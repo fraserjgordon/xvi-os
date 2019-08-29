@@ -1,0 +1,19 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "explicit(...)=explicit"
+            ],
+            "compilerPath": "/opt/cross/bin/g++ -fconcepts",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64",
+            "compileCommands": "${workspaceRoot}/.xvi.build/compile_commands.json"
+        }
+    ],
+    "version": 4
+}
