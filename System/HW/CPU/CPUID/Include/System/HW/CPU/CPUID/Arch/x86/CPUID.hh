@@ -144,11 +144,17 @@ static constexpr unsigned int LeafSerialNumber      = 3;
 static constexpr unsigned int LeafExtendedFeatures  = 7;
 static constexpr unsigned int LeafXsaveInfo         = 13;
 
+static constexpr unsigned int HypervisorLeafStart   = 0x40000000;
+static constexpr unsigned int HypervisorLeafEnd     = 0x400000FF;
+
 static constexpr unsigned int XLeafManufacturer     = 0x80000000;
 static constexpr unsigned int XLeafModelAndFeatures = 0x80000001;
 static constexpr unsigned int XLeafBrandString1     = 0x80000002;
 static constexpr unsigned int XLeafBrandString2     = 0x80000003;
 static constexpr unsigned int XLeafBrandString3     = 0x80000004;
+static constexpr unsigned int XLeafL1CacheTLBInfo   = 0x80000005;
+static constexpr unsigned int XLeafL2L3CacheTLBInfo = 0x80000006;
+static constexpr unsigned int XLeafSVMInfo          = 0x8000000A;
 
 
 namespace Feature
@@ -165,7 +171,7 @@ static constexpr feature_flag_t ExtFamily = {.leaf = 1, .where = Register::EAX, 
 // EBX for EAX=1
 static constexpr feature_flag_t BrandIndex         = {.leaf = 1, .where = Register::EBX, .mask = 0x000000ff, .shift = 0};
 static constexpr feature_flag_t ClflushSize        = {.leaf = 1, .where = Register::EBX, .mask = 0x0000ff00, .shift = 5};  //!< Note: raw value is bytecount/8
-static constexpr feature_flag_t PackageAcpiIdCount = {.leaf = 1, .where = Register::EBX, .mask = 0x00ff0000, .shift = 16};
+static constexpr feature_flag_t LogicalCPUCount    = {.leaf = 1, .where = Register::EBX, .mask = 0x00ff0000, .shift = 16};
 static constexpr feature_flag_t LocalAcpiId        = {.leaf = 1, .where = Register::EBX, .mask = 0xff000000, .shift = 24};
 
 // EDX for EAX=1
@@ -233,6 +239,25 @@ static constexpr feature_flag_t Float16            = {.leaf = 1, .where = Regist
 static constexpr feature_flag_t Rdrand             = {.leaf = 1, .where = Register::ECX, .mask = (1<<30)};
 static constexpr feature_flag_t HypervisorRunning  = {.leaf = 1, .where = Register::ECX, .mask = (1U<<31)};
 
+// EAX for EAX=5
+static constexpr feature_flag_t MonitorLineSizeMin = {.leaf = 5, .where = Register::EAX, .mask = (0x0000ffff)};
+
+// EBX for EAX=5
+static constexpr feature_flag_t MonitorLineSizeMax = {.leaf = 5, .where = Register::EBX, .mask = (0x0000ffff)};
+
+// ECX for EAX=5
+static constexpr feature_flag_t MonitorMwaitEMX    = {.leaf = 5, .where = Register::ECX, .mask = (1<<0)};
+static constexpr feature_flag_t MonitorMwaitIBE    = {.leaf = 5, .where = Register::ECX, .mask = (1<<1)};
+
+// EAX for EAX=6
+static constexpr feature_flag_t APICTimerARAT      = {.leaf = 6, .where = Register::EAX, .mask = (1<<1)};
+
+// ECX for EAX=6
+static constexpr feature_flag_t ACPITimerEffFreq   = {.leaf = 6, .where = Register::ECX, .mask = (1<<0)};
+
+// EAX for EAX=7
+static constexpr feature_flag_t MaxExtFeatureSubId = {.leaf = 7, .where = Register::EAX, .mask = ~0U};
+
 // EBX for EAX=7,ECX=0
 static constexpr feature_flag_t FsGsBase           = {.leaf = 7, .where = Register::EBX, .mask = (1<<0)};
 static constexpr feature_flag_t TscAdjust          = {.leaf = 7, .where = Register::EBX, .mask = (1<<1)};
@@ -292,6 +317,29 @@ static constexpr feature_flag_t StibpControl       = {.leaf = 7, .where = Regist
 static constexpr feature_flag_t Ia32ArchCapsMsr    = {.leaf = 7, .where = Register::EDX, .mask = (1<<29)};
 static constexpr feature_flag_t Ssbd               = {.leaf = 7, .where = Register::EDX, .mask = (1U<<31)};
 
+// Registers for EAX=0x0D,ECX=0
+static constexpr feature_flag_t XFeatureSupportedMaskLow = {.leaf = 0x0D, .subleaf = 0, .use_subleaf = true, .where = Register::EAX, .mask = ~0U};
+static constexpr feature_flag_t XFeatureEnabledSize = {.leaf = 0x0D, .subleaf = 0, .use_subleaf = true, .where = Register::EBX, .mask = ~0U};
+static constexpr feature_flag_t XFeatureMaxSize    = {.leaf = 0x0D, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = ~0U};
+static constexpr feature_flag_t XFeatureSupposedMaskHigh = {.leaf = 0x0D, .subleaf = 0, .use_subleaf = true, .where = Register::EDX, .mask = ~0U};
+
+// EAX for EAX=0x0D,ECX=1
+static constexpr feature_flag_t XSaveOpt           = {.leaf = 0x0D, .subleaf = 1, .use_subleaf = true, .where = Register::EAX, .mask = (1<<0)};
+
+// Registers for EAX=0x0D,ECX=2
+static constexpr feature_flag_t XFeatureYmmSaveSize = {.leaf = 0x0D, .subleaf = 2, .use_subleaf = true, .where = Register::EAX, .mask = ~0U};
+static constexpr feature_flag_t XFeatureYmmSaveOffset = {.leaf = 0x0D, .subleaf = 2, .use_subleaf = true, .where = Register::EBX, .mask = ~0U};
+
+// Registers for EAX=0x0D,ECX=0x3E
+static constexpr feature_flag_t XFeatureLwpSaveSize = {.leaf = 0x0D, .subleaf = 0x3E, .use_subleaf = true, .where = Register::EAX, .mask = ~0U};
+static constexpr feature_flag_t XFeatureLwpSaveOffset = {.leaf = 0x0D, .subleaf = 0x3E, .use_subleaf = true, .where = Register::EBX, .mask = ~0U};
+
+// Registers for EAX=0x80000000
+static constexpr feature_flag_t MaxExtLeaf         = {.leaf = 0x80000000, .where = Register::EAX, .mask = ~0U};
+static constexpr feature_flag_t ExtVendorId1       = {.leaf = 0x80000000, .where = Register::EBX, .mask = ~0U};
+static constexpr feature_flag_t ExtVendorId2       = {.leaf = 0x80000000, .where = Register::ECX, .mask = ~0U};
+static constexpr feature_flag_t ExtVendorId3       = {.leaf = 0x80000000, .where = Register::EDX, .mask = ~0U};
+
 // EDX for EAX=0x80000001
 static constexpr feature_flag_t Syscall            = {.leaf = 0x80000001, .where = Register::EDX, .mask = (1<<11)};
 static constexpr feature_flag_t Multiprocessor     = {.leaf = 0x80000001, .where = Register::EDX, .mask = (1<<19)};
@@ -330,18 +378,112 @@ static constexpr feature_flag_t NbPerfmon          = {.leaf = 0x80000001, .where
 static constexpr feature_flag_t DataBreakpoint     = {.leaf = 0x80000001, .where = Register::ECX, .mask = (1<<26)};
 static constexpr feature_flag_t PerformanceTsc     = {.leaf = 0x80000001, .where = Register::ECX, .mask = (1<<27)};
 static constexpr feature_flag_t L2IPerfmon         = {.leaf = 0x80000001, .where = Register::ECX, .mask = (1<<28)};
+static constexpr feature_flag_t MonitorxMwaitx     = {.leaf = 0x80000001, .where = Register::ECX, .mask = (1<<29)};
+
+// EBX for EAX=0x80000001
+static constexpr feature_flag_t BrandId            = {.leaf = 0x80000001, .where = Register::EBX, .mask = 0x0000ffff};
+static constexpr feature_flag_t PackageType        = {.leaf = 0x80000001, .where = Register::EBX, .mask = 0xf0000000};
+
+// EAX for EAX=0x80000005
+static constexpr feature_flag_t L1ITLB2M4MSize     = {.leaf = 0x80000005, .where = Register::EAX, .mask = 0x000000ff, .shift = 0};
+static constexpr feature_flag_t L1ITLB2M4MAssoc    = {.leaf = 0x80000005, .where = Register::EAX, .mask = 0x0000ff00, .shift = 8};
+static constexpr feature_flag_t L1DTLB2M4MSize     = {.leaf = 0x80000005, .where = Register::EAX, .mask = 0x00ff0000, .shift = 16};
+static constexpr feature_flag_t L1DTLB2M4MAssoc    = {.leaf = 0x80000005, .where = Register::EAX, .mask = 0xff000000, .shift = 24};
+
+// EBX for EAX=0x80000005
+static constexpr feature_flag_t L1ITLB4kSize       = {.leaf = 0x80000005, .where = Register::EBX, .mask = 0x000000ff, .shift = 0};
+static constexpr feature_flag_t L1ITLB4kAssoc      = {.leaf = 0x80000005, .where = Register::EBX, .mask = 0x0000ff00, .shift = 8};
+static constexpr feature_flag_t L1DTLB4kSize       = {.leaf = 0x80000005, .where = Register::EBX, .mask = 0x00ff0000, .shift = 16};
+static constexpr feature_flag_t L1DTLB4kAssoc      = {.leaf = 0x80000005, .where = Register::EBX, .mask = 0xff000000, .shift = 24};
+
+// ECX for EAX=0x80000005
+static constexpr feature_flag_t L1DataLineSize     = {.leaf = 0x80000005, .where = Register::ECX, .mask = 0x000000ff, .shift = 0};
+static constexpr feature_flag_t L1DataLinesPerTag  = {.leaf = 0x80000005, .where = Register::ECX, .mask = 0x0000ff00, .shift = 8};
+static constexpr feature_flag_t L1DataAssoc        = {.leaf = 0x80000005, .where = Register::ECX, .mask = 0x00ff0000, .shift = 16};
+static constexpr feature_flag_t L1DataSize         = {.leaf = 0x80000005, .where = Register::ECX, .mask = 0xff000000, .shift = 14}; // Raw value is in kB.
+
+// EDX for EAX=0x80000005
+static constexpr feature_flag_t L1InsnLineSize     = {.leaf = 0x80000005, .where = Register::EDX, .mask = 0x000000ff, .shift = 0};
+static constexpr feature_flag_t L1InsnLinesPerTag  = {.leaf = 0x80000005, .where = Register::EDX, .mask = 0x0000ff00, .shift = 8};
+static constexpr feature_flag_t L1InsnAssoc        = {.leaf = 0x80000005, .where = Register::EDX, .mask = 0x00ff0000, .shift = 16};
+static constexpr feature_flag_t L1InsnSize         = {.leaf = 0x80000005, .where = Register::EDX, .mask = 0xff000000, .shift = 14}; // Raw value is in kB.
+
+// EAX for EAX=0x80000006
+static constexpr feature_flag_t L2ITLB2M4MSize     = {.leaf = 0x80000006, .where = Register::EAX, .mask = 0x00000fff, .shift = 0};
+static constexpr feature_flag_t L2ITLB2M4MAssoc    = {.leaf = 0x80000006, .where = Register::EAX, .mask = 0x0000f000, .shift = 12}; // Note: non-trivial encoding.
+static constexpr feature_flag_t L2DTLB2M4MSize     = {.leaf = 0x80000006, .where = Register::EAX, .mask = 0x0fff0000, .shift = 16};
+static constexpr feature_flag_t L2DTLB2M4MAssoc    = {.leaf = 0x80000006, .where = Register::EAX, .mask = 0xf0000000, .shift = 28}; // Note: non-trivial encoding.
+
+// EBX for EAX=0x80000006
+static constexpr feature_flag_t L2ITLB4kSize       = {.leaf = 0x80000006, .where = Register::EBX, .mask = 0x00000fff, .shift = 0};
+static constexpr feature_flag_t L2ITLB4kAssoc      = {.leaf = 0x80000006, .where = Register::EBX, .mask = 0x0000f000, .shift = 12}; // Note: non-trivial encoding.
+static constexpr feature_flag_t L2DTLB4kSize       = {.leaf = 0x80000006, .where = Register::EBX, .mask = 0x0fff0000, .shift = 16};
+static constexpr feature_flag_t L2DTLB4kAssoc      = {.leaf = 0x80000006, .where = Register::EBX, .mask = 0xf0000000, .shift = 28}; // Note: non-trivial encoding.
+
+// ECX for EAX=0x80000006
+static constexpr feature_flag_t L2CacheLineSize    = {.leaf = 0x80000006, .where = Register::ECX, .mask = 0x000000ff, .shift = 0};
+static constexpr feature_flag_t L2CacheLinesPerTag = {.leaf = 0x80000006, .where = Register::ECX, .mask = 0x00000f00, .shift = 8};
+static constexpr feature_flag_t L2CacheAssoc       = {.leaf = 0x80000006, .where = Register::ECX, .mask = 0x0000f000, .shift = 12}; // Note: non-trivial encoding.
+static constexpr feature_flag_t L2CacheSize        = {.leaf = 0x80000006, .where = Register::ECX, .mask = 0xffff0000, .shift = 6}; // Raw value is in kB.
+
+// EDX for EAX=0x80000006
+static constexpr feature_flag_t L3CacheLineSize    = {.leaf = 0x80000006, .where = Register::EDX, .mask = 0x000000ff, .shift = 0};
+static constexpr feature_flag_t L3CacheLinesPerTag = {.leaf = 0x80000006, .where = Register::EDX, .mask = 0x00000f00, .shift = 8};
+static constexpr feature_flag_t L3CacheAssoc       = {.leaf = 0x80000006, .where = Register::EDX, .mask = 0x0000f000, .shift = 12}; // Note: non-trivial encoding.
+static constexpr feature_flag_t L3CacheSize        = {.leaf = 0x80000006, .where = Register::EDX, .mask = 0xfffc0000, .shift = 0}; // Raw value is in 512kB.
+
+// EAX for EAX=0x80000008
+static constexpr feature_flag_t PhysicalAddrBits   = {.leaf = 0x80000008, .where = Register::EAX, .mask = 0x000000ff, .shift = 0};
+static constexpr feature_flag_t LinearAddrBits     = {.leaf = 0x80000008, .where = Register::EAX, .mask = 0x0000ff00, .shift = 8};
+static constexpr feature_flag_t GuestPhysicalAddrBits = {.leaf = 0x80000008, .where = Register::EAX, .mask = 0x00ff0000, .shift = 16};
+
+// EBX for EAX=0x80000008
+static constexpr feature_flag_t Clzero             = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<0)};
+static constexpr feature_flag_t InsnRetiredMSR     = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<1)};
+static constexpr feature_flag_t FPErrorPtrXrstor   = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<2)};
+
+// ECX for EAX=0x80000008
+static constexpr feature_flag_t PhysicalCoreCount  = {.leaf = 0x80000008, .where = Register::ECX, .mask = 0x000000ff, .shift = 0}; // Number of cores minus 1.
+static constexpr feature_flag_t ACPIIDCoreIDSize   = {.leaf = 0x80000008, .where = Register::ECX, .mask = 0x0000f000, .shift = 12};
+static constexpr feature_flag_t PerformanceTscSize = {.leaf = 0x80000008, .where = Register::ECX, .mask = 0x00030000, .shift = 16}; // Note: non-trivial encoding.
+
+// EAX for EAX=0x8000000A
+static constexpr feature_flag_t SvmRevision        = {.leaf = 0x8000000A, .where = Register::EAX, .mask = 0x000000ff, .shift = 0};
+
+// EBX for EAX=0x8000000A
+static constexpr feature_flag_t NumberASID         = {.leaf = 0x8000000A, .where = Register::EBX, .mask = ~0U};
+
+// EDX for EAX=0x8000000A
+static constexpr feature_flag_t SvmNestedPaging    = {.leaf = 0x8000000A, .where = Register::EDX, .mask = (1<<0)};
+static constexpr feature_flag_t SvmVirtLBR         = {.leaf = 0x8000000A, .where = Register::EDX, .mask = (1<<1)};
+static constexpr feature_flag_t SvmLock            = {.leaf = 0x8000000A, .where = Register::EDX, .mask = (1<<2)};
+static constexpr feature_flag_t SvmNRIPSave        = {.leaf = 0x8000000A, .where = Register::EDX, .mask = (1<<3)};
+static constexpr feature_flag_t SvmTscRateMSR      = {.leaf = 0x8000000A, .where = Register::EDX, .mask = (1<<4)};
+static constexpr feature_flag_t SvmVCMBClean       = {.leaf = 0x8000000A, .where = Register::EDX, .mask = (1<<5)};
+static constexpr feature_flag_t SvmFlushByASID     = {.leaf = 0x8000000A, .where = Register::EDX, .mask = (1<<6)};
+static constexpr feature_flag_t SvmDecodeAssists   = {.leaf = 0x8000000A, .where = Register::EDX, .mask = (1<<7)};
+static constexpr feature_flag_t SvmPauseFilter     = {.leaf = 0x8000000A, .where = Register::EDX, .mask = (1<<10)};
+static constexpr feature_flag_t SvmPauseFilterLimit= {.leaf = 0x8000000A, .where = Register::EDX, .mask = (1<<12)};
+static constexpr feature_flag_t SvmAVIC            = {.leaf = 0x8000000A, .where = Register::EDX, .mask = (1<<13)};
+static constexpr feature_flag_t SvmVirtVMSave      = {.leaf = 0x8000000A, .where = Register::EDX, .mask = (1<<15)};
+static constexpr feature_flag_t SvmVGIF            = {.leaf = 0x8000000A, .where = Register::EDX, .mask = (1<<16)};    
 
 } // namespace Feature
 
 
 #if defined(__amd64__)
-static constexpr bool SupportsCPUID()
+constexpr bool SupportsCPUIDRaw()
+{
+    return true;
+}
+
+constexpr bool SupportsCPUID()
 {
     return true;
 }
 #else
 [[gnu::const]]
-static inline bool SupportsCPUID()
+inline bool SupportsCPUIDRaw()
 {
     // See if the ID flag (bit 17) of the %eflags register can be modified.
     unsigned int result;
@@ -357,6 +499,13 @@ static inline bool SupportsCPUID()
         : [result] "=r" (result)
     );
     return (result & 0x00020000);
+}
+
+[[gnu::const]]
+inline bool SupportsCPUID()
+{
+    static const bool supported = SupportsCPUIDRaw();
+    return supported;
 }
 #endif
 

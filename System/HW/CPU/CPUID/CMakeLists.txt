@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.12)
 project(System.HW.CPU.CPUID LANGUAGES CXX)
 
 # Header-only library target.
-add_library(System.HW.CPU.CPUID INTERFACE)
+xvi_library(System.HW.CPU.CPUID INTERFACE KERNEL)
 
 target_include_directories(System.HW.CPU.CPUID
     INTERFACE Include/
