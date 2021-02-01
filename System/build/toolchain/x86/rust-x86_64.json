@@ -1,0 +1,45 @@
+{
+  "arch": "x86_64",
+  "cpu": "x86-64",
+  "crt-static-respected": true,
+  "data-layout": "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128",
+  "has-rpath": true,
+  "linker-is-gnu": true,
+  "llvm-target": "x86_64-xvi",
+  "max-atomic-width": 64,
+  "pre-link-args": {
+    "gcc": [
+      "-Wl,--as-needed",
+      "-Wl,-z,noexecstack",
+      "-m64"
+    ]
+  },
+  "target-pointer-width": "64",
+  "target_family": "xvi",
+
+  "allow-asm": true,
+  "default-hidden-visibility": true,
+  "dll-prefix": "",
+  "dll-suffix": ".dylib",
+  "dwarf-version": 5,
+  "dynamic-linking": true,
+  "eh-frame-header": true,
+  "env": "",
+  "exe-suffix": ".exe",
+  "executables": "true",
+  "function-sections": true,
+  "has-elf-tls": true,
+  "needs-plt": false,
+  "os": "xvi",
+  "os-family": "xvi",
+  "panic-strategy": "unwind",
+  "position-independent-executables": true,
+  "relax-elf-relocations": true,
+  "relro-level": "full",
+  "stack-probes": true,
+  "static-position-independent-executables": true,
+  "staticlib-prefix": "",
+  "staticlib-suffix": ".a",
+  "trap-unreachable": true,
+  "vendor": "xvi"
+}

@@ -8,7 +8,7 @@ include(FindDoxygen)
 
 project(System.Unicode.UTF LANGUAGES CXX)
 
-add_library(System.Unicode.UTF SHARED)
+xvi_library(System.Unicode.UTF VERSION 0.1.0 STATIC SHARED KERNEL)
 
 set(HEADERS
     Export.h
@@ -31,21 +31,21 @@ list(TRANSFORM HEADERS PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Include/System/Unicod
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Source/System/Unicode/UTF/)
 list(TRANSFORM TEST_SOURCES PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Test/System/Unicode/UTF/)
 
-target_sources(System.Unicode.UTF
+target_sources(System.Unicode.UTF+All
     PUBLIC ${HEADERS}
     PRIVATE ${SOURCES}    
 )
 
-target_include_directories(System.Unicode.UTF
+target_include_directories(System.Unicode.UTF+All
     PUBLIC Include
     PRIVATE Source 
 )
 
-target_compile_definitions(System.Unicode.UTF
+target_compile_definitions(System.Unicode.UTF+All
     PRIVATE System_ABI_ExecContext_BUILD
 )
 
-target_link_libraries(System.Unicode.UTF
+target_link_libraries(System.Unicode.UTF+All
 )
 
 if (DOXYGEN_FOUND)
@@ -74,6 +74,8 @@ endif()
 
 ##### Test executable #####
 
+if(0)
+
 include(GoogleTest)
 
 enable_testing()
@@ -95,3 +97,5 @@ target_link_libraries(System.Unicode.UTF_TestExe
 gtest_discover_tests(System.Unicode.UTF_TestExe
     TEST_PREFIX "System.Unicode.UTF."
 )
+
+endif()

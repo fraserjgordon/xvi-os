@@ -19,7 +19,7 @@ namespace __XVI_STD_UTILITY_NS
 {
 
 
-inline constexpr size_t variant_npos = -1;
+inline constexpr size_t variant_npos = static_cast<size_t>(-1);
 
 
 namespace __detail
@@ -235,14 +235,14 @@ constexpr void __swap_elem(__variant_storage_union_base<_T, _Types...>& __lhs,
 }
 
 template <class _T, class... _Types>
-constexpr bool __eq(const __variant_storage_union_base<_T, _Types...>& __lhs,
+constexpr bool __variant_eq(const __variant_storage_union_base<_T, _Types...>& __lhs,
                     const __variant_storage_union_base<_T, _Types...>& __rhs,
                     size_t __index)
 {
     if (__index != 0)
     {
         if constexpr (sizeof...(_Types) > 0)
-            return __eq(__lhs.__inner, __rhs.__inner, __index - 1);
+            return __variant_eq(__lhs.__inner, __rhs.__inner, __index - 1);
         return true;
     }
 
@@ -336,6 +336,14 @@ union __variant_storage_union
 
     // Note: does not initialise as any of the alternatives, only as raw storage.
     constexpr __variant_storage_union() : __raw() {}
+
+    ~__variant_storage_union() = default;
+
+    // Non-trivial but empty destructor for unions with non-trivial members.
+    ~__variant_storage_union()
+    requires (!(is_trivially_destructible_v<_Types> && ...))
+    {
+    }
 };
 
 
@@ -351,7 +359,7 @@ struct __variant_storage_base
     constexpr __variant_storage_base(const __variant_storage_base&) = default;
     constexpr __variant_storage_base(__variant_storage_base&&) = default;
 
-    ~__variant_storage_base() = default;
+    constexpr ~__variant_storage_base() = default;
 
     constexpr __variant_storage_base& operator=(const __variant_storage_base&) = default;
     constexpr __variant_storage_base& operator=(__variant_storage_base&&) = default;
@@ -387,7 +395,7 @@ struct __variant_storage_base
         if (true || is_constant_evaluated())
         {
             //! @TODO: evaluate recursive vs jump table.
-            return __eq(_M_storage.__inner, __v._M_storage.__inner, _M_index);
+            return __variant_eq(_M_storage.__inner, __v._M_storage.__inner, _M_index);
         }
 
         return __eq_fns[_M_index](*this, __v);
@@ -612,59 +620,30 @@ struct __variant_storage_base
 };
 
 
-template <class _T, class _VSB, bool = is_default_constructible_v<_T>>
-struct __variant_default_ctor_base_helper : _VSB
+template <class... _Types>
+struct __variant_storage
+    : public __variant_storage_base<_Types...>
 {
-    // Default constructor is defined here.
-    constexpr __variant_default_ctor_base_helper() noexcept(is_nothrow_default_constructible_v<_T>) : _VSB()
+    using _Base = __variant_storage_base<_Types...>;
+    using _T0 = __variant_storage_union<_Types...>::__inner_t::__value_t;    
+
+    constexpr __variant_storage()
+        requires is_default_constructible_v<_T0>
     {
         // Explicitly default-construct using the default constructor of the first alternative in the variant.
-        new (__ptr<0>(_VSB::_M_storage.__inner)) _T();
+        new (__ptr<0>(_Base::_M_storage.__inner)) _T0();
     }
-};
 
-template <class _T, class _VSB>
-struct __variant_default_ctor_base_helper<_T, _VSB, false> : _VSB
-{
-    // First type is not default constructible to default constructor is deleted.
-    __variant_default_ctor_base_helper() = delete;
-    constexpr __variant_default_ctor_base_helper(const __variant_default_ctor_base_helper&) = default;
-    constexpr __variant_default_ctor_base_helper(__variant_default_ctor_base_helper&&) = default;
-    constexpr __variant_default_ctor_base_helper& operator=(const __variant_default_ctor_base_helper&) = default;
-    constexpr __variant_default_ctor_base_helper& operator=(__variant_default_ctor_base_helper&&) = default;
-};
+    constexpr __variant_storage()
+    requires (!is_default_constructible_v<_T0>)
+        = delete;
 
-template <class _T, class... _Types>
-struct __variant_default_ctor_base : __variant_default_ctor_base_helper<_T, __variant_storage_base<_T, _Types...>> {};
+    constexpr __variant_storage(const __variant_storage&)
+    requires (is_trivially_copy_constructible_v<_Types> && ...)
+        = default;
 
-
-template <class _Base, bool _CopyConstructible, bool _TriviallyCopyConstructible>
-struct __variant_copy_ctor_base_helper : _Base
-{
-    // Default assumption is that all types are trivially copy constructible. The underlying union will get copied as a
-    // bunch of bytes.
-};
-
-template <class _Base, bool _Ignored>
-struct __variant_copy_ctor_base_helper<_Base, false, _Ignored> : _Base
-{
-    // At least one of the variant types is non-copy-constructible so copy construction is disabled.
-    constexpr __variant_copy_ctor_base_helper() = default;
-    constexpr __variant_copy_ctor_base_helper(__variant_copy_ctor_base_helper&&) = default;
-    constexpr __variant_copy_ctor_base_helper& operator=(const __variant_copy_ctor_base_helper&) = default;
-    constexpr __variant_copy_ctor_base_helper& operator=(__variant_copy_ctor_base_helper&&) = default;
-    __variant_copy_ctor_base_helper(const __variant_copy_ctor_base_helper&) = delete;
-};
-
-template <class _Base>
-struct __variant_copy_ctor_base_helper<_Base, true, false> : _Base
-{
-    // At least one of the variant types is non-trivially copy-constructible so a copy-constructor call must be used.
-    constexpr __variant_copy_ctor_base_helper() = default;
-    constexpr __variant_copy_ctor_base_helper(__variant_copy_ctor_base_helper&&) = default;
-    constexpr __variant_copy_ctor_base_helper& operator=(const __variant_copy_ctor_base_helper&) = default;
-    constexpr __variant_copy_ctor_base_helper& operator=(__variant_copy_ctor_base_helper&&) = default;
-    constexpr __variant_copy_ctor_base_helper(const __variant_copy_ctor_base_helper& __rhs)
+    constexpr __variant_storage(const __variant_storage& __rhs)
+    requires (!(is_trivially_copy_constructible_v<_Types> && ...) && (is_copy_constructible_v<_Types> && ...))
     {
         auto __this = static_cast<_Base*>(this);
         auto __that = static_cast<const _Base*>(&__rhs);
@@ -682,42 +661,17 @@ struct __variant_copy_ctor_base_helper<_Base, true, false> : _Base
             _Base::__copy_ctors[__that->_M_index](*__this, *__that);
         __this->_M_index = __that->_M_index;
     }
-};
 
-template <class... _Types>
-struct __variant_copy_ctor_base
-    : __variant_copy_ctor_base_helper<__variant_default_ctor_base<_Types...>,
-                                      (is_copy_constructible_v<_Types> && ...),
-                                      (is_trivially_copy_constructible_v<_Types> && ...)> {};
+    constexpr __variant_storage(const __variant_storage&)
+    requires (!(is_copy_constructible_v<_Types> && ...))
+        = delete;
 
+    constexpr __variant_storage(__variant_storage&&)
+    requires (is_trivially_move_constructible_v<_Types> && ...)
+        = default;
 
-template <class _Base, bool _MoveConstructible, bool _TriviallyMoveConstructible>
-struct __variant_move_ctor_base_helper : _Base
-{
-    // Default assumption is that all types are trivially move constructible. The underlying union will get copied as a
-    // bunch of bytes.
-};
-
-template <class _Base, bool _Ignored>
-struct __variant_move_ctor_base_helper<_Base, false, _Ignored> : _Base
-{
-    // At least one of the variant types is non-move-constructible so move construction is disabled.
-    constexpr __variant_move_ctor_base_helper() = default;
-    constexpr __variant_move_ctor_base_helper(const __variant_move_ctor_base_helper&) = default;
-    constexpr __variant_move_ctor_base_helper& operator=(const __variant_move_ctor_base_helper&) = default;
-    constexpr __variant_move_ctor_base_helper& operator=(__variant_move_ctor_base_helper&&) = default;
-    __variant_move_ctor_base_helper(__variant_move_ctor_base_helper&&) = delete;
-};
-
-template <class _Base>
-struct __variant_move_ctor_base_helper<_Base, true, false> : _Base
-{
-    // At least one of the variant types is non-trivially move-constructible so a move-constructor call must be used.
-    constexpr __variant_move_ctor_base_helper() = default;
-    constexpr __variant_move_ctor_base_helper(const __variant_move_ctor_base_helper&) = default;
-    constexpr __variant_move_ctor_base_helper& operator=(const __variant_move_ctor_base_helper&) = default;
-    constexpr __variant_move_ctor_base_helper& operator=(__variant_move_ctor_base_helper&&) = default;
-    constexpr __variant_move_ctor_base_helper(__variant_move_ctor_base_helper&& __rhs)
+    constexpr __variant_storage(__variant_storage&& __rhs)
+    requires (!(is_trivially_move_constructible_v<_Types> && ...) && (is_move_constructible_v<_Types> && ...))
     {
         auto __this = static_cast<_Base*>(this);
         auto __that = static_cast<_Base*>(&__rhs);
@@ -735,26 +689,17 @@ struct __variant_move_ctor_base_helper<_Base, true, false> : _Base
             _Base::__move_ctors[__that->_M_index](*__this, *__that);
         __this->_M_index = __that->_M_index;
     }
-};
 
-template <class... _Types>
-struct __variant_move_ctor_base
-    : __variant_move_ctor_base_helper<__variant_copy_ctor_base<_Types...>,
-                                      (is_move_constructible_v<_Types> && ...),
-                                      (is_trivially_move_constructible_v<_Types> && ...)> {};
+    constexpr __variant_storage(__variant_storage&&) 
+    requires (!(is_move_constructible_v<_Types> && ...))
+        = delete;
 
+    ~__variant_storage()
+    requires (is_trivially_destructible_v<_Types> && ...)
+        = default;
 
-template <class _Base, bool _TriviallyDestructible>
-struct __variant_destructor_base_helper : _Base
-{
-    // Default assumption is that all types are trivially destructible.
-};
-
-template <class _Base>
-struct __variant_destructor_base_helper<_Base, false> : _Base
-{
-    // At least one of the variant types is non-trivially-destructible so a proper destructor is needed.
-    ~__variant_destructor_base_helper()
+    ~__variant_storage()
+    requires (!(is_trivially_destructible_v<_Types> && ...))
     {
         auto __this = static_cast<_Base*>(this);
         
@@ -772,41 +717,14 @@ struct __variant_destructor_base_helper<_Base, false> : _Base
         _Base::__dtors[__this->_M_index](*__this);
         __this->_M_index = variant_npos;
     }
-};
 
-template <class... _Types>
-struct __variant_destructor_base
-    : __variant_destructor_base_helper<__variant_move_ctor_base<_Types...>,
-                                       (is_trivially_destructible_v<_Types> && ...)> {};
+    constexpr __variant_storage& operator=(__variant_storage&&)
+    requires ((is_trivially_move_constructible_v<_Types> && is_trivially_move_assignable_v<_Types> && is_trivially_destructible_v<_Types>) && ...)
+        = default;
 
-
-template <class _Base, bool _MoveAssignable, bool  _TriviallyMoveAssignable>
-struct __variant_move_assign_base_helper : _Base
-{
-    // Default assumption is that all types are trivially moev assignable. The underlying union will get copied as a
-    // bunch of bytes.
-};
-
-template <class _Base, bool _Ignored>
-struct __variant_move_assign_base_helper<_Base, false, _Ignored> : _Base
-{
-    // At least one of the variant types is non-move-assignable so move assignment is disabled.
-    constexpr __variant_move_assign_base_helper() = default;
-    constexpr __variant_move_assign_base_helper(const __variant_move_assign_base_helper&) = default;
-    constexpr __variant_move_assign_base_helper(__variant_move_assign_base_helper&&) = default;
-    constexpr __variant_move_assign_base_helper& operator=(const __variant_move_assign_base_helper&) = default;
-    __variant_move_assign_base_helper& operator=(__variant_move_assign_base_helper&&) = delete;
-};
-
-template <class _Base>
-struct __variant_move_assign_base_helper<_Base, true, false> : _Base
-{
-    // At least one of the types is non-trivially move-assignable so a move-assign call must be used.
-    constexpr __variant_move_assign_base_helper() = default;
-    constexpr __variant_move_assign_base_helper(const __variant_move_assign_base_helper&) = default;
-    constexpr __variant_move_assign_base_helper(__variant_move_assign_base_helper&&) = default;
-    constexpr __variant_move_assign_base_helper& operator=(const __variant_move_assign_base_helper&) = default;
-    constexpr __variant_move_assign_base_helper& operator&=(__variant_move_assign_base_helper&& __rhs)
+    constexpr __variant_storage& operator=(__variant_storage&& __rhs)
+    requires (((is_move_constructible_v<_Types> && is_move_assignable_v<_Types>) && ...)
+        && !((is_trivially_move_constructible_v<_Types> && is_trivially_move_assignable_v<_Types> && is_trivially_destructible_v<_Types>) && ...))
     {
         auto __this = static_cast<_Base*>(this);
         auto __that = static_cast<_Base*>(&__rhs);
@@ -852,46 +770,18 @@ struct __variant_move_assign_base_helper<_Base, true, false> : _Base
             return *this;
         }
     }
-};
 
-template <class... _Types>
-struct __variant_move_assign_base
-    : __variant_move_assign_base_helper<__variant_destructor_base<_Types...>,
-                                      ((is_move_constructible_v<_Types>
-                                        && is_move_assignable_v<_Types>) && ...),
-                                      ((is_trivially_move_constructible_v<_Types>
-                                        && is_trivially_move_assignable_v<_Types>
-                                        && is_trivially_destructible_v<_Types>) && ...)> {};
+    constexpr __variant_storage& operator=(__variant_storage&&)
+    requires (!((is_move_constructible_v<_Types> && is_move_assignable_v<_Types>) && ...))
+        = delete;
 
+    constexpr __variant_storage& operator=(const __variant_storage&)
+    requires ((is_trivially_copy_constructible_v<_Types> && is_trivially_copy_assignable_v<_Types> && is_trivially_destructible_v<_Types>) && ...)
+        = default;;
 
-
-template <class _Base, bool _CopyAssignable, bool _TriviallyCopyAssignable>
-struct __variant_copy_assign_base_helper : _Base
-{
-    // Default assumption is that all types are trivially copy assignable. The underlying union will get copied as a
-    // bunch of bytes.
-};
-
-template <class _Base, bool _Ignored>
-struct __variant_copy_assign_base_helper<_Base, false, _Ignored> : _Base
-{
-    // At least one of the variant types is non-copy-assignable so copy assignment is disabled.
-    constexpr __variant_copy_assign_base_helper() = default;
-    constexpr __variant_copy_assign_base_helper(const __variant_copy_assign_base_helper&) = default;
-    constexpr __variant_copy_assign_base_helper(__variant_copy_assign_base_helper&&) = default;
-    constexpr __variant_copy_assign_base_helper& operator=(__variant_copy_assign_base_helper&&) = default;
-    __variant_copy_assign_base_helper& operator=(const __variant_copy_assign_base_helper&) = delete;
-};
-
-template <class _Base>
-struct __variant_copy_assign_base_helper<_Base, true, false> : _Base
-{
-    // At least one of the variant types is non-trivially copy-assignable so a copy-assign call must be used.
-    constexpr __variant_copy_assign_base_helper() = default;
-    constexpr __variant_copy_assign_base_helper(const __variant_copy_assign_base_helper&) = default;
-    constexpr __variant_copy_assign_base_helper(__variant_copy_assign_base_helper&&) = default;
-    constexpr __variant_copy_assign_base_helper& operator=(__variant_copy_assign_base_helper&&) = default;
-    constexpr __variant_copy_assign_base_helper& operator=(const __variant_copy_assign_base_helper& __rhs)
+    constexpr __variant_storage& operator=(const __variant_storage& __rhs)
+    requires (((is_copy_constructible_v<_Types> && is_copy_assignable_v<_Types>) && ...)
+        && !((is_trivially_copy_constructible_v<_Types> && is_trivially_copy_assignable_v<_Types> && is_trivially_destructible_v<_Types>) && ...))
     {
         auto __this = static_cast<_Base*>(this);
         auto __that = static_cast<const _Base*>(&__rhs);
@@ -943,34 +833,10 @@ struct __variant_copy_assign_base_helper<_Base, true, false> : _Base
             return *this;
         }
     }
-};
 
-template <class... _Types>
-struct __variant_copy_assign_base
-    : __variant_copy_assign_base_helper<__variant_move_assign_base<_Types...>,
-                                      ((is_copy_constructible_v<_Types>
-                                        && is_copy_assignable_v<_Types>) && ...),
-                                      ((is_trivially_copy_constructible_v<_Types>
-                                        && is_trivially_copy_assignable_v<_Types>
-                                        && is_trivially_destructible_v<_Types>) && ...)> {};
-
-
-
-
-template <class... _Types>
-struct __variant_storage
-    : public __variant_copy_assign_base<_Types...>
-{
-    using _Base = __variant_copy_assign_base<_Types...>;
-    
-    constexpr __variant_storage() = default;
-    constexpr __variant_storage(const __variant_storage&) = default;
-    constexpr __variant_storage(__variant_storage&&) = default;
-
-    ~__variant_storage() = default;
-
-    constexpr __variant_storage& operator=(const __variant_storage&) = default;
-    constexpr __variant_storage& operator=(__variant_storage&&) = default;
+    constexpr __variant_storage& operator=(const __variant_storage&)
+    requires (!((is_copy_constructible_v<_Types> && is_copy_assignable_v<_Types>) && ...))
+        = delete;
 
     template <class _T, class... _Args>
     constexpr void __emplace_construct(_Args&&... __args)
@@ -1299,12 +1165,12 @@ public:
     }
 
 #ifdef __XVI_CXX_UTILITY_NO_EXCEPTIONS
-    [[noreturn]] void __invalid_access() noexcept
+    [[noreturn]] void __invalid_access() const noexcept
     {
         terminate();
     }
 #else
-    void __invalid_access()
+    void __invalid_access() const
     {
         throw bad_variant_access();
     }
@@ -1494,7 +1360,7 @@ constexpr _R __dispatch1r_fn(_Visitor&& __v, _Variant&& __var)
 
 template <class _Visitor, class _Variant, size_t... _Idx>
 constexpr auto __dispatch1_via_table(index_sequence<_Idx...>, _Visitor&& __vis, _Variant&& __var)
-    -> invoke_result_t<_Visitor, variant_alternative_t<0, _Variant>>
+    -> invoke_result_t<_Visitor, variant_alternative_t<0, remove_reference_t<_Variant>>>
 {
     using __dispatch1_fn_t = decltype(__dispatch1_fn<0, _Visitor, _Variant>);
     static_assert((is_same_v<__dispatch1_fn_t, decltype(__dispatch1_fn<_Idx, _Visitor, _Variant>)> && ...),
@@ -1524,7 +1390,8 @@ constexpr decltype(auto) visit(_Visitor&& __vis, _Variants&&... __vars)
     {
         // Dispatch via a table for constant-time behaviour.
         using _Variant = typename __detail::__nth_type<0, _Variants...>::type;
-        constexpr size_t _M = variant_size_v<_Variant>;
+        using _V = remove_cvref_t<_Variant>;
+        constexpr size_t _M = variant_size_v<_V>;
 
         return __detail::__dispatch1_via_table(make_index_sequence<_M>(),
                                                __XVI_STD_NS::forward<_Visitor>(__vis),

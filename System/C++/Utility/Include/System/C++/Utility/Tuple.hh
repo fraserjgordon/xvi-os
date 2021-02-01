@@ -377,13 +377,13 @@ __tuple_cat(_MetaTuple&& __m, index_sequence<_ElemIdx...>, index_sequence<_Tuple
 template <class _F, class _Tuple, size_t... _I>
 constexpr decltype(auto) __apply_helper(_F&& __f, _Tuple&& __t, index_sequence<_I...>)
 {
-    return _INVOKE(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::get<_I>(__XVI_STD_NS::forward<_Tuple>(__t))...);
+    return _INVOKE(__XVI_STD_NS::forward<_F>(__f), get<_I>(__XVI_STD_NS::forward<_Tuple>(__t))...);
 }
 
 template <class _R, class _F, class _Tuple, size_t... _I>
 constexpr decltype(auto) __apply_r_helper(_F&& __f, _Tuple&& __t, index_sequence<_I...>)
 {
-    return _INVOKE_R<_R>(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::get<_I>(__XVI_STD_NS::forward<_Tuple>(__t))...);
+    return _INVOKE_R<_R>(__XVI_STD_NS::forward<_F>(__f), get<_I>(__XVI_STD_NS::forward<_Tuple>(__t))...);
 }
 
 template <class _R, class _F, class _Tuple>
@@ -421,10 +421,10 @@ constexpr bool __tuple_lt_helper(const tuple<_TTypes...>& __x, const tuple<_UTyp
         return false;
     else
     {
-        if ((bool)(get<_Offset>(__x) < get<_Offset>(__y)))
+        if (bool(get<_Offset>(__x) < get<_Offset>(__y)))
             // x < y
             return true;
-        else if ((bool)(get<_Offset>(__y) < get<_Offset>(__x)))
+        else if (bool(get<_Offset>(__y) < get<_Offset>(__x)))
             // y > x
             return false;
         else

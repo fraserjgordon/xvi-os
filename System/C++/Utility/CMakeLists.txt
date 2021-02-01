@@ -42,12 +42,14 @@ set(HEADERS
     Ratio.hh
     ReferenceWrapper.hh
     ScopedAllocator.hh
+    StdLib.hh
     SharedPtr.hh
     Span.hh
     StdExcept.hh
     String.hh
     StringFwd.hh
     StringView.hh
+    Swap.hh
     SystemError.hh
     Tuple.hh
     TypeIndex.hh
@@ -61,34 +63,79 @@ set(HEADERS
     Private/TupleTraits.hh
 )
 
+set(STDLIB_SOURCES
+    StdLib/voidptr_iter.hh
+    StdLib/abs.cc
+    StdLib/bsearch.cc
+    StdLib/div.cc
+    StdLib/qsort.cc
+)
+
 set(COMPILE_TEST_SOURCES
     SmokeTests.cc
     SmokeTests-String.cc
 )
 
 list(TRANSFORM HEADERS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/Include/System/C++/Utility/")
+list(TRANSFORM STDLIB_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/Source/System/C++/Utility/")
 list(TRANSFORM COMPILE_TEST_SOURCES PREPEND "Test/System/C++/Utility/")
 
 
-add_library(System.C++.Utility INTERFACE)
+# Main wrapper library.
+xvi_library(System.C++.Utility VERSION 0.1.0 INTERFACE NO_STDLIB)
 
-target_include_directories(System.C++.Utility
-    INTERFACE Include/
+# Implementation libraries.
+xvi_library(System.C++.Utility.Headers  VERSION 0.1.0 INTERFACE NO_STDLIB)
+xvi_library(System.C++.Utility.Impl     VERSION 0.1.0 INTERFACE NO_STDLIB)
+xvi_library(System.C++.Utility.StdLib   VERSION 0.1.0 STATIC SHARED KERNEL NO_STDLIB)
+
+
+# Common settings for implementation libraries.
+macro(cxx_utility_lib name)
+    target_link_libraries(${name}+All PRIVATE System.C++.Utility.Impl PUBLIC System.C++.Utility.Headers)
+    target_link_libraries(System.C++.Utility INTERFACE ${name})
+endmacro()
+
+
+# Headers library
+target_include_directories(System.C++.Utility.Headers
+    INTERFACE   Include/
 )
 
-target_sources(System.C++.Utility
-    INTERFACE ${HEADERS}
+target_sources(System.C++.Utility.Headers
+    INTERFACE   ${HEADERS}
+)
+
+target_link_libraries(System.C++.Utility.Headers
+    INTERFACE   System.C.LanguageSupport
+                System.C++.Atomic
+                System.C++.LanguageSupport.Headers
+                System.C++.TypeTraits
 )
 
 target_link_libraries(System.C++.Utility
-    INTERFACE System.C.LanguageSupport
-              System.C++.Atomic
-              System.C++.LanguageSupport
-              System.C++.TypeTraits
+    INTERFACE   System.C++.LanguageSupport
+)
+
+# Impl library
+target_include_directories(System.C++.Utility.Impl
+    INTERFACE   Source/
+)
+
+target_link_libraries(System.C++.Utility.Impl
+    INTERFACE   System.C++.Utility.Headers
+)
+
+# StdLib library
+cxx_utility_lib(System.C++.Utility.StdLib)
+target_sources(System.C++.Utility.StdLib+All
+    PRIVATE     ${STDLIB_SOURCES}
 )
 
 
 ##### Test library #####
+
+if(OFF)
 
 add_library(System.C++.Utility_CompileTestLibrary STATIC
     ${COMPILE_TEST_SOURCES}
@@ -101,6 +148,8 @@ target_compile_definitions(System.C++.Utility_CompileTestLibrary
 target_link_libraries(System.C++.Utility_CompileTestLibrary
     PRIVATE System.C++.Utility
 )
+
+endif()
 
 ##### Test executable #####
 

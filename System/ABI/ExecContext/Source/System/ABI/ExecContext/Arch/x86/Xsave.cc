@@ -1,13 +1,16 @@
-#include <System/ABI/ExecContext/Arch/x86/Xsave.h>
+#include <System/ABI/ExecContext/Arch/x86/Xsave.hh>
 
-#include <System/ABI/ExecContext/Arch/x86/FloatingPoint.h>
+#include <System/ABI/ExecContext/Arch/x86/FloatingPoint.hh>
+
+
+namespace System::ABI::ExecContext
+{
 
 
 using namespace std;
-using namespace System::ABI::ExecContext;
 
 
-xsave_info_t System::ABI::ExecContext::getXsaveInfo()
+xsave_info_t getXsaveInfo()
 {
     using namespace System::HW::CPU::CPUID;
     
@@ -51,7 +54,7 @@ xsave_info_t System::ABI::ExecContext::getXsaveInfo()
             // The CPU supports this flag so request its particulars.
             results = GetLeaf(LeafXsaveInfo, i);
             info.size[i] = results.eax;
-            info.offset[i] = results.ebx;
+            info.offset[i] = static_cast<std::ptrdiff_t>(results.ebx);
             info.align_64[i] = (results.ecx & 0x02);
         }
         else
@@ -68,86 +71,89 @@ xsave_info_t System::ABI::ExecContext::getXsaveInfo()
 }
 
 
-bool $System$ABI$ExecContext$isXsaveSupported()
+bool _isXsaveSupported()
 {
     return isXsaveSupported();
 }
 
-bool $System$ABI$ExecContext$isXsaveAvailable()
+bool _isXsaveAvailable()
 {
     return isXsaveAvailable();
 }
 
 
-uint64_t $System$ABI$ExecContext$xgetbv(uint32_t index)
+uint64_t _xgetbv(uint32_t index)
 {
     return xgetbv(index);
 }
 
-void $System$ABI$ExecContext$xsetbv(uint32_t index, uint64_t value)
+void _xsetbv(uint32_t index, uint64_t value)
 {
     xsetbv(index, value);
 }
 
 
-void $System$ABI$ExecContext$xrstor(uint64_t flags, const void* save_area)
+void _xrstor(uint64_t flags, const void* save_area)
 {
     xrstor(static_cast<xsave_flag_t>(flags), reinterpret_cast<const fxsave_t*>(save_area));
 }
 
-void $System$ABI$ExecContext$xrstors(uint64_t flags, const void* save_area)
+void _xrstors(uint64_t flags, const void* save_area)
 {
     xrstors(static_cast<xsave_flag_t>(flags), reinterpret_cast<const fxsave_t*>(save_area));
 }
 
-void $System$ABI$ExecContext$xsave(uint64_t flags, void* save_area)
+void _xsave(uint64_t flags, void* save_area)
 {
     xsave(static_cast<xsave_flag_t>(flags), reinterpret_cast<fxsave_t*>(save_area));
 }
 
-void $System$ABI$ExecContext$xsavec(uint64_t flags, void* save_area)
+void _xsavec(uint64_t flags, void* save_area)
 {
     xsavec(static_cast<xsave_flag_t>(flags), reinterpret_cast<fxsave_t*>(save_area));
 }
 
-void $System$ABI$ExecContext$xsaveopt(uint64_t flags, void* save_area)
+void _xsaveopt(uint64_t flags, void* save_area)
 {
     xsaveopt(static_cast<xsave_flag_t>(flags), reinterpret_cast<fxsave_t*>(save_area));
 }
 
-void $System$ABI$ExecContext$xsaves(uint64_t flags, void* save_area)
+void _xsaves(uint64_t flags, void* save_area)
 {
     xsaves(static_cast<xsave_flag_t>(flags), reinterpret_cast<fxsave_t*>(save_area));
 }
 
 #if defined(__x86_64__)
-void $System$ABI$ExecContext$xrstor64(uint64_t flags, const void* save_area)
+void _xrstor64(uint64_t flags, const void* save_area)
 {
     xrstor64(static_cast<xsave_flag_t>(flags), reinterpret_cast<const fxsave_t*>(save_area));
 }
 
-void $System$ABI$ExecContext$xrstors64(uint64_t flags, const void* save_area)
+void _xrstors64(uint64_t flags, const void* save_area)
 {
     xrstors64(static_cast<xsave_flag_t>(flags), reinterpret_cast<const fxsave_t*>(save_area));
 }
 
-void $System$ABI$ExecContext$xsave64(uint64_t flags, void* save_area)
+void _xsave64(uint64_t flags, void* save_area)
 {
     xsave64(static_cast<xsave_flag_t>(flags), reinterpret_cast<fxsave_t*>(save_area));
 }
 
-void $System$ABI$ExecContext$xsavec64(uint64_t flags, void* save_area)
+void _xsavec64(uint64_t flags, void* save_area)
 {
     xsavec64(static_cast<xsave_flag_t>(flags), reinterpret_cast<fxsave_t*>(save_area));
 }
 
-void $System$ABI$ExecContext$xsaveopt64(uint64_t flags, void* save_area)
+void _xsaveopt64(uint64_t flags, void* save_area)
 {
     xsaveopt64(static_cast<xsave_flag_t>(flags), reinterpret_cast<fxsave_t*>(save_area));
 }
 
-void $System$ABI$ExecContext$xsaves64(uint64_t flags, void* save_area)
+void _xsaves64(uint64_t flags, void* save_area)
 {
     xsaves64(static_cast<xsave_flag_t>(flags), reinterpret_cast<fxsave_t*>(save_area));
 }
 #endif
+
+
+} // namespace System::ABI::ExecContext

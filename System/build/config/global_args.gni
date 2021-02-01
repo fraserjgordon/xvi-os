@@ -1,0 +1,63 @@
+# General build configuration.
+declare_args()
+{
+    # Which architectures should be built. If unset, only the host architecture
+    # is built. If set, only architectures in the list are built; this will not
+    # include the host architecture if it is not listed.
+    #
+    # Valid architectures are: aarch64, aarch64be, arm, armbe, mips, mipsel,
+    # mips64, mips64el, powerpc, powerpcle, powerpc64, powerpc64le, sparc,
+    # sparc64, x86, x86_64.
+    enable_archs = []
+    
+    # Should the build generate a system root as it progresses? If not
+    # (the default) it'll build entirely in-tree.
+    build_sysroot = false
+
+    # Path to the sysroot folder. If build_sysroot is true and this is unset, an
+    # appropriate path inside the output directory will be used.
+    sysroot = ""
+
+    # Compile debug-mode code if set; release-mode code if unset.
+    debug = false
+}
+
+# Compiler arguments
+declare_args()
+{   
+    # Location of a cross-compilation toolchain. This path should match the
+    # installation directory (as specified by the '--prefix' option when
+    # building the compilers) of the cross-compilation toolchain(s) to be used
+    # for the build.
+    cross_toolchain_root = ""
+
+    # If set, a Clang-based toolchain will be used. Otherwise, a GCC-based
+    # toolchain will be used.
+    use_clang = false
+}
+
+# Internal variables used for toolchain introspection.
+declare_args()
+{
+    # INTERNAL USE. Used when GCC and Clang need different compiler flags.
+    compiler_id = ""
+}
+
+if (compiler_id == "")
+{
+    if (use_clang)
+    {
+        compiler_id = "clang"
+    }
+    else
+    {
+        compiler_id = "gcc"
+    }
+}
+
+
+# Import the settings for configuring the target/host architecture.
+import("//build/config/arch.gni")
+
+# Import the architecture-specific arguments (for the target only).
+import("//build/config/arch/${target_arch}/arch_args.gni")

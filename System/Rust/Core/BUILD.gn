@@ -1,0 +1,23 @@
+library("Core")
+{
+    library_name = "System.Rust.Core"
+    library_version = "0.0.1"
+
+    use_stdlib = false
+
+    crate_name = "core"
+
+    sources =
+    [
+        "lib.rs",
+
+        "clone.rs",
+        "marker.rs",
+        "result.rs",
+
+        "macros/mod.rs",
+
+        "num/int_type.rs",
+        "num/mod.rs",
+    ]
+}

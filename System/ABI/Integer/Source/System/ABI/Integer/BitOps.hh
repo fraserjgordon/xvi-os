@@ -9,6 +9,10 @@
 #include <System/ABI/Integer/Types.hh>
 
 
+extern "C"
+{
+
+
 __SYSTEM_ABI_INTEGER_EXPORT std::int32_t __clzsi2(std::uint32_t);
 __SYSTEM_ABI_INTEGER_EXPORT std::int32_t __clzdi2(std::uint64_t);
 __SYSTEM_ABI_INTEGER_EXPORT std::int32_t __clzti2(__uint128_t);
@@ -31,6 +35,9 @@ __SYSTEM_ABI_INTEGER_EXPORT std::int32_t __popcountti2(__uint128_t);
 
 __SYSTEM_ABI_INTEGER_EXPORT std::int32_t __bswapsi2(std::int32_t);
 __SYSTEM_ABI_INTEGER_EXPORT std::int64_t __bswapdi2(std::int64_t);
+
+
+} // extern "C"
 
 
 #endif /* ifndef __SYSTEM_ABI_INTEGER_BITOPS_H */

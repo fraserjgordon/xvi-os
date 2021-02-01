@@ -1,0 +1,150 @@
+ENTRY(_IgniterStage2EfiEntry)
+LD_FEATURE("SANE_EXPR")
+
+_IMAGE_BASE = 0x00200000;
+
+/* Used for testing; should be zero otherwise. */
+_IMAGE_OFFSET = 0;
+
+. = _IMAGE_BASE + _IMAGE_OFFSET;
+
+SECTIONS
+{
+    PROVIDE_HIDDEN (_IMAGE_LOAD_START = . - _IMAGE_OFFSET);
+
+    . += SIZEOF_HEADERS;
+
+    .text ALIGN(4K) :
+    {
+        PROVIDE_HIDDEN (_TEXT_START = . - _IMAGE_OFFSET);
+
+        . = ALIGN(32);
+        PROVIDE_HIDDEN (_MULTIBOOT_V2_HDR = . - _IMAGE_OFFSET);
+        KEEP (*(multiboot.header.v2))
+
+        . = ALIGN(32);
+        PROVIDE_HIDDEN (_MULTIBOOT_V1_HDR = . - _IMAGE_OFFSET);
+        KEEP (*(multiboot.header.v1))
+
+        *(.text .text.* .gnu.linkonce.t.*)
+    }
+
+    PROVIDE_HIDDEN (_ENTRY_MULTIBOOT = _IgniterStage2MultibootEntry - _IMAGE_OFFSET);
+    PROVIDE_HIDDEN (_ENTRY_EFI32 = _IgniterStage2Efi32Entry - _IMAGE_OFFSET);
+    PROVIDE_HIDDEN (_ENTRY_EFI64 = _IgniterStage2Efi64Entry - _IMAGE_OFFSET);
+
+
+    .rodata :
+    {
+        *(.rodata .rodata.* .gnu.linkonce.r.*)
+    }
+
+    .ctors :
+    {
+        *(.ctors)
+    }
+
+    .dtors :
+    {
+        *(.dtors)
+    }
+
+    .eh_frame_hdr :
+    {
+        PROVIDE_HIDDEN (_EH_FRAME_HDR = . - _IMAGE_OFFSET);
+        *(.eh_frame_hdr)
+        *(.eh_frame_entry .eh_frame_entry.*)
+    }
+
+    .eh_frame :
+    {
+        KEEP (*(.eh_frame))
+        *(.eh_frame.*)
+    }
+
+    .gcc_except_table :
+    {
+        *(.gcc_except_table .gcc_except_table.*)
+    }
+
+    .hash :
+    {
+        *(.hash)
+    }
+
+    .gnu.hash :
+    {
+        *(.gnu.hash)
+    }
+
+    .data ALIGN(4K) :
+    {
+        PROVIDE_HIDDEN (_DATA_START = . - _IMAGE_OFFSET);        
+
+        *(.data .data.* .gnu.linkonce.d.*)
+
+        *(.got)
+        *(.got.plt)
+    }
+
+    .tdata :
+    {
+        PROVIDE_HIDDEN (_TDATA_START = . - _IMAGE_OFFSET);
+        *(.tdata .tdata.* .gnu.linkonce.td.*)
+        PROVIDE_HIDDEN (_TDATA_END = . - _IMAGE_OFFSET);
+    }
+
+    PROVIDE_HIDDEN (_IMAGE_LOAD_END = . - _IMAGE_OFFSET);
+
+    .tbss :
+    {
+        PROVIDE_HIDDEN (_TBSS_START = . - _IMAGE_OFFSET);
+        *(.tbss .tbss.* .gnu.linkonce.tb.*)
+        *(.tcommon)
+        PROVIDE_HIDDEN(_TBSS_END = . - _IMAGE_OFFSET);
+    }
+
+    .bss :
+    {
+        *(.bss .bss.* .gnu.linkonce.b.*)
+
+        /* Allocate space for the initial thread's TLS data */
+        . = ALIGN(4);
+        PROVIDE_HIDDEN (g_initThreadTLS = . - _IMAGE_OFFSET);
+        . += SIZEOF(.tdata) + SIZEOF(.tbss);
+        . += 8; /* For the TLS linear pointer and the DTV pointer */
+    }
+
+    PROVIDE_HIDDEN (_IMAGE_BSS_END = . - _IMAGE_OFFSET);
+
+    .reloc :
+    {
+        *(.reloc)
+    }
+
+    .rel :
+    {
+        *(.rel*)
+        *(.data.rel*)
+    }
+
+    .dynamic :
+    {
+        *(.dynamic)
+    }
+
+    .dynsym :
+    {
+        *(.dynsym)
+    }
+
+    .dynstr :
+    {
+        *(.dynstr)
+    }
+
+    /DISCARD/ :
+    {
+        *(.note.gnu.build-id)
+    }
+}

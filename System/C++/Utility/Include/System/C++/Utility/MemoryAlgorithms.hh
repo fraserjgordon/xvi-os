@@ -33,7 +33,7 @@ void uninitialized_default_construct(_ForwardIterator __first, _ForwardIterator 
     }
     __XVI_CXX_UTILITY_CATCH(...)
     {
-        if constexpr (DerivedFrom<typename iterator_traits<_ForwardIterator>::iterator_category, bidirectional_iterator_tag>)
+        if constexpr (is_base_of_v<bidirectional_iterator_tag, typename iterator_traits<_ForwardIterator>::iterator_category>)
         {
             for (; __first != __initial_first; --__first)
                 (*__first).~_V();
@@ -61,7 +61,7 @@ void uninitialized_default_construct_n(_ForwardIterator __first, _Size __n)
     }
     __XVI_CXX_UTILITY_CATCH(...)
     {
-        if constexpr (DerivedFrom<typename iterator_traits<_ForwardIterator>::iterator_category, bidirectional_iterator_tag>)
+        if constexpr (is_base_of_v<bidirectional_iterator_tag, typename iterator_traits<_ForwardIterator>::iterator_category>)
         {
             for (; __first != __initial_first; --__first)
                 (*__first).~_V();
@@ -89,7 +89,7 @@ void uninitialized_value_construct(_ForwardIterator __first, _ForwardIterator __
     }
     __XVI_CXX_UTILITY_CATCH(...)
     {
-        if constexpr (DerivedFrom<typename iterator_traits<_ForwardIterator>::iterator_category, bidirectional_iterator_tag>)
+        if constexpr (is_base_of_v<bidirectional_iterator_tag, typename iterator_traits<_ForwardIterator>::iterator_category>)
         {
             for (; __first != __initial_first; --__first)
                 (*__first).~_V();
@@ -117,7 +117,7 @@ void uninitialized_value_construct_n(_ForwardIterator __first, _Size __n)
     }
     __XVI_CXX_UTILITY_CATCH(...)
     {
-        if constexpr (DerivedFrom<typename iterator_traits<_ForwardIterator>::iterator_category, bidirectional_iterator_tag>)
+        if constexpr (is_base_of_v<bidirectional_iterator_tag, typename iterator_traits<_ForwardIterator>::iterator_category>)
         {
             for (; __first != __initial_first; --__first)
                 (*__first).~_V();
@@ -146,7 +146,7 @@ _ForwardIterator uninitialized_copy(_InputIterator __first, _InputIterator __las
     }
     __XVI_CXX_UTILITY_CATCH(...)
     {
-        if constexpr (DerivedFrom<typename iterator_traits<_ForwardIterator>::iterator_category, bidirectional_iterator_tag>)
+        if constexpr (is_base_of_v<bidirectional_iterator_tag, typename iterator_traits<_ForwardIterator>::iterator_category>)
         {
             for (; __result != __initial_result; --__result)
                 (*__result).~_V();
@@ -175,7 +175,7 @@ _ForwardIterator uninitialized_copy_n(_InputIterator __first, _Size __n, _Forwar
     }
     __XVI_CXX_UTILITY_CATCH(...)
     {
-        if constexpr (DerivedFrom<typename iterator_traits<_ForwardIterator>::iterator_category, bidirectional_iterator_tag>)
+        if constexpr (is_base_of_v<bidirectional_iterator_tag, typename iterator_traits<_ForwardIterator>::iterator_category>)
         {
             for (; __result != __initial_result; --__result)
                 (*__result).~_V();
@@ -204,7 +204,7 @@ _ForwardIterator uninitialized_move(_InputIterator __first, _InputIterator __las
     }
     __XVI_CXX_UTILITY_CATCH(...)
     {
-        if constexpr (DerivedFrom<typename iterator_traits<_ForwardIterator>::iterator_category, bidirectional_iterator_tag>)
+        if constexpr (is_base_of_v<bidirectional_iterator_tag, typename iterator_traits<_ForwardIterator>::iterator_category>)
         {
             for (; __result != __initial_result; --__result)
                 (*__result).~_V();
@@ -233,7 +233,7 @@ pair<_InputIterator, _ForwardIterator> uninitialized_move_n(_InputIterator __fir
     }
     __XVI_CXX_UTILITY_CATCH(...)
     {
-        if constexpr (DerivedFrom<typename iterator_traits<_ForwardIterator>::iterator_category, bidirectional_iterator_tag>)
+        if constexpr (is_base_of_v<bidirectional_iterator_tag, typename iterator_traits<_ForwardIterator>::iterator_category>)
         {
             for (; __result != __initial_result; --__result)
                 (*__result).~_V();
@@ -261,7 +261,7 @@ void uninitialized_fill(_ForwardIterator __first, _ForwardIterator __last, const
     }
     __XVI_CXX_UTILITY_CATCH(...)
     {
-        if constexpr (DerivedFrom<typename iterator_traits<_ForwardIterator>::iterator_category, bidirectional_iterator_tag>)
+        if constexpr (is_base_of_v<bidirectional_iterator_tag, typename iterator_traits<_ForwardIterator>::iterator_category>)
         {
             for (; __first != __initial_first; --__first)
                 (*__first).~_V();
@@ -289,7 +289,7 @@ void uninitialized_fill_n(_ForwardIterator __first, _Size __n, const _T& __x)
     }
     __XVI_CXX_UTILITY_CATCH(...)
     {
-        if constexpr (DerivedFrom<typename iterator_traits<_ForwardIterator>::iterator_category, bidirectional_iterator_tag>)
+        if constexpr (is_base_of_v<bidirectional_iterator_tag, typename iterator_traits<_ForwardIterator>::iterator_category>)
         {
             for (; __first != __initial_first; --__first)
                 (*__first).~_V();
@@ -347,33 +347,34 @@ using uninitialized_move_result = uninitialized_copy_result<_I, _O>;
 template <class _I, class _O>
 using uninitialized_move_n_result = uninitialized_move_result<_I, _O>;
 
+#if __cpp_concepts
 template <class _I>
-concept bool _NoThrowInputIterator = InputIterator<_I>
+concept __nothrow_input_iterator = input_iterator<_I>
     && is_lvalue_reference_v<iter_reference_t<_I>>
-    && Same<remove_cvref_t<iter_reference_t<_I>>, iter_value_t<_I>>;
+    && same_as<remove_cvref_t<iter_reference_t<_I>>, iter_value_t<_I>>;
 
 template <class _S, class _I>
-concept bool _NoThrowSentinel = Sentinel<_S, _I>;
+concept __nothrow_sentinel = sentinel_for<_S, _I>;
 
 template <class _R>
-concept bool _NoThrowInputRange = Range<_R>
-    && _NoThrowInputIterator<iterator_t<_R>>
-    && _NoThrowSentinel<sentinel_t<_R>, iterator_t<_R>>;
+concept __nothrow_input_range = range<_R>
+    && __nothrow_input_iterator<iterator_t<_R>>
+    && __nothrow_sentinel<sentinel_t<_R>, iterator_t<_R>>;
 
 template <class _I>
-concept bool _NoThrowForwardIterator = _NoThrowInputIterator<_I>
-    && ForwardIterator<_I>
-    && _NoThrowSentinel<_I, _I>;
+concept __nothrow_forward_iterator = __nothrow_input_iterator<_I>
+    && forward_iterator<_I>
+    && __nothrow_sentinel<_I, _I>;
 
 template <class _R>
-concept bool _NoThrowForwardRange = _NoThrowInputRange<_R>
-    && _NoThrowForwardIterator<iterator_t<_R>>;
+concept __nothrow_forward_range = __nothrow_input_range<_R>
+    && __nothrow_forward_iterator<iterator_t<_R>>;
 
 
 struct __uninitialized_default_construct
 {
-    template <_NoThrowForwardIterator _I, _NoThrowSentinel<_I> _S>
-        requires DefaultConstructible<iter_value_t<_I>>
+    template <__nothrow_forward_iterator _I, __nothrow_sentinel<_I> _S>
+        requires default_constructible<iter_value_t<_I>>
     _I operator()(_I __first, _S __last) const
     {
         using _V = remove_reference_t<iter_reference_t<_I>>;
@@ -387,7 +388,7 @@ struct __uninitialized_default_construct
         }
         __XVI_CXX_UTILITY_CATCH(...)
         {
-            if constexpr (BidirectionalIterator<_I>)
+            if constexpr (bidirectional_iterator<_I>)
             {
                 for (; __first != __initial_first; --__first)
                     (*__first).~_V();
@@ -402,8 +403,8 @@ struct __uninitialized_default_construct
         }
     }
 
-    template <_NoThrowForwardRange _R>
-        requires DefaultConstructible<iter_value_t<iterator_t<_R>>>
+    template <__nothrow_forward_range _R>
+        requires default_constructible<iter_value_t<iterator_t<_R>>>
     safe_iterator_t<_R> operator()(_R&& __r) const
     {
         return operator()(ranges::begin(__r), ranges::end(__r));
@@ -415,8 +416,8 @@ inline constexpr __uninitialized_default_construct uninitialized_default_constru
 
 struct __uninitialized_default_construct_n
 {
-    template <_NoThrowForwardIterator _I>
-        requires DefaultConstructible<iter_value_t<_I>>
+    template <__nothrow_forward_iterator _I>
+        requires default_constructible<iter_value_t<_I>>
     _I operator()(_I __first, iter_difference_t<_I> __n) const
     {
         return uninitialized_default_construct(counted_iterator(__first, __n), default_sentinel).base();
@@ -428,8 +429,8 @@ inline constexpr __uninitialized_default_construct_n uninitialized_default_const
 
 struct __uninitialized_value_construct
 {
-    template <_NoThrowForwardIterator _I, _NoThrowSentinel<_I> _S>
-        requires DefaultConstructible<iter_value_t<_I>>
+    template <__nothrow_forward_iterator _I, __nothrow_sentinel<_I> _S>
+        requires default_constructible<iter_value_t<_I>>
     _I operator()(_I __first, _S __last) const
     {
         using _V = remove_reference_t<iter_reference_t<_I>>;
@@ -443,7 +444,7 @@ struct __uninitialized_value_construct
         }
         __XVI_CXX_UTILITY_CATCH(...)
         {
-            if constexpr (BidirectionalIterator<_I>)
+            if constexpr (bidirectional_iterator<_I>)
             {
                 for (; __first != __initial_first; --__first)
                     (*__first).~_V();
@@ -458,8 +459,8 @@ struct __uninitialized_value_construct
         }
     }
 
-    template <_NoThrowForwardRange _R>
-        requires DefaultConstructible<iter_value_t<iterator_t<_R>>>
+    template <__nothrow_forward_range _R>
+        requires default_constructible<iter_value_t<iterator_t<_R>>>
     safe_iterator_t<_R> operator()(_R&& __r) const
     {
         return operator()(ranges::begin(__r), ranges::end(__r));
@@ -471,8 +472,8 @@ inline constexpr __uninitialized_value_construct uninitialized_value_construct =
 
 struct __uninitialized_value_construct_n
 {
-    template <_NoThrowForwardIterator _I>
-        requires DefaultConstructible<iter_value_t<_I>>
+    template <__nothrow_forward_iterator _I>
+        requires default_constructible<iter_value_t<_I>>
     _I operator()(_I __first, iter_difference_t<_I> __n) const
     {
         return uninitialized_value_construct(counted_iterator(__first, __n), default_sentinel).base();
@@ -484,8 +485,8 @@ inline constexpr __uninitialized_value_construct_n uninitialized_value_construct
 
 struct __uninitialized_copy
 {
-    template <InputIterator _I, Sentinel<_I> _S1, _NoThrowForwardIterator _O, _NoThrowSentinel<_O> _S2>
-        requires Constructible<iter_value_t<_O>, iter_reference_t<_I>>
+    template <input_iterator _I, sentinel_for<_I> _S1, __nothrow_forward_iterator _O, __nothrow_sentinel<_O> _S2>
+        requires constructible_from<iter_value_t<_O>, iter_reference_t<_I>>
     uninitialized_copy_result<_I, _O> operator()(_I __ifirst, _S1 __ilast, _O __ofirst, _S2 __olast) const
     {
         using _V = remove_reference_t<iter_reference_t<_O>>;
@@ -499,7 +500,7 @@ struct __uninitialized_copy
         }
         __XVI_CXX_UTILITY_CATCH(...)
         {
-            if constexpr (BidirectionalIterator<_I>)
+            if constexpr (bidirectional_iterator<_I>)
             {
                 for (; __ofirst != __initial_first; --__ofirst)
                     (*__ofirst).~_V();
@@ -514,8 +515,8 @@ struct __uninitialized_copy
         }
     }
 
-    template <InputRange _IR, _NoThrowForwardRange _OR>
-        requires Constructible<iter_value_t<iterator_t<_OR>>, iter_reference_t<iterator_t<_IR>>>
+    template <input_range _IR, __nothrow_forward_range _OR>
+        requires constructible_from<iter_value_t<iterator_t<_OR>>, iter_reference_t<iterator_t<_IR>>>
     uninitialized_copy_result<safe_iterator_t<_IR>, safe_iterator_t<_OR>> operator()(_IR&& __ir, _OR&& __or) const
     {
         return operator()(ranges::begin(__ir), ranges::end(__ir), ranges::begin(__or), ranges::end(__or));
@@ -527,8 +528,8 @@ inline constexpr __uninitialized_copy uninitialized_copy = {};
 
 struct __uninitialized_copy_n
 {
-    template <InputIterator _I, _NoThrowForwardIterator _O, _NoThrowSentinel<_O> _S>
-        requires Constructible<iter_value_t<_O>, iter_reference_t<_I>>
+    template <input_iterator _I, __nothrow_forward_iterator _O, __nothrow_sentinel<_O> _S>
+        requires constructible_from<iter_value_t<_O>, iter_reference_t<_I>>
     uninitialized_copy_n_result<_I, _O> operator()(_I __ifirst, iter_difference_t<_I> __n, _O __ofirst, _S __olast) const
     {
         auto __t = uninitialized_copy(counted_iterator(__ifirst, __n), default_sentinel, __ofirst, __olast);
@@ -541,8 +542,8 @@ inline constexpr __uninitialized_copy_n uninitialized_copy_n = {};
 
 struct __uninitialized_move
 {
-    template <InputIterator _I, Sentinel<_I> _S1, _NoThrowForwardIterator _O, _NoThrowSentinel<_O> _S2>
-        requires Constructible<iter_value_t<_O>, iter_rvalue_reference_t<_I>>
+    template <input_iterator _I, sentinel_for<_I> _S1, __nothrow_forward_iterator _O, __nothrow_sentinel<_O> _S2>
+        requires constructible_from<iter_value_t<_O>, iter_rvalue_reference_t<_I>>
     uninitialized_move_result<_I, _O> operator()(_I __ifirst, _S1 __ilast, _O __ofirst, _S2 __olast) const
     {
         using _V = remove_reference_t<iter_reference_t<_O>>;
@@ -556,7 +557,7 @@ struct __uninitialized_move
         }
         __XVI_CXX_UTILITY_CATCH(...)
         {
-            if constexpr (BidirectionalIterator<_I>)
+            if constexpr (bidirectional_iterator<_I>)
             {
                 for (; __ofirst != __initial_first; --__ofirst)
                     (*__ofirst).~_V();
@@ -571,8 +572,8 @@ struct __uninitialized_move
         }
     }
 
-    template <InputRange _IR, _NoThrowForwardRange _OR>
-        requires Constructible<iter_value_t<iterator_t<_OR>>, iter_rvalue_reference_t<iterator_t<_IR>>>
+    template <input_range _IR, __nothrow_forward_range _OR>
+        requires constructible_from<iter_value_t<iterator_t<_OR>>, iter_rvalue_reference_t<iterator_t<_IR>>>
     uninitialized_move_result<safe_iterator_t<_IR>, safe_iterator_t<_OR>> operator()(_IR&& __ir, _OR&& __or) const
     {
         return operator()(ranges::begin(__ir), ranges::end(__ir), ranges::begin(__or), ranges::end(__or));
@@ -584,8 +585,8 @@ inline constexpr __uninitialized_move uninitialized_move = {};
 
 struct __uninitialized_move_n
 {
-    template <InputIterator _I, _NoThrowForwardIterator _O, _NoThrowSentinel<_O> _S>
-        requires Constructible<iter_value_t<_O>, iter_rvalue_reference_t<_I>>
+    template <input_iterator _I, __nothrow_forward_iterator _O, __nothrow_sentinel<_O> _S>
+        requires constructible_from<iter_value_t<_O>, iter_rvalue_reference_t<_I>>
     uninitialized_move_n_result<_I, _O> operator()(_I __ifirst, iter_difference_t<_I> __n, _O __ofirst, _S __olast) const
     {
         auto __t = uninitialized_copy(counted_iterator(__ifirst, __n), default_sentinel, __ofirst, __olast);
@@ -598,8 +599,8 @@ inline constexpr __uninitialized_move_n uninitialized_move_n = {};
 
 struct __uninitialized_fill
 {
-    template <_NoThrowForwardIterator _I, _NoThrowSentinel<_I> _S, class _T>
-        requires Constructible<iter_value_t<_I>, const _T&>
+    template <__nothrow_forward_iterator _I, __nothrow_sentinel<_I> _S, class _T>
+        requires constructible_from<iter_value_t<_I>, const _T&>
     _I operator()(_I __first, _S __last, const _T& __x) const
     {
         using _V = remove_reference_t<iter_reference_t<_I>>;
@@ -613,7 +614,7 @@ struct __uninitialized_fill
         }
         __XVI_CXX_UTILITY_CATCH(...)
         {
-            if constexpr (BidirectionalIterator<_I>)
+            if constexpr (bidirectional_iterator<_I>)
             {
                 for (; __first != __initial_first; --__first)
                     (*__first).~_V();
@@ -628,8 +629,8 @@ struct __uninitialized_fill
         }
     }
 
-    template <_NoThrowForwardRange _R, class _T>
-        requires Constructible<iter_value_t<iterator_t<_R>>, const _T&>
+    template <__nothrow_forward_range _R, class _T>
+        requires constructible_from<iter_value_t<iterator_t<_R>>, const _T&>
     safe_iterator_t<_R> operator()(_R&& __r, const _T& __x) const
     {
         return operator()(ranges::begin(__r), ranges::end(__r), __x);
@@ -641,7 +642,7 @@ inline constexpr __uninitialized_fill uninitialized_fill = {};
 
 struct __uninitialized_fill_n
 {
-    template <_NoThrowForwardIterator _I, class _T>
+    template <__nothrow_forward_iterator _I, class _T>
     _I operator()(_I __first, iter_difference_t<_I> __n, const _T& __x) const
     {
         return uninitialized_fill(counted_iterator(__first, __n), default_sentinel, __x);
@@ -653,7 +654,7 @@ inline constexpr __uninitialized_fill_n uninitialized_fill_n = {};
 
 struct __destroy_at
 {
-    template <Destructible _T>
+    template <destructible _T>
     void operator()(_T* __location) const noexcept;
 };
 
@@ -661,8 +662,8 @@ inline constexpr __destroy_at destroy_at = {};
 
 struct __destroy
 {
-    template <_NoThrowInputIterator _I, _NoThrowSentinel<_I> _S>
-        requires Destructible<iter_value_t<_I>>
+    template <__nothrow_input_iterator _I, __nothrow_sentinel<_I> _S>
+        requires destructible<iter_value_t<_I>>
     _I operator()(_I __first, _S __last) const noexcept
     {
         for (; __first != __last; ++__first)
@@ -670,8 +671,8 @@ struct __destroy
         return __first;
     }
 
-    template <_NoThrowInputRange _R>
-        requires Destructible<iter_value_t<iterator_t<_R>>>
+    template <__nothrow_input_range _R>
+        requires destructible<iter_value_t<iterator_t<_R>>>
     safe_iterator_t<_R> operator()(_R&& __r) const noexcept
     {
         return operator()(ranges::begin(__r), ranges::end(__r));
@@ -680,7 +681,7 @@ struct __destroy
 
 inline constexpr __destroy destroy = {};
 
-template <Destructible _T>
+template <destructible _T>
 void __destroy_at::operator()(_T* __location) const noexcept
 {
     if constexpr (is_array_v<_T>)
@@ -691,8 +692,8 @@ void __destroy_at::operator()(_T* __location) const noexcept
 
 struct __destroy_n
 {
-    template <_NoThrowInputIterator _I>
-        requires Destructible<iter_value_t<_I>>
+    template <__nothrow_input_iterator _I>
+        requires destructible<iter_value_t<_I>>
     _I operator()(_I __first, iter_difference_t<_I> __n) const noexcept
     {
         return destroy(counted_iterator(__first, __n), default_sentinel).base();
@@ -700,6 +701,8 @@ struct __destroy_n
 };
 
 inline constexpr __destroy_n destroy_n = {};
+
+#endif // if __cpp_concepts
 
 } // namespace ranges
 

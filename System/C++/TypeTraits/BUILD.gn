@@ -1,0 +1,24 @@
+library("TypeTraits")
+{
+    library_name    = "System.C++.TypeTraits"
+    library_version = "0.1.0"
+    
+    use_stdlib = false
+
+    public_headers =
+    [
+        "Concepts.hh",
+        "TypeTraits.hh",
+
+        "Private/CompilerBuiltins.hh",
+        "Private/Conditional.hh",
+        "Private/Detect.hh",
+        "Private/IntegralConstant.hh",
+        "Private/Invoke.hh",
+        "Private/Namespace.hh",
+        "Private/Relations.hh",
+        "Private/SimpleTraits.hh",
+        "Private/Transforms.hh",
+        "Private/VoidT.hh",
+    ]
+}

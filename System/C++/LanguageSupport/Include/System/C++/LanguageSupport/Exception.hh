@@ -5,10 +5,12 @@
 
 #include <System/C++/TypeTraits/TypeTraits.hh>
 
+#include <System/C++/LanguageSupport/Private/Config.hh>
 #include <System/C++/LanguageSupport/New.hh>
 #include <System/C++/LanguageSupport/StdDef.hh>
 #include <System/C++/LanguageSupport/Utility.hh>
-#include <System/C++/LanguageSupport/Private/Namespace.hh>
+
+#include <System/ABI/C++/TypeInfo.hh>
 
 
 namespace __XVI_STD_LANGSUPPORT_NS
@@ -16,7 +18,6 @@ namespace __XVI_STD_LANGSUPPORT_NS
 
 
 // Forward declarations.
-[[noreturn]] void terminate();
 template <class _T> constexpr _T* addressof(_T&);
 
 
@@ -24,7 +25,21 @@ using terminate_handler = void (*)();
 terminate_handler set_terminate(terminate_handler) noexcept;
 terminate_handler get_terminate() noexcept;
 
+__SYSTEM_CXX_LANGUAGESUPPORT_EXPORT [[noreturn]] void terminate();
+
+
+// The following are deprecated (along with exception specifications).
+using unexpected_handler = void (*)();
+[[deprecated]] unexpected_handler set_unexpected(unexpected_handler) noexcept;
+[[deprecated]] unexpected_handler get_unexpected() noexcept;
+
 int uncaught_exceptions() noexcept;
+
+[[deprecated]]
+inline bool uncaught_exception() noexcept
+{
+    return uncaught_exceptions() > 0;
+}
 
 
 class exception
@@ -52,44 +67,60 @@ public:
         { return "bad exception"; }
 };
 
-//! @TODO: implement
 class bad_alloc : public exception
-{
-};
-
-
-namespace __detail
-{
-
-class __exception_ptr
 {
 public:
 
-    constexpr __exception_ptr() noexcept = default;
+    bad_alloc() noexcept = default;
+    bad_alloc(const bad_alloc&) = default;
+    bad_alloc& operator=(const bad_alloc&) noexcept = default;
 
-    constexpr __exception_ptr(nullptr_t) noexcept
-        : __exception_ptr()
+    const char* what() const noexcept override
+        { return "allocation failure"; }
+};
+
+class bad_array_new_length : public exception
+{
+public:
+
+    bad_array_new_length() noexcept = default;
+    bad_array_new_length(const bad_array_new_length&) = default;
+    bad_array_new_length& operator=(const bad_array_new_length&) noexcept = default;
+
+    const char* what() const noexcept override
+        { return "invalid length for array new"; }
+};
+
+
+class exception_ptr
+{
+public:
+
+    constexpr exception_ptr() noexcept = default;
+
+    constexpr exception_ptr(nullptr_t) noexcept
+        : exception_ptr()
     {
     }
 
-    __exception_ptr(const __exception_ptr& __p) noexcept
+    exception_ptr(const exception_ptr& __p) noexcept
         : _M_ptr(__p._M_ptr)
     {
         __ref();
     }
 
-    __exception_ptr(__exception_ptr&& __p) noexcept
+    exception_ptr(exception_ptr&& __p) noexcept
         : _M_ptr(__p._M_ptr)
     {
         __p._M_ptr = nullptr;
     }
 
-    ~__exception_ptr()
+    ~exception_ptr()
     {
         __unref();
     }
 
-    __exception_ptr& operator=(const __exception_ptr& __p) noexcept
+    exception_ptr& operator=(const exception_ptr& __p) noexcept
     {
         if (&__p == this)
             return *this;
@@ -101,7 +132,7 @@ public:
         return *this;
     }
 
-    __exception_ptr& operator=(__exception_ptr&& __p) noexcept
+    exception_ptr& operator=(exception_ptr&& __p) noexcept
     {
         if (&__p == this)
             return *this;
@@ -113,9 +144,14 @@ public:
         return *this;
     }
 
-    __exception_ptr& operator=(nullptr_t) noexcept
+    exception_ptr& operator=(nullptr_t) noexcept
     {
-        return operator=(__exception_ptr{});
+        return operator=(exception_ptr{});
+    }
+
+    void* __get() const noexcept
+    {
+        return _M_ptr;
     }
 
     constexpr operator bool() const noexcept
@@ -123,60 +159,67 @@ public:
         return _M_ptr != nullptr;
     }
 
-    friend constexpr bool operator==(const __exception_ptr& __l, const __exception_ptr& __r) noexcept
+    friend constexpr bool operator==(const exception_ptr& __l, const exception_ptr& __r) noexcept
     {
         return __l._M_ptr == __r._M_ptr;
     }
 
-    friend constexpr bool operator!=(const __exception_ptr& __l, const __exception_ptr& __r) noexcept
+    friend constexpr bool operator!=(const exception_ptr& __l, const exception_ptr& __r) noexcept
     {
         return __l._M_ptr != __r._M_ptr;
     }
 
-    friend constexpr bool operator==(const __exception_ptr& __l, nullptr_t) noexcept
+    friend constexpr bool operator==(const exception_ptr& __l, nullptr_t) noexcept
     {
         return !__l;
     }
 
-    friend constexpr bool operator==(nullptr_t, const __exception_ptr& __r) noexcept
+    friend constexpr bool operator==(nullptr_t, const exception_ptr& __r) noexcept
     {
         return !__r;
     }
 
-    friend constexpr bool operator!=(const __exception_ptr& __l, nullptr_t) noexcept
+    friend constexpr bool operator!=(const exception_ptr& __l, nullptr_t) noexcept
     {
         return !!__l;
     }
 
-    friend constexpr bool operator!=(nullptr_t, const __exception_ptr& __r) noexcept
+    friend constexpr bool operator!=(nullptr_t, const exception_ptr& __r) noexcept
     {
         return !!__r;
     }
 
-private:
 
     void __ref() const noexcept;
     void __unref() const noexcept;
 
-    const void* _M_ptr = nullptr;
+
+    // Creates an exception by copying the given object.
+    static exception_ptr __make(void* obj, size_t obj_size, const std::type_info*, void (*destructor)(void*), void (*copy)(void* dest, const void* src));
+
+    // Creates from an existing exception object.
+    static exception_ptr __wrap(void* obj);
+
+private:
+
+    void* _M_ptr = nullptr;
 };
 
-__exception_ptr __make_exception_ptr(void*, size_t, void (*)(void*, const void*));
-
-} // namespace __detail
-
-
-using exception_ptr = __detail::__exception_ptr;
 
 exception_ptr current_exception() noexcept;
 [[noreturn]] void rethrow_exception(exception_ptr);
 
 template <class _E> exception_ptr make_exception_ptr(_E __e) noexcept
 {
-    return __detail::__make_exception_ptr(addressof(__e), sizeof(__e), [](void* __dest, const void* __src)
-    {
-        new (__dest) _E(*static_cast<const _E*>(__src));
-    });
+    return exception_ptr::__make(addressof(__e), sizeof(__e), typeid(_E),
+        [](void* __obj)
+        {
+            static_cast<_E*>(__obj)->~_E();
+        },
+        [](void* __dest, const void* __src)
+        {
+            new (__dest) _E(*static_cast<const _E*>(__src));
+        });
 }
 
 

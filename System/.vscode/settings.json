@@ -1,19 +1,24 @@
 {
     "cmake.buildDirectory": "${workspaceRoot}/.xvi.build",
     "cmake.configureOnOpen": true,
-    "cmake.configureSettings": 
-    {
-        "CMAKE_TOOLCHAIN_FILE": "${workspaceRoot}/cmake/xvi.toolchain.cmake",
-        "XVI_COMPILER": "gcc",
-        "XVI_ARCH": "x86_64"
-    },
+    "cmake.preferredGenerators": [ "Ninja", "Unix Makefiles" ],
     "C_Cpp.intelliSenseEngineFallback": "Enabled",
     "files.associations": {
+        "*.S": "asm",
         "array": "cpp",
         "functional": "cpp",
         "tuple": "cpp",
         "type_traits": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "memory": "cpp",
+        "*.tcc": "cpp",
+        "string_view": "cpp",
+        "numeric": "cpp",
+        "optional": "cpp",
+        "bit": "cpp"
     },
-    //"cmake.copyCompileCommands": "${workspaceRoot}/.xvi.build/compile_commands.json",
+    "cmake.copyCompileCommands": "${workspaceRoot}/.xvi.build/compile_commands.json",
+    "restructuredtext.sphinxBuildPath": "/home/fraserjgordon/.local/bin/sphinx-build",
+    "restructuredtext.linter.executablePath": "/home/fraserjgordon/.local/bin/rstcheck",
+    "restructuredtext.confPath": "${workspaceFolder}/Docs"
 }

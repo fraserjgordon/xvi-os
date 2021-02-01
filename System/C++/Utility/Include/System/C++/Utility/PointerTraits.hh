@@ -104,7 +104,7 @@ struct pointer_traits<_T*>
         return addressof(__r);
     }
 
-    template <class _U, class = enable_if_t<is_void_v<remove_cv_t<element_type>>, void>>
+    template <class _U, class _V = element_type, class = enable_if_t<is_void_v<remove_cv_t<_V>>, void>>
     static constexpr pointer pointer_to(_U& __r) noexcept
     {
         return addressof(__r);

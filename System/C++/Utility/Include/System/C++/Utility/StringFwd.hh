@@ -14,17 +14,6 @@ template <class> class allocator;
 template <class> struct char_traits;
 
 
-} // namespace __XVI_STD_UTILITY_NS
-
-
-namespace __XVI_STD_STRING_NS
-{
-
-
-using __XVI_STD_UTILITY_NS::allocator;
-using __XVI_STD_UTILITY_NS::char_traits;
-
-
 template <class _CharT, class = char_traits<_CharT>, class = allocator<_CharT>> class basic_string;
 
 using string = basic_string<char>;

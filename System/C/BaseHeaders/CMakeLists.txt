@@ -18,7 +18,7 @@ set(HEADERS
 
 list(TRANSFORM HEADERS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/Include/System/C/BaseHeaders/")
 
-add_library(System.C.BaseHeaders INTERFACE)
+xvi_library(System.C.BaseHeaders VERSION 0.1.0 INTERFACE KERNEL NO_STDLIB)
 
 target_include_directories(System.C.BaseHeaders
     INTERFACE Include/

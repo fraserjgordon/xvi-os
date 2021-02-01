@@ -8,8 +8,10 @@
 
 #include <System/C++/TypeTraits/TypeTraits.hh>
 
+#include <System/C++/Utility/Algorithm.hh>
 #include <System/C++/Utility/CharTraits.hh>
 #include <System/C++/Utility/Iterator.hh>
+#include <System/C++/Utility/Ranges.hh>
 #include <System/C++/Utility/StringFwd.hh>
 #include <System/C++/Utility/Private/Config.hh>
 
@@ -135,7 +137,7 @@ public:
     constexpr const_reference at(size_type __pos) const
     {
         if (__pos >= size())
-            __XVI_CXX_UTILITY_THROW(out_of_range());
+            __XVI_CXX_UTILITY_THROW(out_of_range("invalid string_view index"));
 
         return _M_ptr[__pos];
     }
@@ -176,7 +178,7 @@ public:
     constexpr size_type copy(_CharT* __s, size_type __n, size_type __pos = 0) const
     {
         if (__pos > size())
-            __XVI_CXX_UTILITY_THROW(out_of_range());
+            __XVI_CXX_UTILITY_THROW(out_of_range("invalid string_view index"));
         
         auto __rlen = min(__n, size() - __pos);
         _Traits::copy(__s, data() + __pos, __rlen);
@@ -186,7 +188,7 @@ public:
     constexpr basic_string_view substr(size_type __pos = 0, size_type __n = npos) const
     {
         if (__pos > size())
-            __XVI_CXX_UTILITY_THROW(out_of_range());
+            __XVI_CXX_UTILITY_THROW(out_of_range("invalid string_view index"));
 
         auto __rlen = min(__n, size() - __pos);
         return basic_string_view(data() + __pos, __rlen);
@@ -235,7 +237,7 @@ public:
 
     constexpr bool starts_with(basic_string_view __x) const noexcept
     {
-        return compare(0, npos, __x) == 0;
+        return compare(0, __x.size(), __x) == 0;
     }
 
     constexpr bool starts_with(_CharT __x) const noexcept
@@ -273,7 +275,7 @@ public:
             auto __p = _Traits::find(data() + __pos, size() - __pos, __s.front());
             if (__p == nullptr)
                 return npos;
-            return __p - begin();
+            return static_cast<size_type>(__p - begin());
         }
 
         // Boyer-Moore-Horspool substring search.
@@ -341,7 +343,7 @@ public:
             auto __p = _Traits::find(data() + __pos, size() - __pos, __s.front());
             if (__p == nullptr)
                 return npos;
-            return __p - data();
+            return static_cast<size_type>(__p - data());
         }
 
         __hash_table_t __tbl = {};
@@ -351,10 +353,10 @@ public:
             if (__in_table(__tbl, *__p))
             {
                 if constexpr (__hash_is_exact())
-                    return __p - begin();
+                    return static_cast<size_type>(__p - begin());
 
                 if (_Traits::find(__s.data(), __s.size(), *__p) != nullptr)
-                    return __p - begin();
+                    return static_cast<size_type>(__p - begin());
             }
         }
 
@@ -378,9 +380,9 @@ public:
 
     constexpr size_type find_last_of(basic_string_view __s, size_type __pos = npos) const noexcept
     {
-        size_type __offset = 0;
+        difference_type __offset = 0;
         if (__pos < size())
-            __offset = size() - __pos;
+            __offset = static_cast<difference_type>(size() - __pos);
         
         if (__s.size() == 1)
         {
@@ -388,7 +390,7 @@ public:
             for (auto __p = rbegin() + __offset; __p != rend(); ++__p)
             {
                 if (*__p == __c)
-                    return addressof(*__p) - begin();
+                    return static_cast<size_type>(addressof(*__p) - begin());
             }
 
             return npos;
@@ -401,10 +403,10 @@ public:
             if (__in_table(__tbl, *__p))
             {
                 if constexpr (__hash_is_exact())
-                    return addressof(*__p) - begin();
+                    return static_cast<size_type>(addressof(*__p) - begin());
 
                 if (_Traits::find(__s.data(), __s.size(), *__p) != nullptr)
-                    return addressof(*__p) - begin();
+                    return static_cast<size_type>(addressof(*__p) - begin());
             }
         }
 
@@ -544,13 +546,13 @@ private:
 
     static constexpr void __generate_hash_table(__hash_table_t& __tab, basic_string_view __needle)
     {
-        __tab = {};
+        fill_n(__tab, 256, false);
 
         for (_CharT __c : __needle)
-            __tab[__c] = true;
+            __tab[__hash(__c)] = true;
     }
 
-    static constexpr void __in_table(const __hash_table_t& __tab, _CharT __c)
+    static constexpr bool __in_table(const __hash_table_t& __tab, _CharT __c)
     {
         return __tab[__hash(__c)];
     }
@@ -568,6 +570,33 @@ private:
 };
 
 
+#if __cpp_concepts
+template <class _CharT, class _Traits>
+inline constexpr bool ranges::enable_view<basic_string_view<_CharT, _Traits>> = true;
+
+template <class _CharT, class _Traits>
+inline constexpr bool ranges::enable_borrowed_range<basic_string_view<_CharT, _Traits>> = true;
+#endif
+
+
+namespace __detail
+{
+
+template <class>
+struct __char_comparison_category { using __type = weak_ordering; };
+
+#if __cpp_concepts
+template <class _Traits>
+    requires requires { typename _Traits::comparison_category; }
+struct __char_comparison_category<_Traits> { using __type = _Traits::comparison_category; };
+#endif
+
+template <class _Traits>
+using __char_comparison_category_t = __char_comparison_category<_Traits>::__type;
+
+} // namespace __detail
+
+
 template <class _CharT, class _Traits>
 constexpr bool operator==(basic_string_view<_CharT, _Traits> __lhs, basic_string_view<_CharT, _Traits> __rhs) noexcept
 {
@@ -581,101 +610,18 @@ constexpr bool operator==(basic_string_view<_CharT, _Traits> __lhs, type_identit
 }
 
 template <class _CharT, class _Traits>
-constexpr bool operator==(type_identity_t<basic_string_view<_CharT, _Traits>> __lhs, basic_string_view<_CharT, _Traits> __rhs) noexcept
+constexpr auto operator<=>(basic_string_view<_CharT, _Traits> __lhs, basic_string_view<_CharT, _Traits> __rhs) noexcept
 {
-    return __lhs.compare(__rhs) == 0;
+    using _R = __detail::__char_comparison_category_t<_Traits>;
+    return static_cast<_R>(__lhs.compare(__rhs) <=> 0);
 }
 
 template <class _CharT, class _Traits>
-constexpr bool operator!=(basic_string_view<_CharT, _Traits> __lhs, basic_string_view<_CharT, _Traits> __rhs) noexcept
+constexpr auto operator<=>(basic_string_view<_CharT, _Traits> __lhs, type_identity_t<basic_string_view<_CharT, _Traits>> __rhs) noexcept
 {
-    return __lhs.compare(__rhs) != 0;
+    using _R = __detail::__char_comparison_category_t<_Traits>;
+    return static_cast<_R>(__lhs.compare(__rhs) <=> 0);
 }
-
-template <class _CharT, class _Traits>
-constexpr bool operator!=(basic_string_view<_CharT, _Traits> __lhs, type_identity_t<basic_string_view<_CharT, _Traits>> __rhs) noexcept
-{
-    return __lhs.compare(__rhs) != 0;
-}
-
-template <class _CharT, class _Traits>
-constexpr bool operator!=(type_identity_t<basic_string_view<_CharT, _Traits>> __lhs, basic_string_view<_CharT, _Traits> __rhs) noexcept
-{
-    return __lhs.compare(__rhs) != 0;
-}
-
-template <class _CharT, class _Traits>
-constexpr bool operator<(basic_string_view<_CharT, _Traits> __lhs, basic_string_view<_CharT, _Traits> __rhs) noexcept
-{
-    return __lhs.compare(__rhs) < 0;
-}
-
-template <class _CharT, class _Traits>
-constexpr bool operator<(basic_string_view<_CharT, _Traits> __lhs, type_identity_t<basic_string_view<_CharT, _Traits>> __rhs) noexcept
-{
-    return __lhs.compare(__rhs) < 0;
-}
-
-template <class _CharT, class _Traits>
-constexpr bool operator<(type_identity_t<basic_string_view<_CharT, _Traits>> __lhs, basic_string_view<_CharT, _Traits> __rhs) noexcept
-{
-    return __lhs.compare(__rhs) < 0;
-}
-
-template <class _CharT, class _Traits>
-constexpr bool operator>(basic_string_view<_CharT, _Traits> __lhs, basic_string_view<_CharT, _Traits> __rhs) noexcept
-{
-    return __lhs.compare(__rhs) > 0;
-}
-
-template <class _CharT, class _Traits>
-constexpr bool operator>(basic_string_view<_CharT, _Traits> __lhs, type_identity_t<basic_string_view<_CharT, _Traits>> __rhs) noexcept
-{
-    return __lhs.compare(__rhs) > 0;
-}
-
-template <class _CharT, class _Traits>
-constexpr bool operator>(type_identity_t<basic_string_view<_CharT, _Traits>> __lhs, basic_string_view<_CharT, _Traits> __rhs) noexcept
-{
-    return __lhs.compare(__rhs) > 0;
-}
-
-template <class _CharT, class _Traits>
-constexpr bool operator<=(basic_string_view<_CharT, _Traits> __lhs, basic_string_view<_CharT, _Traits> __rhs) noexcept
-{
-    return __lhs.compare(__rhs) <= 0;
-}
-
-template <class _CharT, class _Traits>
-constexpr bool operator<=(basic_string_view<_CharT, _Traits> __lhs, type_identity_t<basic_string_view<_CharT, _Traits>> __rhs) noexcept
-{
-    return __lhs.compare(__rhs) <= 0;
-}
-
-template <class _CharT, class _Traits>
-constexpr bool operator<=(type_identity_t<basic_string_view<_CharT, _Traits>> __lhs, basic_string_view<_CharT, _Traits> __rhs) noexcept
-{
-    return __lhs.compare(__rhs) <= 0;
-}
-
-template <class _CharT, class _Traits>
-constexpr bool operator>=(basic_string_view<_CharT, _Traits> __lhs, basic_string_view<_CharT, _Traits> __rhs) noexcept
-{
-    return __lhs.compare(__rhs) >= 0;
-}
-
-template <class _CharT, class _Traits>
-constexpr bool operator>=(basic_string_view<_CharT, _Traits> __lhs, type_identity_t<basic_string_view<_CharT, _Traits>> __rhs) noexcept
-{
-    return __lhs.compare(__rhs) >= 0;
-}
-
-template <class _CharT, class _Traits>
-constexpr bool operator>=(type_identity_t<basic_string_view<_CharT, _Traits>> __lhs, basic_string_view<_CharT, _Traits> __rhs) noexcept
-{
-    return __lhs.compare(__rhs) >= 0;
-}
-
 
 //! @TODO: implement.
 template <class _CharT, class _Traits>

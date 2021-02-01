@@ -3,19 +3,21 @@
 #define __SYSTEM_FS_FAT_DIRENT_H
 
 
-#include <System/C++/Utility/Array.hh>
-#include <System/C++/Utility/Chrono.hh>
+#include <array>
+#include <chrono>
 
-// REMOVE ME
-#include <System/Filesystem/FAT/BPB.hh>
+#include <System/Utility/Endian/Endian.hh>
+
+#include <System/Filesystem/FAT/Unaligned.hh>
 
 
 namespace System::Filesystem::FAT
 {
 
 
-// REMOVE ME
-using char16le_t = char16_t;
+using System::Utility::Endian::uint16le_t;
+using System::Utility::Endian::uint32le_t;
+using System::Utility::Endian::char16le_t;
 
 
 //! FAT time field.
@@ -168,8 +170,6 @@ struct dirent_t
 static_assert(sizeof(dirent_t) == 32);
 
 //! FAT on-disk directory entry structure as used for long file name entries.
-//!
-//! @TODO: endianness issues.
 struct lfn_dirent_t
 {
     std::byte                               ordinal;    //!< Sequence number for this LFN component.

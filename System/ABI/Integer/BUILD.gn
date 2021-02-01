@@ -1,0 +1,84 @@
+library("Integer")
+{
+    library_name    = "System.ABI.Integer"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    shared_define = "__SYSTEM_ABI_INTEGER_BUILD_SHARED"
+
+    deps =
+    [
+        "//C++/LanguageSupport:LanguageSupport_headers"
+    ]
+
+    sources =
+    [
+        "Arithmetic.hh",
+        "ArithmeticOpsImpl.hh",
+        "BitOps.hh",
+        "BitOpsImpl.hh",
+        "Export.hh",
+        "Types.hh",
+
+        "ashldi.cc",
+        "ashlsi.cc",
+        "ashlti.cc",
+        "ashrdi.cc",
+        "ashrsi.cc",
+        "ashrti.cc",
+        "bswapdi.cc",
+        "bswapsi.cc",
+        "clzdi.cc",
+        "clzsi.cc",
+        "clzti.cc",
+        "cmpdi.cc",
+        "cmpti.cc",
+        "divdi.cc",
+        "divsi.cc",
+        "divti.cc",
+        "divmoddi.cc",
+        "divmodsi.cc",
+        "divmodti.cc",
+        "ffsdi.cc",
+        "ffssi.cc",
+        "ffsti.cc",
+        "lshrdi.cc",
+        "lshrsi.cc",
+        "lshrti.cc",
+        "moddi.cc",
+        "modsi.cc",
+        "modti.cc",
+        "muldi.cc",
+        "mulsi.cc",
+        "multi.cc",
+        "negdi.cc",
+        "negti.cc",
+        "paritydi.cc",
+        "paritysi.cc",
+        "parityti.cc",
+        "popcountdi.cc",
+        "popcountsi.cc",
+        "popcountti.cc",
+        "ucmpdi.cc",
+        "ucmpti.cc",
+        "udivdi.cc",
+        "udivsi.cc",
+        "udivti.cc",
+        "udivmoddi.cc",
+        "udivmodsi.cc",
+        "udivmodti.cc",
+        "umoddi.cc",
+        "umodsi.cc",
+        "umodti.cc",
+    ]
+
+    if (current_arch == "x86")
+    {
+        sources +=
+        [
+            "Arch/x86/BitOps.hh",
+            "Arch/x86/Capabilities.hh",
+        ]
+    }
+}

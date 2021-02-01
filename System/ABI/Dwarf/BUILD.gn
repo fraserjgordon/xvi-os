@@ -1,0 +1,69 @@
+cfi_headers =
+[
+    "Arch.hh",
+    "CFI.hh",
+    "Decode.hh",
+    "Expression.hh",
+    "FDE.hh",
+    "LEB128.hh",
+    "RegistersARM.hh",
+    "Registers_x86.hh",
+    "RegistersX86_64.hh",
+]
+
+cfi_sources =
+[
+    "CFI.cc",
+    "Decode.cc",
+    "Expression.cc",
+    "FDE.cc",
+]
+
+library("Dwarf")
+{
+    library_name    = "System.ABI.Dwarf"
+    library_version = "0.1.0"
+
+    define_header_target = true
+
+    #shared_define = "__SYSTEM_ABI_DWARF_BUILD_SHARED"
+
+    public_headers = cfi_headers
+
+    #sources = cfi_sources
+}
+
+library("CFI")
+{
+    library_name    = "System.ABI.Dwarf.CFI"
+    library_version = "0.1.0"
+    include_prefix  = "System/ABI/Dwarf"
+
+    target_types    = ["static", "kernel"]
+
+    use_stdlib = false
+
+    public_deps =
+    [
+        "//ABI/ExecContext:ExecContext_headers",
+        "//C++/LanguageSupport:LanguageSupport_headers",
+        "//C++/Utility:Utility_headers",
+    ]
+
+    deps =
+    [
+        #"//ABI/C++",
+        "//ABI/C++:VecCtor",
+        "//ABI/String",
+        "//C/LanguageSupport",
+    ]
+
+    defines =
+    [
+        "__SYSTEM_ABI_DWARF_CFI_ONLY"
+    ]
+
+    public_headers = cfi_headers
+
+    sources = cfi_sources
+}

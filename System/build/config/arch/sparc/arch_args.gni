@@ -1,0 +1,5 @@
+# Sparc-specific build arguments.
+declare_args()
+{
+
+}

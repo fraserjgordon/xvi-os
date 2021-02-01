@@ -1,0 +1,19 @@
+library("CPUID")
+{
+    library_name    = "System.HW.CPU.CPUID"
+    library_version = "0.1.0"
+
+    define_header_target = true
+
+    public_headers = 
+    [
+    ]
+
+    if (current_arch == "x86")
+    {
+        public_headers +=
+        [
+            "Arch/x86/CPUID.hh"
+        ]
+    }
+}

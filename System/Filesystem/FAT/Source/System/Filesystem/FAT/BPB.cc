@@ -11,7 +11,7 @@ fat_type bpb_common::fat_type() const
     // so check both.
     std::uint32_t sectors = sector_count;
     if (sectors == 0)
-        sectors = reinterpret_cast<const bpb_v3_31*>(this)->sector_count_32;
+        sectors = static_cast<const bpb_v3_31*>(this)->sector_count_32;
 
     // Convert the sector count to a cluster count as that determines the FAT type.
     std::uint32_t clusters = sectors / sectors_per_cluster;

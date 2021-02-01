@@ -186,7 +186,8 @@ public:
 
     constexpr error_category() noexcept = default;
 
-    virtual ~error_category() = default;
+    // Empty body but not defined in the header to avoid un-necessary vtable generation.
+    virtual ~error_category();
 
     error_category(const error_category&) = delete;
     error_category& operator=(const error_category&) = delete;
@@ -197,7 +198,7 @@ public:
     {
         return error_condition(__ev, *this);
     }
-
+ 
     // Defined later due to a mutual dependency between error_category and operator== for error_condition.
     virtual bool equivalent(int __code, const error_condition& __condition) const noexcept;
 
@@ -324,63 +325,63 @@ basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os,
 }
 
 
-error_condition make_error_condition(errc __c) noexcept
+inline error_condition make_error_condition(errc __c) noexcept
 {
     return error_condition(static_cast<int>(__c), generic_category());
 }
 
-error_code make_error_code(errc __c) noexcept
+inline error_code make_error_code(errc __c) noexcept
 {
     return error_code(static_cast<int>(__c), generic_category());
 }
 
 
-bool operator==(const error_code& __lhs, const error_code& __rhs) noexcept
+inline bool operator==(const error_code& __lhs, const error_code& __rhs) noexcept
 {
     return __lhs.category() == __rhs.category() && __lhs.value() == __rhs.value();
 }
 
-bool operator==(const error_code& __lhs, const error_condition& __rhs) noexcept
+inline bool operator==(const error_code& __lhs, const error_condition& __rhs) noexcept
 {
     return __lhs.category().equivalent(__lhs.value(), __rhs) || __rhs.category().equivalent(__lhs, __rhs.value());
 }
 
-bool operator==(const error_condition& __lhs, const error_code& __rhs) noexcept
+inline bool operator==(const error_condition& __lhs, const error_code& __rhs) noexcept
 {
     return __rhs.category().equivalent(__rhs.value(), __lhs) || __lhs.category().equivalent(__rhs, __lhs.value());
 }
 
-bool operator==(const error_condition& __lhs, const error_condition& __rhs) noexcept
+inline bool operator==(const error_condition& __lhs, const error_condition& __rhs) noexcept
 {
     return __lhs.category() == __rhs.category() && __lhs.value() == __rhs.value();
 }
 
-bool operator!=(const error_code& __lhs, const error_code& __rhs) noexcept
+inline bool operator!=(const error_code& __lhs, const error_code& __rhs) noexcept
 {
     return !(__lhs == __rhs);
 }
 
-bool operator!=(const error_code& __lhs, const error_condition& __rhs) noexcept
+inline bool operator!=(const error_code& __lhs, const error_condition& __rhs) noexcept
 {
     return !(__lhs == __rhs);
 }
 
-bool operator!=(const error_condition& __lhs, const error_code& __rhs) noexcept
+inline bool operator!=(const error_condition& __lhs, const error_code& __rhs) noexcept
 {
     return !(__lhs == __rhs);
 }
 
-bool operator!=(const error_condition& __lhs, const error_condition& __rhs) noexcept
+inline bool operator!=(const error_condition& __lhs, const error_condition& __rhs) noexcept
 {
     return !(__lhs == __rhs);
 }
 
-bool operator<(const error_code& __lhs, const error_code& __rhs) noexcept
+inline bool operator<(const error_code& __lhs, const error_code& __rhs) noexcept
 {
     return __lhs.category() < __rhs.category() || (__lhs.category() == __rhs.category() && __lhs.value() < __rhs.value());
 }
 
-bool operator<(const error_condition& __lhs, const error_condition& __rhs) noexcept
+inline bool operator<(const error_condition& __lhs, const error_condition& __rhs) noexcept
 {
     return __lhs.category() < __rhs.category() || (__lhs.category() == __rhs.category() && __lhs.value() < __rhs.value());
 }

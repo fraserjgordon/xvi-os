@@ -40,6 +40,7 @@ namespace __detail
 template <class _I>
 to_chars_result __to_chars(char* __first, char* __last, _I __value, int __base)
 {
+    auto __original_first = __first;
     auto __push = [&__first, __last](char __c) -> bool
     {
         if (__first >= __last)
@@ -76,11 +77,13 @@ to_chars_result __to_chars(char* __first, char* __last, _I __value, int __base)
 
     while (__value > 0)
     {
-        if (!__push(_C[__value % __base]))
+        if (!__push(_C[__value % static_cast<_I>(__base)]))
             return {__first, errc::value_too_large};
 
-        __value /= __base;
+        __value /= static_cast<_I>(__base);
     }
+
+    std::reverse(__original_first, __first);
 
     return {__first, {}};
 }
@@ -166,7 +169,7 @@ from_chars_result __from_chars(const char* __first, const char* __last, _I& __va
     }
 
     const char* __original_first = __first;
-    auto __read_next = [&__first, __last, __base](int& __c) -> bool
+    auto __read_next = [&__first, __last, __base](_I& __c) -> bool
     {
         if (__first >= __last)
             return false;
@@ -177,21 +180,21 @@ from_chars_result __from_chars(const char* __first, const char* __last, _I& __va
         if (__v < 0 || __v >= __base)
             return false;
 
-        __c = __v;
+        __c = static_cast<_I>(__v);
         ++__first;
         return true;        
     };
 
     _I __v = 0;
-    int __i;
+    _I __i;
     while (__read_next(__i))
     {
         // Check for overflow.
         constexpr _I __max = numeric_limits<_I>::max();
-        if ((__max - __i) / __base < __v)
+        if ((__max - __i) / static_cast<_I>(__base) < __v)
             return {__first, errc::result_out_of_range};
 
-        __v = (__v * __base) + __i;
+        __v = (__v * static_cast<_I>(__base)) + __i;
     }
 
     // Check that we decoded anything.
@@ -259,6 +262,18 @@ inline to_chars_result to_chars(char* __first, char* __last, unsigned long long 
 {
     return __detail::__to_chars(__first, __last, __value, __base);
 }
+
+inline to_chars_result to_chars(char* __first, char* __last, float __value, chars_format __fmt);
+
+inline to_chars_result to_chars(char* __first, char* __last, double __value, chars_format __fmt);
+
+inline to_chars_result to_chars(char* __first, char* __last, long double __value, chars_format __fmt);
+
+inline to_chars_result to_chars(char* __first, char* __last, float __value, chars_format __fmt, int __precision);
+
+inline to_chars_result to_chars(char* __first, char* __last, double __value, chars_format __fmt, int __precision);
+
+inline to_chars_result to_chars(char* __first, char* __last, long double __value, chars_format __fmt, int __precision);
 
 
 inline from_chars_result from_chars(const char* __first, const char* __last, char& __value, int __base = 10)

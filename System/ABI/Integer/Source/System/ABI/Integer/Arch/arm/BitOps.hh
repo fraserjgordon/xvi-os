@@ -1,10 +1,11 @@
 #pragma once
-#ifndef __SYSTEM_CRT_ARCH_ARM_BITOPS_H
-#define __SYSTEM_CRT_ARCH_ARM_BITOPS_H
+#ifndef __SYSTEM_ABI_INTEGER_ARCH_ARM_BITOPS_H
+#define __SYSTEM_ABI_INTEGER_ARCH_ARM_BITOPS_H
 
 
-#include <System/CRT/Types.h>
-#include <System/CRT/Arch/arm/Capabilities.hh>
+#include <System/C++/LanguageSupport/StdInt.hh>
+
+#include <System/ABI/Integer/Arch/arm/Capabilities.hh>
 
 
 #if !defined(__INTEGER_CLZ32_INTRINSIC) && __INTEGER_ASSUME_CLZ
@@ -38,4 +39,4 @@ static inline int __asm_rbit_clz(__uint32_t u)
 #endif
 
 
-#endif /* ifndef __SYSTEM_CRT_ARCH_ARM_BITOPS_H */
+#endif /* ifndef __SYSTEM_ABI_INTEGER_ARCH_ARM_BITOPS_H */

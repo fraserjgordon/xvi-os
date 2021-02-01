@@ -3,12 +3,15 @@
 #define __SYSTEM_CXX_UTILITY_ALGORITHM_H
 
 
+#include <System/C++/LanguageSupport/Compare.hh>
+
 #include <System/C++/TypeTraits/TypeTraits.hh>
 
 #include <System/C++/Utility/Bit.hh>
+#include <System/C++/Utility/FunctionalUtils.hh>
 #include <System/C++/Utility/Iterator.hh>
 #include <System/C++/Utility/Pair.hh>
-//#include <System/C++/Utility/Ranges.hh>
+#include <System/C++/Utility/Swap.hh>
 #include <System/C++/Utility/Private/Config.hh>
 
 
@@ -19,22 +22,11 @@ namespace __XVI_STD_UTILITY_NS
 {
 
 
-// Note the extra class - comes from an enable_if in the TypeTraits lib. Noexcept conditions are specified there too.
-template <class _T, class>
-constexpr void swap(_T& __a, _T& __b)
-    noexcept(__detail::is_nothrow_move_constructible<_T>::value && __detail::is_nothrow_move_assignable<_T>::value)
-{
-    _T __tmp = __XVI_STD_NS::move(__a);
-    __a = __XVI_STD_NS::move(__b);
-    __b = __XVI_STD_NS::move(__tmp);
-}
-
-
 template <class _InputIterator, class _Predicate>
 constexpr bool all_of(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
     for (; __first != __last; ++__first)
-        if (pred(*__first) == false)
+        if (__pred(*__first) == false)
             return false;
     return true;
 }
@@ -43,7 +35,7 @@ template <class _InputIterator, class _Predicate>
 constexpr bool any_of(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
     for (; __first != __last; ++__first)
-        if (pred(*__first) != false)
+        if (__pred(*__first) != false)
             return true;
     return false;
 }
@@ -52,7 +44,7 @@ template <class _InputIterator, class _Predicate>
 constexpr bool none_of(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
     for (; __first != __last; ++__first)
-        if (pred(*__first) != false)
+        if (__pred(*__first) != false)
             return false;
     return true;
 }
@@ -86,7 +78,7 @@ template <class _InputIterator, class _Predicate>
 constexpr _InputIterator find_if(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
     for (; __first != __last; ++__first)
-        if (pred(*__first) != false)
+        if (__pred(*__first) != false)
             return __first;
     return __last;
 }
@@ -95,7 +87,7 @@ template <class _InputIterator, class _Predicate>
 constexpr _InputIterator find_if_not(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
     for (; __first != __last; ++__first)
-        if (pred(*__first) == false)
+        if (__pred(*__first) == false)
             return __first;
     return __last;
 }
@@ -293,17 +285,23 @@ constexpr bool is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __la
     if (__start1 == __last1 && __start2 == __last2)
         return true;
 
-    size_t __n1 = 0;
-    auto __n2 = __XVI_STD_NS::distance(__start2, __last2);
-
-    for (; __start1 != __last1; ++__start1, (void)++__n1)
+    for (; __start1 != __last1; ++__start1)
     {
-        auto __where = __XVI_STD_NS::find_if(__start2, __last2, [__pred, __start1](auto&& __x) { return __pred(*__start1, __x); });
-        if (__where == __last2)
+        auto __n1 = __XVI_STD_UTILITY_NS::count_if(__start1, __last1, [__pred, __start1]<class _T>(_T&& __t)
+        {
+            return __pred(*__start1, std::forward<_T>(__t));
+        });
+
+        auto __n2 = __XVI_STD_UTILITY_NS::count_if(__start2, __last2, [__pred, __start1]<class _T>(_T&& __t)
+        {
+            return __pred(*__start1, std::forward<_T>(__t));
+        });
+
+        if (__n1 != __n2)
             return false;
     }
 
-    return __n1 == __n2;
+    return true;
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
@@ -414,7 +412,7 @@ constexpr _BidirectionalIterator2 copy_backward(_BidirectionalIterator1 __first,
 template <class _InputIterator, class _OutputIterator>
 constexpr _OutputIterator move(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
-    for (; __first != __last; ++__first)
+    for (; __first != __last; ++__first, (void)++__result)
         *__result = __XVI_STD_NS::move(*__first);
 
     return __result;
@@ -485,9 +483,9 @@ constexpr _OutputIterator replace_copy(_InputIterator __first, _InputIterator __
 {
     for (; __first != __last; ++__first, (void)++__result)
         if (!(*__first == __old))
-            __result = *__first;
+            *__result = *__first;
         else
-            __result = __new;
+            *__result = __new;
 
     return __result;
 }
@@ -497,9 +495,9 @@ constexpr _OutputIterator replace_copy_if(_InputIterator __first, _InputIterator
 {
     for (; __first != __last; ++__first, (void)++__result)
         if (__pred(*__first) == false)
-            __result = *__first;
+            *__result = *__first;
         else
-            __result = __value;
+            *__result = __value;
 
     return __result;
 }
@@ -652,19 +650,18 @@ constexpr _OutputIterator unique_copy(_InputIterator __first, _InputIterator __l
                        && is_same_v<typename iterator_traits<_InputIterator>::value_type, typename iterator_traits<_OutputIterator>::value_type>)
     {
         *__result = *__first;
-        _OutputIterator __cmp = __result;
-        ++__result;
         ++__first;
 
         for (; __first != __last; ++__first)
         {
-            if (__pred(*__first, *__cmp) != false)
+            if (__pred(*__first, *__result) != false)
                 continue;
 
-            *__result = *__first;
-            __cmp = __result;
             ++__result;
+            *__result = *__first;
         }
+
+        ++__result;
     }
     else
     {
@@ -696,6 +693,7 @@ constexpr _OutputIterator unique_copy(_InputIterator __first, _InputIterator __l
 template <class _BidirectionalIterator>
 constexpr void reverse(_BidirectionalIterator __first, _BidirectionalIterator __last)
 {
+    --__last;
     for (; __first != __last; ++__first, (void)--__last)
     {
         __XVI_STD_NS::iter_swap(__first, __last);
@@ -1415,29 +1413,32 @@ constexpr _OutputIterator set_symmetric_difference(_InputIterator1 __first1, _In
 }
 
 
-constexpr size_t __heap_left(__size_t __i)
+template <class _T>
+constexpr _T __heap_left(_T __i)
 {
     return 2*__i + 1;
 }
 
-constexpr size_t __heap_right(size_t __i)
+template <class _T>
+constexpr _T __heap_right(_T __i)
 {
     return 2*__i + 2;
 }
 
-constexpr size_t __heap_parent(size_t __i)
+template <class _T>
+constexpr _T __heap_parent(_T __i)
 {
     return (__i - 1) / 2;
 }
 
 template <class _RandomAccessIterator, class _Compare>
-constexpr bool __heapify(_RandomAccessIterator __first, _RandomAccessIterator __last, size_t __index, _Compare __comp)
+constexpr bool __heapify(_RandomAccessIterator __first, _RandomAccessIterator __last, typename iterator_traits<_RandomAccessIterator>::difference_type __index, _Compare __comp)
 {
-    size_t __length = static_cast<size_t>(__last - __first);
+    auto __length = (__last - __first);
     
-    size_t __left = __heap_left(__index);
-    size_t __right = __heap_right(__index);
-    size_t __largest = __index;
+    auto __left = __heap_left(__index);
+    auto __right = __heap_right(__index);
+    auto __largest = __index;
 
     if (__left < __length && __XVI_STD_NS::invoke(__comp, __first[__largest], __first[__left]))
         __largest = __left;
@@ -1456,13 +1457,13 @@ constexpr bool __heapify(_RandomAccessIterator __first, _RandomAccessIterator __
 }
 
 template <class _RandomAccessIterator, class _Compare>
-constexpr size_t __bad_heap_index(_RandomAccessIterator __first, _RandomAccessIterator __last, size_t __index, _Compare __comp)
+constexpr size_t __bad_heap_index(_RandomAccessIterator __first, _RandomAccessIterator __last, typename iterator_traits<_RandomAccessIterator>::difference_type __index, _Compare __comp)
 {
-    size_t __length = static_cast<size_t>(__last - __first);
+    auto __length = (__last - __first);
     
-    size_t __left = __heap_left(__index);
-    size_t __right = __heap_right(__index);
-    size_t __largest = __index;
+    auto __left = __heap_left(__index);
+    auto __right = __heap_right(__index);
+    auto __largest = __index;
 
     if (__left < __length && __XVI_STD_NS::invoke(__comp, __first[__largest], __first[__left]))
         return __left;
@@ -1471,11 +1472,11 @@ constexpr size_t __bad_heap_index(_RandomAccessIterator __first, _RandomAccessIt
         return __right;
 
     if (__left < __length)
-        if (size_t __bad = __bad_heap_index(__first, __last, __left, __comp); __bad != 0)
+        if (auto __bad = __bad_heap_index(__first, __last, __left, __comp); __bad != 0)
             return __bad;
 
     if (__right < __length)
-        if (size_t __bad = __bad_heap_index(__first, __last, __right, __comp); __bad != 0)
+        if (auto __bad = __bad_heap_index(__first, __last, __right, __comp); __bad != 0)
             return __bad;
 
     return 0;
@@ -1484,11 +1485,11 @@ constexpr size_t __bad_heap_index(_RandomAccessIterator __first, _RandomAccessIt
 template <class _RandomAccessIterator, class _Compare>
 constexpr void push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
-    size_t __i = static_cast<size_t>(__last - __first) - 1;
+    auto __i = (__last - __first) - 1;
     if (__i == 0)
         return;
     
-    size_t __parent = __XVI_STD_NS::__heap_parent(__i);
+    auto __parent = __XVI_STD_NS::__heap_parent(__i);
     while (true)
     {
         bool __continue = __XVI_STD_NS::__heapify(__first, __last, __parent, __comp);
@@ -1522,8 +1523,8 @@ constexpr void pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __l
 template <class _RandomAccessIterator, class _Compare>
 constexpr void make_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
-    size_t __len = static_cast<size_t>(__last - __first);
-    for (size_t __i = 0; __i < __len; ++__i)
+    auto __len = (__last - __first);
+    for (decltype(__len) __i = 0; __i < __len; ++__i)
         __XVI_STD_NS::__heapify(__first, __last, __len - __i - 1, __comp);
 }
 
@@ -1536,8 +1537,8 @@ constexpr void make_heap(_RandomAccessIterator __first, _RandomAccessIterator __
 template <class _RandomAccessIterator, class _Compare>
 constexpr void sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
-    size_t __len = static_cast<size_t>(__last - __first);
-    for (size_t __i = 0; __i < __len; ++__i)
+    auto __len = (__last - __first);
+    for (decltype(__len) __i = 0; __i < __len; ++__i)
     {
         __XVI_STD_NS::pop_heap(__first, __last, __comp);
         --__last;
@@ -1555,7 +1556,7 @@ constexpr void sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __
 template <class _RandomAccessIterator, class _Compare>
 constexpr _RandomAccessIterator is_heap_until(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
-    size_t __bad_index = __XVI_STD_NS::__bad_heap_index(__first, __last, 0, __comp);
+    auto __bad_index = __XVI_STD_NS::__bad_heap_index(__first, __last, 0, __comp);
     return (__bad_index == 0) ? __last : __first + __bad_index;
 }
 
@@ -1688,7 +1689,7 @@ constexpr _ForwardIterator min_element(_ForwardIterator __first, _ForwardIterato
         if (bool(__XVI_STD_NS::invoke(__comp, *__first, *__min)))
             __min = __first;
 
-    return __min;;
+    return __min;
 }
 
 template <class _ForwardIterator>
@@ -1723,7 +1724,7 @@ template <class _ForwardIterator, class _Compare>
 constexpr pair<_ForwardIterator, _ForwardIterator> minmax_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
     if (__first == __last)
-        return __first;
+        return {__first, __first};
 
     _ForwardIterator __min = __first;
     _ForwardIterator __max = __first;
@@ -1774,21 +1775,40 @@ constexpr bool lexicographical_compare(_InputIterator1 __first1, _InputIterator1
     return __first1 == __last1 && __first2 != __last2;
 }
 
+template <class _InputIterator1, class _InputIterator2, class _Compare>
+constexpr auto lexicographical_compare_three_way(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2, _Compare __comp)
+    -> common_comparison_category_t<decltype(__comp(*__first1, *__first2)), strong_ordering>
+{
+    for (; __first1 != __last1 && __first2 != __last2; ++__first1, (void)++__first2)
+        if (auto __c = __comp(*__first1, *__first2); __c != 0)
+            return __c;
+
+    return __first1 != __last1 ? strong_ordering::greater
+         : __first2 != __last2 ? strong_ordering::less
+         : strong_ordering::equal;
+}
+
+template <class _InputIterator1, class _InputIterator2>
+constexpr auto lexicographical_compare_three_way(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2)
+{
+    return lexicographical_compare_three_way(__first1, __last1, __first2, __last2, less{});
+}
+
 
 template <class _RandomAccessIterator, class _Compare>
 constexpr void __insertion_sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
     // Zero- and one-element arrays are (trivially) sorted.
-    size_t __n = static_cast<size_t>(__last - __first);
+    auto __n = (__last - __first);
     if (__n < 2)
         return;
 
-    for (size_t __i = 1; __i < __n; ++__i)
+    for (decltype(__n) __i = 1; __i < __n; ++__i)
     {
         using _T = typename iterator_traits<_RandomAccessIterator>::value_type;
         _T __tmp = __XVI_STD_NS::move(__first[__i]);
 
-        size_t __j = __i;
+        auto __j = __i;
         for (; __j > 0; --__j)
         {
             if (!bool(__XVI_STD_NS::invoke(__comp, __tmp, __first[__j-1])))
@@ -1806,11 +1826,11 @@ constexpr _RandomAccessIterator __median_of_three(_RandomAccessIterator __first,
 {
     // Note: modifies the array!
     
-    size_t __n = static_cast<size_t>(__last - __first);
+    auto __n = (__last - __first);
     if (__n < 3)
         return __first;
 
-    size_t __mid = __n / 2;
+    auto __mid = __n / 2;
     _RandomAccessIterator __middle = __first + __mid;
     --__last; // Point to an actual element for simplicity.
 
@@ -1829,9 +1849,9 @@ constexpr _RandomAccessIterator __median_of_three(_RandomAccessIterator __first,
 template <class _RandomAccessIterator, class _Compare>
 constexpr void __introsort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp, size_t __depth)
 {
-    constexpr size_t _InsertionSortThreshold = 16;
+    constexpr decltype(__last - __first) _InsertionSortThreshold = 16;
     
-    size_t __n = static_cast<size_t>(__last - __first);
+    auto __n = (__last - __first);
     
     // Check for trivially-sorted inputs.
     if (__n <= 1)
@@ -1875,16 +1895,16 @@ constexpr void __introsort(_RandomAccessIterator __first, _RandomAccessIterator 
 {
     // Arbitrary depth threshold.
     size_t __n = static_cast<size_t>(__last - __first);
-    size_t __max_depth = 2 * __XVI_STD_NS::log2p1(__n);
+    size_t __max_depth = 2 * __XVI_STD_NS::bit_width(__n);
     __XVI_STD_NS::__introsort(__first, __last, __comp, __max_depth);
 }
 
 template <class _RandomAccessIterator, class _Compare>
-constexpr _RandomAccessIterator __heapselect(_RandomAccessIterator __first, _RandomAccessIterator __last, size_t __k, _Compare __comp)
+constexpr _RandomAccessIterator __heapselect(_RandomAccessIterator __first, _RandomAccessIterator __last, typename iterator_traits<_RandomAccessIterator>::difference_type __k, _Compare __comp)
 {
     // Create a heap and then extract the first k elements.
     __XVI_STD_NS::make_heap(__first, __last, __comp);
-    for (size_t __i = 0; __i < __k; ++__i)
+    for (decltype(__k) __i = 0; __i < __k; ++__i)
         __XVI_STD_NS::pop_heap(__first, __last - __i);
 
     // The elements are at the wrong end of the array; reverse it to ensure the k'th element is in the right place.
@@ -1893,14 +1913,14 @@ constexpr _RandomAccessIterator __heapselect(_RandomAccessIterator __first, _Ran
 }
 
 template <class _RandomAccessIterator, class _Compare>
-constexpr void __partial_introsort(_RandomAccessIterator __first, _RandomAccessIterator __last, size_t __k, _Compare __comp, size_t __depth)
+constexpr void __partial_introsort(_RandomAccessIterator __first, _RandomAccessIterator __last, typename iterator_traits<_RandomAccessIterator>::difference_type __k, _Compare __comp, size_t __depth)
 {
     // Note: __k might be > the length of the input array!
     //       (happens when we're called recursively).
     
-    constexpr size_t _InsertionSortThreshold = 16;
+    constexpr decltype(__k) _InsertionSortThreshold = 16;
     
-    size_t __n = static_cast<size_t>(__last - __first);
+    auto __n = (__last - __first);
     
     // Check for trivially-sorted inputs.
     if (__n <= 1)
@@ -1936,7 +1956,7 @@ constexpr void __partial_introsort(_RandomAccessIterator __first, _RandomAccessI
     __XVI_STD_NS::iter_swap(__pivot, __pivot_stash);
 
     // Which of the partitions need to be sorted?
-    size_t __pivot_pos = static_cast<size_t>(__pivot - __first);
+    auto __pivot_pos = (__pivot - __first);
 
     // The left-hand sub-array always needs to be sorted.
     __XVI_STD_NS::__partial_introsort(__first, __pivot, __k, __comp, __depth - 1);
@@ -1947,20 +1967,20 @@ constexpr void __partial_introsort(_RandomAccessIterator __first, _RandomAccessI
 }
 
 template <class _RandomAccessIterator, class _Compare>
-constexpr void __partial_introsort(_RandomAccessIterator __first, _RandomAccessIterator __last, size_t __k, _Compare __comp)
+constexpr void __partial_introsort(_RandomAccessIterator __first, _RandomAccessIterator __last, typename iterator_traits<_RandomAccessIterator>::difference_type __k, _Compare __comp)
 {
     // Arbitrary depth threshold.
-    size_t __n = static_cast<size_t>(__last - __first);
-    size_t __max_depth = 2 * __XVI_STD_NS::log2p1(__n);
+    auto __n = (__last - __first);
+    auto __max_depth = 2 * __XVI_STD_NS::bit_width(__n);
     __XVI_STD_NS::__partial_introsort(__first, __last, __k, __comp, __max_depth);
 }
 
 template <class _RandomAccessIterator, class _Compare>
-constexpr _RandomAccessIterator __introselect(_RandomAccessIterator __first, _RandomAccessIterator __last, size_t __k, _Compare __comp, size_t __depth)
+constexpr _RandomAccessIterator __introselect(_RandomAccessIterator __first, _RandomAccessIterator __last, typename iterator_traits<_RandomAccessIterator>::difference_type __k, _Compare __comp, size_t __depth)
 {
-    constexpr size_t _InsertionSortThreshold = 16;
+    constexpr decltype(__k) _InsertionSortThreshold = 16;
     
-    size_t __n = static_cast<size_t>(__last - __first);
+    auto __n = (__last - __first);
     
     // Check for trivially-sorted inputs.
     if (__n <= 1)
@@ -1994,7 +2014,7 @@ constexpr _RandomAccessIterator __introselect(_RandomAccessIterator __first, _Ra
     __XVI_STD_NS::iter_swap(__pivot, __pivot_stash);
 
     // Which partition do we need to recurse into?
-    size_t __pivot_pos = static_cast<size_t>(__pivot - __first);
+    auto __pivot_pos = static_cast<size_t>(__pivot - __first);
     if (__k < __pivot_pos)
         return __XVI_STD_NS::__introselect(__first, __pivot, __k, __comp, __depth - 1);
     else if (__k > __pivot_pos)
@@ -2004,12 +2024,12 @@ constexpr _RandomAccessIterator __introselect(_RandomAccessIterator __first, _Ra
 }
 
 template <class _RandomAccessIterator, class _Compare>
-constexpr void __introselect(_RandomAccessIterator __first, _RandomAccessIterator __last, size_t __k, _Compare __comp)
+constexpr _RandomAccessIterator __introselect(_RandomAccessIterator __first, _RandomAccessIterator __last, typename iterator_traits<_RandomAccessIterator>::difference_type __k, _Compare __comp)
 {
     // Arbitrary depth threshold.
-    size_t __n = static_cast<size_t>(__last - __first);
-    size_t __max_depth = 2 * __XVI_STD_NS::log2p1(__n);
-    __XVI_STD_NS::__introselect(__first, __last, __k, __comp, __max_depth);
+    auto __n = static_cast<size_t>(__last - __first);
+    auto __max_depth = 2 * __XVI_STD_NS::bit_width(__n);
+    return __XVI_STD_NS::__introselect(__first, __last, __k, __comp, __max_depth);
 }
 
 template <class _RandomAccessIterator, class _Compare>
@@ -2027,7 +2047,7 @@ constexpr void sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
 template <class _RandomAccessIterator, class _Compare>
 constexpr void nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _RandomAccessIterator __last, _Compare __comp)
 {
-    size_t __k = static_cast<size_t>(__nth - __first);
+    auto __k = (__nth - __first);
     __XVI_STD_NS::__introselect(__first, __last, __k, __comp);
 }
 
@@ -2040,7 +2060,7 @@ constexpr void nth_element(_RandomAccessIterator __first, _RandomAccessIterator 
 template <class _RandomAccessIterator, class _Compare>
 constexpr void partial_sort(_RandomAccessIterator __first, _RandomAccessIterator __middle, _RandomAccessIterator __last, _Compare __comp)
 {
-    size_t __k = static_cast<size_t>(__middle - __first);
+    auto __k = (__middle - __first);
     __XVI_STD_NS::__partial_introsort(__first, __last, __k, __comp);
 }
 
@@ -2054,8 +2074,6 @@ constexpr void partial_sort(_RandomAccessIterator __first, _RandomAccessIterator
 //! @TODO: stable_sort
 
 //! @TODO: compare_3way
-//! @TODO: lexicographical_compare_3way
-
 
 template <class _BidirectionalIterator, class _Compare>
 constexpr bool next_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last, _Compare __comp)
@@ -2106,19 +2124,6 @@ constexpr bool prev_permutation(_BidirectionalIterator __first, _BidirectionalIt
 {
     return __XVI_STD_NS::prev_permutation(__first, __last, less{});
 }
-
-
-namespace ranges
-{
-
-template <class _I, class _O>
-struct copy_result
-{
-    _I in;
-    _O out;
-};
-
-} // namespace ranges
 
 
 } // namespace __XVI_STD_UTILITY_NS

@@ -33,6 +33,13 @@ struct __optional_storage_base
         _T __val;
 
         constexpr __storage_t() : __raw() {}
+
+        constexpr ~__storage_t() requires is_trivially_destructible_v<_T> = default;
+
+        constexpr ~__storage_t()
+            requires (!is_trivially_destructible_v<_T>)
+        {
+        }
     };
 
     __storage_t _M_storage;
@@ -602,12 +609,12 @@ private:
     using __storage_t = __detail::__optional_storage<_T>;
 
 #ifdef __XVI_CXX_UTILITY_NO_EXCEPTIONS
-    [[noreturn]] void __invalid_access() noexcept
+    [[noreturn]] void __invalid_access() const noexcept
     {
         terminate();
     }
 #else
-    void __invalid_access()
+    void __invalid_access() const
     {
         throw bad_optional_access();
     }

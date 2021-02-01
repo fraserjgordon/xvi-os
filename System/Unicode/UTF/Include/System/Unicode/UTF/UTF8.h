@@ -71,7 +71,9 @@ using utf8_variant_t = $System$Unicode$UTF$utf8_variant_t;
 
 namespace UTF8Variant
 {
-    static constexpr utf8_variant_t None            = $System$Unicode$UTF$UTF8VariantNone,
+
+constexpr utf8_variant_t None            = $System$Unicode$UTF$UTF8VariantNone;
+
 }
 
 
@@ -222,7 +224,7 @@ public:
     decode_iterator_utf8_t cend() const
     {
         decode_iterator_utf8_t end{m_iter};
-        DecodeIteratorUTF8SkipToEnd(end);
+        DecodeIteratorUTF8SkipToEnd(&end);
         return end;
     }
 

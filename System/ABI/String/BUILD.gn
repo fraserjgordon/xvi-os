@@ -1,0 +1,53 @@
+library("String")
+{
+    library_name    = "System.ABI.String"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    shared_define = "__SYSTEM_ABI_STRING_BUILD_SHARED"
+
+    public_deps =
+    [
+        "//C++/LanguageSupport:LanguageSupport_headers"
+    ]
+
+    defines =
+    [
+        "__SYSTEM_ABI_STRING_BUILD",
+    ]
+
+    public_headers =
+    [
+        "String.hh",
+    ]
+
+    sources =
+    [
+        "StringImpl.hh",
+
+        "memccpy.cc",
+        "memchr.cc",
+        "memcmp.cc",
+        "memcpy.cc",
+        "memmem.cc",
+        "memmove.cc",
+        "memrchr.cc",
+        "memset.cc",
+        "stpcpy.cc",
+        "stpncpy.cc",
+        "strcat.cc",
+        "strchr.cc",
+        "strcmp.cc",
+        "strcpy.cc",
+        "strlcat.cc",
+        "strlcpy.cc",
+        "strlen.cc",
+        "strncat.cc",
+        "strncmp.cc",
+        "strncpy.cc",
+        "strnlen.cc",
+        "strrchr.cc",
+        "strstr.cc",
+    ]
+}

@@ -1,6 +1,6 @@
-#include <System/ABI/ExecContext/Arch/x86/SysV_x64.h>
+#include <System/ABI/ExecContext/Arch/x86/SysV_x64.hh>
 
-#include <System/ABI/ExecContext/Export.h>
+#include <System/ABI/ExecContext/Private/Config.hh>
 
 
 #if defined(__x86_64__)
@@ -13,7 +13,7 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(SwapContexts__v1_0,SwapContexts,1.0)
     //  std::uint64_t       param       %rsi
     //
     // Expected return values:
-    //  sysv_x84_frame_t*   prev        %rax
+    //  sysv_x64_frame_t*   prev        %rax
     //  std::uint64_t       param       %rdx
     //
     
@@ -89,7 +89,7 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContext__v1_0,ResumeContext,1.0)
     //  std::uint64_t       param       %rsi
     //
     // Expected return values:
-    //  sysv_x84_frame_t*   prev        %rax    note: always null
+    //  sysv_x64_frame_t*   prev        %rax    note: always null
     //  std::uint64_t       param       %rdx
     //
     
@@ -142,6 +142,49 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContext__v1_0,ResumeContext,1.0)
 .align 16
 
 
+__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContextFull__v1_0,ResumeContextFull,1.0)
+.LResumeContextFull__v1_0:
+
+    // Parameters:
+    //  sysv_x64_frame_t*   next        %rdi
+    //
+    // Expected return values:
+    //  <unspecified>       n/a         %rax    note: value taken from context
+    //  <unspecified>       n/a         %rdx    note: value taken from context
+    //
+
+    // Restore most of the registers from the context. Not restored are:
+    //  %rdi - needed to point to the context.
+    //  %rip
+    movq    __SYSV_X64_OFFSET_R8(%rdi), %r8
+    movq    __SYSV_X64_OFFSET_R9(%rdi), %r9
+    movq    __SYSV_X64_OFFSET_R10(%rdi), %r10
+    movq    __SYSV_X64_OFFSET_R11(%rdi), %r11
+    movq    __SYSV_X64_OFFSET_R12(%rdi), %r12
+    movq    __SYSV_X64_OFFSET_R13(%rdi), %r13
+    movq    __SYSV_X64_OFFSET_R14(%rdi), %r14
+    movq    __SYSV_X64_OFFSET_R15(%rdi), %r15
+    movq    __SYSV_X64_OFFSET_RAX(%rdi), %rax
+    movq    __SYSV_X64_OFFSET_RBX(%rdi), %rbx
+    movq    __SYSV_X64_OFFSET_RCX(%rdi), %rcx
+    movq    __SYSV_X64_OFFSET_RDX(%rdi), %rdx
+    movq    __SYSV_X64_OFFSET_RSI(%rdi), %rsi
+    movq    __SYSV_X64_OFFSET_RBP(%rdi), %rbp
+    movq    __SYSV_X64_OFFSET_RSP(%rdi), %rsp
+
+    // Push the target %rip to the stack then restore %rdi
+    pushq   __SYSV_X64_OFFSET_RIP(%rdi)
+    movq    __SYSV_X64_OFFSET_RDI(%rdi), %rdi
+
+    // Jump to the target.
+    retq
+
+.LResumeContextFull__v1_0_end = .
+
+
+.align 16
+
+
 __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,1.0)
 .LCaptureContext__v1_0:
 
@@ -150,7 +193,7 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,1.0)
     //  std::uint64_t       param_first %rsi
     //
     // Expected return values:
-    //  sysv_x84_frame_t*   prev        %rax    note: set to the input %rdi
+    //  sysv_x64_frame_t*   prev        %rax    note: set to the input %rdi
     //  std::uint64_t       param       %rdx    note: set to the input %rsi
     //
 
@@ -234,7 +277,7 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CreateContext__v1_0,CreateContext,1.0)
     movq    %rdi, __SYSV_X64_OFFSET_RIP(%rax)
 
     // Context has been set up and the pointer to the context is already in the right place.
-    ret
+    retq
 
 .LCreateContextFnReturned:
 

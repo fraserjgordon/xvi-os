@@ -1,1 +1,2 @@
-add_subdirectory(GAlloc)
+add_subdirectory(Classic)
+#add_subdirectory(GAlloc)

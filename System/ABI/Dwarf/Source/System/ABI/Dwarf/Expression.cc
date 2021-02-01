@@ -16,7 +16,7 @@ namespace System::ABI::Dwarf
 {
 
 
-bool DwarfExpressionDecode(const byte* ptr, size_t len, function<bool(const dwarf_expr_op&)> callback)
+bool DwarfExpressionDecode(const byte* ptr, size_t len, bool (*callback)(void*, const dwarf_expr_op&), void* callback_context)
 {
     // Process the instruction stream.
     while (len > 0)
@@ -76,7 +76,7 @@ bool DwarfExpressionDecode(const byte* ptr, size_t len, function<bool(const dwar
 
             case dwarf_op::const8u:
                 op.opcode = opcode;
-                op.op1 = UnalignedRead<uint32_t>(ptr);
+                op.op1 = UnalignedRead<uint64_t>(ptr);
                 ptr += sizeof(uint64_t);
                 break;
 
@@ -340,7 +340,7 @@ bool DwarfExpressionDecode(const byte* ptr, size_t len, function<bool(const dwar
         }
 
         // Call the callback function with the decoded instruction.
-        if (!callback(op))
+        if (!callback(callback_context, op))
         {
             // Callback has requested the end of processing so exit successfully.
             return true;
@@ -355,7 +355,7 @@ bool DwarfExpressionDecode(const byte* ptr, size_t len, function<bool(const dwar
 }
 
 
-#if !__SYSTEM_ABI_DWARF_MINIMAL
+#if 0 && !__SYSTEM_ABI_DWARF_MINIMAL
 string dwarf_expr_op::toString() const
 {
     switch (opcode)

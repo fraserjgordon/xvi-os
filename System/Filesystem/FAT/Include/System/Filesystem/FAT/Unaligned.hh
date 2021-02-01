@@ -2,14 +2,18 @@
 #ifndef __SYSTEM_FS_FAT_UNALIGNED_H
 #define __SYSTEM_FS_FAT_UNALIGNED_H
 
-
 namespace System::Filesystem::FAT
 {
 
 
+// TODO: refactor this into a common utility header.
 template <class T>
 class unaligned
 {
+public:
+
+    using underlying_type = typename T::underlying_native_endian_type;
+    
     unaligned() = default;
     unaligned(const unaligned&) = default;
     unaligned(unaligned&&) = default;
@@ -17,27 +21,27 @@ class unaligned
     unaligned& operator=(unaligned&&) = default;
     ~unaligned() = default;
 
-    constexpr unaligned(T t) noexcept
+    constexpr unaligned(underlying_type t) noexcept
     {
         operator=(t);
     }
 
-    constexpr unaligned& operator=(T t) noexcept
+    constexpr unaligned& operator=(underlying_type t) noexcept
     {
-        __builtin_memcpy(m_data, std::addressof(t), sizeof(T));
+        __builtin_memcpy(m_data, std::addressof(t), sizeof(underlying_type));
     }
 
-    constexpr operator T() const noexcept
+    constexpr operator underlying_type() const noexcept
     {
-        T t;
-        __builtin_memcpy(std::addressof(t), m_data, sizeof(T));
+        underlying_type t;
+        __builtin_memcpy(std::addressof(t), m_data, sizeof(underlying_type));
         return t;
     }
 
 
 private:
 
-    std::byte m_data[sizeof(T)];
+    std::byte m_data[sizeof(underlying_type)];
 };
 
 

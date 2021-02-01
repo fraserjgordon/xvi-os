@@ -252,10 +252,12 @@ CFIDecodeOne(const DwarfCIE& cie, const byte* ptr, size_t len)
                 {
                     // Defines a register to be stored at the address given by the expression/have the value of the
                     // expression, respectively.
-                    // op(expression block ptr, expression block length)
+                    // op(reg, expression block ptr, expression block length)
+                    auto reg = DecodeULEB128(ptr);
                     auto len = DecodeULEB128(ptr);
-                    op.op1 = uintptr_t(ptr);
-                    op.op2 = len;
+                    op.op1 = reg;
+                    op.op2 = uintptr_t(ptr);
+                    op.op3 = len;
                     ptr += len;
                     break;
                 }
@@ -297,8 +299,9 @@ CFIDecodeOne(const DwarfCIE& cie, const byte* ptr, size_t len)
                 case dwarf_cfi_misc::gnu_negative_offset_extended:
                 {
                     // Similar to (and obsoleted by) offset_extended_sf; the offset is unsigned but negated.
-                    // op(negated factored offset)
-                    op.op1 = -(DecodeULEB128(ptr) * cie.getDataFactor());
+                    // op(reg, negated factored offset)
+                    op.op1 = DecodeULEB128(ptr);
+                    op.op2 = -(DecodeULEB128(ptr) * cie.getDataFactor());
                     break;
                 }
 
@@ -326,7 +329,7 @@ CFIDecodeOne(const DwarfCIE& cie, const byte* ptr, size_t len)
 
 
 bool
-CFIDecode(const DwarfCIE& cie, const byte* ptr, size_t len, function<bool(const dwarf_cfi_op&)> callback)
+CFIDecode(const DwarfCIE& cie, const byte* ptr, size_t len, bool (*callback)(void*, const dwarf_cfi_op&), void* callback_context)
 {
     while (len > 0)
     {
@@ -339,7 +342,7 @@ CFIDecode(const DwarfCIE& cie, const byte* ptr, size_t len, function<bool(const 
         }
 
         // Pass the opcode to the callback.
-        bool result = callback(*op);
+        bool result = callback(callback_context, *op);
 
         // Terminate if requested.
         if (!result)
@@ -367,7 +370,282 @@ CFIDecode(const DwarfCIE& cie, const byte* ptr, size_t len, function<bool(const 
 }
 
 
-#if !__SYSTEM_ABI_DWARF_MINIMAL
+enum class CFIRuleParseResult
+{
+    Error = 0,
+    Success = 1,
+    Push = 2,
+    Pop = 3,
+};
+
+static CFIRuleParseResult GetRuleFromCFI(const DwarfCIE& cie, const std::byte*& ops, std::size_t& len, std::uintptr_t& pc, reg_rule* rules, std::size_t rule_count, const reg_rule* cie_rules)
+{
+    // Parse the next CFI opcode into a more useful form.
+    auto op = CFIDecodeOne(cie, ops, len);
+    if (!op)
+        return CFIRuleParseResult::Error;
+
+    // Update the bounds.
+    ops += op->raw_length;
+    len -= op->raw_length;
+
+    // Register indices.
+    bool invalid_register = false;
+    auto& cfa = rules[0];
+    auto& return_address = rules[rule_count - 1];
+
+    auto reg_index = [return_reg = cie.getReturnRegister(), rule_count, &invalid_register](std::size_t index) -> std::size_t
+    {
+        // Check for an invalid index (for the width of the rule row).
+        if (index >= (rule_count - 1)) [[unlikely]]
+        {
+            invalid_register = true;
+            return 0;
+        }
+
+        if (index == return_reg)
+            return rule_count - 1;
+
+        return index + 1;
+    };
+
+    auto reg = [rules, reg_index](std::size_t index) -> reg_rule&
+    {
+        return rules[reg_index(index)];
+    };
+
+    auto cie_reg = [cie_rules, reg_index](std::size_t index) -> reg_rule
+    {
+        if (!cie_rules)
+            return reg_rule::Undefined();
+
+        return cie_rules[reg_index(index)];
+    };
+
+    // What is the opcode?
+    switch (static_cast<dwarf_cfi_misc>(op->opcode))
+    {
+        case dwarf_cfi_misc::advance_loc:
+        case dwarf_cfi_misc::advance_loc1:
+        case dwarf_cfi_misc::advance_loc2:
+        case dwarf_cfi_misc::advance_loc4:
+        case dwarf_cfi_misc::mips_advance_loc8:
+            // Advance the program counter by the specified amount.
+            pc += op->op1;
+            break;
+
+        case dwarf_cfi_misc::offset:
+        case dwarf_cfi_misc::offset_extended:
+        case dwarf_cfi_misc::offset_extended_sf:
+        case dwarf_cfi_misc::gnu_negative_offset_extended:
+            // The register is stored at an offset from the CFA.
+            reg(op->op1) = reg_rule::CfaRelative(static_cast<std::ptrdiff_t>(op->op2));
+            break;
+
+        case dwarf_cfi_misc::restore:
+        case dwarf_cfi_misc::restore_extended:
+            // The register is restored to the rule from the CIE.
+            reg(op->op1) = cie_reg(op->op1);
+            break;
+
+        case dwarf_cfi_misc::nop:
+            // Nothing to do.
+            break;
+
+        case dwarf_cfi_misc::set_loc:
+            // Set the instruction pointer.
+            pc = op->op1;
+            break;
+
+        case dwarf_cfi_misc::undefined:
+            // The register cannot be restored.
+            reg(op->op1) = reg_rule::Undefined();
+            break;
+
+        case dwarf_cfi_misc::same_value:
+            // The register contains the correct value.
+            reg(op->op1) = reg_rule::Unchanged();
+            break;
+
+        case dwarf_cfi_misc::reg:
+            // The register value is held in another register.
+            reg(op->op1) = reg_rule::OtherRegister(op->op2);
+            break;
+
+        case dwarf_cfi_misc::remember_state:
+            // The caller needs to handle this.
+            return CFIRuleParseResult::Push;
+
+        case dwarf_cfi_misc::restore_state:
+            // The caller needs to handle this.
+            return CFIRuleParseResult::Pop;
+
+        case dwarf_cfi_misc::def_cfa:
+        case dwarf_cfi_misc::def_cfa_sf:
+            // The CFA is equal to the value of a register plus an offset.
+            cfa = reg_rule::OtherRegister(op->op1, static_cast<std::ptrdiff_t>(op->op2));
+            break;
+
+        case dwarf_cfi_misc::def_cfa_register:
+            // Changes the register portion of the CFA rule.
+            cfa.params.other_reg.reg = op->op1;
+            break;
+
+        case dwarf_cfi_misc::def_cfa_offset:
+        case dwarf_cfi_misc::def_cfa_offset_sf:
+            // Changes the offset portion of the CFA rule.
+            cfa.params.other_reg.addend = static_cast<std::ptrdiff_t>(op->op1);
+            break;
+
+        case dwarf_cfi_misc::def_cfa_expression:
+            // The CFA can be calculated via a DWARF expression.
+            cfa = reg_rule::ExpressionValue(reinterpret_cast<const std::byte*>(op->op1), op->op2);  
+            break;
+
+        case dwarf_cfi_misc::expression:
+            // The address of a register is given by an expression.
+            reg(op->op1) = reg_rule::Expression(reinterpret_cast<const std::byte*>(op->op2), op->op3);
+            break;
+
+        case dwarf_cfi_misc::val_expression:
+            // The value of a register is given by an expression.
+            reg(op->op1) = reg_rule::ExpressionValue(reinterpret_cast<const std::byte*>(op->op2), op->op3);
+            break;
+
+        case dwarf_cfi_misc::val_offset:
+        case dwarf_cfi_misc::val_offset_sf:
+            // The value of a register is the value of the CFA plus an offset.
+            reg(op->op1) = reg_rule::CfaRelativeValue(static_cast<std::ptrdiff_t>(op->op2));
+            break;
+
+        case dwarf_cfi_misc::gnu_window_save:
+            //! Encodes the behaviour of the SPARC "save" instruction.
+            for (unsigned int r = 16; r < 32; ++r)
+                reg(r) = reg_rule::CfaRelative((r - 16) * sizeof(void*));
+            break;
+
+        case dwarf_cfi_misc::gnu_args_size:
+            //! @TODO: implement.
+            return CFIRuleParseResult::Error;
+
+        default:
+            // Unknown opcode.
+            return CFIRuleParseResult::Error;
+    }
+
+    // Did any of the opcodes refer to a register we don't have space for?
+    if (invalid_register)
+        return CFIRuleParseResult::Error;
+
+    return CFIRuleParseResult::Success;
+}
+
+template <class F>
+static bool ParseCFIRulesWithCallback(const DwarfFDE& fde, std::uintptr_t pc, std::size_t* arguments_size, reg_rule* output, std::size_t output_count, F callback)
+{
+    // Fail if the FDE is invalid.
+    if (!fde || !(fde.getCodeRangeStart() <= pc && pc <= fde.getCodeRangeEnd()))
+        return false;
+
+    //! @TODO: make nicer!
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic warning "-Walloca" 
+    auto cie_rules = new (__builtin_alloca(output_count * sizeof(reg_rule))) reg_rule[output_count];
+    #pragma GCC diagnostic pop
+
+    // Set the default rules. By default, all callee-saved registers are expected to hold the same value unless CFI
+    // instructions say otherwise. There is also a rule created for restoring the stack pointer from the CFA.
+    for (auto reg : FrameTraitsNative::kCalleeSaveRegisters)
+    {
+        // Registers begin at offset 1 within the rule array.
+        auto index = FrameTraitsNative::RegisterToIndex(reg) + 1;
+        cie_rules[index] = reg_rule::Unchanged();
+    }
+    auto sp_index = FrameTraitsNative::RegisterToIndex(FrameTraitsNative::kStackPointerReg) + 1;
+    cie_rules[sp_index] = reg_rule::CfaRelativeValue(-FrameTraitsNative::kStackPointerOffset);
+
+    // Parse the CIE rules first.
+    const auto& cie = fde.getCIE();
+    auto cie_ops = cie.getInstructions();
+    auto cie_ops_len = cie.getInstructionsLength();
+    while (cie_ops_len > 0)
+    {
+        // Pushing and popping aren't supported as they make no sense for CIE ops.
+        std::uintptr_t dummy_pc = 0;
+        if (auto result = GetRuleFromCFI(cie, cie_ops, cie_ops_len, dummy_pc, cie_rules, output_count, nullptr); result != CFIRuleParseResult::Success)
+            return false;
+    }
+
+    // Initialise the output rules to those from the CIE.
+    std::copy_n(cie_rules, output_count, output);
+    callback(fde.getCodeRangeStart(), output, output_count);
+
+    // Stack of preserved rules. Only a minimal number of pushes are supported.
+    reg_rule* rule_stack[] = { output, nullptr };
+    constexpr std::size_t MaxPushes = std::extent_v<decltype(rule_stack)> - 1   ;
+    std::size_t push_depth = 0;
+
+    // Then parse the FDE opcodes until we meet or exceed the target PC.
+    std::uintptr_t current_pc = fde.getCodeRangeStart();
+    auto fde_ops = fde.getInstructions();
+    auto fde_ops_len = fde.getInstructionsLength();
+    while (current_pc < pc && fde_ops_len > 0)
+    {
+        // Each op can either update the PC or update one (or more) rules, never both. That makes it always safe to
+        // execute the next op without worrying about going too far.
+        switch (GetRuleFromCFI(cie, fde_ops, fde_ops_len, current_pc, rule_stack[push_depth], output_count, cie_rules))
+        {
+            case CFIRuleParseResult::Error:
+                return false;
+
+            case CFIRuleParseResult::Success:
+                break;
+
+            case CFIRuleParseResult::Push:
+            {
+                if (push_depth >= MaxPushes)
+                    return false;
+
+                push_depth += 1;
+                if (rule_stack[push_depth] == nullptr)
+                {
+                    //! @TODO: make nicer!
+                    #pragma GCC diagnostic push
+                    #pragma GCC diagnostic warning "-Walloca"
+                    rule_stack[push_depth] = new (__builtin_alloca(output_count * sizeof(reg_rule))) reg_rule[output_count];
+                    #pragma GCC diagnostic pop
+                }
+
+                std::copy_n(rule_stack[push_depth - 1], output_count, rule_stack[push_depth]);
+
+                break;
+            }
+
+            case CFIRuleParseResult::Pop:
+            {
+                if (push_depth == 0)
+                    return false;
+
+                push_depth -= 1;
+
+                break;
+            }
+        }
+
+        callback(current_pc, rule_stack[push_depth], output_count);
+    }
+
+    // The output rules are now set for unwinding through this frame.
+    return true;
+}
+
+bool ParseCFIRules(const DwarfFDE& fde, std::uintptr_t pc, std::size_t* arguments_size, reg_rule* output, std::size_t output_count)
+{
+    return ParseCFIRulesWithCallback(fde, pc, arguments_size, output, output_count, [](auto...){});
+}
+
+
+#if 0 && !__SYSTEM_ABI_DWARF_MINIMAL
 // Formats the opcode bytes portion of a disassembled CFI opcode.
 static string FormatOpcodeBytes(const byte* ptr, size_t len)
 {
@@ -397,7 +675,7 @@ static const char* RegName(uintptr_t r)
 }
 
 // Decodes a non-expression CFI instruction into human-readable form.
-static string FormatCFIOpcode(const dwarf_cfi_op& op)
+static std::string FormatCFIOpcode(const dwarf_cfi_op& op)
 {
     string str;
     string comment;
@@ -714,6 +992,86 @@ string DisassembleCFI(const DwarfCIE& cie, const byte* ptr, size_t len)
 
     // Formatting complete.
     return str;
+}
+
+std::string reg_rule::toString() const
+{
+    switch (rule_type)
+    {
+        case type::undefined:
+            return "---";
+
+        case type::unchanged:
+            return "same";
+
+        case type::cfa_relative:
+            return Printf("*(cfa%+d)", params.cfa_relative.offset);
+
+        case type::cfa_relative_value:
+            return Printf("cfa%+d", params.cfa_relative.offset);
+
+        case type::other_reg:
+            return Printf("%s%+d", FrameTraitsNative::GetRegisterName(FrameTraitsNative::IndexToRegister(params.other_reg.reg)), params.other_reg.addend);
+            
+        case type::expression:
+            return "*(expr)";
+
+        case type::expression_value:
+            return "expr";
+    }
+}
+
+static std::string PrintRegisterRuleRow(const reg_rule_row_native& row)
+{
+    std::string output;
+
+    output += Printf(" %-10s", row.cfa.toString().c_str());
+
+    for (std::size_t i = 0; i < (row.RegisterCount + 1); ++i)
+    {
+        output += Printf("| %-10s", row.registers[i].toString().c_str());
+    }
+
+    return output;
+}
+
+std::string PrintRegisterRulesTable(const DwarfFDE& fde)
+{
+    std::uintptr_t last_pc = fde.getCodeRangeStart();
+    std::string output;
+    
+    reg_rule_row_native ref;
+    reg_rule_row_native temp;
+
+    output = Printf("|>>>>>>>>>>>>>>>>|> %-10s", "CFA");
+    for (size_t i = 0; i < ref.RegisterCount; ++i)
+    {
+        auto reg = FrameTraitsNative::IndexToRegister(i);
+        output += Printf("| %-10s", FrameTraitsNative::GetRegisterName(reg));
+    }
+    output += Printf("| %-10s\n", FrameTraitsNative::GetRegisterName(FrameTraitsNative::kInstructionPointerReg));
+    
+    auto callback = [&](std::uintptr_t pc, const reg_rule* rules, std::size_t rule_count)
+    {
+        // If the PC has increased, print the rules that were in effect immediately before the change.
+        if (pc > last_pc)
+        {
+            output += Printf("|>  %13" PRIxPTR "|>", last_pc);
+            output += PrintRegisterRuleRow(ref);
+            output += "\n";
+            last_pc = pc;
+        }
+
+        std::copy_n(rules, rule_count, &ref.cfa);
+    };
+
+    if (!ParseCFIRulesWithCallback(fde, fde.getCodeRangeEnd(), &temp.arguments_size, &temp.cfa, temp.RegisterCount + 2, callback))
+        return "|>  <parse error>\n";
+
+    // Invoke the callback to generate the last line of output.
+    callback(~std::uintptr_t(0), nullptr, 0);
+
+    return output;
 }
 #endif // if !__SYSTEM_ABI_DWARF_MINIMAL
 

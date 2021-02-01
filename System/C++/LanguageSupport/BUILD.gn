@@ -1,0 +1,34 @@
+library("LanguageSupport")
+{
+    library_name    = "System.C++.LanguageSupport"
+    library_version = "0.1.0"
+
+    define_header_target = true
+    use_stdlib = false
+
+    header_deps =
+    [
+        "../TypeTraits",
+
+        "//ABI/C++:C++_headers",
+        "//C/BaseHeaders",
+    ]
+
+    public_headers =
+    [
+        "CFloat.hh",
+        "CLimits.hh",
+        "Compare.hh",
+        "Contract.hh",
+        "Exception.hh",
+        "InitializerList.hh",
+        "Limits.hh",
+        "New.hh",
+        "SourceLocation.hh",
+        "StdArg.hh",
+        "StdDef.hh",
+        "StdInt.hh",
+        "TypeInfo.hh",
+        "Utility.hh",
+    ]
+}

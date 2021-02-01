@@ -1,0 +1,45 @@
+library_group("all_single_arch")
+{
+    deps =
+    [
+        "ABI",
+        "C",
+        "C++",
+        "HW",
+        "Rust",
+    ]
+}
+
+library_group("all")
+{
+    if (enable_archs == [])
+    {
+        deps = [":all_single_arch"]
+    }
+    else
+    {
+        deps = []
+        foreach(arch, enable_archs)
+        {
+            _arch = {}
+            _arch =
+            {
+                import("//build/config/arch/arch_toolchains.gni")
+
+                foreach(t, arch_toolchains_list)
+                {
+                    tt = []
+                    tt = string_split(t, "!")
+                    if (tt[0] == arch)
+                    {
+                        arch_toolchain = "//build/toolchain/${tt[1]}"
+                    }
+                }
+
+                assert(defined(arch_toolchain), "unrecognised arch: ${arch}")
+            }
+
+            deps += [":all_single_arch(${_arch.arch_toolchain})"]
+        }
+    }
+}

@@ -115,10 +115,12 @@ public:
         return false;
     }
 
+#ifdef __cpp_impl_destroying_delete
     void operator delete(__shared_ptr_owner_base* __ptr, destroying_delete_t)
     {
         __ptr->__delete_this_owner();
     }
+#endif // ifdef __cpp_impl_destroying_delete
 
     size_t __get_elem_count() const
     {
@@ -245,12 +247,12 @@ template <class _T> inline constexpr bool __has_array_delete_v = is_detected_v<_
 
 
 #ifdef __XVI_CXX_UTILITY_NO_EXCEPTIONS
-[[noreturn]] void __bad_weak_pointer() noexcept
+[[noreturn]] inline void __bad_weak_pointer() noexcept
 {
     terminate();
 }
 #else
-[[noreturn]] void __bad_weak_pointer()
+[[noreturn]] inline void __bad_weak_pointer()
 {
     throw bad_weak_ptr();
 }

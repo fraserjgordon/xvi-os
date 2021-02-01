@@ -1,0 +1,28 @@
+# Ensure that we have a target defined.
+if (target_cpu == "")
+{
+    target_cpu = host_cpu
+}
+
+if (target_os == "")
+{
+    target_os = "xvi"
+}
+
+if (current_cpu == "")
+{
+    current_cpu = target_cpu
+}
+
+if (current_os == "")
+{
+    current_os = target_os
+}
+
+import("//build/config/global_args.gni")
+
+set_default_toolchain("//build/toolchain/x86:x64")
+
+# Include common XVI templates.
+import("//build/templates/library.gni")
+import("//build/templates/library_group.gni")

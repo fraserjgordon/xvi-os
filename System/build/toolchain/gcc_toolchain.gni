@@ -1,0 +1,256 @@
+# Template for toolchains that behave mostly like GCC (e.g. Clang).
+template("gcc_toolchain")
+{
+    assert(defined(invoker.toolchain_arch), "Toolchain architecture must be defined")
+    assert(defined(invoker.toolchain_cpu), "Toolchain CPU must be defined")
+    assert(defined(invoker.toolchain_os), "Toolchain OS must be defined")
+    
+    toolchain_arch = invoker.toolchain_arch
+    toolchain_cpu = invoker.toolchain_cpu
+    toolchain_os = invoker.toolchain_os
+
+    # Compiler executables.
+    cc_exe = "gcc"
+    cxx_exe = "g++"
+    ar_exe = "ar"
+
+    if (defined(invoker.toolchain_prefix))
+    {
+        cc_exe = "${invoker.toolchain_prefix}${cc_exe}"
+        cxx_exe = "${invoker.toolchain_prefix}${cxx_exe}"
+        ar_exe = "${invoker.toolchain_prefix}${ar_exe}"
+    }
+
+    if (defined(invoker.toolchain_root))
+    {
+        cc_exe = "${invoker.toolchain_root}/bin/${cc_exe}"
+        cxx_exe = "${invoker.toolchain_root}/bin/${cxx_exe}"
+        ar_exe = "${invoker.toolchain_root}/bin/${ar_exe}"
+    }
+
+    if (defined(invoker.cc_exe))
+    {
+        cc_exe = invoker.cc_exe
+    }
+
+    if (defined(invoker.cxx_exe))
+    {
+        cxx_exe = invoker.cxx_exe
+    }
+
+    if (defined(invoker.ar_exe))
+    {
+        ar_exe = invoker.ar_exe
+    }
+
+    # Mandatory GCC flags (e.g. target architecture options).
+    arch_cflags = ""
+    if (defined(invoker.arch_cflags))
+    {
+        arch_cflags = string_join(" ", invoker.arch_cflags)
+    }
+
+    # Mandatory Rust flags (e.g. target architecture options).
+    arch_rustflags =""
+    if (defined(invoker.arch_rustflags))
+    {
+        arch_rustflags = string_join(" ", invoker.arch_rustflags)
+    }
+
+    toolchain(target_name)
+    {
+        toolchain_args =
+        {
+            current_arch    = toolchain_arch
+            current_cpu     = toolchain_cpu
+            current_os      = toolchain_os
+
+            compiler_id     = "gcc"
+        }
+
+        default_output_dir = "${toolchain_arch}/${toolchain_cpu}"
+
+        tool("cc")
+        {
+            depfile                 = "{{output}}.d"
+            depsformat              = "gcc"
+            description             = "CC (${toolchain_cpu}) {{source}}"
+            outputs                 = [ "{{target_out_dir}}/{{label_name}}.{{source_file_part}}.o" ]
+            precompiled_header_type = "gcc"
+
+            command = "${cc_exe} -MD -MF ${depfile} ${arch_cflags} {{include_dirs}} {{defines}} {{cflags}} {{cflags_c}} -c {{source}} -o {{output}}"
+        }
+
+        tool("cxx")
+        {
+            depfile                 = "{{output}}.d"
+            depsformat              = "gcc"
+            description             = "CXX (${toolchain_cpu}) {{source}}"
+            outputs                 = [ "{{target_out_dir}}/{{label_name}}.{{source_file_part}}.o" ]
+            precompiled_header_type = "gcc"
+
+            command = "${cxx_exe} -MD -MF ${depfile} ${arch_cflags} {{include_dirs}} {{defines}} {{cflags}} {{cflags_cc}} -c {{source}} -o {{output}}"
+        }
+
+        tool("asm")
+        {
+            depfile                 = "{{output}}.d"
+            depsformat              = "gcc"
+            description             = "ASM (${toolchain_cpu}) {{source}}"
+            outputs                 = [ "{{target_out_dir}}/{{label_name}}.{{source_file_part}}.o" ]
+            precompiled_header_type = "gcc"
+
+            command = "${cc_exe} -MMD -MF ${depfile} ${arch_cflags} {{include_dirs}} {{defines}} {{asmflags}} -c {{source}} -o {{output}}"
+        }
+
+        tool("alink")
+        {
+            default_output_extension= ".a"
+            description             = "AR (${toolchain_cpu}) {{target_output_name}}{{output_extension}}"
+            outputs                 = [ "{{output_dir}}/{{target_output_name}}{{output_extension}}" ]
+            output_prefix           = ""
+
+            rspfile                 = "{{target_output_name}}{{output_extension}}.rsp"
+            rspfile_content         = "{{inputs}}"
+            
+            command = "rm -f {{output}} && ${ar_exe} rcsD {{output}} @${rspfile}"
+        }
+
+        tool("solink")
+        {
+            #command_launcher = "gdb -ex r --return-child-result --batch-silent --args"
+            
+            default_output_extension= ".so"
+            description             = "Link (${toolchain_cpu}) (dynamic) {{target_output_name}}{{output_extension}}"
+            outputs                 = [ "{{output_dir}}/{{target_output_name}}{{output_extension}}" ]
+            output_prefix           = ""
+
+            soname  = "{{target_output_name}}{{output_extension}}"
+            soflags = "-Wl,-soname=${soname}"
+
+            rspfile         = "${soname}.rsp"
+            rspfile_content = "{{inputs}} {{solibs}} {{libs}}"
+
+            command = "${cxx_exe} -shared ${arch_cflags} ${soflags} {{ldflags}} -o {{output}} @${rspfile}"
+        }
+
+        tool("link")
+        {
+            default_output_extension= ""
+            description             = "Link (${toolchain_cpu}) {{target_output_name}}{{output_extension}}"
+            outputs                 = [ "{{output_dir}}/{{target_output_name}}{{output_extension}}" ]
+
+            rspfile         = "{{target_output_name}}{{output_extension}}.rsp"
+            rspfile_content = "{{inputs}} {{solibs}} {{libs}}"
+
+            command = "${cxx_exe} ${arch_cflags} {{ldflags}} @${rspfile}"
+        }
+
+        tool("stamp")
+        {
+            description             = "Stamp {{output}}"
+
+            command = "touch {{output}}"
+        }
+
+        tool("copy")
+        {
+            description             = "Copy {{source}} -> {{output}}"
+
+            command = "cp -af {{source}} {{output}}"
+        }
+        
+        tool("rust_bin")
+        {
+            default_output_extension= ""
+            description             = "Rust (${toolchain_cpu}) (bin) {{target_output_name}}{{output_extension}}"
+            outputs                 = [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
+
+            rspfile                 = "{{target_output_name}}{{output_extension}}.rsp"
+            rspfile_content         = "{{externs}} {{rustdeps}} {{rustenv}}"
+
+            command = "rustc +nightly ${arch_rustflags} {{rustflags}} --crate-type {{crate_type}} --crate-name {{crate_name}} ${rspfile_content} -o {{output}} {{source}}"
+        }
+
+        tool("rust_cdylib")
+        {
+            default_output_extension= ".so"
+            description             = "Rust (${toolchain_cpu}) (cdylib) {{target_output_name}}{{output_extension}}"
+            outputs                 = [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
+
+            rspfile                 = "{{target_output_name}}{{output_extension}}.rsp"
+            rspfile_content         = "{{externs}} {{rustdeps}} {{rustenv}}"
+            
+            command = "rustc +nightly ${arch_rustflags} {{rustflags}} --crate-type {{crate_type}} --crate-name {{crate_name}} ${rspfile_content} -o {{output}} {{source}}"
+        }
+
+        tool("rust_dylib")
+        {
+            default_output_extension= ".so"
+            description             = "Rust (${toolchain_cpu}) (dylib) {{target_output_name}}{{output_extension}}"
+            outputs                 = [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
+
+            rspfile                 = "{{target_output_name}}{{output_extension}}.rsp"
+            rspfile_content         = "{{externs}} {{rustdeps}} {{rustenv}}"
+
+            command = "rustc +nightly ${arch_rustflags} {{rustflags}} --crate-type {{crate_type}} --crate-name {{crate_name}} ${rspfile_content} -o {{output}} {{source}}"
+        }
+
+        tool("rust_macro")
+        {
+            description             = "Rust (${toolchain_cpu}) (proc macro) {{target_output_name}}{{output_extension}}"
+            outputs                 = [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
+
+            rspfile                 = "{{target_output_name}}{{output_extension}}.rsp"
+            rspfile_content         = "{{externs}} {{rustdeps}} {{rustenv}}"
+
+            command = "rustc +nightly ${arch_rustflags} {{rustflags}} --crate-type {{crate_type}} --crate-name {{crate_name}} ${rspfile_content} -o {{output}} {{source}}"
+        }
+
+        tool("rust_rlib")
+        {
+            default_output_extension= ".rlib"
+            description             = "Rust (${toolchain_cpu}) (rlib) {{target_output_name}}{{output_extension}}"
+            outputs                 = [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
+
+            rspfile                 = "{{target_output_name}}{{output_extension}}.rsp"
+            rspfile_content         = "{{externs}} {{rustdeps}} {{rustenv}}"
+
+            command = "rustc +nightly ${arch_rustflags} {{rustflags}} --crate-type {{crate_type}} --crate-name {{crate_name}} ${rspfile_content} -o {{output}} {{source}}"
+        }
+
+        tool("rust_staticlib")
+        {
+            default_output_extension= ".a"
+            description             = "Rust (${toolchain_cpu}) (static lib) {{target_output_name}}{{output_extension}}"
+            outputs                 = [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
+
+            rspfile                 = "{{target_output_name}}{{output_extension}}.rsp"
+            rspfile_content         = "{{externs}} {{rustdeps}} {{rustenv}}"
+
+            command = "rustc +nightly ${arch_rustflags} {{rustflags}} --crate-type {{crate_type}} --crate-name {{crate_name}} ${rspfile_content} -o {{output}} {{source}}"
+        }
+    }
+}
+
+# Special behaviours for Clang toolchains.
+template("clang_toolchain")
+{
+    # Clang target specification.
+    arch_flags = ""
+    if (defined(invoker.arch_flags))
+    {
+        arch_flags = invoker.arch_flags
+    }
+
+    if (defined(invoker.clang_target))
+    {
+        clang_target = invoker.clang_target
+        arch_flags += " -target ${clang_target}"
+    }
+    
+    gcc_toolchain(target_name)
+    {
+
+    } 
+}

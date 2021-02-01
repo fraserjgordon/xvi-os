@@ -1,0 +1,93 @@
+import("//build/config/global_args.gni")
+import("//build/toolchain/gcc_toolchain.gni")
+
+declare_args()
+{
+    # Prefix used for compiler executables for 64-bit (e.g. "x86_64-xvi-).
+    x64_toolchain_prefix = ""
+
+    # Prefix used for compiler executables for 32-bit (e.g. "i686-xvi-").
+    x86_toolchain_prefix = ""
+}
+
+if (cross_toolchain_root != "" && x64_toolchain_prefix == "")
+{
+    x64_toolchain_prefix = "x86_64-xvi-"
+}
+
+if (cross_toolchain_root != "" && x86_toolchain_prefix == "")
+{
+    x86_toolchain_prefix = "i686-xvi-"
+}
+
+# Common settings for all x86 GCC toolchains.
+vars_gcc =
+{
+    arch_cflags     = []
+    arch_rustflags  = []
+    toolchain_arch  = "x86"
+    toolchain_os    = "xvi"
+
+    if (cross_toolchain_root != "")
+    {
+        toolchain_root = cross_toolchain_root
+    }
+
+    if (x86_toolchain_prefix != "")
+    {
+        toolchain_prefix = x86_toolchain_prefix
+    }
+}
+
+# Settings for 16-bit x86 GCC toolchains.
+vars_gcc_16 =
+{
+    forward_variables_from(vars_gcc, "*")
+
+    arch_cflags += [ "-m16" ]
+    toolchain_cpu = "x86_16"
+}
+
+# Settings for 32-bit x86 GCC toolchains.
+vars_gcc_32 =
+{
+    forward_variables_from(vars_gcc, "*")
+
+    arch_cflags += [ "-m32" ]
+    toolchain_cpu = "x86"
+}
+
+# Settings for 64-bit x86 GCC toolchains.
+vars_gcc_64 =
+{
+    forward_variables_from(vars_gcc, "*") 
+
+    arch_cflags += [ "-m64" ]
+    arch_rustflags += [ "--target " + rebase_path("rust-x86_64.json") ]
+    toolchain_cpu = "x86_64"
+
+    toolchain_prefix = x64_toolchain_prefix
+}
+
+
+if (use_clang)
+{
+
+}
+else
+{
+    gcc_toolchain("16")
+    {
+        forward_variables_from(vars_gcc_16, "*")
+    }
+
+    gcc_toolchain("x86")
+    {
+        forward_variables_from(vars_gcc_32, "*")
+    }
+
+    gcc_toolchain("x64")
+    {
+        forward_variables_from(vars_gcc_64, "*")
+    }
+}

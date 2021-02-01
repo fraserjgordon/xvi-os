@@ -130,7 +130,7 @@ constexpr int popcount_nomul_emul(T t)
     t = (t + (t >> 4)) & T(PopcountM4);
     t += t >> 8;
     t += t >> 16;
-    if /*constexpr*/ (sizeof(t) > sizeof(std::uint32_t))
+    if constexpr (sizeof(t) > sizeof(std::uint32_t))
         t += t >> 32;
     return t & 0x7f;
 }
@@ -144,6 +144,31 @@ constexpr int popcount_mul_emul(T t)
     t = (t & T(PopcountM2)) + ((t >> 2) & T(PopcountM2));
     t = (t + (t >> 4)) & T(PopcountM4);
     return (t * T(PopcountH01)) >> ((8 * sizeof(T)) - 8);
+}
+
+
+constexpr std::int16_t bswap_emul(std::int16_t i)
+{
+    std::int16_t lower = ((i >> 8) & 0xFF);
+    std::int16_t upper = ((i << 8) & 0xFF00);
+
+    return lower | upper;
+}
+
+constexpr std::int32_t bswap_emul(std::int32_t i)
+{
+    auto lower = static_cast<std::int32_t>(bswap_emul(static_cast<std::int16_t>((i >> 16) & 0xFFFF)));
+    auto upper = static_cast<std::int32_t>(bswap_emul(static_cast<std::int16_t>(i & 0xFFFF))) << 16;
+
+    return lower | upper;
+}
+
+constexpr std::int64_t bswap_emul(std::int64_t i)
+{
+    auto lower = static_cast<std::int64_t>(bswap_emul(static_cast<std::int32_t>((i >> 32) & 0xFFFFFFFF)));
+    auto upper = static_cast<std::int64_t>(bswap_emul(static_cast<std::int32_t>(i & 0xFFFFFFFF))) << 32;
+
+    return lower | upper;
 }
 
 

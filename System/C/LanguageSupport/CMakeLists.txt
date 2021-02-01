@@ -24,7 +24,7 @@ set(HEADERS
 
 list(TRANSFORM HEADERS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/Include/System/C/LanguageSupport/")
 
-add_library(System.C.LanguageSupport INTERFACE)
+xvi_library(System.C.LanguageSupport VERSION 0.1.0 INTERFACE KERNEL NO_STDLIB)
 
 target_include_directories(System.C.LanguageSupport
     INTERFACE Include/

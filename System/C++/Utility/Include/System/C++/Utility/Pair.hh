@@ -87,8 +87,8 @@ struct pair
     template <class... _Args1, class... _Args2>
     constexpr pair(piecewise_construct_t, tuple<_Args1...> __first_args, tuple<_Args2...> __second_args)
         : pair(piecewise_construct,
-               __first_args, make_index_sequence<sizeof...(_Args1)>(),
-               __second_args, make_index_sequence<sizeof...(_Args2)>()) {}
+               std::move(__first_args), make_index_sequence<sizeof...(_Args1)>(),
+               std::move(__second_args), make_index_sequence<sizeof...(_Args2)>()) {}
 
     template <class... _Args1, class... _Args2,
               size_t... _Idx1, size_t... _Idx2>
@@ -110,9 +110,9 @@ struct pair
         return *this;
     }
 
-    template <class = enable_if_t<is_move_assignable_v<first_type> && is_move_assignable_v<second_type>, void>>
     constexpr pair& operator&=(pair&& __p)
         noexcept(is_nothrow_move_assignable_v<first_type> && is_nothrow_move_assignable_v<second_type>)
+        requires (is_move_assignable_v<first_type> && is_move_assignable_v<second_type>)
     {
         first = __XVI_STD_NS::forward<first_type>(__p.first);
         second = __XVI_STD_NS::forward<second_type>(__p.second);
@@ -131,6 +131,7 @@ struct pair
     constexpr void swap(pair& __p)
         noexcept(is_nothrow_swappable_v<first_type> && is_nothrow_swappable_v<second_type>)
     {
+        using std::swap;
         swap(first, __p.first);
         swap(second, __p.second);
     }

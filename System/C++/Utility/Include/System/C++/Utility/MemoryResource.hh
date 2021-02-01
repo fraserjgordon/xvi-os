@@ -55,12 +55,12 @@ private:
 };
 
 
-bool operator==(const memory_resource& __a, const memory_resource& __b) noexcept
+inline bool operator==(const memory_resource& __a, const memory_resource& __b) noexcept
 {
     return &__a == &__b || __a.is_equal(__b);
 }
 
-bool operator!=(const memory_resource& __a, const memory_resource& __b) noexcept
+inline bool operator!=(const memory_resource& __a, const memory_resource& __b) noexcept
 {
     return !(__a == __b);
 }

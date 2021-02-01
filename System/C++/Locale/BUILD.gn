@@ -1,0 +1,31 @@
+library("Locale")
+{
+    library_name    = "System.C++.Locale"
+    library_version = "0.1.0"
+
+    #define_header_target = true
+    use_stdlib = false
+
+    shared_define = "__BUILD_SYSTEM_CXX_LOCALE_SHARED"
+
+    public_deps =
+    [
+        "../Utility"
+    ]
+
+    public_headers =
+    [
+        "CType.hh",
+        "Locale.hh",
+        "StdLib.hh",
+        "UChar.hh",
+
+        "Private/Config.hh",
+        "Private/Namespace.hh",
+    ]
+
+    sources =
+    [
+        "Locale.cc",
+    ]
+}

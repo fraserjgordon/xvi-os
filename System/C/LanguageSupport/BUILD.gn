@@ -1,0 +1,17 @@
+library("LanguageSupport")
+{
+    library_name    = "System.C.LanguageSupport"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    public_headers =
+    [
+        "ErrorCodes.h",
+        "IntTypes.h",
+        "StdArg.h",
+        "StdBool.h",
+        "StdDef.h",
+        "StdInt.h",
+    ]
+}

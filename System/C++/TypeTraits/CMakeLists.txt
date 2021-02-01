@@ -32,7 +32,7 @@ list(TRANSFORM HEADERS PREPEND "Include/System/C++/TypeTraits/")
 list(TRANSFORM COMPILE_TEST_SOURCES PREPEND "Test/System/C++/TypeTraits/")
 
 
-add_library(System.C++.TypeTraits INTERFACE)
+xvi_library(System.C++.TypeTraits VERSION 0.1.0 INTERFACE KERNEL NO_STDLIB)
 
 target_include_directories(System.C++.TypeTraits
     INTERFACE Include/
@@ -40,6 +40,8 @@ target_include_directories(System.C++.TypeTraits
 
 
 ##### Test library #####
+
+if(OFF)
 
 add_library(System.C++.TypeTraits_CompileTestLibrary STATIC
     ${COMPILE_TEST_SOURCES}
@@ -52,6 +54,8 @@ target_compile_definitions(System.C++.TypeTraits_CompileTestLibrary
 target_link_libraries(System.C++.TypeTraits_CompileTestLibrary
     PRIVATE System.C++.TypeTraits
 )
+
+endif()
 
 ##### Test executable #####
 

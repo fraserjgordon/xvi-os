@@ -1,0 +1,1 @@
+// Dummy source file to work around CMake limitations.

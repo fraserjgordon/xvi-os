@@ -13,6 +13,7 @@
 #  include <System/C++/Utility/String.hh>
 #endif
 
+#include <System/ABI/Dwarf/Private/Config.hh>
 #include <System/ABI/Dwarf/Arch.hh>
 #include <System/ABI/Dwarf/FDE.hh>
 
@@ -86,10 +87,11 @@ struct dwarf_cfi_op
     // out (e.g. all of the advance_loc opcodes are represented here as 0x40).
     std::uint8_t opcode = std::uint8_t(dwarf_cfi_misc::nop);
 
-    // Opcodes can have up to two parameters encoded. They are stored here as uintptr_t but will be bitcast back to the
+    // Opcodes can have up to three parameters encoded. They are stored here as uintptr_t but will be bitcast back to the
     // appropriate types when the opcode is executed.
     std::uintptr_t op1 = 0;
     std::uintptr_t op2 = 0;
+    std::uintptr_t op3 = 0;
 
     // Pointer to and length of the encoded instruction.
     const std::byte* raw = nullptr;
@@ -103,8 +105,11 @@ struct dwarf_cfi_op
 //! @warning    As CFI instructions are loaded as part of an executable's image, they are assumed to be trusted. This
 //!             function does check for some decoding errors but it is not comprehensive and is therefore not safe to
 //!             run on untrusted data.
+__SYSTEM_ABI_DWARF_EXPORT
 std::optional<dwarf_cfi_op>
-CFIDecodeOne(const DwarfCIE& cie, const std::byte* opcodes, std::size_t len);
+CFIDecodeOne(const DwarfCIE& cie, const std::byte* opcodes, std::size_t len)
+__SYSTEM_ABI_DWARF_SYMBOL(CFIDecodeOne);
+
 
 //! @brief      Decodes the given stream of DWARF CFI instructions.
 //! @returns    false on decoding errors; true otherwise.
@@ -112,8 +117,21 @@ CFIDecodeOne(const DwarfCIE& cie, const std::byte* opcodes, std::size_t len);
 //! @warning    As CFI instructions are loaded as part of an executable's image, they are assumed to be trusted. This
 //!             function does check for some decoding errors but it is not comprehensive and is therefore not safe to
 //!             run on untrusted data.
+__SYSTEM_ABI_DWARF_EXPORT
 bool
-CFIDecode(const DwarfCIE& cie, const std::byte* opcodes, std::size_t len, std::function<bool(const dwarf_cfi_op&)> callback);
+CFIDecode(const DwarfCIE& cie, const std::byte* opcodes, std::size_t len, bool (*callback)(void*, const dwarf_cfi_op&), void* callback_context)
+__SYSTEM_ABI_DWARF_SYMBOL(CFIDecode);
+
+inline bool
+CFIDecode(const DwarfCIE& cie, const std::byte* opcodes, std::size_t len, std::function<bool(const dwarf_cfi_op&)> callback)
+{
+    auto context_ptr = &callback;
+    return CFIDecode(cie, opcodes, len, [](void* ctxt, const dwarf_cfi_op& arg)
+    {
+        auto& cb = *reinterpret_cast<decltype(context_ptr)>(ctxt);
+        return cb(arg);
+    }, context_ptr);
+}
 
 
 // Forward declaration.
@@ -293,6 +311,7 @@ struct reg_rule
         struct
         {
             std::uintptr_t reg;
+            std::ptrdiff_t addend;
         } other_reg;
 
         // Parameters for restoration via a DWARF expression.
@@ -302,6 +321,10 @@ struct reg_rule
             std::size_t len;        // Length of the expression bytecode.
         } expression = {nullptr, 0};
     } params = {};
+
+    #if !__SYSTEM_ABI_DWARF_MINIMAL
+    std::string toString() const;
+    #endif
 
     // Creates an "undefined" rule.
     static constexpr reg_rule Undefined()
@@ -328,9 +351,9 @@ struct reg_rule
     }
 
     // Creates a "same as other register" rule.
-    static constexpr reg_rule OtherRegister(std::uintptr_t which)
+    static constexpr reg_rule OtherRegister(std::uintptr_t which, std::ptrdiff_t addend = 0)
     {
-        return reg_rule {.rule_type = type::other_reg, .params{.other_reg = {which}}};
+        return reg_rule {.rule_type = type::other_reg, .params{.other_reg = {which, addend}}};
     }
 
     // Creates an "expression" rule.
@@ -347,9 +370,35 @@ struct reg_rule
 };
 
 
+template <std::size_t Width>
+struct reg_rule_row
+{
+    static constexpr auto RegisterCount = Width;
+
+    std::size_t arguments_size = 0;
+    reg_rule cfa;
+    reg_rule registers[Width];
+    reg_rule return_address;
+};
+
+using reg_rule_row_native = reg_rule_row<FrameTraitsNative::kUnwindRegisterCount>;
+
+
+__SYSTEM_ABI_DWARF_EXPORT
+bool ParseCFIRules(const DwarfFDE&, std::uintptr_t pc, std::size_t* arguments_size, reg_rule* output, std::size_t output_count) __SYSTEM_ABI_DWARF_SYMBOL(ParseCFIRules);
+
+template <std::size_t Width>
+bool ParseCFIRules(const DwarfFDE& fde, std::uintptr_t pc, reg_rule_row<Width>& output)
+{
+    return ParseCFIRules(fde, pc, &output.arguments_size, &output.cfa, Width + 2);
+}
+
+
 #if !__SYSTEM_ABI_DWARF_MINIMAL
 //! @brief  Formats a sequence of DWARF CFI opcodes in a human-readable manner (akin to disassembly).
 std::string DisassembleCFI(const DwarfCIE& cie, const std::byte* cfi, std::size_t length);
+
+std::string PrintRegisterRulesTable(const DwarfFDE& fde);
 #endif
 
 

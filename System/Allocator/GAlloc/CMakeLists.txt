@@ -34,21 +34,17 @@ set(SOURCES
 list(TRANSFORM HEADERS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/Include/System/Allocator/GAlloc/")
 list(TRANSFORM SOURCES PREPEND "Source/System/Allocator/GAlloc/")
 
-xvi_library(System.Allocator.GAlloc STATIC SHARED KERNEL)
+xvi_library(System.Allocator.GAlloc VERSION 0.1.0 STATIC SHARED KERNEL)
 
-target_include_directories(System.Allocator.GAlloc+
+target_include_directories(System.Allocator.GAlloc+All
     PUBLIC Include/
     PRIVATE Source/
 )
 
-target_sources(System.Allocator.GAlloc+
+target_sources(System.Allocator.GAlloc+All
     PUBLIC ${HEADERS}
     PRIVATE ${SOURCES}
 )
 
-target_link_libraries(System.Allocator.GAlloc+
-    PUBLIC  System.ABI.String
-    PRIVATE System.C++.Atomic
-            System.C++.LanguageSupport
-            System.C++.Utility
+target_link_libraries(System.Allocator.GAlloc+All
 )

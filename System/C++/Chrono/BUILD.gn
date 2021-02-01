@@ -1,0 +1,19 @@
+library("Chrono")
+{
+    library_name    = "System.C++.Chrono"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    public_deps =
+    [
+        "//ABI/C++",
+    ]
+
+    public_headers =
+    [
+        "Chrono.hh",
+
+        "Private/Config.hh",
+    ]
+}

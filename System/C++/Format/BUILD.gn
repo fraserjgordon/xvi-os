@@ -1,0 +1,36 @@
+library("Format")
+{
+    library_name    = "System.C++.Format"
+    library_version = "0.1.0"
+
+    define_header_target = true
+    use_stdlib = false
+
+    shared_define = "__BUILD_SYSTEM_CXX_FORMAT_SHARED"
+
+    public_deps =
+    [
+        "../LanguageSupport",
+        "../Locale",
+        "../Utility",
+    ]
+
+    deps =
+    [
+        "//ABI/C++",
+        "//ABI/String",
+    ]
+
+    public_headers =
+    [
+        "Format.hh",
+
+        "Private/Config.hh",
+        "Private/Namespace.hh",
+    ]
+
+    sources =
+    [
+        "Format.cc",
+    ]
+}

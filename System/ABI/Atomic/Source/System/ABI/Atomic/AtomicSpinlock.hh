@@ -7,7 +7,7 @@
 #include <System/C++/LanguageSupport/StdInt.hh>
 
 
-namespace
+namespace System::ABI::Atomic
 {
 
 class AtomicSpinlockArray
@@ -54,12 +54,12 @@ private:
 inline AtomicSpinlockArray g_atomicSpinlocks;
 
 
-} // anonymous namespace
-
-
 // Locking and unlocking methods.
 inline void __Atomic_lock_acquire(volatile AtomicSpinlockArray::spinlock_t*);
 inline void __Atomic_lock_release(volatile AtomicSpinlockArray::spinlock_t*);
+
+
+} // namespace System::ABI::Atomic
 
 
 #endif /* ifndef __SYSTEM_ABI_ATOMIC_ATOMICSPINLOCK_H */

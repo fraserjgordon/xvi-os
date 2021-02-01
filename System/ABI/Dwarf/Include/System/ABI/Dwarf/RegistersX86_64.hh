@@ -3,6 +3,8 @@
 #define __SYSTEM_ABI_DWARF_REGISTERS_X86_64_H
 
 
+#include <System/ABI/ExecContext/Arch/x86/SysV_x64.hh>
+#include <System/C++/LanguageSupport/InitializerList.hh>
 #include <System/C++/LanguageSupport/StdDef.hh>
 #include <System/C++/LanguageSupport/StdInt.hh>
 
@@ -143,23 +145,46 @@ struct FrameTraitsX86_64
     using reg_enum_t    = reg_x86_64;
 
     // Register save slots are 64-bit.
-    using reg_t         = std::int64_t;
+    using reg_t         = std::uint64_t;
 
     // Floating-point registers are not preserved.
     using float_reg_t   = void;
 
+    // Which registers are used for special purposes.
+    static constexpr auto kStackPointerReg          = reg_x86_64::rsp;
+    static constexpr auto kInstructionPointerReg    = reg_x86_64::return_addr;
+
+    // Stack grows downwards.
+    static constexpr std::ptrdiff_t kStackDirection = -1;
+
+    // Callee-saved registers.
+    static constexpr auto kCalleeSaveRegisters =
+    { 
+        reg_x86_64::rbx,
+        reg_x86_64::rbp,
+        reg_x86_64::r11,
+        reg_x86_64::r12,
+        reg_x86_64::r13,
+        reg_x86_64::r14,
+        reg_x86_64::r15,
+    };
+
+    // Offset to apply when converting the CFA into the stack pointer.
+    static constexpr std::ptrdiff_t kStackPointerOffset = 0;
+
     // The saved registers are the 16 general-purpose integer registers, the CFA and the return address. The only other
     // registers that the SysV AMD64 ABI requires to be preserved are the floating-point control registers; we can omit
     // these as long as the unwinder code does not change them.
-    static constexpr std::size_t kUnwindRegisterCount = 18;
+    static constexpr std::size_t kUnwindRegisterCount = 16; // Excluding the CFA and return "register".
+    static constexpr std::size_t kUnwindStorageCount  = kUnwindRegisterCount + 2;
 
     // None of the floating-point or SSE registers are saved; they are all volatile across calls. The control words do
-    // need to be preservd, however.
+    // need to be preserved, however.
 
     // Structure suitable for holding the preserved registers.
     struct reg_storage_t
     {
-        reg_t gp[kUnwindRegisterCount];
+        reg_t gp[kUnwindStorageCount];
 
     #if __SYSTEM_ABI_DWARF_FLOAT_SUPPORT
         __uint16_t fcw;
@@ -198,6 +223,46 @@ struct FrameTraitsX86_64
             gp[std::size_t(which) + 1] = value;
         }
 
+        void CaptureFrame(const ExecContext::sysv_x64_frame_t& frame)
+        {
+            SetGPRegister(reg_x86_64::rsp, frame.rsp);
+            SetGPRegister(reg_x86_64::r12, frame.r12);
+            SetGPRegister(reg_x86_64::r13, frame.r13);
+            SetGPRegister(reg_x86_64::r14, frame.r14);
+            SetGPRegister(reg_x86_64::r15, frame.r15);
+            SetGPRegister(reg_x86_64::rbx, frame.rbx);
+            SetGPRegister(reg_x86_64::rbp, frame.rbp);
+            SetGPRegister(reg_x86_64::rsp, frame.rsp);
+            SetReturnAddress(frame.rip);
+        }
+
+        void ConfigureFrame(ExecContext::sysv_x64_frame_t& frame)
+        {
+            frame.r12 = GetGPRegister(reg_x86_64::r12);
+            frame.r13 = GetGPRegister(reg_x86_64::r13);
+            frame.r14 = GetGPRegister(reg_x86_64::r14);
+            frame.r15 = GetGPRegister(reg_x86_64::r15);
+            frame.rbx = GetGPRegister(reg_x86_64::rbx);
+            frame.rbp = GetGPRegister(reg_x86_64::rbp);
+            frame.rsp = GetCFA();
+            frame.rip = GetReturnAddress();
+        }
+
+        void ConfigureFullFrame(ExecContext::sysv_x64_integer_t& frame)
+        {
+            ConfigureFrame(frame);
+            frame.rax = GetGPRegister(reg_x86_64::rax);
+            frame.rcx = GetGPRegister(reg_x86_64::rcx);
+            frame.rdx = GetGPRegister(reg_x86_64::rdx);
+            frame.rsi = GetGPRegister(reg_x86_64::rsi);
+            frame.rdi = GetGPRegister(reg_x86_64::rdi);
+            frame.rbp = GetGPRegister(reg_x86_64::rbp);
+            frame.r8  = GetGPRegister(reg_x86_64::r8);
+            frame.r9  = GetGPRegister(reg_x86_64::r9);
+            frame.r10 = GetGPRegister(reg_x86_64::r10);
+            frame.r11 = GetGPRegister(reg_x86_64::r11);
+        }
+
         // Validates the given general-purpose register number.
         static constexpr bool IsValidGPRegister(std::size_t n)
         {
@@ -213,19 +278,18 @@ struct FrameTraitsX86_64
         }
     };
 
-    // Method for capturing the current register state (at the call site to this method).
-    //
-    // Implemented in Registers.S.
-    static void CaptureRegisters(reg_storage_t&);
+    static reg_enum_t IndexToRegister(int i)
+    {
+        return reg_enum_t(std::size_t(reg_x86_64::rax) + i);
+    }
 
-    // Method for restoring the register state to the given values. This method does not return as it jumps to the
-    // return address that is stored in the given state.
-    //
-    // Implemented in Registers.S.
-    [[noreturn]] static void RestoreRegisters(const reg_storage_t&);
+    static std::ptrdiff_t RegisterToIndex(reg_enum_t reg)
+    {
+        return std::ptrdiff_t(reg) - std::ptrdiff_t(reg_x86_64::rax);
+    }
 
     // Returns the name of the given register.
-    static const char* GetRegisterName(reg_enum_t r)
+    static constexpr const char* GetRegisterName(reg_enum_t r)
     {
         switch (r)
         {

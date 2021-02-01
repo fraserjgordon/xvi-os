@@ -3,6 +3,10 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 set(CMAKE_SYSTEM_NAME XVI)
 
+# Ensure the architecture gets cached.
+set(XVI_ARCH CACHE STRING "Target architecture")
+set(XVI_TARGET CACHE STRING "Target processor name")
+
 #set(CMAKE_SYSROOT ...)
 set(CMAKE_STAGING_PREFIX ${CMAKE_SOURCE_DIR}/.xvi.stage)
 
@@ -26,7 +30,7 @@ if ("${XVI_COMPILER}" STREQUAL "gcc")
     set(XVI_GCC ON)
 
     # The triple needs to be explicitly specified when using GCC.
-    if (NOT DEFINED XVI_ARCH)
+    if (NOT DEFINED XVI_ARCH AND NOT DEFINED XVI_TARGET)
         message(FATAL_ERROR "XVI_ARCH must be defined when using GCC.")
     endif()
     if (NOT DEFINED XVI_TRIPLE)
@@ -45,7 +49,7 @@ elseif("${XVI_COMPILER}" STREQUAL "clang" OR NOT DEFINED XVI_COMPILER)
     # Set the path to the compilers.
     set(CMAKE_C_COMPILER ${XVI_TOOLCHAIN_DIR}clang)
     set(CMAKE_CXX_COMPILER ${XVI_TOOLCHAIN_DIR}clang++)
-    set(CMAKE_ASM_COMPILER ${CMAKE_TOOLCHAIN_DIR}clang)
+    set(CMAKE_ASM_COMPILER ${XVI_TOOLCHAIN_DIR}clang)
 else()
     message(FATAL_ERROR "Unrecognised setting for XVI_COMPILER \"${XVI_COMPILER}\". Set to \"gcc\" or \"clang\".")
 endif()

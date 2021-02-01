@@ -1,0 +1,43 @@
+library("Atomic")
+{
+    library_name    = "System.ABI.Atomic"
+    library_version = "0.1.0"
+
+    # Don't use the standard dependencies as the C++ standard library depends on
+    # this library.
+    use_stdlib = false
+
+    include_prefix  = "System/ABI/Atomic"
+    
+    deps =
+    [
+        "//ABI/String",
+        "//C++/LanguageSupport:LanguageSupport_headers",
+        "//C++/TypeTraits",
+    ]
+
+    shared_define = "__SYSTEM_ABI_ATOMIC_BUILD_SHARED"
+
+    public_headers =
+    [
+        "Primitives.h",
+    ]
+
+    sources =
+    [
+        "Atomic.hh",
+        "AtomicSpinlock.hh",
+        "Config.hh",
+    ]
+
+    if (current_arch == "x86")
+    {
+        sources +=
+        [
+            "Arch/x86/Primitives.hh",
+
+            "Arch/x86/Primitives.cc",
+            "Arch/x86/Wait.cc",
+        ]
+    }
+}

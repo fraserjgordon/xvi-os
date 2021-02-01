@@ -86,8 +86,8 @@ public:
 
 protected:
 
-    virtual void __prepare(__function_storage_t&) const;
-    virtual void __cleanup(__function_storage_t&) const;
+    virtual void __prepare(__function_storage_t&) const = 0;
+    virtual void __cleanup(__function_storage_t&) const = 0;
 };
 
 template <class _T,

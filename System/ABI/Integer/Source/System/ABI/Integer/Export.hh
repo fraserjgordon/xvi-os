@@ -3,7 +3,7 @@
 #define __SYSTEM_ABI_INTEGER_EXPORT_H
 
 
-#if __SYSTEM_ABI_ATOMIC_BUILD_SHARED
+#if __SYSTEM_ABI_INTEGER_BUILD_SHARED
 #  define __SYSTEM_ABI_INTEGER_EXPORT   [[gnu::visibility("protected")]]
 #else
 #  define __SYSTEM_ABI_INTEGER_EXPORT   [[gnu::visibility("hidden")]]

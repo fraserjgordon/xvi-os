@@ -1,18 +1,20 @@
 {
     "configurations": [
         {
-            "name": "Linux",
+            "name": "XVI GCC x86_64",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/C++/StdLib/Include"
             ],
-            "defines": [
-                "explicit(...)=explicit"
-            ],
-            "compilerPath": "/opt/cross/bin/g++ -fconcepts",
-            "cStandard": "c11",
-            "cppStandard": "c++17",
+            "compilerPath": "/opt/cross/bin/x86_64-xvi-g++",
+            "cStandard": "c17",
+            "cppStandard": "c++20",
             "intelliSenseMode": "gcc-x64",
-            "compileCommands": "${workspaceRoot}/.xvi.build/compile_commands.json"
+            "compileCommands": "${workspaceRoot}/.xvi.build/compile_commands.json",
+            "configurationProvider": "vector-of-bool.cmake-tools",
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true
+            }
         }
     ],
     "version": 4

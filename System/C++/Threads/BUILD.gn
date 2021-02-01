@@ -1,0 +1,36 @@
+library("Threads")
+{
+    library_name    = "System.C++.Threads"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    shared_define = "__XVI_CXX_THREADS_BUILD_SHARED"
+
+    public_deps =
+    [
+        "../Atomic",
+        "../LanguageSupport",
+        "../Utility",
+
+        "//C/LanguageSupport",
+    ]
+
+    deps =
+    [
+        "//ABI/C++",
+    ]
+
+    public_headers =
+    [
+        "Lock.hh",
+        "Mutex.hh",
+
+        "Private/Config.hh",
+    ]
+
+    sources =
+    [
+        "Mutex.cc",
+    ]
+}

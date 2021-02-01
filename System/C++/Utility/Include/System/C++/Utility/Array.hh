@@ -31,6 +31,11 @@ struct array
     using reverse_iterator          = __XVI_STD_NS::reverse_iterator<iterator>;
     using const_reverse_iterator    = __XVI_STD_NS::reverse_iterator<const_iterator>;
 
+
+    // Note: need to support the degenerate _N == 0 case.
+    _T _M_arr[_N];
+
+
     constexpr void fill(const _T& __u)
     {
         fill_n(begin(), _N, __u);
@@ -173,21 +178,62 @@ struct array
     {
         return _M_arr;
     }
-
-
-    // Note: need to support the degenerate _N == 0 case.
-    _T _M_arr[_N];
 };
 
-//! @TODO: mandates (is_same_v<_T, _U> && ...).
 template <class _T, class... _U>
+    requires (is_same_v<_T, _U> && ...)
     array(_T, _U...) -> array<_T, 1 + sizeof...(_U)>;
+
+
+template <class _T, size_t _N>
+constexpr bool operator==(const array<_T, _N>& __x, const array<_T, _N>& __y)
+{
+    return std::equal(__x.begin(), __x.end(), __y.begin());
+}
+
+template <class _T, size_t _N>
+constexpr __detail::__synth_three_way_result<_T> operator<=>(const array<_T, _N>& __x, const array<_T, _N>& __y)
+{
+    return std::lexicographical_compare_three_way(__x.begin(), __x.end(), __y.begin(), __detail::__synth_three_way);
+}
 
 
 template <class _T, size_t _N>
 constexpr void swap(array<_T, _N>& __x, array<_T, _N>& __y) noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
+}
+
+
+namespace __detail
+{
+
+template <class _T, size_t _N, size_t... _Idx>
+constexpr array<remove_cv_t<_T>, _N> __make_array(index_sequence<_Idx...>, _T (&__a)[_N])
+{
+    return {{__a[_Idx]...}};
+}
+
+template <class _T, size_t _N, size_t... _Idx>
+constexpr array<remove_cv_t<_T>, _N> __make_array(index_sequence<_Idx...>, _T (&&__a)[_N])
+{
+    return {{std::move(__a[_Idx])...}};
+}
+
+} // namespace __detail
+
+
+template <class _T, size_t _N>
+    requires (!is_array_v<_T> && is_constructible_v<_T, _T&>)
+constexpr array<remove_cv_t<_T>, _N> to_array(_T (&__a)[_N])
+{
+    return __detail::__make_array(make_index_sequence<_N>(), __a);
+}
+
+template <class _T, size_t _N>
+constexpr array<remove_cv_t<_T>, _N> to_array(_T (&&__a)[_N])
+{
+    return __detail::__make_array(make_index_sequence<_N>(), std::move(__a));
 }
 
 
@@ -199,38 +245,37 @@ struct tuple_size<array<_T, _N>>
     : integral_constant<size_t, _N> {};
 
 template <size_t _I, class _T, size_t _N>
+    requires (_I < _N)
 struct tuple_element<_I, array<_T, _N>>
 {
-    static_assert(_I < _N);
-
     using type = _T;
 };
 
 template <size_t _I, class _T, size_t _N>
+    requires (_I < _N)
 constexpr _T& get(array<_T, _N>& __a) noexcept
 {
-    static_assert(_I < _N);
     return __a[_I];
 }
 
 template <size_t _I, class _T, size_t _N>
+    requires (_I < _N)
 constexpr const _T& get(const array<_T, _N>& __a) noexcept
 {
-    static_assert(_I < _N);
     return __a[_I];
 }
 
 template <size_t _I, class _T, size_t _N>
-constexpr _T&& get(array<_T, _N>& __a) noexcept
+    requires (_I < _N)
+constexpr _T&& get(array<_T, _N>&& __a) noexcept
 {
-    static_assert(_I < _N);
     return __XVI_STD_NS::move(__a[_I]);
 }
 
 template <size_t _I, class _T, size_t _N>
-constexpr const _T&& get(const array<_T, _N>& __a) noexcept
+    requires (_I < _N)
+constexpr const _T&& get(const array<_T, _N>&& __a) noexcept
 {
-    static_assert(_I < _N);
     return __XVI_STD_NS::move(__a[_I]);
 }
 

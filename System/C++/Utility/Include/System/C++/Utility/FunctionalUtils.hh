@@ -412,13 +412,12 @@ struct identity
 };
 
 
+#ifdef __cpp_concepts
 namespace __detail
 {
 
-
 template <class _T, class _U>
-concept bool _BUILTIN_PTR_CMP = is_pointer_v<remove_cvref_t<_T>> && is_pointer_v<remove_cvref_t<_U>>;
-
+concept _BUILTIN_PTR_CMP = is_pointer_v<remove_cvref_t<_T>> && is_pointer_v<remove_cvref_t<_U>>;
 
 } // namespace __detail
 
@@ -426,140 +425,90 @@ concept bool _BUILTIN_PTR_CMP = is_pointer_v<remove_cvref_t<_T>> && is_pointer_v
 namespace ranges
 {
 
-template <class _T = void>
-    requires EqualityComparable<_T> || Same<_T, void> || __detail::_BUILTIN_PTR_CMP<const _T&, const _T&>
 struct equal_to
 {
-    constexpr bool operator()(const _T& __x, const _T& __y) const
+    template <class _T, class _U>
+        requires equality_comparable_with<_T, _U> || __detail::_BUILTIN_PTR_CMP<_T, _U>
+    constexpr bool operator()(_T&& __t, _U&& __u) const
     {
-        return __x == __y;
+        return std::forward<_T>(__t) == std::forward<_U>(__u);
     }
+
+    using is_transparent = void;
 };
 
-template <class _T = void>
-    requires EqualityComparable<_T> || Same<_T, void> || __detail::_BUILTIN_PTR_CMP<const _T&, const _T&>
 struct not_equal_to
 {
-    constexpr bool operator()(const _T& __x, const _T& __y) const
+    template <class _T, class _U>
+        requires equality_comparable_with<_T, _U> || __detail::_BUILTIN_PTR_CMP<_T, _U>
+    constexpr bool operator()(_T&& __t, _U&& __u) const
     {
-        return !(__x == __y);
+        return !ranges::equal_to{}(std::forward<_T>(__t), std::forward<_U>(__u));
     }
+
+    using is_transparent = void;
 };
 
-template <class _T = void>
-    requires StrictTotallyOrdered<_T> || Same<_T, void> || __detail::_BUILTIN_PTR_CMP<const _T&, const _T&>
-struct greater
-{
-    constexpr bool operator()(const _T& __x, const _T& __y) const
-    {
-        return __y < __x;
-    }
-};
-
-template <class _T = void>
-    requires StrictTotallyOrdered<_T> || Same<_T, void> || __detail::_BUILTIN_PTR_CMP<const _T&, const _T&>
 struct less
 {
-    constexpr bool operator()(const _T& __x, const _T& __y) const
+    template <class _T, class _U>
+        requires totally_ordered_with<_T, _U> || __detail::_BUILTIN_PTR_CMP<_T, _U>
+    constexpr bool operator()(_T&& __t, _U&& __u) const
     {
-        return __x < __y;
+        return std::forward<_T>(__t) < std::forward<_U>(__u);
     }
+
+    using is_transparent = void;
 };
 
-template <class _T = void>
-    requires StrictTotallyOrdered<_T> || Same<_T, void> || __detail::_BUILTIN_PTR_CMP<const _T&, const _T&>
+struct greater
+{
+    template <class _T, class _U>
+        requires totally_ordered_with<_T, _U> || __detail::_BUILTIN_PTR_CMP<_T, _U>
+    constexpr bool operator()(_T&& __t, _U&& __u) const
+    {
+        return ranges::less{}(std::forward<_U>(__u), std::forward<_T>(__t));
+    }
+
+    using is_transparent = void;
+};
+
 struct greater_equal
 {
-    constexpr bool operator()(const _T& __x, const _T& __y) const
+    template <class _T, class _U>
+        requires totally_ordered_with<_T, _U> || __detail::_BUILTIN_PTR_CMP<_T, _U>
+    constexpr bool operator()(_T&& __t, _U&& __u) const
     {
-        return !(__x < __y);
+        return !ranges::less{}(std::forward<_T>(__t), std::forward<_U>(__u));
     }
+
+    using is_transparent = void;
 };
 
-template <class _T = void>
-    requires StrictTotallyOrdered<_T> || Same<_T, void> || __detail::_BUILTIN_PTR_CMP<const _T&, const _T&>
 struct less_equal
 {
-    constexpr bool operator()(const _T& __x, const _T& __y) const
-    {
-        return !(__y < __x);
-    }
-};
-
-
-template <> struct equal_to<void>
-{
     template <class _T, class _U>
-        requires EqualityComparableWith<_T, _U> || __detail::_BUILTIN_PTR_CMP<const _T&, const _T&>
+        requires totally_ordered_with<_T, _U> || __detail::_BUILTIN_PTR_CMP<_T, _U>
     constexpr bool operator()(_T&& __t, _U&& __u) const
     {
-        return __XVI_STD_NS::forward<_T>(__t) == __XVI_STD_NS::forward<_U>(__u);
+        return !ranges::less{}(std::forward<_U>(__u), std::forward<_T>(__t));
     }
 
     using is_transparent = void;
 };
 
-template <> struct not_equal_to<void>
+//! @TODO: not specified in the standard.
+struct __compare_3way
 {
     template <class _T, class _U>
-        requires EqualityComparableWith<_T, _U> || __detail::_BUILTIN_PTR_CMP<const _T&, const _T&>
-    constexpr bool operator()(_T&& __t, _U&& __u) const
+    constexpr auto operator()(_T&& __t, _U&& __u) const
     {
-        return !(__XVI_STD_NS::forward<_T>(__t) == __XVI_STD_NS::forward<_U>(__u));
+        return std::forward<_T>(__t) <=> std::forward<_U>(__u);
     }
-
-    using is_transparent = void;
-};
-
-template <> struct greater<void>
-{
-    template <class _T, class _U>
-        requires StrictTotallyOrderedWith<_T, _U> || __detail::_BUILTIN_PTR_CMP<const _T&, const _T&>
-    constexpr bool operator()(_T&& __t, _U&& __u) const
-    {
-        return __XVI_STD_NS::forward<_U>(__u) < __XVI_STD_NS::forward<_T>(__t);
-    }
-
-    using is_transparent = void;
-};
-
-template <> struct less<void>
-{
-    template <class _T, class _U>
-        requires StrictTotallyOrderedWith<_T, _U> || __detail::_BUILTIN_PTR_CMP<const _T&, const _T&>
-    constexpr bool operator()(_T&& __t, _U&& __u) const
-    {
-        return __XVI_STD_NS::forward<_T>(__t) < __XVI_STD_NS::forward<_U>(__u);
-    }
-
-    using is_transparent = void;
-};
-
-template <> struct greater_equal<void>
-{
-    template <class _T, class _U>
-        requires StrictTotallyOrderedWith<_T, _U> || __detail::_BUILTIN_PTR_CMP<const _T&, const _T&>
-    constexpr bool operator()(_T&& __t, _U&& __u) const
-    {
-        return !(__XVI_STD_NS::forward<_T>(__t) < __XVI_STD_NS::forward<_U>(__u));
-    }
-
-    using is_transparent = void;
-};
-
-template <> struct less_equal<void>
-{
-    template <class _T, class _U>
-        requires StrictTotallyOrderedWith<_T, _U> || __detail::_BUILTIN_PTR_CMP<const _T&, const _T&>
-    constexpr bool operator()(_T&& __t, _U&& __u) const
-    {
-        return !(__XVI_STD_NS::forward<_U>(__u) < __XVI_STD_NS::forward<_T>(__t));
-    }
-
-    using is_transparent = void;
 };
 
 } // namespace ranges
+#endif // ifdef __cpp_concepts
 
 
 } // namespace __XVI_STD_UTILITY_NS

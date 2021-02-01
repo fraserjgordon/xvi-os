@@ -6,6 +6,16 @@
 #include <System/C++/Utility/Private/Namespace.hh>
 
 
+#if defined(__XVI_CXX_UTILITY_BUILD_SHARED)
+#  define __XVI_CXX_UTILITY_EXPORT                      [[gnu::visibility("protected")]]
+#elif defined(__XVI_CXX_UTILITY_BUILD_STATIC)
+#  define __XVI_CXX_UTILITY_EXPORT                      /**/
+#else
+#  define __XVI_CXX_UTILITY_EXPORT                      /**/
+#endif
+
+#define __XVI_CXX_UTILITY_SYMBOL(x)                   asm(#x)
+
 #if !defined(__XVI_CXX_UTILITY_NO_EXCEPTIONS)
 #  if !defined(__EXCEPTIONS) && !defined(__cpp_exceptions)
 #    define __XVI_CXX_UTILITY_NO_EXCEPTIONS 1

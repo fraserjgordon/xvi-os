@@ -1,0 +1,12 @@
+library_group("ABI")
+{
+    deps =
+    [
+        "Atomic",
+        "C++",
+        "Dwarf",
+        "ExecContext",
+        "Integer",
+        "TLS",
+    ]
+}

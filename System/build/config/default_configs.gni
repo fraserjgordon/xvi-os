@@ -1,0 +1,28 @@
+# Default configurations to apply to all builds.
+default_configs =
+[
+    "//build/config:c11",
+    "//build/config:c++20",
+    "//build/config:default_codegen",
+    "//build/config:default_debug_info",
+    "//build/config:default_errors",
+    "//build/config:default_warnings",
+    "//build/config:gcc_colour_output",
+    "//build/config:gcc_gc_crash_fix",
+    "//build/config:rust_2018",
+]
+
+if (debug)
+{
+    default_configs +=
+    [
+        "//build/config:optimize_debug"
+    ]
+}
+else
+{
+    default_configs +=
+    [
+        "//build/config:optimize_full"
+    ]
+}

@@ -1,0 +1,21 @@
+# Architecture-specific flags for building kernel-mode code.
+config("kernel_flags")
+{
+    cflags =
+    [
+        "-mno-sse",
+    ]
+    
+    if (current_cpu == "x86")
+    {
+
+    }
+    else if (current_cpu == "x64")
+    {
+        cflags +=
+        [
+            "-mcmodel=kernel",
+            "-fno-pic",
+        ]
+    }
+}

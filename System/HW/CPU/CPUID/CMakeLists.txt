@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.12)
 project(System.HW.CPU.CPUID LANGUAGES CXX)
 
 # Header-only library target.
-xvi_library(System.HW.CPU.CPUID INTERFACE KERNEL)
+xvi_library(System.HW.CPU.CPUID VERSION 0.1.0 INTERFACE KERNEL)
 
 target_include_directories(System.HW.CPU.CPUID
     INTERFACE Include/
@@ -36,8 +36,13 @@ target_sources(System.HW.CPU.CPUID
     INTERFACE ${HEADERS}
 )
 
+target_link_libraries(System.HW.CPU.CPUID
+)
+
 
 ##### Test library #####
+
+if(OFF)
 
 add_library(System.HW.CPU.CPUID_CompileTestLibrary STATIC)
 
@@ -48,3 +53,5 @@ target_sources(System.HW.CPU.CPUID_CompileTestLibrary
 target_link_libraries(System.HW.CPU.CPUID_CompileTestLibrary
     System.HW.CPU.CPUID
 )
+
+endif()

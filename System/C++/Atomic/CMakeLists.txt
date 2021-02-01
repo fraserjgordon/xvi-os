@@ -23,7 +23,7 @@ list(TRANSFORM HEADERS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/Include/System/C++/A
 list(TRANSFORM COMPILE_TEST_SOURCES PREPEND "Test/System/C++/Atomic/")
 
 
-xvi_library(System.C++.Atomic INTERFACE KERNEL)
+xvi_library(System.C++.Atomic VERSION 0.1.0 INTERFACE KERNEL NO_STDLIB)
 
 target_include_directories(System.C++.Atomic
     INTERFACE Include/
@@ -35,12 +35,14 @@ target_sources(System.C++.Atomic
 
 target_link_libraries(System.C++.Atomic
     INTERFACE System.ABI.Atomic
-              System.C++.LanguageSupport
+              System.C++.LanguageSupport.Headers
               System.C++.TypeTraits
 )
 
 
 ##### Test library #####
+
+if(OFF)
 
 add_library(System.C++.Atomic_CompileTestLibrary STATIC
     ${COMPILE_TEST_SOURCES}
@@ -53,6 +55,8 @@ target_compile_definitions(System.C++.Atomic_CompileTestLibrary
 target_link_libraries(System.C++.Atomic_CompileTestLibrary
     PRIVATE System.C++.Atomic
 )
+
+endif()
 
 ##### Test executable #####
 

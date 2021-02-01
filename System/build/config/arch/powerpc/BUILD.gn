@@ -1,0 +1,4 @@
+# Architecture-specific flags for building kernel-mode code.
+config("kernel_flags")
+{
+}

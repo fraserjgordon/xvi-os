@@ -1,0 +1,48 @@
+library("TLS")
+{
+    library_name    = "System.ABI.TLS"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    shared_define = "__SYSTEM_ABI_TLS_BUILD_SHARED"
+
+    deps =
+    [
+        "//ABI/String",
+        "//C++/LanguageSupport:LanguageSupport_headers",
+        "//C++/Utility:Utility_headers"
+    ]
+
+    public_headers =
+    [
+        "TLS.hh",
+        
+        "Private/Config.hh"
+    ]
+
+    if (current_arch == "x86")
+    {
+        public_headers +=
+        [
+            "Arch/x86/TLS.hh"
+        ]
+    }
+
+    sources =
+    [
+        "ImageInternal.hh",
+        "Terminate.hh",
+        "WeakMalloc.hh",
+
+        "Image.cc",
+    ]
+
+    if (current_arch == "x86")
+    {
+        sources +=
+        [
+            "Arch/x86/TLS.cc",
+        ]
+    }
+}

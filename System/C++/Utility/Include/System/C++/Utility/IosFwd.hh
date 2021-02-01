@@ -3,6 +3,8 @@
 #define __SYSTEM_CXX_UTILITY_IOSFWD_H
 
 
+#include <System/C++/LanguageSupport/StdDef.hh>
+
 #include <System/C++/Utility/MBState.hh>
 #include <System/C++/Utility/Private/Config.hh>
 

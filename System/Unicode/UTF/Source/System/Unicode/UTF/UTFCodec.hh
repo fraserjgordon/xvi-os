@@ -3,6 +3,9 @@
 #define __SYSTEM_UNICODE_UTF_UTFCODEC_H
 
 
+#include <cstddef>
+
+
 namespace System::Unicode::UTF
 {
 
@@ -11,8 +14,7 @@ class UTFCodec
 {
 public:
 
-    // TODO: update when std::byte is available.
-    using byte = unsigned char;
+    using byte = std::byte;
 
     // Range of non-codepoint values used internally to signal errors.
     static constexpr char32_t ErrorRangeStart           = 0xFFFF0000;

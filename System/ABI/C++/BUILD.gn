@@ -1,0 +1,296 @@
+# Defaults for most of the sub-libraries.
+deps =
+[
+    ":C++_headers",
+
+    "//C++/LanguageSupport",
+]
+
+shared_define = "__SYSTEM_ABI_CXX_BUILD_SHARED"
+is_source_set = true
+
+library("AtExit")
+{
+    library_name    = "System.ABI.C++.AtExit"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    sources =
+    [
+        "AtExit.cc",
+    ]
+}
+
+library("Demangle")
+{
+    library_name    = "System.ABI.C++.Demangle"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    public_deps =
+    [
+        "//ABI/String",
+        "//C++/Containers",
+        "//C++/Format:Format_headers",
+    ]
+
+    deps_shared =
+    [
+        "//C++/Format:Format__static",
+    ]
+
+    sources =
+    [
+        "Demangle.cc",
+    ]
+}
+
+library("EhPersonality")
+{
+    library_name    = "System.ABI.C++.EhPersonality"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    public_deps =
+    [
+        ":Unwind",
+
+        "//ABI/Dwarf:Dwarf_headers",
+    ]
+
+    sources =
+    [
+        "GxxPersonality_v0.cc",
+    ]
+}
+
+library("Exception")
+{
+    library_name    = "System.ABI.C++.Exception"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    public_deps =
+    [
+        ":EhPersonality",
+        ":RTTI",
+        ":Unwind",
+
+        "//ABI/TLS",
+        "//C++/Atomic",
+    ]
+
+    sources =
+    [
+        "Exception.cc",
+        "Terminate.cc",
+        "Unexpected.cc",
+    ]
+}
+
+library("Guard")
+{
+    library_name    = "System.ABI.C++.Guard"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    sources =
+    [
+        "Guard.cc",
+    ]
+}
+
+library("NewDelete")
+{
+    library_name    = "System.ABI.C++.NewDelete"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    deps +=
+    [
+        "//C++/Atomic",
+    ]
+
+    sources =
+    [
+        "NewDelete.cc",
+    ]
+}
+
+library("PriorityInit")
+{
+    library_name    = "System.ABI.C++.PriorityInit"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    sources =
+    [
+        "PriorityInit.cc"
+    ]
+}
+
+library("RTTI")
+{
+    library_name    = "System.ABI.C++.RTTI"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    deps +=
+    [
+        "//C++/Utility:Utility_headers",
+    ]
+
+    sources =
+    [
+        "DynamicCast.cc",
+        "TypeInfo.cc",
+    ]
+}
+
+library("Unwind")
+{
+    library_name    = "System.ABI.C++.Unwind"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    public_deps =
+    [
+        ":RTTI",
+        ":Virtual",
+
+        "//ABI/Dwarf:CFI",
+        "//ABI/ExecContext",
+        "//C++/Containers",
+    ]
+
+    defines = []
+
+    sources =
+    [
+        "Unwinder.hh",
+
+        "DwarfUnwinder.cc",
+        "NullUnwinder.cc",
+        "Unwind.cc",
+        "Unwinder.cc",
+    ]
+
+    if (current_arch == "arm")
+    {
+        # The DWARF unwinder is not supported on ARM.
+        sources -=
+        [
+            "DwarfUnwinder.cc",
+        ]
+        
+        # Include the ARM EHABI unwinder.
+        sources +=
+        [
+            "Arch/ARM/EHABIUnwinder.cc",
+        ]
+
+        defines +=
+        [
+            "UNWIND_AEABI",
+        ]
+    }
+}
+
+library("VecCtor")
+{
+    library_name    = "System.ABI.C++.VecCtor"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    sources =
+    [
+        "VecCtor.cc",
+    ]
+}
+
+library("Virtual")
+{
+    library_name    = "System.ABI.C++.Virtual"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    sources =
+    [
+        "DeletedVirtual.cc",
+        "PureVirtual.cc",
+    ]
+}
+
+library("C++")
+{
+    library_name    = "System.ABI.C++"
+    library_version = "0.1.0"
+
+    is_source_set = false
+    header_only = false
+    define_header_target = true
+    use_stdlib = false
+
+    public_headers =
+    [
+        "Demangle.hh",
+        "DynamicCast.hh",
+        "Exception.hh",
+        "Guard.hh",
+        "TypeInfo.hh",
+        "Unwinder.hh",
+        "VecCtor.hh",
+        "Virtual.hh",
+    ]
+
+    header_deps =
+    [
+        "//C++/Atomic",
+    ]
+
+    public_deps =
+    [
+        ":AtExit",
+        ":Demangle",
+        ":EhPersonality",
+        ":Exception",
+        ":Guard",
+        ":NewDelete",
+        ":PriorityInit",
+        ":RTTI",
+        ":Unwind",
+        
+        "//ABI/Integer",
+        "//ABI/String",
+        "//ABI/TLS",
+    ]
+
+    if (current_arch == "arm")
+    {
+        public_configs =
+        [
+            ":aeabi"
+        ]
+    }
+}
+
+# Configuration applied when this library is building according to the ARM EABI
+# (Embedded ARM ABI; despite the name, also used for non-embedded ARM targets).
+config("aeabi")
+{
+    defines =
+    [
+        "__SYSTEM_ABI_CXX_AEABI"
+    ]
+}

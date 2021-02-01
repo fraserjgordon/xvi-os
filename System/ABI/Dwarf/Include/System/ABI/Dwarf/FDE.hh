@@ -3,11 +3,13 @@
 #define __SYSTEM_ABI_DWARF_FDE_H
 
 
+#include <System/C++/LanguageSupport/StdArg.hh>
 #include <System/C++/LanguageSupport/StdDef.hh>
 #include <System/C++/LanguageSupport/StdInt.hh>
 #include <System/C++/Utility/Array.hh>
 #include <System/C++/Utility/String.hh>
 
+#include <System/ABI/Dwarf/Private/Config.hh>
 #include <System/ABI/Dwarf/Decode.hh>
 
 
@@ -30,7 +32,7 @@ public:
     ~DwarfCIE() = default;
 
     // Returns true if this CIE object is valid.
-    bool isValid() const;
+    __SYSTEM_ABI_DWARF_EXPORT bool isValid() const __SYSTEM_ABI_DWARF_SYMBOL(DwarfCIE.IsValid);
     explicit operator bool() const
     {
         return isValid();
@@ -96,14 +98,35 @@ public:
         return m_instructionsLength;
     }
 
+    std::size_t getReturnRegister() const
+    {
+        return m_returnRegister;
+    }
+
+    std::uintptr_t getTextBase() const
+    {
+        return m_textBase;
+    }
+
+    std::uintptr_t getDataBase() const
+    {
+        return m_dataBase;
+    }
+
 #if !__SYSTEM_ABI_DWARF_MINIMAL
     // Formats the CIE into a human-readable form.
     std::string toString() const;
 #endif
 
-    static DwarfCIE DecodeFrom(const std::byte*&);
+    __SYSTEM_ABI_DWARF_EXPORT
+    static DwarfCIE DecodeFrom(const std::byte*&, std::uintptr_t text_base, std::uintptr_t data_base)
+    __SYSTEM_ABI_DWARF_SYMBOL(DwarfCIE.DecodeFrom);
 
 private:
+
+    // Addresses used for decoding relative pointers.
+    std::uintptr_t m_textBase = 0;
+    std::uintptr_t m_dataBase = 0;
 
     // Pointer to and length of the original source for the CIE.
     const std::byte* m_location = nullptr;
@@ -118,7 +141,11 @@ private:
     std::int32_t  m_dataFactor = 0;
 
     // The column number of the return address register.
-    std::uint32_t m_returnRegister = -1;
+    std::uint32_t m_returnRegister = ~0U;
+
+    // These fields were added in DWARFv4 and record the size of pointers.
+    std::uint8_t m_addressSize = 0;
+    std::uint8_t m_segmentSize = 0;
 
     // The contents of the augmentation string. Because we only know about 5 possible characters in the augmentation
     // string, a fixed-size buffer is used. These are needed to be able to read the associated FDE.
@@ -167,10 +194,20 @@ public:
     ~DwarfFDE() = default;
 
     // Returns true if this CIE object is valid.
-    bool isValid() const;
+    __SYSTEM_ABI_DWARF_EXPORT bool isValid() const __SYSTEM_ABI_DWARF_SYMBOL(DwarfFDE.IsValid);
     explicit operator bool() const
     {
         return isValid();
+    }
+
+    const std::byte* getLocation() const
+    {
+        return m_location;
+    }
+
+    std::size_t getLength() const
+    {
+        return m_length;
     }
 
     const DwarfCIE& getCIE() const
@@ -178,14 +215,19 @@ public:
         return m_cie;
     }
 
-    const std::byte* getCodeRangeStart() const
+    std::uintptr_t getCodeRangeStart() const
     {
-        return m_codeStart;
+        return reinterpret_cast<std::uintptr_t>(m_codeStart);
     }
 
     std::size_t getCodeRangeSize() const
     {
         return m_codeLength;
+    }
+
+    std::uintptr_t getCodeRangeEnd() const
+    {
+        return getCodeRangeStart() + getCodeRangeSize();
     }
 
     const std::byte* getLSDA() const
@@ -203,12 +245,24 @@ public:
         return m_instructionsLength;
     }
 
+    std::uintptr_t getTextBase() const
+    {
+        return m_cie.getTextBase();
+    }
+
+    std::uintptr_t getDataBase() const
+    {
+        return m_cie.getDataBase();
+    }
+
 #if !__SYSTEM_ABI_DWARF_MINIMAL
     // Formats the FDE into a human-readable form.
     std::string toString() const;
 #endif
 
-    static DwarfFDE DecodeFrom(const std::byte*&);
+    __SYSTEM_ABI_DWARF_EXPORT
+    static DwarfFDE DecodeFrom(const std::byte*&, std::uintptr_t text_base, std::uintptr_t data_base, const void* frame_section_start)
+    __SYSTEM_ABI_DWARF_SYMBOL(DwarfFDE.DecodeFrom);
 
 private:
 
@@ -246,8 +300,20 @@ struct DwarfCieOrFde
         DwarfFDE fde;
     };
 
+    bool isValid() const
+    {
+        return (is_fde) ? fde.isValid() : cie.isValid();
+    }
+
+    std::size_t getLength() const
+    {
+        return (is_fde) ? fde.getLength() : cie.getLength();
+    }
+
     // Decodes a CIE or FDE, as appropriate, from the given pointer.
-    static DwarfCieOrFde DecodeFrom(const std::byte*& ptr);
+    __SYSTEM_ABI_DWARF_EXPORT
+    static DwarfCieOrFde DecodeFrom(const std::byte*& ptr, std::uintptr_t text_base, std::uintptr_t data_base, const void* frame_section_start)
+    __SYSTEM_ABI_DWARF_SYMBOL(DwarfCieOrFde.DecodeFrom);
 };
 
 

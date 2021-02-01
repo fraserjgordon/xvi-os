@@ -1,0 +1,14 @@
+library("Atomic")
+{
+    library_name    = "System.C++.Atomic"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    public_headers =
+    [
+        "Atomic.hh",
+        "Private/Config.hh",
+        "Private/Namespace.hh",
+    ]
+}

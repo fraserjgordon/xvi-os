@@ -137,7 +137,7 @@ public:
     bitset& set(size_t __n, bool __val = true)
     {
         if (__n >= _N)
-            __XVI_CXX_UTILITY_THROW(out_of_range());
+            __XVI_CXX_UTILITY_THROW(out_of_range("invalid bitset index"));
 
         if (__val)
             _M_words[__n / _WB] |= __word_t(1) << (__n % _WB);
@@ -263,9 +263,9 @@ public:
     bool test(size_t __n) const
     {
         if (__n >= _N)
-            __XVI_CXX_UTILITY_THROW(out_of_range());
+            __XVI_CXX_UTILITY_THROW(out_of_range("invalid bitset index"));
 
-        return (_M_words[__n / _WB] & (__word_t(1) << (__n % _WB)) != 0);
+        return (_M_words[__n / _WB] & ((__word_t(1) << (__n % _WB)) != 0));
     }
 
     bool all() const noexcept

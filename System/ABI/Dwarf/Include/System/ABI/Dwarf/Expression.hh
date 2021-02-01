@@ -7,6 +7,13 @@
 #include <System/C++/LanguageSupport/StdInt.hh>
 #include <System/C++/Utility/Function.hh>
 
+#if !__SYSTEM_ABI_DWARF_MINIMAL
+#  include <System/ABI/Dwarf/FDE.hh>
+#  include <System/C++/Utility/String.hh>
+#endif
+
+#include <System/ABI/Dwarf/Private/Config.hh>
+
 
 namespace System::ABI::Dwarf
 {
@@ -168,6 +175,22 @@ enum class dwarf_op : std::uint8_t
     bit_piece   = 0x9d, // (location description) Like piece but with bit (rather than byte) granularity
     implicit_value      = 0x9e, // (location description) Provides an object inline within the expression bytecode
     stack_value = 0x9f, // (location description) Provides an object as the value at the top of the stack
+
+    // GNU extensions.
+    gnu_push_tls_address    = 0xe0,
+    gnu_uninit              = 0xf0,
+    gnu_encoded_addr        = 0xf1,
+    gnu_implicit_pointee    = 0xf2,
+    gnu_entry_value         = 0xf3,
+    gnu_const_type          = 0xf4,
+    gnu_regval_type         = 0xf5,
+    gnu_deref_type          = 0xf6,
+    gnu_convert             = 0xf7,
+    gnu_reinterpret         = 0xf9,
+    gnu_parameter_ref       = 0xfa,
+    gnu_addr_index          = 0xfb,
+    gnu_const_index         = 0xfc,
+    gnu_variable_value      = 0xfd,
 };
 
 
@@ -199,8 +222,21 @@ struct dwarf_expr_op
 //! @warning    As expression blocks are loaded as part of an executable's image, they are assumed to be trusted. This
 //!             function does check for some decoding errors but it is not comprehensive and is therefore not safe to
 //!             run on untrusted data.
+__SYSTEM_ABI_DWARF_EXPORT
 bool
-DwarfExpressionDecode(const std::byte* opcodes, std::size_t len, std::function<bool(const dwarf_expr_op&)> callback);
+DwarfExpressionDecode(const std::byte* opcodes, std::size_t len, bool (*callback)(void*, const dwarf_expr_op&), void* callback_context)
+__SYSTEM_ABI_DWARF_SYMBOL(DwarfExpressionDecode);
+
+inline bool
+DwarfExpressionDecode(const std::byte* opcodes, std::size_t len, std::function<bool(const dwarf_expr_op&)> callback)
+{
+    auto context_ptr = &callback;
+    return DwarfExpressionDecode(opcodes, len, [](void* ctxt, const dwarf_expr_op& arg)
+    {
+        auto cb = *reinterpret_cast<decltype(context_ptr)>(ctxt);
+        return cb(arg);
+    }, context_ptr);
+}
 
 
 

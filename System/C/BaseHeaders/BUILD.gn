@@ -1,0 +1,16 @@
+library("BaseHeaders")
+{
+    library_name    = "System.C.BaseHeaders"
+    library_version = "0.1.0"
+    
+    use_stdlib = false
+
+    public_headers =
+    [
+        "Limits.h",
+        "Null.h",
+        "OffsetOf.h",
+        "Types.h",
+        "VarArgs.h",
+    ]
+}

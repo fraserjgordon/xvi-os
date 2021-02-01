@@ -4,6 +4,7 @@
 
 
 #include <System/C++/LanguageSupport/New.hh>
+#include <System/C++/LanguageSupport/StdDef.hh>
 #include <System/C++/TypeTraits/TypeTraits.hh>
 
 #include <System/C++/Utility/Allocator.hh>
@@ -53,13 +54,13 @@ inline void* align(size_t __alignment, size_t __size, void*& __ptr, size_t& __sp
     uintptr_t __aligned_p = (__original_p + __alignment - 1) & ~(__alignment - 1);
     uintptr_t __padding_size = __aligned_p - __original_p;
 
-    if ((__size + __padding_size) < __space)
+    if ((__size + __padding_size) > __space)
         return nullptr;
 
-    __ptr = reinterpret_cast<void*>(__aligned_p + __size);
+    __ptr = reinterpret_cast<void*>(__aligned_p);
     __space -= (__size + __padding_size);
 
-    return reinterpret_cast<void*>(__aligned_p);
+    return __ptr;
 }
 
 template <size_t _N, class _T>

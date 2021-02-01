@@ -34,11 +34,23 @@
 #endif
 
 
+namespace System::ABI::Atomic
+{
+
+
 using std::size_t;
 using std::uint8_t;
 using std::uint16_t;
 using std::uint32_t;
 using std::uint64_t;
+
+
+#if !defined(__LP64__)
+struct __uint128_t
+{
+    uint64_t __elem[2];
+};
+#endif
 
 
 __SYSTEM_ABI_ATOMIC_EXPORT bool __Atomic_is_lock_free(size_t, const volatile void*) __ATOMIC_NAME(__atomic_is_lock_free);
@@ -156,6 +168,30 @@ __SYSTEM_ABI_ATOMIC_EXPORT uint16_t __Atomic_nand_fetch_2(volatile void*, uint16
 __SYSTEM_ABI_ATOMIC_EXPORT uint32_t __Atomic_nand_fetch_4(volatile void*, uint32_t, int) __ATOMIC_NAME(__atomic_nand_fetch_4);
 __SYSTEM_ABI_ATOMIC_EXPORT uint64_t __Atomic_nand_fetch_8(volatile void*, uint64_t, int) __ATOMIC_NAME(__atomic_nand_fetch_8);
 __SYSTEM_ABI_ATOMIC_EXPORT __uint128_t __Atomic_nand_fetch_16(volatile void*, __uint128_t, int) __ATOMIC_NAME(__atomic_nand_fetch_16);
+
+#if 0
+// Probably not appropriate as part of the ABI.Atomic library.
+__SYSTEM_ABI_ATOMIC_EXPORT void __Atomic_wait_1(const volatile uint8_t*) __ATOMIC_NAME(__atomic_wait_1);
+__SYSTEM_ABI_ATOMIC_EXPORT void __Atomic_wait_2(const volatile uint16_t*) __ATOMIC_NAME(__atomic_wait_2);
+__SYSTEM_ABI_ATOMIC_EXPORT void __Atomic_wait_4(const volatile uint32_t*) __ATOMIC_NAME(__atomic_wait_4);
+__SYSTEM_ABI_ATOMIC_EXPORT void __Atomic_wait_8(const volatile uint64_t*) __ATOMIC_NAME(__atomic_wait_8);
+__SYSTEM_ABI_ATOMIC_EXPORT void __Atomic_wait_16(const volatile __uint128_t*) __ATOMIC_NAME(__atomic_wait_16);
+
+__SYSTEM_ABI_ATOMIC_EXPORT void __Atomic_notify_one_1(const volatile uint8_t*) __ATOMIC_NAME(__atomic_notify_one_1);
+__SYSTEM_ABI_ATOMIC_EXPORT void __Atomic_notify_one_2(const volatile uint16_t*) __ATOMIC_NAME(__atomic_notify_one_2);
+__SYSTEM_ABI_ATOMIC_EXPORT void __Atomic_notify_one_4(const volatile uint32_t*) __ATOMIC_NAME(__atomic_notify_one_4);
+__SYSTEM_ABI_ATOMIC_EXPORT void __Atomic_notify_one_8(const volatile uint64_t*) __ATOMIC_NAME(__atomic_notify_one_8);
+__SYSTEM_ABI_ATOMIC_EXPORT void __Atomic_notify_one_16(const volatile __uint128_t*) __ATOMIC_NAME(__atomic_notify_one_16);
+
+__SYSTEM_ABI_ATOMIC_EXPORT void __Atomic_notify_all_1(const volatile uint8_t*) __ATOMIC_NAME(__atomic_notify_all_1);
+__SYSTEM_ABI_ATOMIC_EXPORT void __Atomic_notify_all_2(const volatile uint16_t*) __ATOMIC_NAME(__atomic_notify_all_2);
+__SYSTEM_ABI_ATOMIC_EXPORT void __Atomic_notify_all_4(const volatile uint32_t*) __ATOMIC_NAME(__atomic_notify_all_4);
+__SYSTEM_ABI_ATOMIC_EXPORT void __Atomic_notify_all_8(const volatile uint64_t*) __ATOMIC_NAME(__atomic_notify_all_8);
+__SYSTEM_ABI_ATOMIC_EXPORT void __Atomic_notify_all_16(const volatile __uint128_t*) __ATOMIC_NAME(__atomic_notify_all_16);
+#endif
+
+
+} // namespace System::ABI::Atomic
 
 
 #endif /* ifndef __SYSTEM_ABI_ATOMIC_ATOMIC_H */

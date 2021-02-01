@@ -1,0 +1,17 @@
+library_group("StdLib")
+{
+    deps =
+    [
+        "../Atomic",
+        "../Chrono",
+        "../Containers",
+        "../Format",
+        "../LanguageSupport",
+        "../Locale",
+        "../Runtime",
+        "../Threads",
+        "../TypeTraits",
+
+        "//ABI/C++",
+    ]
+}

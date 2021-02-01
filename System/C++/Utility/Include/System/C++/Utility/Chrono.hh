@@ -8,6 +8,7 @@
 
 #include <System/C++/Utility/Abs.hh>
 #include <System/C++/Utility/IosFwd.hh>
+#include <System/C++/Utility/Pair.hh>
 #include <System/C++/Utility/Ratio.hh>
 #include <System/C++/Utility/StringFwd.hh>
 #include <System/C++/Utility/Private/Config.hh>
@@ -81,8 +82,9 @@ struct duration_values
 };
 
 
+#if __cpp_concepts
 template <class _T>
-concept bool _Cpp17Clock =
+concept _Cpp17Clock =
     requires
     {
         typename _T::rep;
@@ -92,14 +94,17 @@ concept bool _Cpp17Clock =
         { _T::is_steady };
         { _T::now() };
     };
+#endif // if __cpp_concepts
 
 template <class _T> struct is_clock
     : false_type {};
 
+#if __cpp_concepts
 template <class _T>
     requires _Cpp17Clock<_T>
 struct is_clock<_T>
     : true_type {};
+#endif // if __cpp_concepts
 
 template <class _T> inline constexpr bool is_clock_v = is_clock<_T>::value;
 
@@ -711,15 +716,16 @@ struct clock_time_conversion<_DestClock, utc_clock>
 };
 
 
+#if __cpp_concepts
 template <class _DC, class _SC, class _D>
-concept bool _ClockTimeConversionDirect =
+concept _ClockTimeConversionDirect =
     requires(const time_point<_SC, _D>& __t)
     {
         clock_time_conversion<_DC, _SC>{}(__t);
     };
 
 template <class _DC, class _SC, class _D>
-concept bool _ClockTimeConversionViaSystem =
+concept _ClockTimeConversionViaSystem =
     !_ClockTimeConversionDirect<_DC, _SC, _D>
     && requires(const time_point<_SC, _D>& __t)
     {
@@ -729,7 +735,7 @@ concept bool _ClockTimeConversionViaSystem =
     };
 
 template <class _DC, class _SC, class _D>
-concept bool _ClockTimeConversionViaUtc =
+concept _ClockTimeConversionViaUtc =
     !_ClockTimeConversionDirect<_DC, _SC, _D>
     && requires(const time_point<_SC, _D>& __t)
     {
@@ -738,7 +744,7 @@ concept bool _ClockTimeConversionViaUtc =
     };
 
 template <class _DC, class _SC, class _D>
-concept bool _ClockTimeConversionViaSystemThenUtc =
+concept _ClockTimeConversionViaSystemThenUtc =
     !_ClockTimeConversionDirect<_DC, _SC, _D>
     && !_ClockTimeConversionViaSystem<_DC, _SC, _D>
     && !_ClockTimeConversionViaUtc<_DC, _SC, _D>
@@ -750,7 +756,7 @@ concept bool _ClockTimeConversionViaSystemThenUtc =
     };
 
 template <class _DC, class _SC, class _D>
-concept bool _ClockTimeConversionViaUtcThenSystem =
+concept _ClockTimeConversionViaUtcThenSystem =
     !_ClockTimeConversionDirect<_DC, _SC, _D>
     && !_ClockTimeConversionViaSystem<_DC, _SC, _D>
     && !_ClockTimeConversionViaUtc<_DC, _SC, _D>
@@ -801,6 +807,7 @@ auto clock_cast(const time_point<_SourceClock, _Duration>& __t)
         (clock_time_conversion<system_clock, utc_clock>{}
             (clock_time_conversion<utc_clock, _SourceClock>{}(__t)));
 }
+#endif // __cpp_concepts
 
 
 struct last_spec
@@ -2716,7 +2723,7 @@ constexpr month_day operator/(const month& __m, int __d) noexcept
     return __m / day(__d);
 }
 
-const month_day operator/(int __m, const day& __d) noexcept
+constexpr month_day operator/(int __m, const day& __d) noexcept
 {
     return month(__m) / __d;
 }

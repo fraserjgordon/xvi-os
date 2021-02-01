@@ -1,0 +1,15 @@
+#ifndef __SYSTEM_UTILITY_LOGGER_PRIVATE_CONFIG_H
+#define __SYSTEM_UTILITY_LOGGER_PRIVATE_CONFIG_H
+
+
+#if __BUILD_SYSTEM_UTILITY_LOGGER_SHARED
+#  define __SYSTEM_UTILITY_LOGGER_EXPORT        [[gnu::visibility("protected")]]
+#else
+#  define __SYSTEM_UTILITY_LOGGER_EXPORT    /**/
+#endif
+
+# define __SYSTEM_UTILITY_LOGGER_SYMBOL_(s) asm("System.Utility.Logger." #s)
+# define __SYSTEM_UTILITY_LOGGER_SYMBOL(s)  __SYSTEM_UTILITY_LOGGER_SYMBOL_(s)
+
+
+#endif /* ifndef __SYSTEM_UTILITY_LOGGER_PRIVATE_CONFIG_H */

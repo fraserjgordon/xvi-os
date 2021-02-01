@@ -1,55 +1,62 @@
-#include <System/ABI/ExecContext/Arch/x86/FloatingPoint.h>
+#include <System/ABI/ExecContext/Arch/x86/FloatingPoint.hh>
 
 
-using namespace System::ABI::ExecContext;
-
-
-void $System$ABI$ExecContext$fnstenv(struct $System$ABI$ExecContext$fenv_t* ptr)
+namespace System::ABI::ExecContext
 {
-    fnstenv(*reinterpret_cast<fenv_t*>(ptr));
+
+
+void _fnstenv(fenv_t* ptr)
+{
+    fnstenv(*ptr);
 }
 
-void $System$ABI$ExecContext$fnstenv_fldenv(struct $System$ABI$ExecContext$fenv_t* ptr)
+void _fnstenv_fldenv(fenv_t* ptr)
 {
-    fnstenv_fldenv(*reinterpret_cast<fenv_t*>(ptr));
+    fnstenv_fldenv(*ptr);
 }
 
-void $System$ABI$ExecContext$fldenv(const struct $System$ABI$ExecContext$fenv_t* ptr)
+void _fldenv(const fenv_t* ptr)
 {
-    fldenv(*reinterpret_cast<const fenv_t*>(ptr));
+    fldenv(*ptr);
 }
 
-void $System$ABI$ExecContext$fnsave(struct $System$ABI$ExecContext$fsave_t* ptr)
+void _fnsave(fsave_t* ptr)
 {
-    fnsave(*reinterpret_cast<fsave_t*>(ptr));
+    fnsave(*ptr);
 }
 
-void $System$ABI$ExecContext$fnsave_fldenv(struct $System$ABI$ExecContext$fsave_t* ptr)
+void _fnsave_fldenv(fsave_t* ptr)
 {
-    fnsave_fldenv(*reinterpret_cast<fsave_t*>(ptr));
+    fnsave_fldenv(*ptr);
 }
 
-void $System$ABI$ExecContext$fninit()
+void _fninit()
 {
     fninit();
 }
 
-void $System$ABI$ExecContext$fnclex()
+void _fnclex()
 {
     fnclex();
 }
 
-void $System$ABI$ExecContext$frstor(const struct $System$ABI$ExecContext$fsave_t* ptr)
+void _frstor(const fsave_t* ptr)
 {
-    frstor(*reinterpret_cast<const fsave_t*>(ptr));
+    frstor(*ptr);
 }
 
-void $System$ABI$ExecContext$fxsave(struct $System$ABI$ExecContext$fxsave_t* ptr)
+[[gnu::target("sse")]]
+void _fxsave(fxsave_t* ptr)
 {
-    fxsave(*reinterpret_cast<fxsave_t*>(ptr));
+    fxsave(*ptr);
 }
 
-void $System$ABI$ExecContext$fxrstor(const struct $System$ABI$ExecContext$fxsave_t* ptr)
+[[gnu::target("sse")]]
+void _fxrstor(const fxsave_t* ptr)
 {
-    fxrstor(*reinterpret_cast<const fxsave_t*>(ptr));
+    fxrstor(*ptr);
 }
+
+
+} // namespace System::ABI::ExecContext
+

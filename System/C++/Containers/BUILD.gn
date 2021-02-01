@@ -1,0 +1,31 @@
+library("Containers")
+{
+    library_name    = "System.C++.Containers"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    public_deps =
+    [
+        "../LanguageSupport:LanguageSupport_headers",
+        "../Utility:Utility_headers",
+    ]
+
+    public_headers =
+    [
+        "Array.hh",
+        "Deque.hh",
+        "ForwardList.hh",
+        "List.hh",
+        "Map.hh",
+        "Queue.hh",
+        "Set.hh",
+        "Stack.hh",
+        "UnorderedMap.hh",
+        "UnorderedSet.hh",
+        "Vector.hh",
+
+        "Private/Config.hh",
+        "Private/Namespace.hh"
+    ]
+}

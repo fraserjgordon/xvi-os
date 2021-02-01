@@ -1,0 +1,50 @@
+#ifndef __SYSTEM_ABI_EXECCONTEXT_ARCH_MIPS_EABI64_H
+#define __SYSTEM_ABI_EXECCONTEXT_ARCH_MIPS_EABI64_H
+
+
+#include <System/C++/LanguageSupport/StdInt.hh>
+
+
+namespace System::ABI::ExecContext
+{
+
+
+// Callee-saved registers.
+struct mips_eabi64_frame_t
+{
+    std::uint64_t   s[8];
+    std::uint64_t   gp;
+    std::uint64_t   sp;
+    std::uint64_t   fp;
+
+    std::uint64_t   pc;
+};
+
+struct mips_eabi64_full_frame_t
+{
+    // Almost, but not quite, in register order.
+    std::uint64_t   at;
+    std::uint64_t   v[2];
+    std::uint64_t   a[8];
+    std::uint64_t   t[6];
+    std::uint64_t   s[8];
+    std::uint64_t   k[2];
+    std::uint64_t   gp;
+    std::uint64_t   sp;
+    std::uint64_t   fp;
+    std::uint64_t   ra;
+
+    std::uint64_t   pc;
+};
+
+
+#if defined(__mips_eabi) && defined(__mips64)
+using mips_frame_t = mips_eabi64_frame_t;
+using mips_full_frame_t = mips_eabi64_full_frame_t;
+#endif
+
+
+} // namespace System::ABI::ExecContext
+
+
+#endif /* ifndef __SYSTEM_ABI_EXECCONTEXT_ARCH_MIPS_EABI64_H */

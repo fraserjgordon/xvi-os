@@ -64,17 +64,10 @@ template <class _T> struct underlying_type { using type = __underlying_type(_T);
 } // namespace __detail
 
 
-#ifndef __clang__
 constexpr bool is_constant_evaluated() noexcept
 {
     return __builtin_is_constant_evaluated();
 }
-#else
-constexpr bool is_constant_evaluated() noexcept
-{
-    return false;
-}
-#endif
 
 
 } // namespace __XVI_STD_TYPETRAITS_NS

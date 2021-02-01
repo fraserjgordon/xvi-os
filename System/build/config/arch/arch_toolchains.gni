@@ -1,0 +1,12 @@
+arch_toolchains_list =
+[
+    "arm!arm:armv6",
+    "mips!mips:mips32",
+    "mips64!mips:mips64",
+    "powerpc!powerpc:ppc32",
+    "powerpc64!powerpc:ppc64",
+    "sparc!sparc:sparcv8",
+    "sparc64!sparc:v9",
+    "x64!x86:x64",
+    "x86!x86:x86",
+]

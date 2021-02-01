@@ -3,10 +3,15 @@
 #define __SYSTEM_CXX_LANGUAGESUPPORT_COMPARE_H
 
 
+#include <System/C++/TypeTraits/Concepts.hh>
 #include <System/C++/TypeTraits/TypeTraits.hh>
 
 #include <System/C++/LanguageSupport/StdDef.hh>
 #include <System/C++/LanguageSupport/Private/Namespace.hh>
+
+
+//! @TODO: find a way of not needing to disable this warning.
+#pragma GCC diagnostic ignored "-Wzero-as-null-pointer-constant"
 
 
 namespace __XVI_STD_LANGSUPPORT_NS
@@ -38,10 +43,11 @@ public:
         { return __v._M_value == 0; }
     friend constexpr bool operator!=(nullptr_t, weak_equality __v) noexcept
         { return __v._M_value != 0; }
-    /*friend constexpr weak_equality operator<=>(weak_equality __v, nullptr_t) noexcept
+
+    friend constexpr weak_equality operator<=>(weak_equality __v, nullptr_t) noexcept
         { return __v; }
     friend constexpr weak_equality operator<=>(nullptr_t, weak_equality __v) noexcept
-        { return __v; }*/
+        { return __v; }
 
 private:
 
@@ -73,10 +79,13 @@ public:
         { return __v._M_value == 0; }
     friend constexpr bool operator!=(nullptr_t, strong_equality __v) noexcept
         { return __v._M_value != 0; }
-    /*friend constexpr strong_equality operator<=>(strong_equality __v, nullptr_t) noexcept
+
+#ifdef __cpp_impl_three_way_comparison
+    friend constexpr strong_equality operator<=>(strong_equality __v, nullptr_t) noexcept
         { return __v; }
     friend constexpr strong_equality operator<=>(nullptr_t, strong_equality __v) noexcept
-        { return __v; }*/
+        { return __v; }
+#endif
 
 private:
 
@@ -126,10 +135,11 @@ public:
         { return __v._M_is_ordered && 0 <= __v._M_value; }
     friend constexpr bool operator>=(nullptr_t, partial_ordering __v) noexcept
         { return __v._M_is_ordered && 0 >= __v._M_value; };
-    /*friend constexpr partial_ordering operator<=>(partial_ordering __v, nullptr_t) noexcept
+
+    friend constexpr partial_ordering operator<=>(partial_ordering __v, nullptr_t) noexcept
         { return __v; }
     friend constexpr partial_ordering operator<=>(nullptr_t, partial_ordering __v) noexcept
-        { return __v < 0 ? partial_ordering::greater : __v > 0 ? partial_ordering::less : __v; }*/
+        { return __v < 0 ? partial_ordering::greater : __v > 0 ? partial_ordering::less : __v; }
 
 private:
 
@@ -187,10 +197,13 @@ public:
         { return 0 <= __v._M_value; }
     friend constexpr bool operator>=(nullptr_t, weak_ordering __v) noexcept
         { return 0 >= __v._M_value; }
-    /*friend constexpr weak_ordering operator<=>(weak_ordering __v, nullptr_t) noexcept
+
+#ifdef __cpp_impl_three_way_comparison
+    friend constexpr weak_ordering operator<=>(weak_ordering __v, nullptr_t) noexcept
         { return __v; }
     friend constexpr weak_ordering operator<=>(nullptr_t, weak_ordering __v) noexcept
-        { return __v < 0 ? weak_ordering::greater : __v > 0 ? weak_ordering::less : __v; }*/
+        { return __v < 0 ? weak_ordering::greater : __v > 0 ? weak_ordering::less : __v; }
+#endif
 
 private:
 
@@ -254,10 +267,11 @@ public:
         { return 0 <= __v._M_value; }
     friend constexpr bool operator>=(nullptr_t, strong_ordering __v) noexcept
         { return 0 >= __v._M_value; }
-    /*friend constexpr strong_ordering operator<=>(strong_ordering __v, nullptr_t) noexcept
+
+    friend constexpr strong_ordering operator<=>(strong_ordering __v, nullptr_t) noexcept
         { return __v; }
     friend constexpr strong_ordering operator<=>(nullptr_t, strong_ordering __v) noexcept
-        { return __v < 0 ? strong_ordering::greater : __v > 0 ? strong_ordering::less : __v; }*/
+        { return __v < 0 ? strong_ordering::greater : __v > 0 ? strong_ordering::less : __v; }
 
 
 private:
@@ -267,6 +281,11 @@ private:
     constexpr explicit strong_ordering(__detail::__eq __v) : _M_value(int(__v)) {}
     constexpr explicit strong_ordering(__detail::__ord __v) : _M_value(int(__v)) {}
 };
+
+inline constexpr strong_ordering strong_ordering::less(__detail::__ord::__less);
+inline constexpr strong_ordering strong_ordering::equal(__detail::__eq::__equal);
+inline constexpr strong_ordering strong_ordering::equivalent(__detail::__eq::__equivalent);
+inline constexpr strong_ordering strong_ordering::greater(__detail::__ord::__greater);
 
 
 constexpr bool is_eq(weak_equality __cmp) noexcept
@@ -321,11 +340,359 @@ template <class... _Ts> struct common_comparison_category
 template <class... _Ts> using common_comparison_category_t = typename common_comparison_category<_Ts...>::type;
 
 
-template <class _T> constexpr strong_ordering strong_order(const _T&, const _T&);
-template <class _T> constexpr weak_ordering weak_order(const _T&, const _T&);
-template <class _T> constexpr partial_ordering partial_order(const _T&, const _T&);
-template <class _T> constexpr strong_equality strong_equal(const _T&, const _T&);
-template <class _T> constexpr weak_equality weak_equal(const _T&, const _T&);
+namespace __detail
+{
+
+template <class _T, class _Cat>
+concept __compares_as = same_as<common_comparison_category_t<_T, _Cat>, _Cat>;
+
+} // namespace __detail
+
+
+template <class _T, class _Cat = partial_ordering>
+concept three_way_comparable = __detail::__weakly_equality_comparable_with<_T, _T>
+    && (!convertible_to<_Cat, partial_ordering> || __detail::__partially_ordered_with<_T, _T>)
+    && requires(const remove_reference_t<_T>& __a, const remove_reference_t<_T>& __b)
+    {
+        { __a <=> __b } -> __detail::__compares_as<_Cat>;
+    };
+
+template <class _T, class _U, class _Cat = partial_ordering>
+concept three_way_comparable_with = __detail::__weakly_equality_comparable_with<_T, _U>
+    && (!convertible_to<_Cat, partial_ordering> || __detail::__partially_ordered_with<_T, _U>)
+    && three_way_comparable<_T, _Cat>
+    && three_way_comparable<_U, _Cat>
+    && common_reference_with<const remove_reference_t<_T>&, const remove_reference_t<_U>&>
+    && three_way_comparable<common_reference_t<const remove_reference_t<_T>&,
+                                               const remove_reference_t<_U>&>,
+                            _Cat>
+    && requires(const remove_reference_t<_T>& __t, const remove_reference_t<_U>& __u)
+    {
+        { __t <=> __u } -> __detail::__compares_as<_Cat>;
+        { __u <=> __t } -> __detail::__compares_as<_Cat>;
+    };
+
+
+namespace __detail
+{
+
+//! @TODO: implement
+template <class _T, class _U>
+constexpr bool __builtin_ptr_three_way = false;
+
+} // namespace __detail
+
+
+template <class _T, class _U = _T>
+struct compare_three_way_result {};
+
+template <class _T, class _U>
+    requires requires(const remove_reference_t<_T>& __t, const remove_reference_t<_U>& __u) { __t <=> __u; }
+struct compare_three_way_result<_T, _U>
+{
+    using type = decltype(declval<remove_reference_t<_T>&>() <=> declval<remove_reference_t<_U>&>());
+};
+
+template <class _T, class _U = _T>
+using compare_three_way_result_t = typename compare_three_way_result<_T, _U>::type;
+
+struct compare_three_way
+{
+    template <class _T, class _U>
+        requires three_way_comparable_with<_T, _U> || __detail::__builtin_ptr_three_way<_T, _U>
+    constexpr auto operator()(_T&& __t, _U&& __u) const
+    {
+        return std::forward<_T>(__t) <=> std::forward<_U>(__u);
+    }
+
+    using is_transparent = void;
+};
+
+inline namespace __compare
+{
+
+template <class _Ord, class _E, class _F>
+concept __has_strong_order = requires(_E __e, _F __f)
+{
+    _Ord(strong_order(__e, __f));
+};
+
+template <class _Ord, class _E, class _F>
+concept __has_weak_order = requires(_E __e, _F __f)
+{
+    _Ord(weak_order(__e, __f));
+};
+
+template <class _Ord, class _E, class _F>
+concept __has_partial_order = requires(_E __e, _F __f)
+{
+    _Ord(partial_order(__e, __f));
+};
+
+template <class _E, class _F>
+concept __has_eq_and_lt = requires(_E __e, _F __f)
+{
+    { __e == __f } -> convertible_to<bool>;
+    { __e <  __f } -> convertible_to<bool>;
+};
+
+template <class _E, class _F>
+concept __has_spaceship = requires(_E __e, _F __f)
+{
+    __e <=> __f;
+};
+
+struct __strong_order
+{
+    template <class _E, class _F>
+        requires (!same_as<decay_t<_E>, decay_t<_F>>)
+    constexpr void operator()(_E&&, _F&&) const = delete;
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+         && __has_strong_order<strong_ordering, _E, _F>)
+    constexpr auto operator()(_E&& __e, _F&& __f) const
+    {
+        return strong_ordering(strong_order(std::forward<_E>(__e), std::forward<_F>(__f)));
+    }
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && !__has_strong_order<strong_ordering, _E, _F>
+        && __has_spaceship<_E, _F>)
+    constexpr auto operator()(_E&& __e, _F&& __f) const
+    {
+        return std::forward<_E>(__e) <=> std::forward<_F>(__f);
+    }
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && !__has_strong_order<strong_ordering, _E, _F>
+        && !__has_spaceship<_E, _F>)
+    constexpr void operator()(_E&&, _F&&) const = delete;
+};
+
+inline constexpr __strong_order strong_order = {};
+
+struct __weak_order
+{
+    template <class _E, class _F>
+        requires (!same_as<decay_t<_E>, decay_t<_F>>)
+    constexpr void operator()(_E&& __e, _F&& __f) const = delete;
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && __has_weak_order<weak_ordering, _E, _F>)
+    constexpr auto operator()(_E&& __e, _F&& __f) const
+    {
+        return weak_ordering(weak_order(std::forward<_E>(__e), std::forward<_F>(__f)));
+    }
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && !__has_weak_order<weak_ordering, _E, _F>
+        && __has_spaceship<_E, _F>)
+    constexpr auto operator()(_E&& __e, _F&& __f) const
+    {
+        return std::forward<_E>(__e) <=> std::forward<_F>(__f);
+    }
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && !__has_weak_order<weak_ordering, _E, _F>
+        && !__has_spaceship<_E, _F>
+        && __has_strong_order<weak_ordering, _E, _F>)
+    constexpr auto operator()(_E&& __e, _F&& __f) const
+    {
+        return weak_ordering(strong_order(std::forward<_E>(__e), std::forward<_F>(__f)));
+    }
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && !__has_weak_order<weak_ordering, _E, _F>
+        && !__has_spaceship<_E, _F>
+        && !__has_strong_order<weak_ordering, _E, _F>)
+    constexpr void operator()(_E&& __e, _F&& __f) const = delete;
+};
+
+inline constexpr __weak_order weak_order = {};
+
+struct __partial_order
+{
+    template <class _E, class _F>
+        requires (!same_as<decay_t<_E>, decay_t<_F>>)
+    constexpr void operator()(_E&& __e, _F&& __f) const = delete;
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && __has_partial_order<partial_ordering, _E, _F>)
+    constexpr auto operator()(_E&& __e, _F&& __f) const
+    {
+        return partial_ordering(partial_order(std::forward<_E>(__e), std::forward<_F>(__f)));
+    }
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && !__has_partial_order<partial_ordering, _E, _F>
+        && __has_spaceship<_E, _F>)
+    constexpr auto operator()(_E&& __e, _F&& __f) const
+    {
+        return std::forward<_E>(__e) <=> std::forward<_F>(__f);
+    }
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && !__has_partial_order<partial_ordering, _E, _F>
+        && !__has_spaceship<_E, _F>
+        && __has_weak_order<partial_ordering, _E, _F>)
+    constexpr auto operator()(_E&& __e, _F&& __f) const
+    {
+        return partial_ordering(weak_order(std::forward<_E>(__e), std::forward<_F>(__f)));
+    }
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && !__has_partial_order<partial_ordering, _E, _F>
+        && !__has_spaceship<_E, _F>
+        && !__has_weak_order<partial_ordering, _E, _F>)
+    constexpr void operator()(_E&& __e, _F&& __f) const = delete;
+};
+
+inline constexpr __partial_order partial_order = {};
+
+struct __compare_strong_order_fallback
+{
+    template <class _E, class _F>
+        requires (!same_as<decay_t<_E>, decay_t<_F>>)
+    constexpr void operator()(_E&& __E, _F&& __f) const = delete;
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && __has_strong_order<void, _E, _F>)
+    constexpr auto operator()(_E&& __e, _F&& __f) const
+    {
+        return strong_order(std::forward<_E>(__e), std::forward<_F>(__f));
+    }
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && !__has_strong_order<void, _E, _F>
+        && __has_eq_and_lt<_E, _F>)
+    constexpr auto operator()(_E&& __e, _F&& __f) const
+    {
+        return (__e == __f) ? strong_ordering::equal :
+               (__e <  __f) ? strong_ordering::less  :
+                              strong_ordering::greater;
+    }
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && !__has_strong_order<void, _E, _F>
+        && !__has_eq_and_lt<_E, _F>)
+    constexpr void operator()(_E&& __e, _F&& __f) const = delete;
+};
+
+inline constexpr __compare_strong_order_fallback compare_strong_order_fallback = {};
+
+struct __compare_weak_order_fallback
+{
+    template <class _E, class _F>
+        requires (!same_as<decay_t<_E>, decay_t<_F>>)
+    constexpr void operator()(_E&& __E, _F&& __f) const = delete;
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && __has_weak_order<void, _E, _F>)
+    constexpr auto operator()(_E&& __e, _F&& __f) const
+    {
+        return weak_order(std::forward<_E>(__e), std::forward<_F>(__f));
+    }
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && !__has_weak_order<void, _E, _F>
+        && __has_eq_and_lt<_E, _F>)
+    constexpr auto operator()(_E&& __e, _F&& __f) const
+    {
+        return (__e == __f) ? weak_ordering::equivalent :
+               (__e <  __f) ? weak_ordering::less       :
+                              weak_ordering::greater;
+    }
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && !__has_weak_order<void, _E, _F>
+        && !__has_eq_and_lt<_E, _F>)
+    constexpr void operator()(_E&& __e, _F&& __f) const = delete;
+};
+
+inline constexpr __compare_weak_order_fallback compare_weak_order_fallback = {};
+
+struct __compare_partial_order_fallback
+{
+    template <class _E, class _F>
+        requires (!same_as<decay_t<_E>, decay_t<_F>>)
+    constexpr void operator()(_E&& __E, _F&& __f) const = delete;
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && __has_partial_order<void, _E, _F>)
+    constexpr auto operator()(_E&& __e, _F&& __f) const
+    {
+        return partial_order(std::forward<_E>(__e), std::forward<_F>(__f));
+    }
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && !__has_partial_order<void, _E, _F>
+        && __has_eq_and_lt<_E, _F>)
+    constexpr auto operator()(_E&& __e, _F&& __f) const
+    {
+        return (__e == __f) ? partial_ordering::equivalent :
+               (__e <  __f) ? partial_ordering::less       :
+               (__f <  __e) ? partial_ordering::greater    :
+                              partial_ordering::unordered;
+    }
+
+    template <class _E, class _F>
+        requires (same_as<decay_t<_E>, decay_t<_F>>
+        && !__has_partial_order<void, _E, _F>
+        && !__has_eq_and_lt<_E, _F>)
+    constexpr void operator()(_E&& __e, _F&& __f) const = delete;
+};
+
+inline constexpr __compare_partial_order_fallback compare_partial_order_fallback = {};
+
+} // inline namespace __compare
+
+
+namespace __detail
+{
+
+constexpr auto __synth_three_way = []<class _T, class _U>(const _T& __t, const _U& __u)
+    requires requires
+    {
+        { __t < __u } -> __boolean_testable;
+        { __u < __t } -> __boolean_testable;
+    }
+{
+    if constexpr (three_way_comparable_with<_T, _U>)
+        return __t <=> __u;
+    else
+    {
+        if (__t < __u)
+            return weak_ordering::less;
+        else if (__u < __t)
+            return weak_ordering::greater;
+        else
+            return weak_ordering::equivalent;
+    }
+};
+
+template <class _T, class _U = _T>
+using __synth_three_way_result = decltype(__synth_three_way(declval<_T&>(), declval<_U&>()));
+
+} // namespace __detail
 
 
 } // namespace __XVI_STD_LANGSUPPORT_NS

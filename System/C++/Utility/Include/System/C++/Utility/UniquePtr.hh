@@ -183,6 +183,8 @@ private:
 template <class _T, class _D>
 class unique_ptr<_T[], _D>
 {
+public:
+
     using pointer = __detail::__unique_ptr_pointer_type<_T, _D>;
     using element_type = _T;
     using deleter_type = _D;
@@ -328,7 +330,7 @@ class unique_ptr<_T[], _D>
         return __p;
     }
 
-    void reset(nullptr_t __p = pointer()) noexcept
+    void reset(std::nullptr_t = nullptr) noexcept
     {
         reset(pointer());
     }

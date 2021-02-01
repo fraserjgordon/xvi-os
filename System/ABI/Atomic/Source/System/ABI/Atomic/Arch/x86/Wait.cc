@@ -1,7 +1,11 @@
 #include <System/ABI/Atomic/Atomic.hh>
 
 #include <System/C++/TypeTraits/TypeTraits.hh>
-#include <System/HW/CPU/CPUID/Arch/x86/CPUID.hh>
+//#include <System/HW/CPU/CPUID/Arch/x86/CPUID.hh>
+
+
+namespace System::ABI::Atomic
+{
 
 
 static constexpr uint32_t MWAIT_EXT_WAKE_ON_DISABLED_INTERRUPT      = 0x00000001;
@@ -115,14 +119,31 @@ static inline void generic_monitor_mwait_while_unchanged(T* ptr, Monitor&& monit
 {
     std::remove_cv_t<T> old_value;
     __atomic_load(ptr, &old_value, __memory_order_relaxed);
-    generic_monitor_mwait_while(ptr, [old_value](T* ptr)
+    generic_monitor_mwait_while(ptr, [old_value](T* p)
     {
         std::remove_cv_t<T> current_value;
-        __atomic_load(ptr, &current_value, __memory_order_relaxed);
+        __atomic_load(p, &current_value, __memory_order_relaxed);
         return (current_value == old_value);
     }, monitor_fn, mwait_fn);
 }
 
+
+template <class T>
+static inline void monitor_mwait_once(T* ptr)
+{
+    std::remove_cv_t<T> old_value;
+    __atomic_load(ptr, &old_value, __memory_order_relaxed);
+
+    auto monitor_fn = [](const volatile void*p) { monitor(p); };
+    auto mwait_fn = []() { mwait(); };
+    auto condition = [old_value](T* p)
+    { 
+        std::remove_cv_t<T> current_value;
+        __atomic_load(p, &current_value, __memory_order_relaxed);
+        return (current_value == old_value);
+    };
+    generic_monitor_mwait_once(ptr, condition, monitor_fn, mwait_fn);
+}
 
 template <class T>
 static inline void monitor_mwait_while_unchanged(T* ptr)
@@ -149,37 +170,4 @@ static inline void monitorx_mwaitx_while_unchanged_for(T* ptr, uint32_t cycles)
 }
 
 
-void __Atomic_wait_1(const volatile uint8_t* ptr)
-{
-    monitor_mwait_while_unchanged(ptr);
-}
-
-void __Atomic_wait_2(const volatile uint16_t* ptr)
-{
-    monitor_mwait_while_unchanged(ptr);
-}
-
-void __Atomic_wait_4(const volatile uint32_t* ptr)
-{
-    monitor_mwait_while_unchanged(ptr);
-}
-
-void __Atomic_wait_8(const volatile uint64_t* ptr)
-{
-    monitorx_mwaitx_while_unchanged(ptr);
-}
-
-
-bool __Atomic_supports_address_monitor()
-{
-    namespace CPUID = System::HW::CPU::CPUID;
-    static const bool supported = CPUID::HasFeature(CPUID::Feature::MonitorMwait);
-    return supported;
-}
-
-bool __Atomic_supports_address_monitor_timeout()
-{
-    namespace CPUID = System::HW::CPU::CPUID;
-    static const bool supported = CPUID::HasFeature(CPUID::Feature::);
-    return supported;
-}
+} // namespace System::ABI::Atomic

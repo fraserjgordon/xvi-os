@@ -1,0 +1,103 @@
+library("StdLib")
+{
+    library_name    = "System.C++.Utility.StdLib"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    shared_define = "__XVI_CXX_UTILITY_BUILD_SHARED"
+
+    deps =
+    [
+        ":Utility_headers"
+    ]
+
+    sources =
+    [
+        "voidptr_iter.hh",
+
+        "abs.cc",
+        "bsearch.cc",
+        "div.cc",
+        "qsort.cc",
+    ]
+}
+
+library("Utility")
+{
+    library_name    = "System.C++.Utility"
+    library_version = "0.1.0"
+
+    define_header_target = true
+    use_stdlib = false
+
+    header_deps =
+    [
+        "../Atomic",
+        "../LanguageSupport",
+        "../TypeTraits",
+
+        "//C/LanguageSupport",
+    ]
+
+    public_deps =
+    [
+        ":StdLib",
+    ]
+
+    public_headers =
+    [
+        "Abs.hh",
+        "Algorithm.hh",
+        "Allocator.hh",
+        "AllocatorTraits.hh",
+        "Any.hh",
+        "Array.hh",
+        "Bind.hh",
+        "Bit.hh",
+        "Bitset.hh",
+        "CharConv.hh",
+        "CharTraits.hh",
+        "Chrono.hh",
+        "DefaultDelete.hh",
+        "ErrorCodes.hh",
+        "ExecutionPolicy.hh",
+        "Function.hh",
+        "FunctionalUtils.hh",
+        "IntegerSequence.hh",
+        "Invoke.hh",
+        "IosFwd.hh",
+        "Iterator.hh",
+        "MBState.hh",
+        "Memory.hh",
+        "MemoryAlgorithms.hh",
+        "MemoryResource.hh",
+        "Numeric.hh",
+        "Optional.hh",
+        "Pair.hh",
+        "PointerTraits.hh",
+        "Ranges.hh",
+        "Ratio.hh",
+        "ReferenceWrapper.hh",
+        "ScopedAllocator.hh",
+        "StdLib.hh",
+        "SharedPtr.hh",
+        "Span.hh",
+        "StdExcept.hh",
+        "String.hh",
+        "StringFwd.hh",
+        "StringView.hh",
+        "Swap.hh",
+        "SystemError.hh",
+        "Tuple.hh",
+        "TypeIndex.hh",
+        "UniquePtr.hh",
+        "Variant.hh",
+
+        "Private/AddressOf.hh",
+        "Private/Config.hh",
+        "Private/InPlace.hh",
+        "Private/Namespace.hh",
+        "Private/TupleTraits.hh",
+    ]
+}

@@ -31,19 +31,18 @@ list(TRANSFORM SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/Source/System/Filesy
 list(TRANSFORM COMPILE_TEST_SOURCES PREPEND "Test/System/Filesystem/FAT/")
 
 
-add_library(System.Filesystem.FAT STATIC)
+xvi_library(System.Filesystem.FAT       VERSION 0.1.0 STATIC SHARED)
 
-target_include_directories(System.Filesystem.FAT
+target_include_directories(System.Filesystem.FAT+All
     PUBLIC  Include/
     PRIVATE Source/
 )
 
-target_sources(System.Filesystem.FAT
+target_sources(System.Filesystem.FAT+All
     PUBLIC  ${HEADERS}
     PRIVATE ${SOURCES}
 )
 
-target_link_libraries(System.Filesystem.FAT
-    PUBLIC  System.C++.LanguageSupport
-            System.C++.Utility
+target_link_libraries(System.Filesystem.FAT+All
+    PUBLIC  System.Utility.Endian
 )

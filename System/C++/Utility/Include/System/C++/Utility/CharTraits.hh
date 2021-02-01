@@ -24,7 +24,7 @@ constexpr int __char_traits_compare(const _T* __s1, const _T* __s2, size_t __n)
 {
     for (size_t __i = 0; __i < __n; ++__i)
     {
-        int __diff = __s1[__n] - __s2[__n];
+        int __diff = static_cast<int>(__s1[__n] - __s2[__n]);
         if (__diff != 0)
             return __diff;
     }
@@ -45,8 +45,8 @@ template <class _T>
 constexpr const _T* __char_traits_find(const _T* __s, size_t __n, const _T& __a)
 {
     for (size_t __i = 0; __i < __n; ++__i)
-        if (char_traits<_T>::eq(__s[__n], __a))
-            return &__s[__n];
+        if (char_traits<_T>::eq(__s[__i], __a))
+            return &__s[__i];
 
     return nullptr;
 }
@@ -55,7 +55,7 @@ template <class _T>
 constexpr _T* __char_traits_move(_T* __dest, const _T* __src, size_t __n)
 {
     // True iff the beginning of dest overlaps the end of src.
-    if (__dest >= __src && __dest < (__src + __n)) 
+    if (!is_constant_evaluated() && __dest >= __src && __dest < (__src + __n)) 
     {
         for (size_t __i = 0; __i < __n; ++__i)
             __dest[__n - 1 - __i] = __src[__n - 1 - __i];
@@ -247,7 +247,7 @@ template <> struct char_traits<char8_t>
 
     static constexpr int_type eof() noexcept
     {
-        return ~0;
+        return static_cast<int_type>(~0);
     }
 };
 
@@ -326,7 +326,7 @@ template <> struct char_traits<char16_t>
 
     static constexpr int_type eof() noexcept
     {
-        return ~0;
+        return static_cast<int_type>(~0);
     }
 };
 
@@ -405,7 +405,7 @@ template <> struct char_traits<char32_t>
 
     static constexpr int_type eof() noexcept
     {
-        return ~0;
+        return static_cast<int_type>(~0);
     }
 };
 
@@ -484,7 +484,7 @@ template <> struct char_traits<wchar_t>
 
     static constexpr int_type eof() noexcept
     {
-        return -1;
+        return static_cast<int_type>(-1);
     }
 };
 

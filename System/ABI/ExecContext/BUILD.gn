@@ -1,0 +1,75 @@
+library("ExecContext")
+{
+    library_name    = "System.ABI.ExecContext"
+    library_version = "0.1.0"
+
+    define_header_target = true
+    use_stdlib = false
+
+    shared_define = "SYSTEM_ABI_EXECCONTEXT_BUILD_SHARED"
+
+    public_deps =
+    [
+        "//HW/CPU/CPUID",
+    ]
+
+    deps =
+    [
+        "//ABI/String",
+        "//C++/LanguageSupport:LanguageSupport_headers",
+        "//C++/Utility:Utility_headers",
+    ]
+
+    public_headers =
+    [
+        "Private/Config.hh",
+    ]
+
+    if (current_arch == "x86")
+    {
+        public_headers +=
+        [
+            "Arch/x86/Eflags.hh",
+            "Arch/x86/FloatingPoint.hh",
+            "Arch/x86/GeneralRegs.hh",
+            "Arch/x86/SSE.hh",
+            "Arch/x86/SysV_x64.hh",
+            "Arch/x86/SysV_x86.hh",
+            "Arch/x86/Xsave.hh",
+        ]
+    }
+
+    sources =
+    [
+    ]
+
+    if (current_arch == "arm")
+    {
+        sources +=
+        [
+            "Arch/ARM/ARM.cc",
+            "Arch/ARM/AAPCS.S",
+        ]
+    }
+    else if (current_arch == "x86")
+    {
+        sources +=
+        [
+            "Arch/x86/FloatingPoint.cc",
+            "Arch/x86/SysV_x64.cc",
+            "Arch/x86/SysV_x64.S",
+            "Arch/x86/SysV_x86.S",
+            "Arch/x86/Xsave.cc",
+        ]
+    }
+
+    inputs =
+    [
+        "version.ld"
+    ]
+
+    ldflags =
+    [
+        "-Wl,--version-script," + rebase_path("Source/System/ABI/ExecContext/" + inputs[0], root_build_dir),
+    ]
+}

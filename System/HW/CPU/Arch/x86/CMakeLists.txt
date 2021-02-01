@@ -1,0 +1,5 @@
+add_subdirectory(ControlRegs)
+add_subdirectory(IO)
+add_subdirectory(MMU)
+add_subdirectory(Segmentation)
+add_subdirectory(VM86)

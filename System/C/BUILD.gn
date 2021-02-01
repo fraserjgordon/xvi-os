@@ -1,0 +1,8 @@
+library_group("C")
+{
+    deps =
+    [
+        "BaseHeaders",
+        "LanguageSupport",
+    ]
+}

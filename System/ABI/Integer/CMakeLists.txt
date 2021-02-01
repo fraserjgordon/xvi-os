@@ -87,18 +87,18 @@ list(TRANSFORM HEADERS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/Include/System/ABI/I
 list(TRANSFORM SOURCES PREPEND "Source/System/ABI/Integer/")
 
 
-xvi_library(System.ABI.Integer STATIC SHARED KERNEL)
+xvi_library(System.ABI.Integer VERSION 0.1.0 STATIC SHARED KERNEL NO_STDLIB)
 
-target_include_directories(System.ABI.Integer+
+target_include_directories(System.ABI.Integer+All
     PUBLIC Include/
     PRIVATE Source/
 )
 
-target_sources(System.ABI.Integer+
+target_sources(System.ABI.Integer+All
     PUBLIC ${HEADERS}
     PRIVATE ${SOURCES}
 )
 
-target_link_libraries(System.ABI.Integer+
-    PRIVATE System.C++.LanguageSupport
+target_link_libraries(System.ABI.Integer+All
+    PRIVATE System.C++.LanguageSupport.Headers
 )

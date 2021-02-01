@@ -19,8 +19,8 @@ public:
     friend class PoolHeader;
 
 
-    static constexpr std::size_t MinimumBlockSizeOrder      = std::log2p1(sizeof(std::uintptr_t)) - 1;
-    static constexpr std::size_t SmallBlockSizeOrder        = std::log2p1(MaxSmallObjectSize) - 1;
+    static constexpr std::size_t MinimumBlockSizeOrder      = std::bit_width(sizeof(std::uintptr_t)) - 1;
+    static constexpr std::size_t SmallBlockSizeOrder        = std::bit_width(MaxSmallObjectSize) - 1;
     static constexpr std::size_t MaximumBlockSizeOrder      = (PageOrder + MaxPooledBlockSizeOrder);
     static constexpr std::size_t MinimumBlockSize           = std::size_t(1) << MinimumBlockSizeOrder;
     static constexpr std::size_t SmallBlockSize             = MaxSmallObjectSize;
@@ -118,8 +118,8 @@ private:
         if (size <= SmallBlockSize)
             return (size + sizeof(std::uintptr_t) - 1) / sizeof(std::uintptr_t);
         
-        auto rounded = std::ceil2(size);
-        auto log2 = std::log2p1(rounded) - 1;
+        auto rounded = std::bit_ceil(size);
+        auto log2 = std::bit_width(rounded) - 1;
         auto order = log2 - SmallBlockSizeOrder;
         auto index = order * 2;
 

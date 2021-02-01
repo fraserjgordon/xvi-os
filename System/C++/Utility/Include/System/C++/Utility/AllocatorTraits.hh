@@ -77,12 +77,15 @@ struct allocator_traits
     template <class _T>
     using rebind_alloc      = typename __detail::__allocator_traits_rebind<_T, _Alloc>::type;
 
-    [[nodiscard]] static pointer allocate(_Alloc& __a, size_type __n)
+    template <class _T>
+    using rebind_traits     = allocator_traits<rebind_alloc<_T>>;
+
+    [[nodiscard]] static constexpr pointer allocate(_Alloc& __a, size_type __n)
     {
         return __a.allocate(__n);
     }
 
-    [[nodiscard]] static pointer allocate(_Alloc& __a, size_type __n, const_void_pointer __hint)
+    [[nodiscard]] static constexpr pointer allocate(_Alloc& __a, size_type __n, const_void_pointer __hint)
     {
         if constexpr (__detail::is_detected_v<__detail::__allocate_hint_detector, _Alloc, size_type, const_void_pointer>)
             return __a.allocate(__n, __hint);
@@ -90,13 +93,13 @@ struct allocator_traits
             return __a.allocate(__n);
     }
 
-    static void deallocate(_Alloc& __a, pointer __p, size_type __n)
+    static constexpr void deallocate(_Alloc& __a, pointer __p, size_type __n)
     {
         return __a.deallocate(__p, __n);
     }
 
     template <class _T, class... _Args>
-    static void construct(_Alloc& __a, _T* __p, _Args&&... __args)
+    static constexpr void construct(_Alloc& __a, _T* __p, _Args&&... __args)
     {
         if constexpr (__detail::is_detected_v<__detail::__construct_detector, _Alloc, _T, _Args...>)
             __a.construct(__p, __XVI_STD_NS::forward<_Args>(__args)...);
@@ -105,7 +108,7 @@ struct allocator_traits
     }
 
     template <class _T>
-    static void destroy(_Alloc& __a, _T* __p)
+    static constexpr void destroy(_Alloc& __a, _T* __p)
     {
         if constexpr (__detail::is_detected_v<__detail::__destroy_detector, _Alloc, _T>)
             __a.destroy(__p);
@@ -113,7 +116,7 @@ struct allocator_traits
             __p->~_T();
     }
 
-    static size_type max_size(const _Alloc& __a) noexcept
+    static constexpr size_type max_size(const _Alloc& __a) noexcept
     {
         if constexpr (__detail::is_detected_v<__detail::__max_size_detector, _Alloc>)
             return __a.max_size();
@@ -121,7 +124,7 @@ struct allocator_traits
             return numeric_limits<size_type>::max() / sizeof(value_type);
     }
 
-    static _Alloc select_on_container_copy_construction(const _Alloc& __a)
+    static constexpr _Alloc select_on_container_copy_construction(const _Alloc& __a)
     {
         if constexpr (__detail::is_detected_v<__detail::__select_on_copy_construct_detector, _Alloc>)
             return __a.select_on_container_copy_construction();
@@ -129,11 +132,6 @@ struct allocator_traits
             return __a;
     }
 };
-
-
-//! @TODO: define.
-template <class _Alloc>
-concept bool _IsAllocator = false;
 
 
 } // namespace __XVI_STD_UTILITY_NS

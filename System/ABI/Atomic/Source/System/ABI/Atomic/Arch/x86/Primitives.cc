@@ -1,30 +1,88 @@
 #include <System/ABI/Atomic/Arch/x86/Primitives.hh>
 #include <System/ABI/Atomic/AtomicSpinlock.hh>
 
+//#include <System/HW/CPU/CPUID/Arch/x86/CPUID.hh>
+
+
+namespace System::ABI::Atomic
+{
+
 
 using std::uintptr_t;
 
 
-#ifdef __x86_64__
-#  if __ATOMIC_ASSUME_CMPXCHG16B
-static constexpr size_t MaxLockFree = 16;
-#  else
-static constexpr size_t MaxLockFree = 8;
-#  endif
-#else
-#  if __ATOMIC_ASSUME_CMPXCHG8B
-static constexpr size_t MaxLockFree = 8;
-#  else
-static constexpr size_t MaxLockFree = 4;
-#  endif
-#endif
+#if ATOMIC_IFUNC || ATOMIC_RUNTIME_CHECKS
+#  if defined(__x86_64__)
+#    if !__ATOMIC_ASSUME_CMPXCHG16B
+        static const bool cmpxchg16b_supported = System::HW::CPU::CPUID::HasFeature(System::HW::CPU::CPUID::Feature::CompareExchange16B);
 
+        static bool has_cmpxchg16b()
+        {
+            return cmpxchg16b_supported;
+        }
 
-#if __CRT_ATOMIC_IFUNC
-using cmpxchg16b_fn = bool (*)(volatile void*, void*, __uint128_t, int, int);
-static cmpxchg16b_fn cmpxchg16b_resolver()
+        static size_t max_lock_free()
+        {
+            return has_cmpxchg16b() ? 16 : 8;
+        }
+#    else
+        static constexpr bool has_cmpxchg16b()
+        {
+            return true;
+        }
+
+        static constexpr size_t max_lock_free()
+        {
+            return 16;
+        }
+#    endif
+#  else
+#    if !__ATOMIC_ASSUME_CMPXCHG8B
+        static bool has_cmpxchg8b()
+        {
+            using namespace System::HW::CPU::CPUID;
+            static const bool supported = CPUID::HasFeature(CPUID::Feature::CompareExchange8B);
+            return supported;
+        }
+
+        static size_t max_lock_free()
+        {
+            return has_cmpxchg8b() ? 8 : 4;
+        }
+#    else
+        static constexpr bool has_cmpxchg8b()
+        {
+            return true;
+        }
+
+        static constexpr size_t max_lock_free()
+        {
+            return 4;
+        }
+#    endif  // !__ATOMIC_ASSUME_CMPXCHG8B
+#  endif    // defined(__x86_64__)
+#endif      // ATOMIC_IFUNC || ATOMIC_RUNTIME_CHECKS
+
+#if !ATOMIC_IFUNC && !ATOMIC_RUNTIME_CHECKS
+static constexpr size_t max_lock_free()
 {
-    // Todo...
+#  if __ATOMIC_ASSUME_CMPXCHG16B
+    return 16;
+#  elif defined(__x86_64__) || __ATOMIC_ASSUME_CMPXCHG8B
+    return 8;
+#else
+    return 4;
+#endif
+}
+
+static constexpr bool has_cmpxchg8b()
+{
+    return max_lock_free() >= 8;
+}
+
+static constexpr bool has_cmpxchg16b()
+{
+    return max_lock_free() >= 16;
 }
 #endif
 
@@ -32,7 +90,7 @@ static cmpxchg16b_fn cmpxchg16b_resolver()
 bool __Atomic_is_lock_free(size_t size, const volatile void* ptr)
 {
     // Check the size of the access.
-    if (size > MaxLockFree)
+    if (size > max_lock_free())
     {
         // Unsupported size for lock-free operation.
         return false;
@@ -141,6 +199,8 @@ bool __Atomic_compare_exchange_##n(volatile void* ptr, void* expect, type desire
 #define ATOMIC_XADD_N(n, type, suffix, op, sign) \
 type __Atomic_fetch_##op##_##n(volatile void* ptr, type value, int) \
 { \
+    _Pragma("GCC diagnostic push") \
+    _Pragma("GCC diagnostic ignored \"-Wuseless-cast\"") \
     asm volatile \
     ( \
         "lock xadd" suffix " %0, (%1)\n\t" \
@@ -149,6 +209,7 @@ type __Atomic_fetch_##op##_##n(volatile void* ptr, type value, int) \
         : "memory" \
     ); \
     return value; \
+    _Pragma("GCC diagnostic pop") \
 } \
 \
 type __Atomic_##op##_fetch_##n(volatile void* ptr, type value, int) \
@@ -304,8 +365,7 @@ ATOMIC_OP_N(8, uint64_t, "q", nand, "andq", "notq")
 
 // No native support for 64-bit operations. They need to be emulated.
 
-#if __ATOMIC_ASSUME_CMPXCHG8B
-bool __Atomic_compare_exchange_8(volatile void* ptr, void* expect, uint64_t value, int, int)
+static bool cmpxchg8b(volatile void* ptr, void* expect, uint64_t value, int, int)
 {
     bool result;
     auto& expect_val = *static_cast<uint64_t*>(expect);
@@ -333,13 +393,37 @@ bool __Atomic_compare_exchange_8(volatile void* ptr, void* expect, uint64_t valu
     expect_val = (uint64_t(expect_high) << 32) | expect_low;
     return result;
 }
-#else // __ATOMIC_ASSUME_CMPXCHG8B
-bool __Atomic_compare_exchange_8(volatile void* ptr, void* expect, uint64_t value, int, int)
+
+static bool cmpxchg8b_emulated(volatile void* ptr, void* expect, uint64_t value, int, int)
 {
     // No lockless implementation available; fall back on the locked form.
     return __Atomic_compare_exchange(8, ptr, expect, &value, 0, 0);
 }
-#endif // __ATOMIC_ASSUME_CMPXCHG8B
+
+
+#if ATOMIC_IFUNC && !__ATOMIC_ASSUME_CMPXCHG8B
+using cmpxch8b_fn = bool (*)(volatile void*, void*, uint64_t, int, int);
+extern "C" cmpxchg8b_fn cmpxchg8b_resolver();
+static cmpxchg8b_fn cmpxchg8b_resolver()
+{
+    if (has_cmpxchg8b())
+        return &cmpxchg8b;
+    else
+        return &cmpxchg8b_emulated;
+}
+
+bool __Atomic_compare_exchange_8(volatile void*, void*, uint64_t, int, int)
+    [[gnu::ifunc("cmpxchg8b_resolver")]];
+#else
+bool __Atomic_compare_exchange_8(volatile void* ptr, void* expect, uint64_t value, int success, int fail)
+{
+    if (has_cmpxchg8b())
+        return cmpxchg8b(ptr, expect, value, success, fail);
+    else
+        return cmpxchg8b_emulated(ptr, expect, value, success, fail);
+}
+#endif
+
 
 uint64_t __Atomic_load_8(const volatile void* ptr, int)
 {
@@ -379,8 +463,8 @@ ATOMIC_OP_CMPXCHG_N(8, uint64_t, nand, &, ~)
 
 
 // 128-bit operations.
-#if defined(__x86_64__) && __ATOMIC_ASSUME_CMPXCHG16B
-bool __Atomic_compare_exchange_16(volatile void* ptr, void* expect, __uint128_t value, int, int)
+#ifdef __x86_64__
+static bool cmpxchg16b(volatile void* ptr, void* expect, __uint128_t value, int, int)
 {
     bool result;
     auto& expect_val = *static_cast<__uint128_t*>(expect);
@@ -409,11 +493,56 @@ bool __Atomic_compare_exchange_16(volatile void* ptr, void* expect, __uint128_t 
     return result;
 }
 
+static bool cmpxchg16b_emulated(volatile void* ptr, void* expect, __uint128_t desire, int, int)
+{
+    // No lockless implementation available; fall back on the locked form.
+    auto lock = g_atomicSpinlocks.getLock(ptr);
+    auto expect_ptr = static_cast<__uint128_t*>(expect);
+    auto uint128_ptr = static_cast<__uint128_t*>(const_cast<void*>(ptr));
+    bool result;
+    __Atomic_lock_acquire(lock);
+    if (auto current = *uint128_ptr; current == *expect_ptr)
+    {
+        *uint128_ptr = desire;
+        result = true;
+    }
+    else
+    {
+        *expect_ptr = current;
+        result = false;
+    }
+    __Atomic_lock_release(lock);
+    return result;
+}
+
+#if defined(__x86_64__) && !__ATOMIC_ASSUME_CMPXCHG16B && ATOMIC_IFUNC
+using cmpxchg16b_fn = bool (*)(volatile void*, void*, __uint128_t, int, int);
+static cmpxchg16b_fn cmpxchg16b_resolver() asm("__cmpxchg16b_resolver");
+static cmpxchg16b_fn cmpxchg16b_resolver()
+{
+    if (has_cmpxchg16b())
+        return &cmpxchg16b;
+    else
+        return &cmpxchg16b_emulated;
+}
+
+bool __Atomic_compare_exchange_16(volatile void*, void*, __uint128_t, int, int)
+    [[gnu::ifunc("__cmpxchg16b_resolver")]];
+#else
+bool __Atomic_compare_exchange_16(volatile void* ptr, void* expect, __uint128_t value, int success, int fail)
+{
+    if (has_cmpxchg16b())
+        return cmpxchg16b(ptr, expect, value, success, fail);
+    else
+        return cmpxchg16b_emulated(ptr, expect, value, success, fail);
+}
+#endif
+
 __uint128_t __Atomic_load_16(const volatile void* ptr, int)
 {
     // Emulate the load using a compare-exchange. This is technically not valid as it may cause an extraneous write but
     // it is the only way to atomically load a 128-bit quantity on x86 without using locks.
-    __uint128_t value;
+    __uint128_t value = 0;
     __Atomic_compare_exchange_16(const_cast<volatile void*>(ptr), &value, 0, 0, 0);
     return value;
 }
@@ -442,69 +571,7 @@ ATOMIC_OP_CMPXCHG_N(16, __uint128_t, or , |,)
 ATOMIC_OP_CMPXCHG_N(16, __uint128_t, xor, ^,)
 ATOMIC_OP_CMPXCHG_N(16, __uint128_t, nand, &, ~)
 
-#else
-
-// Use locks to implement 128-bit loads.
-__uint128_t __Atomic_load_16(const volatile void* ptr, int)
-{
-    auto lock = g_atomicSpinlocks.getLock(ptr);
-    __Atomic_lock_acquire(lock);
-    __uint128_t value = *static_cast<const __uint128_t*>(const_cast<const void*>(ptr));
-    __Atomic_lock_release(lock);
-    return value;
-}
-
-// Use locks to implement 128-bit stores.
-void __Atomic_store_16(volatile void* ptr, __uint128_t value, int)
-{
-    auto lock = g_atomicSpinlocks.getLock(ptr);
-    __Atomic_lock_acquire(lock);
-    *static_cast<__uint128_t*>(const_cast<void*>(ptr)) = value;
-    __Atomic_lock_release(lock);
-}
-
-// Use locks to implement 128-bit exchanges.
-__uint128_t __Atomic_exchange_16(volatile void* ptr, __uint128_t value, int)
-{
-    auto lock = g_atomicSpinlocks.getLock(ptr);
-    auto uint128_ptr = static_cast<__uint128_t*>(const_cast<void*>(ptr));
-    __Atomic_lock_acquire(lock);
-    __uint128_t old = *uint128_ptr;
-    *uint128_ptr = value;
-    __Atomic_lock_release(lock);
-    return old;
-}
-
-bool __Atomic_compare_exchange_16(volatile void* ptr, void* expect, __uint128_t desire, int, int)
-{
-    // No lockless implementation available; fall back on the locked form.
-    auto lock = g_atomicSpinlocks.getLock(ptr);
-    auto expect_ptr = static_cast<__uint128_t*>(expect);
-    auto uint128_ptr = static_cast<__uint128_t*>(const_cast<void*>(ptr));
-    bool result;
-    __Atomic_lock_acquire(lock);
-    if (auto current = *uint128_ptr; current == *expect_ptr)
-    {
-        *uint128_ptr = desire;
-        result = true;
-    }
-    else
-    {
-        *expect_ptr = current;
-        result = false;
-    }
-    __Atomic_lock_release(lock);
-    return result;
-}
-
-ATOMIC_OP_LOCKED_N(16, __uint128_t, add, +,)
-ATOMIC_OP_LOCKED_N(16, __uint128_t, sub, -,)
-ATOMIC_OP_LOCKED_N(16, __uint128_t, and, &,)
-ATOMIC_OP_LOCKED_N(16, __uint128_t, or , |,)
-ATOMIC_OP_LOCKED_N(16, __uint128_t, xor, ^,)
-ATOMIC_OP_LOCKED_N(16, __uint128_t, nand, &, ~)
-
-#endif
+#endif // ifdef __x86_64__
 
 
 void __Atomic_lock_acquire(volatile AtomicSpinlockArray::spinlock_t* lock)
@@ -512,7 +579,7 @@ void __Atomic_lock_acquire(volatile AtomicSpinlockArray::spinlock_t* lock)
     asm volatile
     (
         "1:         \n\t"
-        "lock btsq  $0x01, (%0)\n\t"
+        "lock btsl  $0x01, (%0)\n\t"
         "pause      \n\t"
         "jnz        1b\n\t"
         :
@@ -678,3 +745,6 @@ bool __Atomic_compare_exchange(size_t n, volatile void* ptr, void* expect, void*
     __Atomic_lock_release(lock);
     return equal;
 }
+
+
+} // namespace System::ABI::Atomic

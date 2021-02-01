@@ -1,0 +1,22 @@
+[
+  {
+    "name": "XVI Clang",
+    "toolchainFile": "${workspaceFolder}/cmake/xvi.toolchain.cmake",
+    "compilers": {
+      "C": "/opt/cross/bin/clang",
+      "CXX": "/opt/cross/bin/clang++"
+    }
+  },
+  {
+    "name": "XVI GCC x86_64",
+    "toolchainFile": "${workspaceFolder}/cmake/xvi.toolchain.cmake",
+    "compilers": {
+      "C": "/opt/cross/bin/x86_64-xvi-gcc",
+      "CXX": "/opt/cross/bin/x86_64-xvi-g++"
+    },
+    "cmakeSettings": {
+        "XVI_COMPILER": "gcc",
+        "XVI_TARGET": "x86_64"
+    }
+  }
+]

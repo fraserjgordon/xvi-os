@@ -1,0 +1,2 @@
+import("//build/config/global_args.gni")
+import("//build/arch/${current_arch}/arch_config.gni")

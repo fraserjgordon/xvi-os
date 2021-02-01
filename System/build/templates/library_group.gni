@@ -1,0 +1,47 @@
+import("//build/templates/library.gni")
+
+template("library_group")
+{
+    static_deps = []
+    shared_deps = []
+    kernel_deps = []
+
+    if (defined(invoker.deps))
+    {
+        foreach(dep, invoker.deps)
+        {
+            dep_label = get_label_info(dep, "label_no_toolchain")
+            dep_toolchain = get_label_info(dep, "toolchain")
+
+            static_deps +=
+            [
+                "${dep_label}__static(${dep_toolchain})",
+            ]
+
+            shared_deps +=
+            [
+                "${dep_label}__shared(${dep_toolchain})",
+            ]
+
+            kernel_deps +=
+            [
+                "${dep_label}__kernel(${dep_toolchain})",
+            ]
+        }
+    }
+
+    group("${target_name}__static")
+    {
+        deps = static_deps
+    }
+
+    group("${target_name}__shared")
+    {
+        deps = shared_deps
+    }
+
+    group("${target_name}__kernel")
+    {
+        deps = kernel_deps
+    }
+}

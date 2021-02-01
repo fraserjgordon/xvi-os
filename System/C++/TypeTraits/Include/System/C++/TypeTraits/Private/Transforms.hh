@@ -179,7 +179,8 @@ template <class _T> struct add_pointer<_T, false> { using type = _T; };
 
 template <class _T> struct type_identity { using type = _T; };
 
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wduplicated-branches"
 static constexpr size_t __get_default_alignment(size_t _Len)
 {
     if (_Len <= sizeof(char))
@@ -195,6 +196,7 @@ static constexpr size_t __get_default_alignment(size_t _Len)
     else // TODO: probably not right.
         return alignof(long long);
 }
+#pragma GCC diagnostic pop
 
 template <size_t _Len, size_t _Align>
 struct aligned_storage

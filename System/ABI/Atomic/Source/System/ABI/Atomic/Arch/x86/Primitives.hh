@@ -4,6 +4,7 @@
 
 
 #include <System/ABI/Atomic/Atomic.hh>
+#include <System/ABI/Atomic/Config.hh>
 
 
 // __ATOMIC_ASSUME_CMPXCHG8B

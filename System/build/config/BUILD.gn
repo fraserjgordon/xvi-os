@@ -1,0 +1,191 @@
+# C standard.
+config("c11")
+{
+    cflags_c = ["-std=c11"]
+}
+
+# C++ standard.
+config("c++20")
+{
+    cflags_cc = ["-std=c++2a"]
+}
+
+# Rust edition.
+config("rust_2018")
+{
+    rustflags = [ "--edition=2018" ]
+}
+
+# Warnings required by the XVI coding standard.
+config("default_warnings")
+{
+    cflags =
+    [
+        "-Wall",
+        "-Wextra",
+        "-Wduplicated-cond",
+        "-Wduplicated-branches",
+        "-Wlogical-op",
+        "-Wnull-dereference",
+        "-Wdouble-promotion",
+        "-Wshadow-local",
+        "-Wformat=2",
+        #"-Wconversion",
+        "-Wsign-conversion",
+    ]
+
+    cflags_c =
+    [
+        "-Wbad-function-cast",
+        "-Wc++-compat",
+        "-Wmissing-prototypes",
+    ]
+
+    cflags_cc =
+    [
+        #"-Wuseless-cast",
+        "-Wimplicit-fallthrough=5",
+        "-Wsized-deallocation",
+        "-Wmissing-declarations",
+    ]
+
+    asmflags =
+    [
+        "-Wall",
+    ]
+}
+
+# Errors required by the XVI coding standard.
+config("default_errors")
+{
+    cflags =
+    [
+        "-Werror=init-self",
+        "-Werror=implicit-fallthrough",
+        "-Werror=trampolines",
+        "-Werror=pointer-arith",
+        "-Werror=write-strings",
+        "-Werror=date-time",
+        "-Werror=alloca",
+    ]
+
+    cflags_c =
+    [
+        "-Werror=jump-misses_init",
+        "-Werror=strict-prototypes",
+        "-Werror=old-style-declaration",
+        "-Werror=old-style-definition",
+    ]
+
+    cflags_cc =
+    [
+        "-Werror=old-style-cast",
+        "-Werror=zero-as-null-pointer-constant",
+    ]
+}
+
+# Default code generation options.
+config("default_codegen")
+{
+    cflags =
+    [
+        "-fno-plt",
+        "-fdata-sections",
+        "-ffunction-sections",
+    ]
+
+    if (compiler_id == "gnu")
+    {
+        cflags +=
+        [
+            "-fstack-clash-protection"
+        ]
+    }
+}
+
+# Default debug information options.
+config("default_debug_info")
+{
+    cflags =
+    [
+        "-gdwarf-5",
+        "-g3",
+    ]
+
+    ldflags =
+    [
+        "-gdwarf-5",
+        "-g3",
+    ]
+}
+
+# Appropriate optimisation level for debug builds.
+config("optimize_debug")
+{
+    cflags =
+    [
+        "-Og",
+    ]
+}
+
+# Appropriate omptimisation level for release builds.
+config("optimize_full")
+{
+    cflags =
+    [
+        "-O3",
+    ]
+}
+
+config("pic")
+{
+    cflags      = ["-fPIC"]
+    ldflags     = ["-fPIC"]
+}
+
+config("shared_lib_no_undefined_symbols")
+{
+    ldflags     = ["-Wl,-z,defs"]
+}
+
+config("shared")
+{
+    configs     = [":pic", ":shared_lib_no_undefined_symbols"]
+}
+
+# Don't link to standard include directories.
+config("no_stdlib")
+{
+    cflags      = ["-nostdinc", "-nostdlib"]
+    defines     = ["__XVI_NO_STDLIB"]
+    ldflags     = ["-nostdlib"]
+
+    #rustflags   =
+    #[
+    #    "-Z", "crate-attr=no_std",
+    #    "-Z", "crate-attr=no_implicit_prelude",
+    #]
+}
+
+config("gcc_gc_crash_fix")
+{
+    if (false && compiler_id == "gcc")
+    {
+        cflags =
+        [
+            "--param=ggc-min-expand=100",
+            "--param=ggc-min-heapsize=131072",
+        ]
+    }
+}
+
+config("gcc_colour_output")
+{
+    if (compiler_id == "gcc")
+    {
+        cflags =
+        [
+            "-fdiagnostics-color=always",
+        ]
+    }
+}

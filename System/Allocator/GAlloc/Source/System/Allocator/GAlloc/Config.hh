@@ -67,7 +67,7 @@ constexpr std::size_t PageSize = 1 << PageOrder;
 constexpr std::size_t PointerSize = sizeof(std::uintptr_t);
 constexpr std::size_t PointerBits = PointerSize * 8;
 constexpr std::size_t PointersPerPage = PageSize / PointerSize;
-constexpr std::size_t AddressBitsPerPage = std::log2p1(PointersPerPage) - 1;
+constexpr std::size_t AddressBitsPerPage = std::bit_width(PointersPerPage) - 1;
 
 constexpr std::size_t LargePageOrder(int order)
     { return PageOrder + order * AddressBitsPerPage; }

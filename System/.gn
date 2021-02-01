@@ -1,0 +1,8 @@
+buildconfig = "//build/config/BUILDCONFIG.gn"
+
+# The XVI code style uses angle brackets for almost all headers so we need to
+# make sure that GN checks dependencies for them.
+check_system_includes = true
+
+# Oldest supported build host is Debian Buster, which uses this version.
+ninja_required_version = "1.8.2"

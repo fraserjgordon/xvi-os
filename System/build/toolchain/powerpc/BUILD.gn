@@ -1,0 +1,66 @@
+import("//build/config/global_args.gni")
+import("//build/toolchain/gcc_toolchain.gni")
+
+declare_args()
+{
+    # Prefix used for compiler executables (e.g. "powerpc-xvi-"")
+    powerpc_toolchain_prefix = ""
+}
+
+if (cross_toolchain_root != "" && powerpc_toolchain_prefix == "")
+{
+    powerpc_toolchain_prefix = "powerpc-xvi-"
+}
+
+# Common settings for all PowerPC GCC toolchains.
+vars_gcc =
+{
+    arch_cflags     = []
+    toolchain_arch  = "powerpc"
+    toolchain_os    = "xvi"
+
+    if (cross_toolchain_root != "")
+    {
+        toolchain_root = cross_toolchain_root
+    }
+
+    if (powerpc_toolchain_prefix != "")
+    {
+        toolchain_prefix = powerpc_toolchain_prefix
+    }
+}
+
+# Settings for 32-bit PowerPC GCC toolchains.
+vars_gcc_ppc32 =
+{
+    forward_variables_from(vars_gcc, "*")
+
+    arch_cflags += [ "-m32" ]
+    toolchain_cpu = "ppc32"
+}
+
+# Settings for 64-bit PowerPC GCC toolchains.
+vars_gcc_ppc64 =
+{
+    forward_variables_from(vars_gcc, "*")
+
+    arch_cflags += [ "-m64" ]
+    toolchain_cpu = "ppc64"
+}
+
+if (use_clang)
+{
+
+}
+else
+{
+    gcc_toolchain("ppc32")
+    {
+        forward_variables_from(vars_gcc_ppc32, "*")
+    }
+
+    gcc_toolchain("ppc64")
+    {
+        forward_variables_from(vars_gcc_ppc64, "*")
+    }
+}

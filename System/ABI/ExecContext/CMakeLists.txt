@@ -9,17 +9,26 @@ include(FindDoxygen)
 project(System.ABI.ExecContext LANGUAGES CXX ASM)
 
 set(HEADERS_x86
-    Arch/x86/Eflags.h
-    Arch/x86/FloatingPoint.h
-    Arch/x86/GeneralRegs.h
-    Arch/x86/SSE.h
-    Arch/x86/SysV_x64.h
-    Arch/x86/SysV_x86.h
-    Arch/x86/Xsave.h
+    Arch/x86/Eflags.hh
+    Arch/x86/FloatingPoint.hh
+    Arch/x86/GeneralRegs.hh
+    Arch/x86/SSE.hh
+    Arch/x86/SysV_x64.hh
+    Arch/x86/SysV_x86.hh
+    Arch/x86/Xsave.hh
 )
 
 set(HEADERS
+    Private/Config.hh
     ${HEADERS_${XVI_ARCH}}
+)
+
+set(SOURCES_arm
+    Arch/ARM/ARM.cc
+)
+
+set(SOURCES_powerpc
+    Arch/PowerPC/ppc.cc
 )
 
 set(SOURCES_x86
@@ -46,33 +55,41 @@ list(TRANSFORM HEADERS PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Include/System/ABI/Ex
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Source/System/ABI/ExecContext/)
 list(TRANSFORM TEST_SOURCES PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Test/System/ABI/ExecContext/)
 
-add_library(System.ABI.ExecContext STATIC)
+xvi_library(System.ABI.ExecContext.Headers  VERSION 0.1.0 INTERFACE KERNEL NO_STDLIB)
+xvi_library(System.ABI.ExecContext          VERSION 0.1.0 STATIC SHARED KERNEL NO_STDLIB)
 
-target_sources(System.ABI.ExecContext
+target_sources(System.ABI.ExecContext.Headers
+    INTERFACE   ${HEADERS}
+)
+
+target_include_directories(System.ABI.ExecContext.Headers
+    INTERFACE Include
+)
+
+target_sources(System.ABI.ExecContext+All
     PUBLIC ${HEADERS}
     PRIVATE ${SOURCES}    
 )
 
-target_include_directories(System.ABI.ExecContext
+target_include_directories(System.ABI.ExecContext+All
     PUBLIC Include
     PRIVATE Source 
 )
 
-target_compile_definitions(System.ABI.ExecContext
-    PRIVATE System_ABI_ExecContext_BUILD
-)
-
-target_link_libraries(System.ABI.ExecContext
-    PUBLIC  System.C.LanguageSupport
-            System.C++.LanguageSupport
-            System.C++.Utility
+target_link_libraries(System.ABI.ExecContext+All
+    PUBLIC  System.ABI.ExecContext.Headers
             System.HW.CPU.CPUID
-    PRIVATE -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/Source/System/ABI/ExecContext/version.ld
+    PRIVATE System.ABI.String
+            System.C++.LanguageSupport.Headers
+            System.C++.Utility.Headers
+            -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/Source/System/ABI/ExecContext/version.ld
 )
 
-set_target_properties(System.ABI.ExecContext
+set_target_properties(System.ABI.ExecContext+All
     PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Source/System/ABI/ExecContext/version.ld
 )
+
+target_compile_definitions(System.ABI.ExecContext+Shared PRIVATE SYSTEM_ABI_EXECCONTEXT_BUILD_SHARED)
 
 if (DOXYGEN_FOUND)
     # Configure Doxygen macro expansion.

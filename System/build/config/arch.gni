@@ -1,0 +1,46 @@
+
+# Internally used toolchain arguments.
+declare_args()
+{
+    # A generalisation of target_cpu: represents the overall CPU architecture
+    # family of the target machine.
+    target_arch = ""
+
+    # A generalisation of host_cpu: represents the overall CPU architecture
+    # family of the build machine.
+    host_arch = ""
+
+    # A generalisation of current_cpu: represents the overall CPU architecture
+    # family that is currently being built.
+    current_arch = ""
+}
+
+if (host_arch == "")
+{
+    _host_arch =
+    {
+        import("//build/config/cpu/${host_cpu}.gni")
+    }
+
+    host_arch = _host_arch.cpu_arch
+}
+
+if (target_arch == "")
+{
+    _target_arch =
+    {
+        import("//build/config/cpu/${target_cpu}.gni")
+    }
+
+    target_arch = _target_arch.cpu_arch
+}
+
+if (current_arch == "")
+{
+    _current_arch =
+    {
+        import("//build/config/cpu/${current_cpu}.gni")
+    }
+
+    current_arch = _current_arch.cpu_arch
+}

@@ -85,7 +85,7 @@ template <class _T> struct __integer_limits
     static constexpr int max_digits10 = 0;
 
     static constexpr _T min() noexcept { if constexpr (is_signed) return (_T(1) << digits); else return _T(0); }
-    static constexpr _T max() noexcept { return ~min(); }
+    static constexpr _T max() noexcept { return static_cast<_T>(~min()); }
     static constexpr _T lowest() noexcept { return min(); }
 
     static constexpr _T epsilon() noexcept { return _T(0); }

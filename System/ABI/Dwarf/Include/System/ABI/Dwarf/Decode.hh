@@ -5,7 +5,12 @@
 
 #include <System/C++/Utility/Algorithm.hh>
 
+#include <System/ABI/Dwarf/Private/Config.hh>
 #include <System/ABI/Dwarf/LEB128.hh>
+
+#if !__SYSTEM_ABI_DWARF_MINIMAL
+#  include <System/C++/Utility/String.hh>
+#endif
 
 
 namespace System::ABI::Dwarf
@@ -43,6 +48,18 @@ enum class dw_ptr_rel : std::uint8_t
     data        = 0x30,     // Relative to data section.
     func        = 0x40,     // Relative to function start.
 };
+
+inline constexpr std::uint8_t MakeEncoding(dw_ptr_type type, dw_ptr_rel rel)
+{
+    return static_cast<std::uint8_t>(type) | static_cast<std::uint8_t>(rel);
+}
+
+
+#if !__SYSTEM_ABI_DWARF_MINIMAL
+std::string toString(dw_ptr_type);
+std::string toString(dw_ptr_rel);
+std::string PointerEncodingName(std::uint8_t);
+#endif
 
 
 // Utility method for performing unaligned reads.
@@ -97,7 +114,7 @@ public:
     // whether the location has been updated in this case is undefined.
     //
     // If the encoding type is kDwarfPtrOmit, zero is returned and location is not updated.
-    UintPtrT decode(std::uint8_t encoding, const std::byte*& loc) const
+    UintPtrT decode(std::uint8_t encoding, const std::byte*& loc, bool preserve_null = false) const
     {
         // Do nothing if the pointer is omitted.
         if (encoding == kDwarfPtrOmit)
@@ -117,8 +134,6 @@ public:
 
         // Extract the encoding type field and read the raw value. Note that in the general case, correct alignment of
         // the value cannot be assumed.
-        //
-        //! @TODO: fix alignment issues.
         UintPtrT ptr = 0;
         switch (dw_ptr_type(encoding & kDwarfPtrTypeMask))
         {
@@ -127,17 +142,17 @@ public:
                 break;
 
             case dw_ptr_type::udata2:
-                ptr = *reinterpret_cast<const std::uint16_t*>(loc);
+                ptr = UnalignedRead<std::uint16_t>(loc);
                 loc += sizeof(std::uint16_t);
                 break;
 
             case dw_ptr_type::udata4:
-                ptr = *reinterpret_cast<const std::uint32_t*>(loc);
+                ptr = UnalignedRead<std::uint32_t>(loc);
                 loc += sizeof(std::uint32_t);
                 break;
 
             case dw_ptr_type::udata8:
-                ptr = *reinterpret_cast<const std::uint64_t*>(loc);
+                ptr = UnalignedRead<std::uint64_t>(loc);
                 loc += sizeof(std::uint64_t);
                 break;
 
@@ -146,17 +161,17 @@ public:
                 break;
 
             case dw_ptr_type::sdata2:
-                ptr = *reinterpret_cast<const std::int16_t*>(loc);
+                ptr = UnalignedRead<std::int16_t>(loc);
                 loc += sizeof(std::int16_t);
                 break;
 
             case dw_ptr_type::sdata4:
-                ptr = *reinterpret_cast<const std::int32_t*>(loc);
+                ptr = UnalignedRead<std::int32_t>(loc);
                 loc += sizeof(std::int32_t);
                 break;
 
             case dw_ptr_type::sdata8:
-                ptr = *reinterpret_cast<const std::int64_t*>(loc);
+                ptr = UnalignedRead<std::int64_t>(loc);
                 loc += sizeof(std::int64_t);
                 break;
 
@@ -164,6 +179,9 @@ public:
                 // Unrecognised encoding type.
                 return 0;
         }
+
+        if (preserve_null && ptr == 0)
+            return 0;
 
         // Extract the location that the pointer is relative to and adjust the decoded pointer to match.
         switch (dw_ptr_rel(encoding & kDwarfPtrRelMask))
@@ -209,6 +227,12 @@ public:
 
         // Return the decoded pointer.
         return ptr;
+    }
+
+    UintPtrT decodeVoid(std::uint8_t encoding, const void* ptr)
+    {
+        auto p = reinterpret_cast<const std::byte*>(ptr);
+        return decode(encoding, p);
     }
 
 private:

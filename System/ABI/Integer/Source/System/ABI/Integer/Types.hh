@@ -53,7 +53,7 @@ struct emulated_integer
     {
         typename counterpart_t::parts_t p;
         p.low = parts.low;
-        p.high = parts.high;
+        p.high = static_cast<decltype(p.high)>(parts.high);
         return counterpart_t{.parts = p};
     }
 };
@@ -265,7 +265,13 @@ struct split_int_terminal
 };
 
 
-}
+} // namespace System::ABI::Integer
+
+
+#if !__SYSTEM_ABI_INTEGER_PROVIDE_128BIT
+using __int128_t = System::ABI::Integer::int128_t;
+using __uint128_t = System::ABI::Integer::uint128_t;
+#endif
 
 
 #endif /* ifndef __SYSTEM_ABI_INTEGER_TYPES_H */

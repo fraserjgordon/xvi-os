@@ -1,0 +1,5 @@
+# PowerPC-specific build arguments.
+declare_args()
+{
+
+}

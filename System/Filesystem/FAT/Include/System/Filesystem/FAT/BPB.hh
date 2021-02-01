@@ -3,9 +3,11 @@
 #define __SYSTEM_FS_FAT_BPB_H
 
 
-#include <System/C++/LanguageSupport/StdDef.hh>
-#include <System/C++/LanguageSupport/StdInt.hh>
-#include <System/C++/Utility/Array.hh>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+
+#include <System/Utility/Endian/Endian.hh>
 
 #include <System/Filesystem/FAT/Unaligned.hh>
 
@@ -14,9 +16,8 @@ namespace System::Filesystem::FAT
 {
 
 
-// FIXME
-using uint32le_t = std::uint32_t;
-using uint16le_t = std::uint16_t;
+using System::Utility::Endian::uint16le_t;
+using System::Utility::Endian::uint32le_t;
 
 
 using bpb_oem_sig = std::array<char, 8>;

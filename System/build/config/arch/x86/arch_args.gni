@@ -1,0 +1,11 @@
+# x86-specific global options.
+declare_args()
+{
+    # Assume (for 32-bit builds) that the cmpxchg8b instruction is always
+    # available.
+    x86_assume_cmpxchg8b = false
+
+    # Assume (for 64-bit builds) that the cmpxchg8b instruction is always
+    # available.
+    x86_assume_cmpxchg18b = false
+}

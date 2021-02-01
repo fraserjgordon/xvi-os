@@ -20,6 +20,14 @@ template <class _T, class = enable_if_t<is_unsigned_v<_T>, void>> constexpr _T r
 template <class _T, class = enable_if_t<is_unsigned_v<_T>, void>> constexpr _T rotr(_T, int) noexcept;
 
 
+enum class endian
+{
+    little      = __ORDER_LITTLE_ENDIAN__,
+    big         = __ORDER_BIG_ENDIAN__,
+    native      = __BYTE_ORDER__,
+};
+
+
 template <class _T, class>
 [[nodiscard]] constexpr _T rotl(_T __x, int __s) noexcept
 {
@@ -125,45 +133,49 @@ constexpr int popcount(_T __x) noexcept
 }
 
 
-template <class _To, class _From,
-          class = enable_if_t<sizeof(_To) == sizeof(_From)
-                              && is_trivially_copyable_v<_To>
-                              && is_trivially_copyable_v<_From>, void>>
+// The GCC warning should be suppressed due to the constraints saying the same thing.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+template <class _To, class _From>
+    requires (sizeof(_To) == sizeof(_From)
+          && is_trivially_copyable_v<_To>
+          && is_trivially_copyable_v<_From>)
 constexpr _To bit_cast(const _From& __from) noexcept
 {
     _To __to = {};
     __builtin_memcpy(__XVI_STD_NS::addressof(__to), __XVI_STD_NS::addressof(__from), sizeof(_To));
     return __to;
 }
+#pragma GCC diagnostic pop
 
 
 template <class _T,
           class = enable_if_t<is_unsigned_v<_T>, void>>
-constexpr bool ispow2(_T __x) noexcept
+constexpr bool has_single_bit(_T __x) noexcept
 {
     return (__x & (__x - 1)) == 0;
 }
 
 template <class _T,
           class = enable_if_t<is_unsigned_v<_T>, void>>
-constexpr _T log2p1(_T __x) noexcept
+constexpr _T bit_width(_T __x) noexcept
 {
     if (__x == 0)
         return 0;
 
     if constexpr (sizeof(_T) <= sizeof(int))
-        return 8 * sizeof(int) - __builtin_clz(__x);
+        return 8 * sizeof(int) - static_cast<_T>(__builtin_clz(__x));
     else if constexpr (sizeof(_T) <= sizeof(long))
-        return 8 * sizeof(long) - __builtin_clzl(__x);
+        return 8 * sizeof(long) - static_cast<_T>(__builtin_clzl(__x));
     else if constexpr (sizeof(_T) <= sizeof(long long))
-        return 8 * sizeof(long long) - __builtin_clzll(__x);
+        return 8 * sizeof(long long) - static_cast<_T>(__builtin_clzll(__x));
 }
 
 template <class _T,
           class = enable_if_t<is_unsigned_v<_T>, void>>
-constexpr _T ceil2(_T __x) noexcept
+constexpr _T bit_ceil(_T __x) noexcept
 {
-    _T __l = __XVI_STD_UTILITY_NS::log2p1(__x);
+    _T __l = __XVI_STD_UTILITY_NS::bit_width(__x);
     if (__l == 0)
         return 0;
 
@@ -173,9 +185,9 @@ constexpr _T ceil2(_T __x) noexcept
 
 template <class _T,
           class = enable_if_t<is_unsigned_v<_T>, void>>
-constexpr _T floor2(_T __x) noexcept
+constexpr _T bit_floor(_T __x) noexcept
 {
-    _T __l = __XVI_STD_UTILITY_NS::log2p1(__x);
+    _T __l = __XVI_STD_UTILITY_NS::bit_width(__x);
     if (__l == 0)
         return 0;
 

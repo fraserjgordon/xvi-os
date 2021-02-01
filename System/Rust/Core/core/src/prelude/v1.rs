@@ -1,0 +1,11 @@
+pub use crate::clone::{Clone};
+pub use crate::cmp::{Eq, Ord, PartialEq, PartialOrd};
+pub use crate::convert::{AsMut, AsRef, From, Into};
+pub use crate::default::{Default};
+pub use crate::fmt::macros::Debug;
+pub use crate::hash::macros::Hash;
+pub use crate::iterator::{IntoIterator, Iterator};
+pub use crate::marker::{Copy, Send, Sized, Sync, Unpin};
+pub use crate::ops::{Drop, Fn, FnMut, FnOnce};
+pub use crate::option::{Option, Option::{Some, None}};
+pub use crate::result::{Result, Result::{Ok, Err}};

@@ -3,36 +3,10 @@
 #define __SYSTEM_CXX_LANGUAGESUPPORT_TYPEINFO_H
 
 
+#include <System/ABI/C++/TypeInfo.hh>
+
 #include <System/C++/LanguageSupport/Exception.hh>
 #include <System/C++/LanguageSupport/Private/Namespace.hh>
-
-
-// type_info needs to be in std for the typeid operator to work
-#if !__XVI_FOREIGN_HOSTED
-namespace std
-#else
-namespace __XVI_STD_LANGSUPPORT_NS
-#endif
-{
-
-
-class type_info
-{
-public:
-
-    virtual ~type_info();
-    bool operator==(const type_info&) const noexcept;
-    bool operator!=(const type_info&) const noexcept;
-    bool before(const type_info&) const noexcept;
-    __XVI_STD_NS::size_t hash_code() const noexcept;
-    const char* name() const noexcept;
-
-    type_info(const type_info&) = delete;
-    type_info& operator=(const type_info&) = delete;
-};
-
-
-} // namespace std OR namespace __XVI_STD_LANGSUPPORT_NS
 
 
 namespace __XVI_STD_LANGSUPPORT_NS

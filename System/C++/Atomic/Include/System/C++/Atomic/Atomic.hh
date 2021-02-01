@@ -389,7 +389,7 @@ public:
     __integral_atomic_ref& operator=(const __integral_atomic_ref&) = delete;
 
     explicit __integral_atomic_ref(_T& __t)
-        : _M_ptr(addressof(__t))
+        : _M_ptr(reinterpret_cast<__type*>(addressof(__t)))
     {
     }
 
@@ -429,24 +429,24 @@ public:
         return static_cast<_T>(__ops::exchange(_M_ptr, static_cast<__type>(__val), __mo));
     }
 
-    bool compare_exchange_weak(_T* __expect, _T __desire, memory_order __s, memory_order __f) const noexcept
+    bool compare_exchange_weak(_T& __expect, _T __desire, memory_order __s, memory_order __f) const noexcept
     {
-        return __ops::compare_exchange_weak(_M_ptr, __expect, static_cast<__type>(__desire), __s, __f);
+        return __ops::compare_exchange_weak(_M_ptr, reinterpret_cast<__type*>(&__expect), static_cast<__type>(__desire), __s, __f);
     }
 
-    bool compare_exchange_strong(_T* __expect, _T __desire, memory_order __s, memory_order __f) const noexcept
+    bool compare_exchange_strong(_T& __expect, _T __desire, memory_order __s, memory_order __f) const noexcept
     {
-        return __ops::compare_exchange_strong(_M_ptr, __expect, static_cast<__type>(__desire), __s, __f);
+        return __ops::compare_exchange_strong(_M_ptr, reinterpret_cast<__type*>(&__expect), static_cast<__type>(__desire), __s, __f);
     }
 
-    bool compare_exchange_weak(_T* __expect, _T __desire, memory_order __mo = memory_order::seq_cst) const noexcept
+    bool compare_exchange_weak(_T& __expect, _T __desire, memory_order __mo = memory_order::seq_cst) const noexcept
     {
-        return __ops::compare_exchange_weak(_M_ptr, __expect, static_cast<__type>(__desire), __mo, __mo);
+        return __ops::compare_exchange_weak(_M_ptr, reinterpret_cast<__type*>(&__expect), static_cast<__type>(__desire), __mo, __mo);
     }
 
-    bool compare_exchange_strong(_T* __expect, _T __desire, memory_order __mo = memory_order::seq_cst) const noexcept
+    bool compare_exchange_strong(_T& __expect, _T __desire, memory_order __mo = memory_order::seq_cst) const noexcept
     {
-        return __ops::compare_exchange_strong(_M_ptr, __expect, static_cast<__type>(__desire), __mo, __mo);
+        return __ops::compare_exchange_strong(_M_ptr, reinterpret_cast<__type*>(&__expect), static_cast<__type>(__desire), __mo, __mo);
     }
 
     _T fetch_add(_T __op, memory_order __mo = memory_order::seq_cst) const noexcept
@@ -521,7 +521,7 @@ public:
 
 private:
 
-    _T* _M_ptr;
+    __type* _M_ptr;
 };
 
 
@@ -530,7 +530,7 @@ template <class _T> struct __pointer_atomic_ref
 private:
 
     using __ops = __integral_atomic_ops<sizeof(uintptr_t)>;
-    using __type = uintptr_t;
+    using __type = typename __ops::__type;
 
 public:
 
@@ -539,7 +539,7 @@ public:
     using value_type = _T;
     using difference_type = ptrdiff_t;
 
-    static constexpr bool is_always_lock_free   = __atomic_always_lock_free(sizeof(uintptr_t), 0);
+    static constexpr bool is_always_lock_free   = __atomic_always_lock_free(sizeof(uintptr_t), nullptr);
     static constexpr size_t required_alignment  = alignof(uintptr_t);
 
     __pointer_atomic_ref& operator=(const __pointer_atomic_ref&) = delete;
@@ -647,7 +647,7 @@ public:
 
 private:
 
-    _T* _M_ptr;
+    __type* _M_ptr;
 };
 
 
@@ -1221,6 +1221,12 @@ public:
         return __atomic_compare_exchange(_M_ptr, &__expect, &__desire, false, int(__mo), int(__mo));
     }
 
+    void wait(_T, memory_order __mo = memory_order::seq_cst) const noexcept;
+
+    void notify_one() const noexcept;
+
+    void notify_all() const noexcept;
+
 private:
 
     _T* _M_ptr;
@@ -1417,6 +1423,13 @@ public:
     {
         return __atomic_compare_exchange(&_M_storage.__value, &__expect, &__desire, false, int(__mo), int(__mo));
     }
+
+    void wait(_T, memory_order __mo = memory_order::seq_cst) const noexcept;
+
+    void notify_one() const noexcept;
+
+    void notify_all() const noexcept;
+
 
     using __storage_t = __detail::__atomic_storage_union<_T, _T>;
     __storage_t _M_storage;
