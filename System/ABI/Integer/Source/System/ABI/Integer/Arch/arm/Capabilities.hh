@@ -3,8 +3,19 @@
 #define __SYSTEM_CRT_ARCH_ARM_CAPABILITIES_H
 
 
-#if !defined(__arm__)
+#if !defined(__arm__) && !defined(__aarch64__)
 #  error Incompatible architecture
+#endif
+
+#ifndef __INTEGER_ASSUME_ISA64
+#  if defined(__ARM_64BIT_STATE)
+#    define __INTEGER_ASSUME_ISA64 1
+#  endif
+#endif
+
+// Support for 128-bit arithmetic operations.
+#if __INTEGER_ASSUME_ISA64
+#  define __SYSTEM_ABI_INTEGER_PROVIDE_128BIT 1
 #endif
 
 // Features which compilers provide flags for.
@@ -24,12 +35,22 @@
 #endif
 
 // Arithmetic capabilities.
-#define __INTEGER_ARCH_SHIFT_CAP      __INTEGER_SHIFT_64
-#define __INTEGER_ARCH_MUL_CAP        __INTEGER_MUL_64
-#if __ARM_FEATURE_IDIV
-#  define __INTEGER_ARCH_DIV_CAP      __INTEGER_DIV_32  
+#if __INTEGER_ASSUME_ISA64
+#  define __INTEGER_ARCH_SHIFT_CAP      __INTEGER_SHIFT_128
+#  define __INTEGER_ARCH_MUL_CAP        __INTEGER_MUL_128
+#  if __ARM_FEATURE_IDIV
+#    define __INTEGER_ARCH_DIV_CAP      __INTEGER_DIV_64
+#  else
+#    define __INTEGER_ARCH_DIV_CAP      __INTEGER_DIV_NONE
+#  endif
 #else
-#  define __INTEGER_ARCH_DIV_CAP      __INTEGER_DIV_NONE
+#  define __INTEGER_ARCH_SHIFT_CAP      __INTEGER_SHIFT_64
+#  define __INTEGER_ARCH_MUL_CAP        __INTEGER_MUL_64
+#  if __ARM_FEATURE_IDIV
+#    define __INTEGER_ARCH_DIV_CAP      __INTEGER_DIV_32  
+#  else
+#    define __INTEGER_ARCH_DIV_CAP      __INTEGER_DIV_NONE
+#  endif
 #endif
 
 // Byte swaps are always supported natively (REV opcode).

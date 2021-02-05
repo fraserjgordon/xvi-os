@@ -5,6 +5,7 @@ declare_args()
 {
     # Prefix used for compiler executables (e.g. "sparc-xvi-"")
     sparc_toolchain_prefix = ""
+    sparc64_toolchain_prefix = ""
 }
 
 if (cross_toolchain_root != "" && sparc_toolchain_prefix == "")
@@ -12,8 +13,18 @@ if (cross_toolchain_root != "" && sparc_toolchain_prefix == "")
     sparc_toolchain_prefix = "sparc-xvi-"
 }
 
+if (cross_toolchain_root != "" && sparc64_toolchain_prefix == "")
+{
+    sparc64_toolchain_prefix = "sparc64-xvi-"
+}
+
+if (sparc64_toolchain_prefix == "" && sparc_toolchain_prefix != "")
+{
+    sparc64_toolchain_prefix = sparc_toolchain_prefix
+}
+
 # Common settings for all Sparc GCC toolchains.
-vars_gcc =
+vars_gcc_common =
 {
     arch_cflags     = []
     toolchain_arch  = "sparc"
@@ -23,6 +34,11 @@ vars_gcc =
     {
         toolchain_root = cross_toolchain_root
     }
+}
+
+vars_gcc_32 =
+{
+    forward_variables_from(vars_gcc_common, "*")
 
     if (sparc_toolchain_prefix != "")
     {
@@ -30,21 +46,31 @@ vars_gcc =
     }
 }
 
+vars_gcc_64 =
+{
+    forward_variables_from(vars_gcc_common, "*")
+
+    if (sparc64_toolchain_prefix != "")
+    {
+        toolchain_prefix = sparc64_toolchain_prefix
+    }
+}
+
 # Settings for v8 Sparc GCC toolchains.
 vars_gcc_sparcv8 =
 {
-    forward_variables_from(vars_gcc, "*")
+    forward_variables_from(vars_gcc_32, "*")
 
-    arch_cflags += [ "-mcpu=v8" ]
+    #arch_cflags += [ "-mcpu=v8" ]
     toolchain_cpu = "sparcv8"
 }
 
 # Settings for v9 Sparc GCC toolchains.
 vars_gcc_sparcv9 =
 {
-    forward_variables_from(vars_gcc, "*")
+    forward_variables_from(vars_gcc_64, "*")
 
-    arch_cflags += [ "-mcpu=v9", "-m64" ]
+    #arch_cflags += [ "-mcpu=v9", "-m64" ]
     toolchain_cpu = "sparcv9"
 }
 
@@ -54,12 +80,12 @@ if (use_clang)
 }
 else
 {
-    gcc_toolchain("sparcv8")
+    gcc_toolchain("v8")
     {
         forward_variables_from(vars_gcc_sparcv8, "*")
     }
 
-    gcc_toolchain("sparcv9")
+    gcc_toolchain("v9")
     {
         forward_variables_from(vars_gcc_sparcv9, "*")
     }

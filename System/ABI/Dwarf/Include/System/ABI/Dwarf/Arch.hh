@@ -9,7 +9,7 @@ namespace System::ABI::Dwarf { using FrameTraitsNative = FrameTraitsX86_64; }
 #elif defined(__i386__)
 #  include <System/ABI/Dwarf/Registers_x86.hh>
 namespace System::ABI::Dwarf { using FrameTraitsNative = FrameTraitsX86; }
-#elif defined(__arm__)
+#elif defined(__arm__) || defined(__aarch64__)
 #  include <System/ABI/Dwarf/RegistersARM.hh>
 #elif defined(__mips__)
 #  include <System/ABI/Dwarf/RegistersMIPS.hh>

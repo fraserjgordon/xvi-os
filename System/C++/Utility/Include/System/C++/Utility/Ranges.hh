@@ -1078,8 +1078,13 @@ public:
 
 private:
 
+    basic_istream<_CharT, _Traits>* _M_stream = nullptr;
+    _Val                            _M_object = _Val();
+
     class iterator
     {
+    public:
+
         using iterator_category     = input_iterator_tag;
         using difference_type       = ptrdiff_t;
         using value_type            = _Val;
@@ -1115,16 +1120,14 @@ private:
 
         friend bool operator==(const iterator& __x, default_sentinel_t)
         {
-            return __x._M_parent == nullptr || !*__x._M_parent->_M_stream;
+            auto parent = __x._M_parent;
+            return parent == nullptr || !(*parent->_M_stream);
         }
 
     private:
 
         basic_istream_view* _M_parent = nullptr;
     };
-
-    basic_istream<_CharT, _Traits>* _M_stream = nullptr;
-    _Val                            _M_object = _Val();
 };
 
 

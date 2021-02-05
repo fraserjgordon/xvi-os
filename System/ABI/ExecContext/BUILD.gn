@@ -16,6 +16,7 @@ library("ExecContext")
     deps =
     [
         "//ABI/String",
+        "//ABI/C++:Guard",
         "//C++/LanguageSupport:LanguageSupport_headers",
         "//C++/Utility:Utility_headers",
     ]

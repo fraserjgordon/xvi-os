@@ -176,6 +176,9 @@ enum class dwarf_op : std::uint8_t
     implicit_value      = 0x9e, // (location description) Provides an object inline within the expression bytecode
     stack_value = 0x9f, // (location description) Provides an object as the value at the top of the stack
 
+    // ARM extensions.
+    arm_operation           = 0xea,
+
     // GNU extensions.
     gnu_push_tls_address    = 0xe0,
     gnu_uninit              = 0xf0,

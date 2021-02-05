@@ -37,7 +37,7 @@ struct mips_o32_full_frame_t
 };
 
 
-#if defined(__ABIO32)
+#if defined(_ABIO32)
 using mips_frame_t = mips_o32_frame_t;
 using mips_full_frame_t = mips_o32_full_frame_t;
 #endif

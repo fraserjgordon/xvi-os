@@ -30,7 +30,22 @@ library("Atomic")
         "Config.hh",
     ]
 
-    if (current_arch == "x86")
+    if (current_arch == "arm")
+    {
+        sources +=
+        [
+            "Arch/ARM/Primitives.cc",
+            "Arch/ARM/Primitives_v8.cc",
+        ]
+    }
+    else if (current_arch == "powerpc")
+    {
+        sources +=
+        [
+            "Arch/PowerPC/Primitives.cc",
+        ]
+    }
+    else if (current_arch == "x86")
     {
         sources +=
         [
@@ -39,5 +54,9 @@ library("Atomic")
             "Arch/x86/Primitives.cc",
             "Arch/x86/Wait.cc",
         ]
+    }
+    else
+    {
+        #assert(false, "unsupported architecture: ${current_arch}")
     }
 }

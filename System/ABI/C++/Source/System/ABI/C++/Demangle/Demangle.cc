@@ -2230,41 +2230,8 @@ struct exception_spec
 
     variant_t   spec;
 
-    void format(substitution_table& sub, std::string& out) const
-    {
-        std::visit([&]<class T>(const T& t)
-        {
-            if constexpr (std::is_same_v<T, non_throwing>)
-            {
-                out += "noexcept ";
-            }
-            else if constexpr (std::is_same_v<T, computed_noexcept>)
-            {
-                out += "noexcept(";
-                t.e.format(sub, out);
-                out += ") ";
-            }
-            else if constexpr (std::is_same_v<T, dynamic>)
-            {
-                bool first = true;
-                out += "throw(";
-                for (const auto& p : t.types)
-                {
-                    if (!first)
-                        out += ", ";
-                    else
-                        first = false;
-
-                    p->format(sub, out);
-                }
-                out += ") ";
-            }
-            else
-            {
-                static_assert(!std::is_same_v<T, T>);
-            }
-        }, spec);
-    }
+    // Defined after struct type is defined.
+    void format(substitution_table& sub, std::string& out) const;
 
     static std::optional<exception_spec> parse(std::string_view& in)
     {
@@ -2922,61 +2889,8 @@ struct special_name
 
     variant_t   sn;
 
-    void format(substitution_table& sub, std::string& out) const
-    {
-        std::visit([&]<class T>(const T& t)
-        {
-            if constexpr (std::is_same_v<T, virtual_table>)
-            {
-                out += "vtable for ";
-                t.for_type.format(sub, out);
-            }
-            else if constexpr (std::is_same_v<T, vtt>)
-            {
-                out += "vtt for ";
-                t.for_type.format(sub, out);
-            }
-            else if constexpr (std::is_same_v<T, typeinfo>)
-            {
-                out += "typeinfo for ";
-                t.for_type.format(sub, out);
-            }
-            else if constexpr (std::is_same_v<T, typeinfo_name>)
-            {
-                out += "typeinfo name for ";
-                t.for_type.format(sub, out);
-            }
-            else if constexpr (std::is_same_v<T, virtual_thunk>)
-            {
-                out += "non-virtual thunk to ";
-                t.base->format(sub, out);
-            }
-            else if constexpr (std::is_same_v<T, virtual_covariant_thunk>)
-            {
-                out += "virtual thunk to ";
-                t.base->format(sub, out);
-            }
-            else if constexpr (std::is_same_v<T, guard_variable>)
-            {
-                out += "guard variable for ";
-                t.var_name.format(sub, out);
-            }
-            else if constexpr (std::is_same_v<T, temporary>)
-            {
-                out += std::format("temporary #{} for ", t.id);
-                t.object.format(sub, out);
-            }
-            else if constexpr (std::is_same_v<T, transaction_safe_entry>)
-            {
-                out += "transaction safe entry for ";
-                t.entry_for->format(sub, out);
-            }
-            else
-            {
-                static_assert(!std::is_same_v<T, T>);
-            }
-        }, sn);
-    }
+    // Defined after struct encoding is defined.
+    void format(substitution_table& sub, std::string& out) const;
 
     static std::optional<special_name> parse(std::string_view& in)
     {
@@ -3220,6 +3134,99 @@ struct mangled_name
         return mangled_name{std::move(*e), std::move(suffix)};
     }
 };
+
+
+void exception_spec::format(substitution_table& sub, std::string& out) const
+{
+    std::visit([&]<class T>(const T& t)
+    {
+        if constexpr (std::is_same_v<T, non_throwing>)
+        {
+            out += "noexcept ";
+        }
+        else if constexpr (std::is_same_v<T, computed_noexcept>)
+        {
+            out += "noexcept(";
+            t.e.format(sub, out);
+            out += ") ";
+        }
+        else if constexpr (std::is_same_v<T, dynamic>)
+        {
+            bool first = true;
+            out += "throw(";
+            for (const auto& p : t.types)
+            {
+                if (!first)
+                    out += ", ";
+                else
+                    first = false;
+
+                p->format(sub, out);
+            }
+            out += ") ";
+        }
+        else
+        {
+            static_assert(!std::is_same_v<T, T>);
+        }
+    }, spec);
+}
+
+void special_name::format(substitution_table& sub, std::string& out) const
+{
+    std::visit([&]<class T>(const T& t)
+    {
+        if constexpr (std::is_same_v<T, virtual_table>)
+        {
+            out += "vtable for ";
+            t.for_type.format(sub, out);
+        }
+        else if constexpr (std::is_same_v<T, vtt>)
+        {
+            out += "vtt for ";
+            t.for_type.format(sub, out);
+        }
+        else if constexpr (std::is_same_v<T, typeinfo>)
+        {
+            out += "typeinfo for ";
+            t.for_type.format(sub, out);
+        }
+        else if constexpr (std::is_same_v<T, typeinfo_name>)
+        {
+            out += "typeinfo name for ";
+            t.for_type.format(sub, out);
+        }
+        else if constexpr (std::is_same_v<T, virtual_thunk>)
+        {
+            out += "non-virtual thunk to ";
+            t.base->format(sub, out);
+        }
+        else if constexpr (std::is_same_v<T, virtual_covariant_thunk>)
+        {
+            out += "virtual thunk to ";
+            t.base->format(sub, out);
+        }
+        else if constexpr (std::is_same_v<T, guard_variable>)
+        {
+            out += "guard variable for ";
+            t.var_name.format(sub, out);
+        }
+        else if constexpr (std::is_same_v<T, temporary>)
+        {
+            out += std::format("temporary #{} for ", t.id);
+            t.object.format(sub, out);
+        }
+        else if constexpr (std::is_same_v<T, transaction_safe_entry>)
+        {
+            out += "transaction safe entry for ";
+            t.entry_for->format(sub, out);
+        }
+        else
+        {
+            static_assert(!std::is_same_v<T, T>);
+        }
+    }, sn);
+}
 
 
 static std::unique_ptr<type> parse_type(std::string_view& in)

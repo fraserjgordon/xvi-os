@@ -45,13 +45,23 @@ template("gcc_toolchain")
 
     # Mandatory GCC flags (e.g. target architecture options).
     arch_cflags = ""
+    #arch_ldflags = ""
+    #arch_soflags = ""
     if (defined(invoker.arch_cflags))
     {
         arch_cflags = string_join(" ", invoker.arch_cflags)
     }
+    # if (defined(invoker.arch_ldflags))
+    # {
+    #     arch_ldflags = string_join(" ", invoker.arch_ldflags)
+    # }
+    # if (defined(invoker.arch_soflags))
+    # {
+    #     arch_soflags = string_join(" ", invoker.arch_soflags)
+    # }
 
     # Mandatory Rust flags (e.g. target architecture options).
-    arch_rustflags =""
+    arch_rustflags = ""
     if (defined(invoker.arch_rustflags))
     {
         arch_rustflags = string_join(" ", invoker.arch_rustflags)

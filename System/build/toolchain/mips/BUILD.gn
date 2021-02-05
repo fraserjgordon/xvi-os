@@ -1,3 +1,4 @@
+import("//build/config/default_configs.gni")
 import("//build/config/global_args.gni")
 import("//build/toolchain/gcc_toolchain.gni")
 
@@ -5,6 +6,11 @@ declare_args()
 {
     # Prefix used for compiler executables (e.g. "mips-xvi-"")
     mips_toolchain_prefix = ""
+    mips64_toolchain_prefix = ""
+
+    # Default MIPS ABI.
+    mips32_abi = "32"
+    mips64_abi = "64"
 }
 
 if (cross_toolchain_root != "" && mips_toolchain_prefix == "")
@@ -12,8 +18,13 @@ if (cross_toolchain_root != "" && mips_toolchain_prefix == "")
     mips_toolchain_prefix = "mips-xvi-"
 }
 
+if (cross_toolchain_root != "" && mips64_toolchain_prefix == "")
+{
+    mips64_toolchain_prefix = "mips64-xvi-"
+}
+
 # Common settings for all PowerPC GCC toolchains.
-vars_gcc =
+vars_gcc_common =
 {
     arch_cflags     = []
     toolchain_arch  = "mips"
@@ -23,6 +34,11 @@ vars_gcc =
     {
         toolchain_root = cross_toolchain_root
     }
+}
+
+vars_gcc_32 =
+{
+    forward_variables_from(vars_gcc_common, "*")
 
     if (mips_toolchain_prefix != "")
     {
@@ -30,21 +46,31 @@ vars_gcc =
     }
 }
 
+vars_gcc_64 =
+{
+    forward_variables_from(vars_gcc_common, "*")
+
+    if (mips64_toolchain_prefix != "")
+    {
+        toolchain_prefix = mips64_toolchain_prefix
+    }
+}
+
 # Settings for 32-bit MIPS GCC toolchains.
 vars_gcc_mips32 =
 {
-    forward_variables_from(vars_gcc, "*")
+    forward_variables_from(vars_gcc_32, "*")
 
-    arch_cflags += [ "-march=mips32" ]
+    #arch_cflags += [ "-march=mips32", "-mabi=${mips32_abi}", "-mabicalls" ]
     toolchain_cpu = "mips32"
 }
 
 # Settings for 64-bit MIPS GCC toolchains.
 vars_gcc_mips64 =
 {
-    forward_variables_from(vars_gcc, "*")
+    forward_variables_from(vars_gcc_64, "*")
 
-    arch_cflags += [ "-march=mips64" ]
+    #arch_cflags += [ "-march=mips64", "-mabi=${mips64_abi}", "-mabicalls" ]
     toolchain_cpu = "mips64"
 }
 

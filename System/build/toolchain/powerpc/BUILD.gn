@@ -5,6 +5,7 @@ declare_args()
 {
     # Prefix used for compiler executables (e.g. "powerpc-xvi-"")
     powerpc_toolchain_prefix = ""
+    powerpc64_toolchain_prefix = ""
 }
 
 if (cross_toolchain_root != "" && powerpc_toolchain_prefix == "")
@@ -12,8 +13,18 @@ if (cross_toolchain_root != "" && powerpc_toolchain_prefix == "")
     powerpc_toolchain_prefix = "powerpc-xvi-"
 }
 
+if (cross_toolchain_root != "" && powerpc64_toolchain_prefix == "")
+{
+    powerpc64_toolchain_prefix = "powerpc64-xvi-"
+}
+
+if (powerpc64_toolchain_prefix == "" && powerpc_toolchain_prefix != "")
+{
+    powerpc64_toolchain_prefix = powerpc_toolchain_prefix
+}
+
 # Common settings for all PowerPC GCC toolchains.
-vars_gcc =
+vars_gcc_common =
 {
     arch_cflags     = []
     toolchain_arch  = "powerpc"
@@ -23,6 +34,11 @@ vars_gcc =
     {
         toolchain_root = cross_toolchain_root
     }
+}
+
+vars_gcc_32 =
+{
+    forward_variables_from(vars_gcc_common, "*")
 
     if (powerpc_toolchain_prefix != "")
     {
@@ -30,21 +46,31 @@ vars_gcc =
     }
 }
 
+vars_gcc_64 =
+{
+    forward_variables_from(vars_gcc_common, "*")
+
+    if (powerpc64_toolchain_prefix != "")
+    {
+        toolchain_prefix = powerpc64_toolchain_prefix
+    }
+}
+
 # Settings for 32-bit PowerPC GCC toolchains.
 vars_gcc_ppc32 =
 {
-    forward_variables_from(vars_gcc, "*")
+    forward_variables_from(vars_gcc_32, "*")
 
-    arch_cflags += [ "-m32" ]
+    #arch_cflags += [ "-m32" ]
     toolchain_cpu = "ppc32"
 }
 
 # Settings for 64-bit PowerPC GCC toolchains.
 vars_gcc_ppc64 =
 {
-    forward_variables_from(vars_gcc, "*")
+    forward_variables_from(vars_gcc_64, "*")
 
-    arch_cflags += [ "-m64" ]
+    #arch_cflags += [ "-m64" ]
     toolchain_cpu = "ppc64"
 }
 

@@ -20,11 +20,11 @@ static inline guard_variable* getGuard(std::int64_t* var)
 }
 
 
-int __cxa_guard_acquire(std::int64_t* ptr)
+/*int __cxa_guard_acquire(std::int64_t* ptr)
 {
     auto* guard = getGuard(ptr);
 
-}
+}*/
 
 
 } // namespace __cxxabiv1

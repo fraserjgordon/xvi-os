@@ -5,11 +5,17 @@ declare_args()
 {
     # Prefix used for compiler executables (e.g. "arm-xvi-"")
     arm_toolchain_prefix = ""
+    arm64_toolchain_prefix = ""
 }
 
 if (cross_toolchain_root != "" && arm_toolchain_prefix == "")
 {
     arm_toolchain_prefix = "arm-xvi-"
+}
+
+if (cross_toolchain_root != "" && arm64_toolchain_prefix == "")
+{
+    arm64_toolchain_prefix = "aarch64-xvi-"
 }
 
 # Common settings for all ARM GCC toolchains.
@@ -30,6 +36,23 @@ vars_gcc =
     }
 }
 
+vars_gcc_arm64 =
+{
+    arch_cflags     = []
+    toolchain_arch  = "arm"
+    toolchain_os    = "xvi"
+
+    if (cross_toolchain_root != "")
+    {
+        toolchain_root = cross_toolchain_root
+    }
+
+    if (arm64_toolchain_prefix != "")
+    {
+        toolchain_prefix = arm64_toolchain_prefix
+    }
+}
+
 # Settings for v6 ARM GCC toolchains.
 vars_gcc_armv6 =
 {
@@ -38,6 +61,15 @@ vars_gcc_armv6 =
     arch_cflags += [ "-march=armv6" ]
     toolchain_cpu = "armv6"
 }
+
+vars_gcc_armv8 =
+{
+    forward_variables_from(vars_gcc_arm64, "*")
+
+    arch_cflags += [ "-march=armv8-a" ]
+    toolchain_cpu = "armv8-a"
+}
+
 
 if (use_clang)
 {
@@ -48,5 +80,10 @@ else
     gcc_toolchain("armv6")
     {
         forward_variables_from(vars_gcc_armv6, "*")
+    }
+
+    gcc_toolchain("armv8")
+    {
+        forward_variables_from(vars_gcc_armv8, "*")
     }
 }

@@ -6,7 +6,7 @@
 #if defined(__x86_64__) || defined(__i386__)
 #  define __SYSTEM_ABI_INTEGER_ARCH_HDR_BITOPS         <System/ABI/Integer/Arch/x86/BitOps.hh>
 #  define __SYSTEM_ABI_INTEGER_ARCH_HDR_CAPABILITIES   <System/ABI/Integer/Arch/x86/Capabilities.hh>
-#elif defined(__arm__)
+#elif defined(__arm__) || defined(__aarch64__)
 #  define __SYSTEM_ABI_INTEGER_ARCH_HDR_BITOPS         <System/ABI/Integer/Arch/arm/BitOps.hh>
 #  define __SYSTEM_ABI_INTEGER_ARCH_HDR_CAPABILITIES   <System/ABI/Integer/Arch/arm/Capabilities.hh>
 #elif defined(__mips__)

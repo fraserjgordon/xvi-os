@@ -17,8 +17,12 @@ library("Format")
 
     deps =
     [
-        "//ABI/C++",
         "//ABI/String",
+    ]
+
+    deps_shared =
+    [
+        "//ABI/C++",
     ]
 
     public_headers =

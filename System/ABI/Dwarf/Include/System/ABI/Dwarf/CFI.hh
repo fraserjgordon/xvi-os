@@ -65,6 +65,9 @@ enum class dwarf_cfi_misc : std::uint8_t
     val_offset_sf       = 0x15, // Like val_offset but the offset is signed and factored.
     val_expression      = 0x16, // The register's value is given by a DWARF expression.
 
+    // ARM extensions.
+    arm_negate_ra_state             = 0x2d, // Negates bit 0 of the RA_SIGN_STATE register.
+
     // MIPS extensions.
     mips_advance_loc8               = 0x1d, // Advances the PC by an 8-byte constant * the code alignment factor.
 

@@ -15,18 +15,6 @@ namespace System::ABI::Dwarf
 
 // Forward declarations.
 enum class reg_sparc : std::uint16_t;
-struct FrameTraitsSparc32;
-struct FrameTraitsSparc64;
-
-
-// Alias for ARM targets.
-#if defined(__sparc__)
-#  if defined(__arch64__)
-using FrameTraitsNative = FrameTraitsSparc64;
-#  else
-using FrameTraitsNative = FrameTraitsSparc32;
-#  endif
-#endif
 
 
 // The DWARF register numbers for Sparc.
@@ -163,7 +151,7 @@ struct FrameTraitsSparc
         // CFA get/set methods.
         reg_t GetCFA() const
         {
-            return gp[0]
+            return gp[0];
         }
         void SetCFA(reg_t cfa)
         {
@@ -382,6 +370,16 @@ struct FrameTraitsSparc
 
 using FrameTraitsSparc32 = FrameTraitsSparc<32>;
 using FrameTraitsSparc64 = FrameTraitsSparc<64>;
+
+// Alias for SPARC targets.
+#if defined(__sparc__)
+#  if defined(__arch64__)
+using FrameTraitsNative = FrameTraitsSparc64;
+#  else
+using FrameTraitsNative = FrameTraitsSparc32;
+#  endif
+#endif
+
 
 
 } // namespace System::ABI::Dwarf

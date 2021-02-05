@@ -3,16 +3,18 @@
 #include <System/ABI/Atomic/AtomicSpinlock.hh>
 
 
+#if !defined(__ARM_ARCH)
+#  error unknown ARM architecture, cannot build
+#endif
+
+#if __ARM_ARCH < 8
 namespace System::ABI::Atomic
 {
 
 
 // Auto-detect various architecture options.
 //
-//! @TODO: these should be refactored into __CRT_HAS_LDREXB etc.
-#if !defined(__ARM_ARCH)
-#  error unknown ARM architecture, cannot build
-#endif
+//! @todo: these should be refactored into __CRT_HAS_LDREXB etc.
 #if !defined(__CRT_ASSUME_ARMV7) && __ARM_ARCH >= 7
 #  define __CRT_ASSUME_ARMV7 1
 #endif
@@ -1176,3 +1178,5 @@ bool __Atomic_compare_exchange(__size_t n, volatile void* ptr, void* expect, voi
 }
 
 } // namespace System::ABI::Atomic
+
+#endif // if __ARM_ARCH < 8

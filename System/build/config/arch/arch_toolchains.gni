@@ -1,11 +1,18 @@
 arch_toolchains_list =
 [
+    "armv6!arm:armv6",
+    "armv7a!arm:armv7a",
+    "armv8a!arm:armv8a",
     "arm!arm:armv6",
+    "arm64!arm:armv8",
+
     "mips!mips:mips32",
     "mips64!mips:mips64",
+
     "powerpc!powerpc:ppc32",
     "powerpc64!powerpc:ppc64",
-    "sparc!sparc:sparcv8",
+
+    "sparc!sparc:v8",
     "sparc64!sparc:v9",
     "x64!x86:x64",
     "x86!x86:x86",

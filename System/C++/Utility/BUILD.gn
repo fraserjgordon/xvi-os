@@ -9,7 +9,9 @@ library("StdLib")
 
     deps =
     [
-        ":Utility_headers"
+        ":Utility_headers",
+
+        "//ABI/Integer",
     ]
 
     sources =
