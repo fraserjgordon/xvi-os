@@ -43,6 +43,12 @@ template("gcc_toolchain")
         ar_exe = invoker.ar_exe
     }
 
+    arch_toolchain_args = {}
+    if (defined(invoker.arch_toolchain_args))
+    {
+        arch_toolchain_args = invoker.arch_toolchain_args
+    }
+
     # Mandatory GCC flags (e.g. target architecture options).
     arch_cflags = ""
     #arch_ldflags = ""
@@ -76,6 +82,8 @@ template("gcc_toolchain")
             current_os      = toolchain_os
 
             compiler_id     = "gcc"
+
+            forward_variables_from(arch_toolchain_args, "*")
         }
 
         default_output_dir = "${toolchain_arch}/${toolchain_cpu}"

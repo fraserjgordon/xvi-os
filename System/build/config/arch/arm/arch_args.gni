@@ -1,5 +1,12 @@
 # ARM-specific build arguments.
 declare_args()
 {
+    # Internal argument. Set to the major revision of the target ARM architecture.
+    arm_arch_major = 0
 
+    # Internal argument. Set to the minor revision of the target ARM architecture (if arm_arch_major >= 8).
+    arm_arch_minor = 0
+
+    # Internal argument. Set to the targeted ARM architecture profile.
+    arm_arch_profile = ""
 }

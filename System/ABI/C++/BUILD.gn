@@ -1,3 +1,5 @@
+import("//build/config/arch/current_arch_config.gni")
+
 # Defaults for most of the sub-libraries.
 deps =
 [
@@ -5,6 +7,16 @@ deps =
 
     "//C++/LanguageSupport",
 ]
+
+if (current_arch == "arm" && arm_arch_major >= 8)
+{
+    # ARMv8 builds with -moutline-atomics cause most of these to depend on the
+    # ABI.Atomics library.
+    deps +=
+    [
+        "//ABI/Atomic",
+    ]
+}
 
 shared_define = "__SYSTEM_ABI_CXX_BUILD_SHARED"
 is_source_set = true
