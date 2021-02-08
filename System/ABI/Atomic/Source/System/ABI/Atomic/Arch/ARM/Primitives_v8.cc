@@ -1,6 +1,7 @@
 #include <System/ABI/Atomic/Atomic.hh>
 
 #include <System/ABI/Atomic/AtomicSpinlock.hh>
+#include <System/ABI/Atomic/Arch/ARM/Primitives.hh>
 
 
 #if !defined(__ARM_ARCH)

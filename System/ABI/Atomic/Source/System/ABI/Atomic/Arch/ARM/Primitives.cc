@@ -1,6 +1,7 @@
 #include <System/ABI/Atomic/Atomic.hh>
 
 #include <System/ABI/Atomic/AtomicSpinlock.hh>
+#include <System/ABI/Atomic/Arch/ARM/Primitives.hh>
 
 
 #if !defined(__ARM_ARCH)
@@ -14,7 +15,7 @@ namespace System::ABI::Atomic
 
 // Auto-detect various architecture options.
 //
-//! @todo: these should be refactored into __CRT_HAS_LDREXB etc.
+//! @todo: these should be refactored into __ATOMIC_HAS_LDREXB etc.
 #if !defined(__CRT_ASSUME_ARMV7) && __ARM_ARCH >= 7
 #  define __CRT_ASSUME_ARMV7 1
 #endif

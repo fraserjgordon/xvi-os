@@ -288,7 +288,7 @@ library("C++")
         "//ABI/TLS",
     ]
 
-    if (current_arch == "arm")
+    if (current_arch == "arm" && arm_arch_major < 8)
     {
         public_configs =
         [

@@ -12,10 +12,20 @@ namespace System::ABI::ExecContext
 {
 
 
-struct ppc32_frame_t
+// Althougth the frames defined in this file may have the same register layout, they are semantically different. In
+// order to prevent programming mistakes, they are defined as distinct types to prevent, for example, a frame being
+// captured as one ABI and then being restored as another.
+
+
+// 32-bit SysV ABI. Also used for the EABI but r2 is interpreted differently (SDA2 pointer rather than thread pointer).
+struct ppc32_sysv_frame_t
 {
+    // Registers with specific ABI-defined uses.
     std::uint32_t   r1;     // Stack frame pointer.
-    std::uint32_t   r2;     // TOC pointer.
+    std::uint32_t   r2;     // Thread pointer / small data area 2 (SDA2) pointer.
+    std::uint32_t   r13;    // Small data area (SDA) pointer.
+
+    // Non-volatile integer registers.
     std::uint32_t   r14;
     std::uint32_t   r15;
     std::uint32_t   r16;
@@ -32,28 +42,24 @@ struct ppc32_frame_t
     std::uint32_t   r27;
     std::uint32_t   r28;
     std::uint32_t   r29;
-    std::uint32_t   r30;
-    std::uint32_t   r31;
+    std::uint32_t   r30;    // May be used as a GOT pointer.
+    std::uint32_t   r31;    // May be used as a frame pointer.
 
+    // Only some fields of the condition register are non-volatile.
     std::uint32_t   cr;
-    std::uint32_t   xer;
+
     std::uint32_t   pc;
 };
 
-struct ppc32_full_frame_t
+// 64-bit ELFv1 ABI (also known as the AIX 64-bit ABI).
+struct ppc64_elfv1_frame_t
 {
-    std::uint32_t   r[32];
-    std::uint32_t   cr;
-    std::uint32_t   pc;
-    std::uint32_t   lr;
-    std::uint32_t   ctr;
-    std::uint32_t   xer;
-};
-
-struct ppc64_frame_t
-{
+    // Registers with specific ABI-defined uses.
     std::uint64_t   r1;     // Stack frame pointer.
     std::uint64_t   r2;     // TOC pointer.
+    std::uint64_t   r13;    // Thread-local storage pointer.
+
+    // Non-volatile integer registers.
     std::uint64_t   r14;
     std::uint64_t   r15;
     std::uint64_t   r16;
@@ -71,31 +77,81 @@ struct ppc64_frame_t
     std::uint64_t   r28;
     std::uint64_t   r29;
     std::uint64_t   r30;
-    std::uint64_t   r31;
+    std::uint64_t   r31;    // May be used as a frame pointer.
 
+    // Only some fields of the condition register are non-volatile.
     std::uint64_t   cr;
-    std::uint64_t   xer;
+
     std::uint64_t   pc;
 };
+
+struct ppc64_elfv2_frame_t
+{
+    // Registers with specific ABI-defined uses.
+    std::uint64_t   r1;     // Stack frame pointer.
+    std::uint64_t   r2;     // TOC pointer.
+    std::uint64_t   r13;    // Thread-local storage pointer.
+
+    // Non-volatile integer registers.
+    std::uint64_t   r14;
+    std::uint64_t   r15;
+    std::uint64_t   r16;
+    std::uint64_t   r17;
+    std::uint64_t   r18;
+    std::uint64_t   r19;
+    std::uint64_t   r20;
+    std::uint64_t   r21;
+    std::uint64_t   r22;
+    std::uint64_t   r23;
+    std::uint64_t   r24;
+    std::uint64_t   r25;
+    std::uint64_t   r26;
+    std::uint64_t   r27;
+    std::uint64_t   r28;
+    std::uint64_t   r29;
+    std::uint64_t   r30;
+    std::uint64_t   r31;    // May be used as a frame pointer.
+
+    // Only some fields of the condition register are non-volatile.
+    std::uint64_t   cr;
+
+    std::uint64_t   pc;
+};
+
+
+struct ppc32_full_frame_t
+{
+    std::uint32_t   r[32];
+    std::uint32_t   cr;
+    std::uint32_t   pc;
+};
+
 
 struct ppc64_full_frame_t
 {
     std::uint64_t   r[32];
     std::uint64_t   cr;
     std::uint64_t   pc;
-    std::uint64_t   lr;
-    std::uint64_t   ctr;
-    std::uint64_t   xer;
 };
 
 
 #if defined(_ARCH_PPC)
+// Full frame.
 #  if defined(_ARCH_PPC64)
-using powerpc_frame_t = ppc64_frame_t;
 using powerpc_full_frame_t = ppc64_full_frame_t;
 #  else
-using powerpc_frame_t = ppc32_frame_t;
 using powerpc_full_frame_t = ppc32_full_frame_t;
+#  endif
+
+// Non-volatile frame.
+#  if defined(_CALL_SYSV)
+using powerpc_frame_t = ppc32_sysv_frame_t;
+#  elif _CALL_ELF == 1
+using powerpc_frame_t = ppc64_elfv1_frame_t;
+#  elif _CALL_ELF == 2
+using powerpc_frame_t = ppc64_elfv2_frame_t;
+#  else
+#    error unknown PowerPC ABI
 #  endif
 #endif
 
@@ -119,7 +175,6 @@ using powerpc_full_frame_t = ppc32_full_frame_t;
 //!
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
 [[gnu::returns_twice]]
-[[gnu::sysv_abi]]
 std::pair<powerpc_frame_t*, std::uintptr_t>
 SwapContexts(powerpc_frame_t* next, std::uintptr_t param)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(SwapContexts);
@@ -131,7 +186,6 @@ SwapContexts(powerpc_frame_t* next, std::uintptr_t param)
 //!
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
 [[noreturn]]
-[[gnu::sysv_abi]]
 void ResumeContext(powerpc_frame_t* next, std::uintptr_t param)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(ResumeContext);
 
@@ -142,7 +196,6 @@ void ResumeContext(powerpc_frame_t* next, std::uintptr_t param)
 //!
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
 [[noreturn]]
-[[gnu::sysv_abi]]
 void ResumeContextFull(powerpc_full_frame_t* next)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(ResumeContextFull);
 
@@ -159,7 +212,6 @@ void ResumeContextFull(powerpc_full_frame_t* next)
 //!
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
 [[gnu::returns_twice]]
-[[gnu::sysv_abi]]
 std::pair<powerpc_frame_t*, std::uintptr_t>
 CaptureContext(powerpc_frame_t* ctxt, std::uintptr_t param_first)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(CaptureContext);
@@ -185,14 +237,12 @@ using create_context_fn_t = void (*)(powerpc_frame_t* prev_frame, std::uintptr_t
 
 //! @brief Creates a context by wrapping a call to a function.
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
-[[gnu::sysv_abi]]
 powerpc_frame_t*
 CreateContext(void* stack, std::size_t stack_size, create_context_fn_t, std::uintptr_t bound_param)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(CreateContext);
 
 //! @brief Creates a context by wrapping a call to a function using some copied data.
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
-[[gnu::sysv_abi]]
 powerpc_frame_t*
 CreateContextWithData(void* stack, std::size_t stack_size, create_context_fn_t fn, const void* data, std::size_t data_size)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(CreateContextWithData);

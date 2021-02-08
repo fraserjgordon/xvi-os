@@ -52,6 +52,15 @@ library("ExecContext")
             "Arch/ARM/AAPCS.S",
         ]
     }
+    else if (current_arch == "powerpc")
+    {
+        sources +=
+        [
+            "Arch/PowerPC/PPC.cc",
+            "Arch/PowerPC/PPC32.S",
+            "Arch/PowerPC/PPC64.S",
+        ]
+    }
     else if (current_arch == "x86")
     {
         sources +=
@@ -62,6 +71,10 @@ library("ExecContext")
             "Arch/x86/SysV_x86.S",
             "Arch/x86/Xsave.cc",
         ]
+    }
+    else
+    {
+        #assert(false, "unsupported architecture: ${current_arch}")
     }
 
     inputs =
