@@ -18,10 +18,23 @@ namespace System::ABI::ExecContext
 
 
 // 32-bit SysV ABI. Also used for the EABI but r2 is interpreted differently (SDA2 pointer rather than thread pointer).
+//
+// The layout of this structure is designed to comply with the SysV ABI stack frame layout requirements.
 struct ppc32_sysv_frame_t
 {
+    // The stack pointer for the previous frame is stored in a backchain field at 0(%r1).
+    std::uint32_t   r1;
+    
+    // Denoted as the link register save field in the ABI.
+    std::uint32_t   pc;
+
+    // Padding to meet ABI requirements.
+    std::uint32_t   pad[1];
+    
+    // Only some fields of the condition register are non-volatile.
+    std::uint32_t   cr;
+    
     // Registers with specific ABI-defined uses.
-    std::uint32_t   r1;     // Stack frame pointer.
     std::uint32_t   r2;     // Thread pointer / small data area 2 (SDA2) pointer.
     std::uint32_t   r13;    // Small data area (SDA) pointer.
 
@@ -44,12 +57,11 @@ struct ppc32_sysv_frame_t
     std::uint32_t   r29;
     std::uint32_t   r30;    // May be used as a GOT pointer.
     std::uint32_t   r31;    // May be used as a frame pointer.
-
-    // Only some fields of the condition register are non-volatile.
-    std::uint32_t   cr;
-
-    std::uint32_t   pc;
 };
+
+// SysV ABI stack frames must have quadword size.
+static_assert(sizeof(ppc32_sysv_frame_t) % 16 == 0, "invalid SysV ABI frame size");
+
 
 // 64-bit ELFv1 ABI (also known as the AIX 64-bit ABI).
 struct ppc64_elfv1_frame_t

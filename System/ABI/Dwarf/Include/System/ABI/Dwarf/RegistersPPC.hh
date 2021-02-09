@@ -15,18 +15,29 @@ namespace System::ABI::Dwarf
 {
 
 
+using ExecContext::ppc32_sysv_frame_t;
+using ExecContext::ppc64_elfv1_frame_t;
+using ExecContext::ppc64_elfv2_frame_t;
+using ExecContext::ppc32_full_frame_t;
+using ExecContext::ppc64_full_frame_t;
+
+
 // Forward declarations.
-struct FrameTraitsPPC32Sysv;
+struct FrameTraitsPPC32SysV;
 struct FrameTraitsPPC64ElfV1;
 struct FrameTraitsPPC64ElfV2;
 
 
 // Alias for PowerPC targets.
 #if defined(_ARCH_PPC)
-#  if defined(_ARCH_PPC64)
-using FrameTraitsNative = FrameTraitsPPC<64>;
+#  if defined(_CALL_SYSV)
+using FrameTraitsNative = FrameTraitsPPC32SysV;
+#  elif _CALL_ELF == 1
+using FrameTraitsNative = FrameTraitsPPC64ElfV1;
+#  elif _CALL_ELF == 2
+using FrameTraitsNative = FrameTraitsPPC64ElfV2;
 #  else
-using FrameTraitsNative = FrameTraitsPPC<32>;
+#    error unknown PowerPC ABI
 #  endif
 #endif
 
@@ -485,108 +496,65 @@ enum class reg_ppc64_elfv2 : std::int16_t
     texasr      = 116,
 };
 
+constexpr auto operator<=>(const reg_ppc64_elfv2& a, const reg_ppc64_elfv2& b)
+{
+    using T = std::underlying_type_t<reg_ppc64_elfv2>;
+    return static_cast<T>(a) <=> static_cast<T>(b);
+}
+
 
 // Shared traits for all PowerPC frame types.
-template <std::size_t Bits, typename RegEnum>
+template <std::size_t Bits, typename RegEnum, typename Frame, typename FullFrame>
 struct FrameTraitsPPCCommon
 {
     //! @todo: implement floating-point register save/restore.
     using reg_enum_t        = RegEnum;
     using reg_t             = std::conditional_t<Bits == 32, std::uint32_t, std::uint64_t>;
+    using frame_t           = Frame;
+    using full_frame_t      = FullFrame;
 
     // Registers with special purposes that a DWARF user needs to know about.
     static constexpr auto kStackPointerReg          = reg_enum_t::r1;
     static constexpr auto kInstructionPointerReg    = reg_enum_t::pc;
 
     // Downward-growing stack with no offset.
-    static constexpr std::ptrdiff_t kStackDirection = -1;
-    static constexpr std::ptrdiff_t kStackOffset    = 0;
+    static constexpr std::ptrdiff_t kStackDirection     = -1;
+    static constexpr std::ptrdiff_t kStackPointerOffset = 0;
+
+    // The core integer registers and CR0-8 plus the CFA and PC.
+    static constexpr std::size_t kUnwindRegisterCount = 33;
+    static constexpr std::size_t kUnwindStorageCount  = kUnwindRegisterCount + 2;
 
     // All frames save the same set of integer registers.
     static constexpr auto kCalleeSaveRegisters =
     { 
-        reg_ppc::r14,
-        reg_ppc::r15,
-        reg_ppc::r16,
-        reg_ppc::r17,
-        reg_ppc::r18,
-        reg_ppc::r19,
-        reg_ppc::r20,
-        reg_ppc::r21,
-        reg_ppc::r22,
-        reg_ppc::r23,
-        reg_ppc::r24,
-        reg_ppc::r25,
-        reg_ppc::r26,
-        reg_ppc::r27,
-        reg_ppc::r28,
-        reg_ppc::r29,
-        reg_ppc::r30,
-        reg_ppc::r31,
-    };
-};
-
-
-// Traits class for PowerPC.
-template <std::size_t Bits>
-struct FrameTraitsPPC
-{
-    using reg_enum_t    = reg_ppc;
-
-    // Register save slots are 32-bit.
-    using reg_t         = std::conditional_t<Bits == 32, std::uint32_t, std::conditional_t<Bits == 64, std::uint64_t, void>>;
-
-    //! @todo: implement floating-point register save/restore.
-    using float_reg_t   = void;
-
-    // Which registers are used for special purposes.
-    static constexpr auto kStackPointerReg          = reg_ppc::r1;
-    static constexpr auto kInstructionPointerReg    = reg_ppc::pc;
-
-    // Stack grows downwards.
-    static constexpr std::ptrdiff_t kStackDirection = -1;
-
-    // Callee-saved registers.
-    static constexpr auto kCalleeSaveRegisters =
-    { 
-        reg_ppc::r14,
-        reg_ppc::r15,
-        reg_ppc::r16,
-        reg_ppc::r17,
-        reg_ppc::r18,
-        reg_ppc::r19,
-        reg_ppc::r20,
-        reg_ppc::r21,
-        reg_ppc::r22,
-        reg_ppc::r23,
-        reg_ppc::r24,
-        reg_ppc::r25,
-        reg_ppc::r26,
-        reg_ppc::r27,
-        reg_ppc::r28,
-        reg_ppc::r29,
-        reg_ppc::r30,
-        reg_ppc::r31,
+        reg_enum_t::r1,
+        reg_enum_t::r2,
+        reg_enum_t::r13,
+        reg_enum_t::r14,
+        reg_enum_t::r15,
+        reg_enum_t::r16,
+        reg_enum_t::r17,
+        reg_enum_t::r18,
+        reg_enum_t::r19,
+        reg_enum_t::r20,
+        reg_enum_t::r21,
+        reg_enum_t::r22,
+        reg_enum_t::r23,
+        reg_enum_t::r24,
+        reg_enum_t::r25,
+        reg_enum_t::r26,
+        reg_enum_t::r27,
+        reg_enum_t::r28,
+        reg_enum_t::r29,
+        reg_enum_t::r30,
+        reg_enum_t::r31,
     };
 
-    // Offset to apply when converting the CFA into the stack pointer.
-    static constexpr std::ptrdiff_t kStackPointerOffset = 0;
 
-    // All core integer registers, LR, CTR, CR0-8, XER plus the CFA and return address.
-    static constexpr std::size_t kUnwindRegisterCount = 36;
-    static constexpr std::size_t kUnwindStorageCount  = kUnwindRegisterCount + 2;
-
-    //! @todo: floating point save and resture.
-
-    // Structure suitable for holding the preserved registers.
     struct reg_storage_t
     {
         reg_t gp[kUnwindStorageCount];
-
-        constexpr bool IsConditionRegister(reg_enum_t which) const
-        {
-            return (reg_ppc::cr0 <= which && which <= reg_ppc::cr7);
-        }
 
         // CFA get/set methods.
         reg_t GetCFA() const
@@ -608,125 +576,106 @@ struct FrameTraitsPPC
             gp[1] = ra;
         }
 
-        reg_t GetConditionRegister(reg_enum_t which) const
+        // Condition register get/set methods.
+        reg_t GetConditionRegister() const
         {
-            auto offset = std::size_t(which) - std::size_t(reg_ppc::cr0);
-            auto cr = gp[RegisterToIndex(reg_ppc::cr0)];
-            auto shift = offset * 4;
-            return (cr >> shift) & 0x0F;
+            return gp[2];
         }
-        void SetConditionRegister(reg_enum_t which, reg_t value)
+        void SetConditionRegister(reg_t cr)
         {
-            auto index = RegisterToIndex(reg_ppc::cr0);
-            auto offset = std::size_t(which) - std::size_t(reg_ppc::cr0);
-            auto shift = offset * 4;
-            auto mask = (0x0F << shift);
-
-            auto cr = gp[index];
-            cr = (cr & ~mask) | ((value << shift) & mask);
-            gp[index] = cr;
+            gp[2] = cr;
         }
 
         // General-purpose register get/set methods.
         reg_t GetGPRegister(reg_enum_t which) const
         {
             // Assumes: IsValidGPRegister(which).
-            if (IsConditionRegister(which))
-                return GetConditionRegister(which);
-
             return gp[RegisterToIndex(which)];
         }
         void SetGPRegister(reg_enum_t which, reg_t value)
         {
             // Assumes: IsValidGPRegister(which).
-            if (IsConditionRegister(which))
-                return SetConditionRegister(which, value);
-
             gp[RegisterToIndex(which)] = value;
         }
 
-        using frame_t = std::conditional_t<Bits == 64, ExecContext::ppc64_frame_t, ExecContext::ppc32_frame_t>;
-        using full_frame_t = std::conditional_t<Bits == 64, ExecContext::ppc64_full_frame_t, ExecContext::ppc32_full_frame_t>;
-
         void CaptureFrame(const frame_t& frame)
         {
-            SetGPRegister(reg_ppc::r14, frame.r14);
-            SetGPRegister(reg_ppc::r15, frame.r15);
-            SetGPRegister(reg_ppc::r16, frame.r16);
-            SetGPRegister(reg_ppc::r17, frame.r17);
-            SetGPRegister(reg_ppc::r18, frame.r18);
-            SetGPRegister(reg_ppc::r19, frame.r19);
-            SetGPRegister(reg_ppc::r20, frame.r20);
-            SetGPRegister(reg_ppc::r21, frame.r21);
-            SetGPRegister(reg_ppc::r22, frame.r22);
-            SetGPRegister(reg_ppc::r23, frame.r23);
-            SetGPRegister(reg_ppc::r24, frame.r24);
-            SetGPRegister(reg_ppc::r25, frame.r25);
-            SetGPRegister(reg_ppc::r26, frame.r26);
-            SetGPRegister(reg_ppc::r27, frame.r27);
-            SetGPRegister(reg_ppc::r28, frame.r28);
-            SetGPRegister(reg_ppc::r29, frame.r29);
-            SetGPRegister(reg_ppc::r30, frame.r30);
-            SetGPRegister(reg_ppc::r31, frame.r31);
+            SetGPRegister(reg_enum_t::r1, frame.r1);
+            SetGPRegister(reg_enum_t::r2, frame.r2);
+            SetGPRegister(reg_enum_t::r13, frame.r13);
+            SetGPRegister(reg_enum_t::r14, frame.r14);
+            SetGPRegister(reg_enum_t::r15, frame.r15);
+            SetGPRegister(reg_enum_t::r16, frame.r16);
+            SetGPRegister(reg_enum_t::r17, frame.r17);
+            SetGPRegister(reg_enum_t::r18, frame.r18);
+            SetGPRegister(reg_enum_t::r19, frame.r19);
+            SetGPRegister(reg_enum_t::r20, frame.r20);
+            SetGPRegister(reg_enum_t::r21, frame.r21);
+            SetGPRegister(reg_enum_t::r22, frame.r22);
+            SetGPRegister(reg_enum_t::r23, frame.r23);
+            SetGPRegister(reg_enum_t::r24, frame.r24);
+            SetGPRegister(reg_enum_t::r25, frame.r25);
+            SetGPRegister(reg_enum_t::r26, frame.r26);
+            SetGPRegister(reg_enum_t::r27, frame.r27);
+            SetGPRegister(reg_enum_t::r28, frame.r28);
+            SetGPRegister(reg_enum_t::r29, frame.r29);
+            SetGPRegister(reg_enum_t::r30, frame.r30);
+            SetGPRegister(reg_enum_t::r31, frame.r31);
 
-            SetGPRegister(reg_ppc::cr0, frame.cr);
-            SetGPRegister(reg_ppc::xer, frame.xer);
+            SetCFA(frame.r1);
+            SetConditionRegister(frame.cr);
             SetReturnAddress(frame.pc);
         }
 
         void CaptureFullFrame(const full_frame_t& frame)
         {
-            auto r0 = static_cast<std::underlying_type_t<reg_ppc>>(reg_ppc::r0);
+            auto r0 = static_cast<std::underlying_type_t<reg_enum_t>>(reg_enum_t::r0);
             for (int i = 0; i < 32; ++i)
-                SetGPRegister(static_cast<reg_ppc>(r0 + i), frame.r[i]);
+                SetGPRegister(static_cast<reg_enum_t>(r0 + i), frame.r[i]);
 
-            SetGPRegister(reg_ppc::lr, frame.lr);
-            SetGPRegister(reg_ppc::ctr, frame.ctr);
-            SetGPRegister(reg_ppc::cr0, frame.cr);
-            SetGPRegister(reg_ppc::xer, frame.xer);
+            SetCFA(frame.r1);
+            SetConditionRegister(frame.cr);
             SetReturnAddress(frame.pc);
         }
 
         void ConfigureFrame(frame_t& frame)
         {
-            frame.r14 = GetGPRegister(reg_ppc::r14);
-            frame.r15 = GetGPRegister(reg_ppc::r15);
-            frame.r16 = GetGPRegister(reg_ppc::r16);
-            frame.r17 = GetGPRegister(reg_ppc::r17);
-            frame.r18 = GetGPRegister(reg_ppc::r18);
-            frame.r19 = GetGPRegister(reg_ppc::r19);
-            frame.r20 = GetGPRegister(reg_ppc::r20);
-            frame.r21 = GetGPRegister(reg_ppc::r21);
-            frame.r22 = GetGPRegister(reg_ppc::r22);
-            frame.r23 = GetGPRegister(reg_ppc::r23);
-            frame.r24 = GetGPRegister(reg_ppc::r24);
-            frame.r25 = GetGPRegister(reg_ppc::r25);
-            frame.r26 = GetGPRegister(reg_ppc::r26);
-            frame.r27 = GetGPRegister(reg_ppc::r27);
-            frame.r28 = GetGPRegister(reg_ppc::r28);
-            frame.r29 = GetGPRegister(reg_ppc::r29);
-            frame.r30 = GetGPRegister(reg_ppc::r30);
-            frame.r31 = GetGPRegister(reg_ppc::r31);
+            frame.r1 = GetGPRegister(reg_enum_t::r1);
+            frame.r2 = GetGPRegister(reg_enum_t::r2);
+            frame.r13 = GetGPRegister(reg_enum_t::r13);
+            frame.r14 = GetGPRegister(reg_enum_t::r14);
+            frame.r15 = GetGPRegister(reg_enum_t::r15);
+            frame.r16 = GetGPRegister(reg_enum_t::r16);
+            frame.r17 = GetGPRegister(reg_enum_t::r17);
+            frame.r18 = GetGPRegister(reg_enum_t::r18);
+            frame.r19 = GetGPRegister(reg_enum_t::r19);
+            frame.r20 = GetGPRegister(reg_enum_t::r20);
+            frame.r21 = GetGPRegister(reg_enum_t::r21);
+            frame.r22 = GetGPRegister(reg_enum_t::r22);
+            frame.r23 = GetGPRegister(reg_enum_t::r23);
+            frame.r24 = GetGPRegister(reg_enum_t::r24);
+            frame.r25 = GetGPRegister(reg_enum_t::r25);
+            frame.r26 = GetGPRegister(reg_enum_t::r26);
+            frame.r27 = GetGPRegister(reg_enum_t::r27);
+            frame.r28 = GetGPRegister(reg_enum_t::r28);
+            frame.r29 = GetGPRegister(reg_enum_t::r29);
+            frame.r30 = GetGPRegister(reg_enum_t::r30);
+            frame.r31 = GetGPRegister(reg_enum_t::r31);
 
-            frame.r1 = GetCFA();
-            frame.cr = GetGPRegister(reg_ppc::cr0);
-            frame.xer = GetGPRegister(reg_ppc::xer);
+            frame.cr = GetConditionRegister();
             frame.pc = GetReturnAddress();
         }
 
         void ConfigureFullFrame(full_frame_t& frame)
         {
-            auto r0 = static_cast<std::underlying_type_t<reg_ppc>>(reg_ppc::r0);
+            auto r0 = static_cast<std::underlying_type_t<reg_enum_t>>(reg_enum_t::r0);
             for (int i = 0; i <32; ++i)
-                frame.r[i] = GetGPRegister(static_cast<reg_ppc>(r0 + i));
+                frame.r[i] = GetGPRegister(static_cast<reg_enum_t>(r0 + i));
 
-            frame.lr = GetGPRegister(reg_ppc::lr);
-            frame.ctr = GetGPRegister(reg_ppc::ctr);
-            frame.cr = GetGPRegister(reg_ppc::cr0);
-            frame.xer = GetGPRegister(reg_ppc::xer);
-            frame.r[1] = GetCFA();
+            frame.cr = GetConditionRegister();
             frame.pc = GetReturnAddress();
         }
+
 
         // Validates the given general-purpose register number.
         static constexpr bool IsValidGPRegister(std::size_t n)
@@ -742,48 +691,17 @@ struct FrameTraitsPPC
         }
     };
 
-    static reg_enum_t IndexToRegister(int i)
+
+    static reg_enum_t IndexToRegister(std::size_t i)
     {
-        switch (i)
-        {
-            case 2:
-                return reg_ppc::lr;
-
-            case 3:
-                return reg_ppc::ctr;
-
-            case 4:
-                return reg_ppc::cr0;
-
-            case 5:
-                return reg_ppc::xer;
-
-            default:
-                return reg_enum_t(std::size_t(reg_ppc::r0) + i - 6);
-        }
+        return reg_enum_t(std::size_t(reg_enum_t::r0) + i - 3);
     }
 
     static std::ptrdiff_t RegisterToIndex(reg_enum_t reg)
     {
-        switch (reg)
-        {
-            case reg_ppc::lr:
-                return 2;
-
-            case reg_ppc::ctr:
-                return 3;
-
-            case reg_ppc::cr0:
-                return 4;
-
-            case reg_ppc::xer:
-                return 5;
-
-            default:
-                return std::ptrdiff_t(reg) - std::ptrdiff_t(reg_ppc::r0) + 6;
-        }
+        return std::ptrdiff_t(reg) - std::ptrdiff_t(reg_enum_t::r0) + 3;
     }
-
+    
     // Returns the name of the given register.
     static constexpr const char* GetRegisterName(reg_enum_t r)
     {
@@ -853,32 +771,78 @@ struct FrameTraitsPPC
                 return "r30";
             case reg_enum_t::r31:
                 return "r31";
-            case reg_enum_t::lr:
-                return "lr";
-            case reg_enum_t::ctr:
-                return "ctr";
-            case reg_enum_t::cr0:
-                return "cr0";
-            case reg_enum_t::cr1:
-                return "cr1";
-            case reg_enum_t::cr2:
-                return "cr2";
-            case reg_enum_t::cr3:
-                return "cr3";
-            case reg_enum_t::cr4:
-                return "cr4";
-            case reg_enum_t::cr5:
-                return "cr5";
-            case reg_enum_t::cr6:
-                return "cr6";
-            case reg_enum_t::cr7:
-                return "cr7";
-            case reg_enum_t::xer:
-                return "xer";
             default:
                 return "<unknown>";
         }
     }
+};
+
+
+struct FrameTraitsPPC32SysV :
+    public FrameTraitsPPCCommon<32, reg_ppc32_sysv, ppc32_sysv_frame_t, ppc32_full_frame_t>
+{
+};
+
+
+struct FrameTraitsPPC64ElfV1 :
+    public FrameTraitsPPCCommon<64, reg_ppc64_elfv1, ppc64_elfv1_frame_t, ppc64_full_frame_t>
+{
+};
+
+
+struct FrameTraitsPPC64ElfV2 :
+    public FrameTraitsPPCCommon<64, reg_ppc64_elfv2, ppc64_elfv2_frame_t, ppc64_full_frame_t>
+{
+    using Base = FrameTraitsPPCCommon<64, reg_ppc64_elfv2, ppc64_elfv2_frame_t, ppc64_full_frame_t>;
+
+    struct reg_storage_t :
+        public Base::reg_storage_t
+    {
+        // General-purpose register get/set methods.
+        reg_t GetGPRegister(reg_ppc64_elfv2 which) const
+        {
+            if (IsConditionRegister(which))
+                return GetConditionRegister(which);
+            
+            // Assumes: IsValidGPRegister(which).
+            return gp[RegisterToIndex(which)];
+        }
+        void SetGPRegister(reg_ppc64_elfv2 which, reg_t value)
+        {
+            if (IsConditionRegister(which))
+                return SetConditionRegister(which, value);
+            
+            // Assumes: IsValidGPRegister(which).
+            gp[RegisterToIndex(which)] = value;
+        }
+
+        // Condition register get/set methods.
+        using Base::reg_storage_t::GetConditionRegister;
+        using Base::reg_storage_t::SetConditionRegister;
+        reg_t GetConditionRegister(reg_ppc64_elfv2 which) const
+        {
+            auto offset = std::size_t(which) - std::size_t(reg_ppc64_elfv2::cr0);
+            auto cr = GetConditionRegister();
+            auto shift = offset * 4;
+            return (cr >> shift) & 0x0F;
+        }
+        void SetConditionRegister(reg_ppc64_elfv2 which, reg_t value)
+        {
+            auto offset = std::size_t(which) - std::size_t(reg_ppc64_elfv2::cr0);
+            auto shift = offset * 4;
+            auto mask = (reg_t(0x0F) << shift);
+
+            auto cr = GetConditionRegister();
+            cr = (cr & ~mask) | ((value << shift) & mask);
+            SetConditionRegister(cr);
+        }
+
+
+        static constexpr bool IsConditionRegister(reg_ppc64_elfv2 reg)
+        {
+            return reg_ppc64_elfv2::cr0 <= reg && reg <= reg_ppc64_elfv2::cr7;
+        }
+    };
 };
 
 
