@@ -63,12 +63,78 @@ struct ppc32_sysv_frame_t
 static_assert(sizeof(ppc32_sysv_frame_t) % 16 == 0, "invalid SysV ABI frame size");
 
 
+struct ppc32_sysv_full_frame_t
+{
+    // The stack pointer for the previous frame is stored in a backchain field at 0(%r1).
+    std::uint32_t   r1;
+    
+    // Denoted as the link register save field in the ABI.
+    std::uint32_t   pc;
+
+    // Padding to meet ABI requirements.
+    std::uint32_t   pad[2];
+    
+    // Only some fields of the condition register are non-volatile.
+    std::uint32_t   cr;
+    
+    // Registers with specific ABI-defined uses.
+    std::uint32_t   r2;     // Thread pointer / small data area 2 (SDA2) pointer.
+
+    // Volatile registers.
+    std::uint32_t   r0;
+    std::uint32_t   r3;
+    std::uint32_t   r4;
+    std::uint32_t   r5;
+    std::uint32_t   r6;
+    std::uint32_t   r7;
+    std::uint32_t   r8;
+    std::uint32_t   r9;
+    std::uint32_t   r10;
+    std::uint32_t   r11;
+    std::uint32_t   r12;
+
+    // Registers with specific ABI-defined uses.
+    std::uint32_t   r13;    // Small data area (SDA) pointer.
+
+    // Non-volatile integer registers.
+    std::uint32_t   r14;
+    std::uint32_t   r15;
+    std::uint32_t   r16;
+    std::uint32_t   r17;
+    std::uint32_t   r18;
+    std::uint32_t   r19;
+    std::uint32_t   r20;
+    std::uint32_t   r21;
+    std::uint32_t   r22;
+    std::uint32_t   r23;
+    std::uint32_t   r24;
+    std::uint32_t   r25;
+    std::uint32_t   r26;
+    std::uint32_t   r27;
+    std::uint32_t   r28;
+    std::uint32_t   r29;
+    std::uint32_t   r30;    // May be used as a GOT pointer.
+    std::uint32_t   r31;    // May be used as a frame pointer.
+};
+
+// SysV ABI stack frames must have quadword size.
+static_assert(sizeof(ppc32_sysv_full_frame_t) % 16 == 0, "invalid SysV ABI frame size");
+
+
 // 64-bit ELFv1 ABI (also known as the AIX 64-bit ABI).
 struct ppc64_elfv1_frame_t
 {
+    // Stack frame header.
+    std::uint64_t   r1;             // Stack pointer;
+    std::uint64_t   cr;
+    std::uint64_t   pc;
+    std::uint64_t   reserved[2];    // Reserved for compiler/linker use.
+    std::uint64_t   r2;             // TOC pointer.
+    
+    // Padding.
+    std::uint64_t   padding[1];
+
     // Registers with specific ABI-defined uses.
-    std::uint64_t   r1;     // Stack frame pointer.
-    std::uint64_t   r2;     // TOC pointer.
     std::uint64_t   r13;    // Thread-local storage pointer.
 
     // Non-volatile integer registers.
@@ -90,19 +156,83 @@ struct ppc64_elfv1_frame_t
     std::uint64_t   r29;
     std::uint64_t   r30;
     std::uint64_t   r31;    // May be used as a frame pointer.
-
-    // Only some fields of the condition register are non-volatile.
-    std::uint64_t   cr;
-
-    std::uint64_t   pc;
 };
+
+static_assert(sizeof(ppc64_elfv1_frame_t) % 16 == 0, "invalid ELFv1 frame size");
+
+
+struct ppc64_elfv1_full_frame_t
+{
+    // Stack frame header.
+    std::uint64_t   r1;             // Stacj pointer;
+    std::uint64_t   cr;
+    std::uint64_t   pc;
+    std::uint64_t   reserved[2];    // Reserved for compiler/linker use.
+    std::uint64_t   r2;             // TOC pointer.
+    
+    // Volatile registers.
+    std::uint64_t   r0;
+    std::uint64_t   r3;
+    std::uint64_t   r4;
+    std::uint64_t   r5;
+    std::uint64_t   r6;
+    std::uint64_t   r7;
+    std::uint64_t   r8;
+    std::uint64_t   r9;
+    std::uint64_t   r10;
+    std::uint64_t   r11;
+    std::uint64_t   r12;
+
+    // Registers with specific ABI-defined uses.
+    std::uint64_t   r13;    // Thread-local storage pointer.
+
+    // Non-volatile integer registers.
+    std::uint64_t   r14;
+    std::uint64_t   r15;
+    std::uint64_t   r16;
+    std::uint64_t   r17;
+    std::uint64_t   r18;
+    std::uint64_t   r19;
+    std::uint64_t   r20;
+    std::uint64_t   r21;
+    std::uint64_t   r22;
+    std::uint64_t   r23;
+    std::uint64_t   r24;
+    std::uint64_t   r25;
+    std::uint64_t   r26;
+    std::uint64_t   r27;
+    std::uint64_t   r28;
+    std::uint64_t   r29;
+    std::uint64_t   r30;
+    std::uint64_t   r31;    // May be used as a frame pointer.
+};
+
+static_assert(sizeof(ppc64_elfv1_frame_t) % 16 == 0, "invalid ELFv1 full frame size");
+
 
 struct ppc64_elfv2_frame_t
 {
+    // Stack frame header.
+    std::uint64_t   r1;             // Stack pointer;
+    std::uint64_t   cr;
+    std::uint64_t   pc;
+    std::uint64_t   r2;             // TOC pointer.
+
+    // Volatile registers.
+    std::uint64_t   r0;
+    std::uint64_t   r3;
+    std::uint64_t   r4;
+    std::uint64_t   r5;
+    std::uint64_t   r6;
+    std::uint64_t   r7;
+    std::uint64_t   r8;
+    std::uint64_t   r9;
+    std::uint64_t   r10;
+    std::uint64_t   r11;
+    std::uint64_t   r12;
+
     // Registers with specific ABI-defined uses.
-    std::uint64_t   r1;     // Stack frame pointer.
-    std::uint64_t   r2;     // TOC pointer.
-    std::uint64_t   r13;    // Thread-local storage pointer.
+    std::uint64_t   r13;            // Thread-local storage pointer.
 
     // Non-volatile integer registers.
     std::uint64_t   r14;
@@ -123,45 +253,61 @@ struct ppc64_elfv2_frame_t
     std::uint64_t   r29;
     std::uint64_t   r30;
     std::uint64_t   r31;    // May be used as a frame pointer.
-
-    // Only some fields of the condition register are non-volatile.
-    std::uint64_t   cr;
-
-    std::uint64_t   pc;
 };
 
+static_assert(sizeof(ppc64_elfv2_frame_t) % 16 == 0, "invalid ELFv2 frame size");
 
-struct ppc32_full_frame_t
+
+
+struct ppc64_elfv2_full_frame_t
 {
-    std::uint32_t   r[32];
-    std::uint32_t   cr;
-    std::uint32_t   pc;
-};
-
-
-struct ppc64_full_frame_t
-{
-    std::uint64_t   r[32];
+    // Stack frame header.
+    std::uint64_t   r1;             // Stack pointer;
     std::uint64_t   cr;
     std::uint64_t   pc;
+    std::uint64_t   r2;             // TOC pointer.
+
+    // Padding.
+    std::uint64_t   padding[1];
+
+    // Registers with specific ABI-defined uses.
+    std::uint64_t   r13;            // Thread-local storage pointer.
+
+    // Non-volatile integer registers.
+    std::uint64_t   r14;
+    std::uint64_t   r15;
+    std::uint64_t   r16;
+    std::uint64_t   r17;
+    std::uint64_t   r18;
+    std::uint64_t   r19;
+    std::uint64_t   r20;
+    std::uint64_t   r21;
+    std::uint64_t   r22;
+    std::uint64_t   r23;
+    std::uint64_t   r24;
+    std::uint64_t   r25;
+    std::uint64_t   r26;
+    std::uint64_t   r27;
+    std::uint64_t   r28;
+    std::uint64_t   r29;
+    std::uint64_t   r30;
+    std::uint64_t   r31;    // May be used as a frame pointer.
 };
+
+static_assert(sizeof(ppc64_elfv2_full_frame_t) % 16 == 0, "invalid ELFv2 full_frame size");
+
 
 
 #if defined(_ARCH_PPC)
-// Full frame.
-#  if defined(_ARCH_PPC64)
-using powerpc_full_frame_t = ppc64_full_frame_t;
-#  else
-using powerpc_full_frame_t = ppc32_full_frame_t;
-#  endif
-
-// Non-volatile frame.
 #  if defined(_CALL_SYSV)
 using powerpc_frame_t = ppc32_sysv_frame_t;
+using powerpc_full_frame_t = ppc32_sysv_full_frame_t;
 #  elif _CALL_ELF == 1
 using powerpc_frame_t = ppc64_elfv1_frame_t;
+using powerpc_full_frame_t = ppc64_elfv1_full_frame_t;
 #  elif _CALL_ELF == 2
 using powerpc_frame_t = ppc64_elfv2_frame_t;
+using powerpc_full_frame_t = ppc64_elfv2_full_frame_t;
 #  else
 #    error unknown PowerPC ABI
 #  endif

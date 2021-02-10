@@ -1,6 +1,9 @@
 #include <System/ABI/ExecContext/Private/Config.hh>
 
 
+#if _ARCH_PPC && !_ARCH_PPC64
+
+
 // General-purpose register saving routines.
 #define DECLARE_SAVEGPR(n) \
     .global     _savegpr_##n; \
@@ -87,11 +90,12 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(SwapContexts__v1_0,SwapContexts,1.0)
 
     // Build a normal SysV ABI stack frame that saves all non-volatile registers.
     mr      %r11, %r1
-    stwu    %r1, -96(%r1)       // QuadwordAlign(18 GPRs + CR + LR + BackChain).
+    stwu    %r1, -96(%r1)       // sizeof(ppc32_sysv_frame_t)
     mflr    %r0
     mfcr    %r12
     stw     %r0, 4(%r1)
-    stw     %r12, -80(%r11)     // Condition register.
+    stw     %r12, -84(%r11)     // Condition register.
+    stw     %r2,  -80(%r11)
     stw     %r13, -76(%r11)
     bl      _savegpr_14
 
@@ -104,7 +108,8 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(SwapContexts__v1_0,SwapContexts,1.0)
     lwz     %r11, 0(%r1)
     bl      _restgpr_14
     lwz     %r13, -72(%r11)
-    lwz     %r12, -80(%r11)
+    lwz     %r2,  -76(%r11)
+    lwz     %r12, -84(%r11)
     lwz     %r0, 4(%r1)
     mtcr    %r12
     mtlr    %r0
@@ -112,6 +117,75 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(SwapContexts__v1_0,SwapContexts,1.0)
     blr
 
 .LSwapContexts__v1_0_end = .
+
+
+__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContext__v1_0,ResumeContext,1.0)
+.LResumeContext__v1_0:
+    // Parameters:
+    //      r3:     ppc32_sysv_frame_t* context
+    //      r4:     std::uintptr_t opaque
+    //
+    // Returns:
+    //      r3:     ppc32_sysv_frame_t* context     note: always null
+    //      r4:     std::uintptr_t opaque
+
+    // Restore registers from the context.
+    mflr    %r5
+    addi    %r11, %r3, 96       // sizeof(ppc32_sysv_frame_t)
+    stw     %r5, 4(%r1)         // Need to save %lr to keep within the ABI requirements.
+    bl      _restgpr_14
+    lwz     %r13, -72(%r11)
+    lwz     %r2,  -76(%r11)
+    lwz     %r12, -84(%r11)
+    lwz     %r0, 4(%r3)
+    mtcr    %r12
+    mtlr    %r0
+    lwz     %r1, 0(%r3)
+    blr
+
+.LResumeContext__v1_0_end = .
+
+
+__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContextFull__v1_0,ResumeContextFull,1.0)
+.LResumeContextFull__v1_0:
+    // Parameters:
+    //      r3:     ppc32_sysv_frame_t* context
+    //
+    // Returns: <taken from the context>
+
+    // Restore the non-volatile registers first.
+    mflr    %r5
+    addi    %r11, %r3, 142      // sizeof(ppc32_sysv_full_frame_t)
+    stw     %r5, 4(%r1)         // Need to save %lr to keep within the ABI requirements.
+    bl      _restgpr_14         // Restore the non-volatile registers.
+    lwz     %r13, -72(%r11)     // SDA pointer.
+    lwz     %r2,   20(%r3)      // Thread pointer / SDA2 pointer.
+    lwz     %r12,  16(%r3)      // Condition register.
+    lwz     %r0,    4(%r3)      // Link register.
+    mtcr    %r12
+    mtlr    %r0
+    lwz     %r1, 0(%r3)         // Stack pointer.
+
+    // Restore the volatile registers.
+    lwz     %r12, -76(%r11)
+    // Skipping %r11 until the end.
+    lwz     %r10, -84(%r11)
+    lwz     %r9,  -88(%r11)
+    lwz     %r8,  -92(%r11)
+    lwz     %r7,  -96(%r11)
+    lwz     %r6, -100(%r11)
+    lwz     %r5, -104(%r11)
+    lwz     %r4, -108(%r11)
+    lwz     %r3, -112(%r11)
+    lwz     %r3, -116(%r11)
+    lwz     %r2, -120(%r11)
+    lwz     %r0, -124(%r11)
+    lwz     %r11, -80(%r11)
+
+    // All registers now have the requested state.
+    blr
+
+.LResumeContextFull__v1_0_end = .
 
 
 __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,1.0)
@@ -136,3 +210,6 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,1.0)
     b       _savegpr_14
 
 .LCaptureContext__v1_0_end = .
+
+
+#endif // if _ARCH_PPC && !_ARCH_PPC64

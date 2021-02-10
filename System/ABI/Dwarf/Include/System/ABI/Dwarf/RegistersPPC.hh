@@ -18,8 +18,9 @@ namespace System::ABI::Dwarf
 using ExecContext::ppc32_sysv_frame_t;
 using ExecContext::ppc64_elfv1_frame_t;
 using ExecContext::ppc64_elfv2_frame_t;
-using ExecContext::ppc32_full_frame_t;
-using ExecContext::ppc64_full_frame_t;
+using ExecContext::ppc32_sysv_full_frame_t;
+using ExecContext::ppc64_elfv1_full_frame_t;
+using ExecContext::ppc64_elfv2_full_frame_t;
 
 
 // Forward declarations.
@@ -629,9 +630,38 @@ struct FrameTraitsPPCCommon
 
         void CaptureFullFrame(const full_frame_t& frame)
         {
-            auto r0 = static_cast<std::underlying_type_t<reg_enum_t>>(reg_enum_t::r0);
-            for (int i = 0; i < 32; ++i)
-                SetGPRegister(static_cast<reg_enum_t>(r0 + i), frame.r[i]);
+            SetGPRegister(reg_enum_t::r0, frame.r0);
+            SetGPRegister(reg_enum_t::r1, frame.r1);
+            SetGPRegister(reg_enum_t::r2, frame.r2);
+            SetGPRegister(reg_enum_t::r3, frame.r3);
+            SetGPRegister(reg_enum_t::r4, frame.r4);
+            SetGPRegister(reg_enum_t::r5, frame.r5);
+            SetGPRegister(reg_enum_t::r6, frame.r6);
+            SetGPRegister(reg_enum_t::r7, frame.r7);
+            SetGPRegister(reg_enum_t::r8, frame.r8);
+            SetGPRegister(reg_enum_t::r9, frame.r9);
+            SetGPRegister(reg_enum_t::r10, frame.r10);
+            SetGPRegister(reg_enum_t::r11, frame.r11);
+            SetGPRegister(reg_enum_t::r12, frame.r12);
+            SetGPRegister(reg_enum_t::r13, frame.r13);
+            SetGPRegister(reg_enum_t::r14, frame.r14);
+            SetGPRegister(reg_enum_t::r15, frame.r15);
+            SetGPRegister(reg_enum_t::r16, frame.r16);
+            SetGPRegister(reg_enum_t::r17, frame.r17);
+            SetGPRegister(reg_enum_t::r18, frame.r18);
+            SetGPRegister(reg_enum_t::r19, frame.r19);
+            SetGPRegister(reg_enum_t::r20, frame.r20);
+            SetGPRegister(reg_enum_t::r21, frame.r21);
+            SetGPRegister(reg_enum_t::r22, frame.r22);
+            SetGPRegister(reg_enum_t::r23, frame.r23);
+            SetGPRegister(reg_enum_t::r24, frame.r24);
+            SetGPRegister(reg_enum_t::r25, frame.r25);
+            SetGPRegister(reg_enum_t::r26, frame.r26);
+            SetGPRegister(reg_enum_t::r27, frame.r27);
+            SetGPRegister(reg_enum_t::r28, frame.r28);
+            SetGPRegister(reg_enum_t::r29, frame.r29);
+            SetGPRegister(reg_enum_t::r30, frame.r30);
+            SetGPRegister(reg_enum_t::r31, frame.r31);
 
             SetCFA(frame.r1);
             SetConditionRegister(frame.cr);
@@ -668,9 +698,38 @@ struct FrameTraitsPPCCommon
 
         void ConfigureFullFrame(full_frame_t& frame)
         {
-            auto r0 = static_cast<std::underlying_type_t<reg_enum_t>>(reg_enum_t::r0);
-            for (int i = 0; i <32; ++i)
-                frame.r[i] = GetGPRegister(static_cast<reg_enum_t>(r0 + i));
+            frame.r0 = GetGPRegister(reg_enum_t::r0);
+            frame.r1 = GetGPRegister(reg_enum_t::r1);
+            frame.r2 = GetGPRegister(reg_enum_t::r2);
+            frame.r3 = GetGPRegister(reg_enum_t::r3);
+            frame.r4 = GetGPRegister(reg_enum_t::r4);
+            frame.r5 = GetGPRegister(reg_enum_t::r5);
+            frame.r6 = GetGPRegister(reg_enum_t::r6);
+            frame.r7 = GetGPRegister(reg_enum_t::r7);
+            frame.r8 = GetGPRegister(reg_enum_t::r8);
+            frame.r9 = GetGPRegister(reg_enum_t::r9);
+            frame.r10 = GetGPRegister(reg_enum_t::r10);
+            frame.r11 = GetGPRegister(reg_enum_t::r11);
+            frame.r12 = GetGPRegister(reg_enum_t::r12);
+            frame.r13 = GetGPRegister(reg_enum_t::r13);
+            frame.r14 = GetGPRegister(reg_enum_t::r14);
+            frame.r15 = GetGPRegister(reg_enum_t::r15);
+            frame.r16 = GetGPRegister(reg_enum_t::r16);
+            frame.r17 = GetGPRegister(reg_enum_t::r17);
+            frame.r18 = GetGPRegister(reg_enum_t::r18);
+            frame.r19 = GetGPRegister(reg_enum_t::r19);
+            frame.r20 = GetGPRegister(reg_enum_t::r20);
+            frame.r21 = GetGPRegister(reg_enum_t::r21);
+            frame.r22 = GetGPRegister(reg_enum_t::r22);
+            frame.r23 = GetGPRegister(reg_enum_t::r23);
+            frame.r24 = GetGPRegister(reg_enum_t::r24);
+            frame.r25 = GetGPRegister(reg_enum_t::r25);
+            frame.r26 = GetGPRegister(reg_enum_t::r26);
+            frame.r27 = GetGPRegister(reg_enum_t::r27);
+            frame.r28 = GetGPRegister(reg_enum_t::r28);
+            frame.r29 = GetGPRegister(reg_enum_t::r29);
+            frame.r30 = GetGPRegister(reg_enum_t::r30);
+            frame.r31 = GetGPRegister(reg_enum_t::r31);
 
             frame.cr = GetConditionRegister();
             frame.pc = GetReturnAddress();
@@ -779,21 +838,21 @@ struct FrameTraitsPPCCommon
 
 
 struct FrameTraitsPPC32SysV :
-    public FrameTraitsPPCCommon<32, reg_ppc32_sysv, ppc32_sysv_frame_t, ppc32_full_frame_t>
+    public FrameTraitsPPCCommon<32, reg_ppc32_sysv, ppc32_sysv_frame_t, ppc32_sysv_full_frame_t>
 {
 };
 
 
 struct FrameTraitsPPC64ElfV1 :
-    public FrameTraitsPPCCommon<64, reg_ppc64_elfv1, ppc64_elfv1_frame_t, ppc64_full_frame_t>
+    public FrameTraitsPPCCommon<64, reg_ppc64_elfv1, ppc64_elfv1_frame_t, ppc64_elfv1_full_frame_t>
 {
 };
 
 
 struct FrameTraitsPPC64ElfV2 :
-    public FrameTraitsPPCCommon<64, reg_ppc64_elfv2, ppc64_elfv2_frame_t, ppc64_full_frame_t>
+    public FrameTraitsPPCCommon<64, reg_ppc64_elfv2, ppc64_elfv2_frame_t, ppc64_elfv2_full_frame_t>
 {
-    using Base = FrameTraitsPPCCommon<64, reg_ppc64_elfv2, ppc64_elfv2_frame_t, ppc64_full_frame_t>;
+    using Base = FrameTraitsPPCCommon<64, reg_ppc64_elfv2, ppc64_elfv2_frame_t, ppc64_elfv2_full_frame_t>;
 
     struct reg_storage_t :
         public Base::reg_storage_t

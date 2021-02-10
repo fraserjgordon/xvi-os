@@ -57,8 +57,8 @@ library("ExecContext")
         sources +=
         [
             "Arch/PowerPC/PPC.cc",
-            "Arch/PowerPC/PPC32.S",
-            "Arch/PowerPC/PPC64.S",
+            "Arch/PowerPC/PPC32_SysV.S",
+            "Arch/PowerPC/PPC64_Elf.S",
         ]
     }
     else if (current_arch == "x86")

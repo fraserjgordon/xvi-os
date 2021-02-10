@@ -21,6 +21,13 @@ library("TLS")
         "Private/Config.hh"
     ]
 
+    if (current_arch == "powerpc")
+    {
+        public_headers +=
+        [
+            "Arch/x86/TLS.hh"
+        ]
+    }
     if (current_arch == "x86")
     {
         public_headers +=
@@ -38,11 +45,22 @@ library("TLS")
         "Image.cc",
     ]
 
-    if (current_arch == "x86")
+    if (current_arch == "powerpc")
+    {
+        sources +=
+        [
+            "Arch/PowerPC/TLS.cc",
+        ]
+    }
+    else if (current_arch == "x86")
     {
         sources +=
         [
             "Arch/x86/TLS.cc",
         ]
+    }
+    else
+    {
+        #assert(false, "unsupported architecture: ${current_arch}")
     }
 }
