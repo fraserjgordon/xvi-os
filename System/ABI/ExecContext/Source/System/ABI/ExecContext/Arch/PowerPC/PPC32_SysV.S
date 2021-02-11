@@ -1,7 +1,7 @@
 #include <System/ABI/ExecContext/Private/Config.hh>
 
 
-#if _ARCH_PPC && !_ARCH_PPC64
+#if _ARCH_PPC && !_ARCH_PPC64 && _CALL_SYSV
 
 
 // General-purpose register saving routines.
@@ -141,6 +141,7 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContext__v1_0,ResumeContext,1.0)
     mtcr    %r12
     mtlr    %r0
     lwz     %r1, 0(%r3)
+    li      %r3, 0
     blr
 
 .LResumeContext__v1_0_end = .
@@ -212,4 +213,4 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,1.0)
 .LCaptureContext__v1_0_end = .
 
 
-#endif // if _ARCH_PPC && !_ARCH_PPC64
+#endif // if _ARCH_PPC && !_ARCH_PPC64 && _CALL_SYSV

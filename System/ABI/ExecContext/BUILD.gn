@@ -52,6 +52,13 @@ library("ExecContext")
             "Arch/ARM/AAPCS.S",
         ]
     }
+    else if (current_arch == "mips")
+    {
+        sources +=
+        [
+            "Arch/MIPS/O32.S",
+        ]
+    }
     else if (current_arch == "powerpc")
     {
         sources +=

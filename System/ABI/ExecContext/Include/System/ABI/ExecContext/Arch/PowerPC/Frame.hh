@@ -218,18 +218,8 @@ struct ppc64_elfv2_frame_t
     std::uint64_t   pc;
     std::uint64_t   r2;             // TOC pointer.
 
-    // Volatile registers.
-    std::uint64_t   r0;
-    std::uint64_t   r3;
-    std::uint64_t   r4;
-    std::uint64_t   r5;
-    std::uint64_t   r6;
-    std::uint64_t   r7;
-    std::uint64_t   r8;
-    std::uint64_t   r9;
-    std::uint64_t   r10;
-    std::uint64_t   r11;
-    std::uint64_t   r12;
+    // Padding.
+    std::uint64_t   padding[1];
 
     // Registers with specific ABI-defined uses.
     std::uint64_t   r13;            // Thread-local storage pointer.
@@ -253,10 +243,10 @@ struct ppc64_elfv2_frame_t
     std::uint64_t   r29;
     std::uint64_t   r30;
     std::uint64_t   r31;    // May be used as a frame pointer.
+
 };
 
 static_assert(sizeof(ppc64_elfv2_frame_t) % 16 == 0, "invalid ELFv2 frame size");
-
 
 
 struct ppc64_elfv2_full_frame_t
@@ -267,8 +257,18 @@ struct ppc64_elfv2_full_frame_t
     std::uint64_t   pc;
     std::uint64_t   r2;             // TOC pointer.
 
-    // Padding.
-    std::uint64_t   padding[1];
+    // Volatile registers.
+    std::uint64_t   r0;
+    std::uint64_t   r3;
+    std::uint64_t   r4;
+    std::uint64_t   r5;
+    std::uint64_t   r6;
+    std::uint64_t   r7;
+    std::uint64_t   r8;
+    std::uint64_t   r9;
+    std::uint64_t   r10;
+    std::uint64_t   r11;
+    std::uint64_t   r12;
 
     // Registers with specific ABI-defined uses.
     std::uint64_t   r13;            // Thread-local storage pointer.
