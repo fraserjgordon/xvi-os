@@ -2,7 +2,7 @@
 #define __SYSTEM_ABI_DWARF_REGISTERS_SPARC_H
 
 
-#include <System/ABI/ExecContext/Arch/SPARC/Frame.hh>
+#include <System/ABI/ExecContext/Arch/Sparc/Frame.hh>
 
 #include <System/C++/LanguageSupport/InitializerList.hh>
 #include <System/C++/LanguageSupport/StdDef.hh>
@@ -14,12 +14,15 @@ namespace System::ABI::Dwarf
 
 
 // Forward declarations.
-enum class reg_sparc : std::uint16_t;
+enum class reg_sparc : std::int16_t;
 
 
 // The DWARF register numbers for Sparc.
-enum class reg_sparc : std::uint16_t
+enum class reg_sparc : std::int16_t
 {
+    // Not defined by the ABI; used internally.
+    pc          = -1,
+
     // Integer registers.
     g0      = 0,
     g1      = 1,
@@ -108,7 +111,7 @@ struct FrameTraitsSparc
     // Which registers are used for special purposes.
     static constexpr auto kStackPointerReg          = reg_sparc::o6;
     static constexpr auto kFramePointerReg          = reg_sparc::i6;
-    //static constexpr auto kInstructionPointerReg    = reg_sparc::pc;
+    static constexpr auto kInstructionPointerReg    = reg_sparc::pc;
 
     // Stack grows downwards.
     static constexpr std::ptrdiff_t kStackDirection = -1;
@@ -202,7 +205,7 @@ struct FrameTraitsSparc
             SetGPRegister(reg_sparc::l6, frame.l[6]);
             SetGPRegister(reg_sparc::l7, frame.l[7]);
 
-            SetCFA(GetGPRegister(kFramePointerReg) + kStackPointerOffset);
+            SetCFA(frame.sp + kStackPointerOffset);
             SetReturnAddress(frame.pc);
         }
 
@@ -214,7 +217,7 @@ struct FrameTraitsSparc
             frame.i[3] = GetGPRegister(reg_sparc::i3);
             frame.i[4] = GetGPRegister(reg_sparc::i4);
             frame.i[5] = GetGPRegister(reg_sparc::i5);
-            //frame.i[6] = GetGPRegister(reg_sparc::i6);
+            frame.i[6] = GetGPRegister(reg_sparc::i6);
             frame.i[7] = GetGPRegister(reg_sparc::i7);
             frame.l[0] = GetGPRegister(reg_sparc::l0);
             frame.l[1] = GetGPRegister(reg_sparc::l1);
@@ -225,7 +228,7 @@ struct FrameTraitsSparc
             frame.l[6] = GetGPRegister(reg_sparc::l6);
             frame.l[7] = GetGPRegister(reg_sparc::l7);
 
-            frame.i[6] = GetCFA() - kStackPointerOffset;
+            frame.sp = GetCFA() - kStackPointerOffset;
             frame.pc = GetReturnAddress();
         }
 

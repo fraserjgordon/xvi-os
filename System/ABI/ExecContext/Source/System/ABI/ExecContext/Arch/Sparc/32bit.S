@@ -1,62 +1,58 @@
-#if defined(_ABIO32)
+#if !defined(__LP64__)
 
 #include <System/ABI/ExecContext/Private/Config.hh>
 
 
-.set noat
-.set noreorder
+#ifdef __sparc_v9__
+#  define FLUSHW    flushw
+#else
+#  define FLUSHW    trap x03
+#endif
 
 
 __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(SwapContexts__v1_0,SwapContexts,1.0)
 .LSwapContexts__v1_0:
     // Parameters:
-    //      $a0:    mips_o32_frame_t* next
-    //      $a1:    std::uintptr_t opaque
+    //      %i0:    sparc32_frame_t* next
+    //      %i1:    std::uintptr_t opaque
     //
     // Returns:
-    //      $v0:    mips_o32_frame_t* prev
-    //      $v1:    std::uintptr_t opaque
+    //      [%sp + 64]:    pair<sparc32_frame_t*, std::uintptr_t>
 
-    // Save the current context to the stack.
-    move    $t0, $sp
-    addiu   $sp, $sp, -48   // sizeof(mips_o32_frame_t)
-    sw      $s0, 0($sp)
-    sw      $s1, 4($sp)
-    sw      $s2, 8($sp)
-    sw      $s3, 12($sp)
-    sw      $s4, 16($sp)
-    sw      $s5, 20($sp)
-    sw      $s6, 24($sp)
-    sw      $s7, 28($sp)
-    sw      $s8, 32($sp)
-    sw      $gp, 36($sp)
-    sw      $t0, 40($sp)    // Stack pointer.
-    sw      $ra, 44($sp)
+    // Allocate a new register window and flush all other windows to the stack.
+    save    %sp, -(64+8), %sp       // ABI-required register save area plus two words for %sp and %pc.
+    FLUSHW
 
-    // Swap stacks.
-    move    $v0, $sp
-    move    $sp, $a0
+    // Store the previous stack pointer and the true return address.
+    add     %i7, 8, %l0             // Address of next instruction in caller.
+    st      %fp, [ %fp - 8 ]        // Stack pointer at point of call.
+    st      %l0, [ %fp - 4 ]        // Return address.
 
-    // Restore the new context from the stack.
-    lw      $ra, 44($sp)
-    lw      $gp, 36($sp)
-    lw      $s8, 32($sp)
-    lw      $s7, 28($sp)
-    lw      $s6, 24($sp)
-    lw      $s5, 20($sp)
-    lw      $s4, 16($sp)
-    lw      $s3, 12($sp)
-    lw      $s2, 8($sp)
-    lw      $s1, 4($sp)
-    lw      $s0, 0($sp)
-    lw      $sp, 40($sp)
-    jr      $ra
-      move  $v1, $a1
+    // The context is now split across two stack frames: the %sp and %pc at the top of this frame and the %iX and %lX
+    // at the bottom of the next frame.
+    add     %fp, -8, %l1
+
+    // Set the frame pointer to the new context's stack pointer: we'll switch stacks to that context when we return.
+    ld      [ %i0 + 4 ], %fp
+
+    // Set the return address to the new context's return address.
+    ld      [ %i0 + 0 ], %i7
+
+    // From the new stack, get the pointer to the structure return area.
+    ld      [ %fp + 64 ], %l2
+
+    // Write the return values.
+    st      %l1, [ %l2 + 0 ]    // Pointer to the context we just switched from.
+    st      %i1, [ %l2 + 4 ]    // Opaque return data.
+
+    // Return to the new context.
+    ret
+      restore   %fp, 0, %sp
 
 .LSwapContexts__v1_0_end = .
 
 
-__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContext__v1_0,ResumeContext,1.0)
+/*__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContext__v1_0,ResumeContext,1.0)
 .LResumeContext__v1_0:
     // Parameters:
     //      $a0:    mips_o32_frame_t* context
@@ -165,6 +161,6 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,1.0)
       move  $v1, $a1
 
 .LCaptureContext__v1_0_end = .
-
+*/
 
 #endif // if defined(_ABIO32)

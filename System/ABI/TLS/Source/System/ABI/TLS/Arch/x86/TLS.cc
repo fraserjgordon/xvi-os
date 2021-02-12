@@ -11,7 +11,7 @@
 // System calls for configuring the segment registers.
 //! @todo: remove weak attribute.
 extern "C" [[gnu::weak]] void __set_fs_base(std::uintptr_t base) asm("Syscall.X86.SetFsBase");
-extern "C" void __set_gs_base(std::uintptr_t base) asm("Syscall.X86.SetGsBase");
+extern "C" [[gnu::weak]] void __set_gs_base(std::uintptr_t base) asm("Syscall.X86.SetGsBase");
 
 
 namespace System::ABI::TLS

@@ -231,7 +231,7 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContext__v1_0,ResumeContext,1.0)
 __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContextFull__v1_0,ResumeContextFull,1.0)
 .LResumeContextFull__v1_0:
     // Parameters:
-    //      r3:     ppc64_elfvX_frame_t* context
+    //      r3:     ppc64_elfvX_full_frame_t* context
     //
     // Returns: <taken from the context>
 
@@ -289,6 +289,7 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,1.0)
     std     %r13, -TP_OFFSET(%r12)          // Thread pointer.
     stw     %r11, CR_OFFSET(%r3)            // Condition register (32 bits!).
     std     %r0, LR_OFFSET(%r3)             // Link register.
+    li      %r3, 0
     b       _savegpr1_14                    // Non-volatile registers.
 
 .LCaptureContext__v1_0_end = .

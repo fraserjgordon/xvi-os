@@ -271,7 +271,7 @@ struct FrameTraitsMIPS_O32 : FrameTraitsMIPS_Common
             frame.k[1] = GetGPRegister(reg_mips::r27);
             frame.gp = GetGPRegister(reg_mips::r28);
             frame.sp = GetGPRegister(reg_mips::r29);
-            frame.fp = GetGPRegister(reg_mips::r30);
+            frame.s[8] = GetGPRegister(reg_mips::r30);
             frame.ra = GetGPRegister(reg_mips::r31);
             frame.pc = GetReturnAddress();
         }
@@ -450,7 +450,7 @@ struct FrameTraitsMIPS_O64 : FrameTraitsMIPS_O32
             frame.k[1] = GetGPRegister(reg_mips::r27);
             frame.gp = GetGPRegister(reg_mips::r28);
             frame.sp = GetGPRegister(reg_mips::r29);
-            frame.fp = GetGPRegister(reg_mips::r30);
+            frame.s[8] = GetGPRegister(reg_mips::r30);
             frame.ra = GetGPRegister(reg_mips::r31);
             frame.pc = GetReturnAddress();
         }
@@ -491,7 +491,7 @@ struct FrameTraitsMIPS_N64 : FrameTraitsMIPS_Common
             SetGPRegister(reg_mips::r23, frame.s[7]);
             SetGPRegister(reg_mips::r28, frame.gp);
             SetGPRegister(reg_mips::r29, frame.sp);
-            SetGPRegister(reg_mips::r30, frame.fp);
+            SetGPRegister(reg_mips::r30, frame.s[8]);
             SetReturnAddress(frame.pc);
         }
 
@@ -507,7 +507,7 @@ struct FrameTraitsMIPS_N64 : FrameTraitsMIPS_Common
             frame.s[7] = GetGPRegister(reg_mips::r23);
             frame.gp = GetGPRegister(reg_mips::r28);
             frame.sp = GetGPRegister(reg_mips::r29);
-            frame.fp = GetGPRegister(reg_mips::r30);
+            frame.s[8] = GetGPRegister(reg_mips::r30);
             frame.pc = GetReturnAddress();
         }
 
@@ -542,8 +542,7 @@ struct FrameTraitsMIPS_N64 : FrameTraitsMIPS_Common
             frame.k[1] = GetGPRegister(reg_mips::r27);
             frame.gp = GetGPRegister(reg_mips::r28);
             frame.sp = GetGPRegister(reg_mips::r29);
-            frame.fp = GetGPRegister(reg_mips::r30);
-            frame.ra = GetGPRegister(reg_mips::r31);
+            frame.s[8] = GetGPRegister(reg_mips::r30);
             frame.pc = GetReturnAddress();
         }
     };
@@ -586,7 +585,7 @@ struct FrameTraitsMIPS_N32 : FrameTraitsMIPS_N64
             SetGPRegister(reg_mips::r23, frame.s[7]);
             SetGPRegister(reg_mips::r28, frame.gp);
             SetGPRegister(reg_mips::r29, frame.sp);
-            SetGPRegister(reg_mips::r30, frame.fp);
+            SetGPRegister(reg_mips::r30, frame.s[8]);
             SetReturnAddress(frame.pc);
         }
 
@@ -602,7 +601,7 @@ struct FrameTraitsMIPS_N32 : FrameTraitsMIPS_N64
             frame.s[7] = GetGPRegister(reg_mips::r23);
             frame.gp = GetGPRegister(reg_mips::r28);
             frame.sp = GetGPRegister(reg_mips::r29);
-            frame.fp = GetGPRegister(reg_mips::r30);
+            frame.s[8] = GetGPRegister(reg_mips::r30);
             frame.pc = GetReturnAddress();
         }
 
@@ -637,8 +636,7 @@ struct FrameTraitsMIPS_N32 : FrameTraitsMIPS_N64
             frame.k[1] = GetGPRegister(reg_mips::r27);
             frame.gp = GetGPRegister(reg_mips::r28);
             frame.sp = GetGPRegister(reg_mips::r29);
-            frame.fp = GetGPRegister(reg_mips::r30);
-            frame.ra = GetGPRegister(reg_mips::r31);
+            frame.s[8] = GetGPRegister(reg_mips::r30);
             frame.pc = GetReturnAddress();
         }
     };
@@ -678,7 +676,7 @@ struct FrameTraitsMIPS_EABI32 : FrameTraitsMIPS_Common
             SetGPRegister(reg_mips::r23, frame.s[7]);
             SetGPRegister(reg_mips::r28, frame.gp);
             SetGPRegister(reg_mips::r29, frame.sp);
-            SetGPRegister(reg_mips::r30, frame.fp);
+            SetGPRegister(reg_mips::r30, frame.s[8]);
             SetReturnAddress(frame.pc);
         }
 
@@ -694,7 +692,7 @@ struct FrameTraitsMIPS_EABI32 : FrameTraitsMIPS_Common
             frame.s[7] = GetGPRegister(reg_mips::r23);
             frame.gp = GetGPRegister(reg_mips::r28);
             frame.sp = GetGPRegister(reg_mips::r29);
-            frame.fp = GetGPRegister(reg_mips::r30);
+            frame.s[8] = GetGPRegister(reg_mips::r30);
             frame.pc = GetReturnAddress();
         }
 
@@ -729,7 +727,7 @@ struct FrameTraitsMIPS_EABI32 : FrameTraitsMIPS_Common
             frame.k[1] = GetGPRegister(reg_mips::r27);
             frame.gp = GetGPRegister(reg_mips::r28);
             frame.sp = GetGPRegister(reg_mips::r29);
-            frame.fp = GetGPRegister(reg_mips::r30);
+            frame.s[8] = GetGPRegister(reg_mips::r30);
             frame.ra = GetGPRegister(reg_mips::r31);
             frame.pc = GetReturnAddress();
         }

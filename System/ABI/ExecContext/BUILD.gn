@@ -56,7 +56,12 @@ library("ExecContext")
     {
         sources +=
         [
+            "Arch/MIPS/EABI32.S",
+            "Arch/MIPS/EABI64.S",
+            "Arch/MIPS/N32.S",
+            "Arch/MIPS/N64.S",
             "Arch/MIPS/O32.S",
+            "Arch/MIPS/O64.S",
         ]
     }
     else if (current_arch == "powerpc")
@@ -66,6 +71,14 @@ library("ExecContext")
             "Arch/PowerPC/PPC.cc",
             "Arch/PowerPC/PPC32_SysV.S",
             "Arch/PowerPC/PPC64_Elf.S",
+        ]
+    }
+    else if (current_arch == "sparc")
+    {
+        sources +=
+        [
+            "Arch/Sparc/32bit.S",
+            "Arch/Sparc/64bit.S",
         ]
     }
     else if (current_arch == "x86")
@@ -81,7 +94,7 @@ library("ExecContext")
     }
     else
     {
-        #assert(false, "unsupported architecture: ${current_arch}")
+        assert(false, "unsupported architecture: ${current_arch}")
     }
 
     inputs =

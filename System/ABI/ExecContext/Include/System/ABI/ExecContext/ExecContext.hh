@@ -45,7 +45,7 @@ using full_frame_t = powerpc_full_frame_t;
 
 }
 #elif defined(__sparc__)
-#  include <System/ABI/ExecContext/Arch/SPARC/Frame.hh>
+#  include <System/ABI/ExecContext/Arch/Sparc/Frame.hh>
 
 namespace System::ABI::ExecContext
 {

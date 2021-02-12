@@ -12,7 +12,8 @@ namespace System::ABI::ExecContext
 // Callee-saved registers.
 struct mips_o64_frame_t
 {
-    std::uint64_t   s[8];
+    // Almost, but not quite, in register order.
+    std::uint64_t   s[9];
     std::uint64_t   sp;
     std::uint64_t   fp;
 
@@ -26,11 +27,10 @@ struct mips_o64_full_frame_t
     std::uint64_t   v[2];
     std::uint64_t   a[4];
     std::uint64_t   t[10];
-    std::uint64_t   s[8];
+    std::uint64_t   s[9];
     std::uint64_t   k[2];
     std::uint64_t   gp;
     std::uint64_t   sp;
-    std::uint64_t   fp;
     std::uint64_t   ra;
 
     std::uint64_t   pc;

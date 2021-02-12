@@ -12,6 +12,7 @@ namespace System::ABI::ExecContext
 // Callee-saved registers.
 struct mips_o32_frame_t
 {
+    // Almost, but not quite, in register order.
     std::uint32_t   s[9];
     std::uint32_t   gp;
     std::uint32_t   sp;
@@ -24,13 +25,12 @@ struct mips_o32_full_frame_t
     // Almost, but not quite, in register order.
     std::uint32_t   at;
     std::uint32_t   v[2];
-    std::uint32_t   a[0];
+    std::uint32_t   a[4];
     std::uint32_t   t[10];
-    std::uint32_t   s[8];
+    std::uint32_t   s[9];
     std::uint32_t   k[2];
     std::uint32_t   gp;
     std::uint32_t   sp;
-    std::uint32_t   fp;
     std::uint32_t   ra;
 
     std::uint32_t   pc;

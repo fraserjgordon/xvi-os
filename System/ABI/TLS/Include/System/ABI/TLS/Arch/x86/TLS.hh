@@ -21,4 +21,4 @@ extern "C" __SYSTEM_ABI_TLS_EXPORT void*   __tls_get_addr(__tls_index*);
 #endif
 
 
-#endif /* ifndef __SYSTEM_ABI_TLS_ARH_X86_TLS_H */
+#endif /* ifndef __SYSTEM_ABI_TLS_ARCH_X86_TLS_H */

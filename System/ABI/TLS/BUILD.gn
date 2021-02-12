@@ -21,7 +21,14 @@ library("TLS")
         "Private/Config.hh"
     ]
 
-    if (current_arch == "powerpc")
+    if (current_arch == "mips")
+    {
+        public_headers +=
+        [
+            "Arch/MIPS/TLS.hh",
+        ]
+    }
+    else if (current_arch == "powerpc")
     {
         public_headers +=
         [
@@ -45,7 +52,14 @@ library("TLS")
         "Image.cc",
     ]
 
-    if (current_arch == "powerpc")
+    if (current_arch == "mips")
+    {
+        sources +=
+        [
+            "Arch/MIPS/TLS.cc",
+        ]
+    }
+    else if (current_arch == "powerpc")
     {
         sources +=
         [

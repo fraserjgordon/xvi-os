@@ -150,7 +150,7 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContext__v1_0,ResumeContext,1.0)
 __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContextFull__v1_0,ResumeContextFull,1.0)
 .LResumeContextFull__v1_0:
     // Parameters:
-    //      r3:     ppc32_sysv_frame_t* context
+    //      r3:     ppc32_sysv_full_frame_t* context
     //
     // Returns: <taken from the context>
 
@@ -208,6 +208,7 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,1.0)
     stw     %r13, 8(%r3)
     stw     %r5, 84(%r3)    // Condition register.
     stw     %r6, 88(%r3)    // Link register.
+    li      %r3, 0
     b       _savegpr_14
 
 .LCaptureContext__v1_0_end = .
