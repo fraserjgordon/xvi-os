@@ -48,11 +48,6 @@ library("Demangle")
         "//C++/Format:Format_headers",
     ]
 
-    deps_shared =
-    [
-        "//C++/Format:Format__static",
-    ]
-
     sources =
     [
         "Demangle.cc",

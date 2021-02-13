@@ -28,6 +28,7 @@ library("Format")
     public_headers =
     [
         "Format.hh",
+        "FormatImpl.hh",
 
         "Private/Config.hh",
         "Private/Namespace.hh",

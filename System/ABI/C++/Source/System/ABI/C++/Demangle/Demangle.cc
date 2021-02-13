@@ -1,9 +1,12 @@
+#define __XVI_STD_FORMAT_HEADER_ONLY
+
 #include <System/ABI/C++/Demangle.hh>
 
 #include <System/ABI/String/String.hh>
 
 #include <System/C++/Containers/Vector.hh>
 #include <System/C++/Format/Format.hh>
+#include <System/C++/Format/FormatImpl.hh>
 #include <System/C++/LanguageSupport/Exception.hh>
 #include <System/C++/Utility/Memory.hh>
 #include <System/C++/Utility/Optional.hh>
@@ -16,6 +19,10 @@ extern "C" [[gnu::weak]] void* __realloc(void*, std::size_t) asm("System.Allocat
 
 
 namespace System::ABI::CXX
+{
+
+
+namespace
 {
 
 
@@ -3325,6 +3332,9 @@ catch (...)
 {
     return DemangleInvalidName;
 }
+
+
+} // anonymous namespace
 
 
 } // namespace System::ABI::CXX
