@@ -6,11 +6,11 @@
 // Are we building a shared library?
 #if defined(SYSTEM_ABI_EXECCONTEXT_BUILD_SHARED)
    // Shared library; export the symbols but enforce local binding.
-#  define __SYSTEM_ABI_EXECCONTEXT_EXPORT              [[gnu::visibility("protected")]]
+#  define __SYSTEM_ABI_EXECCONTEXT_EXPORT                [[gnu::visibility("protected")]]
 #  define __SYSTEM_ABI_EXECCONTEXT_EXPORT_ASM_WORD       .protected
 #else
    // Static library; do not export the symbols.
-#  define __SYSTEM_ABI_EXECCONTEXT_EXPORT              [[gnu::visibility("hidden")]]
+#  define __SYSTEM_ABI_EXECCONTEXT_EXPORT                /**/
 #  define __SYSTEM_ABI_EXECCONTEXT_EXPORT_ASM_WORD       .hidden
 #endif
 

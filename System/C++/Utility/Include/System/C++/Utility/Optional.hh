@@ -614,7 +614,7 @@ private:
         terminate();
     }
 #else
-    void __invalid_access() const
+    [[noreturn]] void __invalid_access() const
     {
         throw bad_optional_access();
     }

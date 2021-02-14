@@ -227,6 +227,11 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,1.0)
 .align 16
 
 
+.Lget_eip:
+    movl    0(%esp), %ebx
+    ret
+
+
 __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CreateContext__v1_0,CreateContext,1.0)
 .LCreateContext__v1_0:
 
@@ -276,7 +281,8 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CreateContext__v1_0,CreateContext,1.0)
     movl    %esi, __SYSV_X86_OFFSET_ESP(%eax)
 
     // Finally, set the execution address to our trampoline code.
-    leal    .LCreateContextTrampoline, %edx
+    call    .Lget_eip
+    leal    (.LCreateContextTrampoline - .)(%ebx), %edx
     movl    %edx, __SYSV_X86_OFFSET_EIP(%eax)
 
     // Context has been set up and the pointer to the context is already in the right place.

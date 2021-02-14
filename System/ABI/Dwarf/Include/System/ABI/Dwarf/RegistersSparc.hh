@@ -384,7 +384,6 @@ using FrameTraitsNative = FrameTraitsSparc32;
 #endif
 
 
-
 } // namespace System::ABI::Dwarf
 
 

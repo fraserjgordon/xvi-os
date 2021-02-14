@@ -1127,7 +1127,7 @@ public:
     }
 
     template <class _T>
-    constexpr const _T& __get()
+    constexpr const _T& __get() const
     {
         if (index() != __detail::__index_of_v<_T, _Types...>)
             __invalid_access();
@@ -1170,7 +1170,7 @@ public:
         terminate();
     }
 #else
-    void __invalid_access() const
+    [[noreturn]] void __invalid_access() const
     {
         throw bad_variant_access();
     }

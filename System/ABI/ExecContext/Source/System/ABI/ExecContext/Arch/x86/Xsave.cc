@@ -10,7 +10,8 @@ namespace System::ABI::ExecContext
 using namespace std;
 
 
-xsave_info_t getXsaveInfo()
+//! @todo requires __cxa_guard_acquire etc support.
+/*xsave_info_t getXsaveInfo()
 {
     using namespace System::HW::CPU::CPUID;
     
@@ -70,7 +71,6 @@ xsave_info_t getXsaveInfo()
     return info;
 }
 
-
 bool _isXsaveSupported()
 {
     return isXsaveSupported();
@@ -79,7 +79,7 @@ bool _isXsaveSupported()
 bool _isXsaveAvailable()
 {
     return isXsaveAvailable();
-}
+}*/
 
 
 uint64_t _xgetbv(uint32_t index)

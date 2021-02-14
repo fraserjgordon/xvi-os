@@ -17,12 +17,16 @@ struct sparc32_frame_t
     std::uint32_t   sp;     // Stored in %o6.
     std::uint32_t   pc;     // Calculated from the return address in %o7.
 
-    std::uint32_t   i[8];
     std::uint32_t   l[8];
+    std::uint32_t   i[8];
 };
 
 struct sparc32_full_frame_t
 {
+    // Note: in the v8+ ABI, the %gX and %oX are used as 64-bit registers by the compiler. Because these register sets
+    // are volatile, they're not preserved across function calls. As supporting them as possibly-64-bit registers in
+    // this frame structure would complicate things, the volatile nature of these registers is a convenient excuse to
+    // only support the lower 32 bits of the registers when in 32-bit mode.
     std::uint32_t   g[8];
     std::uint32_t   i[8];
     std::uint32_t   l[8];
@@ -34,10 +38,11 @@ struct sparc32_full_frame_t
 
 struct sparc64_frame_t
 {
-    std::uint64_t   i[8];
-    std::uint64_t   l[8];
+    std::uint64_t   sp;     // Stored in %o6.
+    std::uint64_t   pc;     // Calculated from the return address in %o7.    
 
-    std::uint64_t   pc;
+    std::uint64_t   l[8];
+    std::uint64_t   i[8];
 };
 
 struct sparc64_full_frame_t
@@ -47,12 +52,13 @@ struct sparc64_full_frame_t
     std::uint64_t   l[8];
     std::uint64_t   o[8];
 
+    // For a full frame, we store %pc explicitly.
     std::uint64_t   pc;
 };
 
 
 #if defined(__sparc__)
-#  if defined(__LP64__)
+#  if defined(__arch64__)
 using sparc_frame_t = sparc64_frame_t;
 using sparc_full_frame_t = sparc64_full_frame_t;
 #  else

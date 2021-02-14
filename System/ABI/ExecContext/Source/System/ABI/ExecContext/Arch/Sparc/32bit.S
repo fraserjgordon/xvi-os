@@ -1,12 +1,12 @@
-#if !defined(__LP64__)
+#if !defined(__arch64__)
 
 #include <System/ABI/ExecContext/Private/Config.hh>
 
 
 #ifdef __sparc_v9__
-#  define FLUSHW    flushw
+#   define FLUSHW    flushw
 #else
-#  define FLUSHW    trap x03
+#   define FLUSHW    trap x03
 #endif
 
 
@@ -28,7 +28,7 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(SwapContexts__v1_0,SwapContexts,1.0)
     st      %fp, [ %fp - 8 ]        // Stack pointer at point of call.
     st      %l0, [ %fp - 4 ]        // Return address.
 
-    // The context is now split across two stack frames: the %sp and %pc at the top of this frame and the %iX and %lX
+    // The context is now split across two stack frames: the %sp and %pc at the top of this frame and the %lX and %iX
     // at the bottom of the next frame.
     add     %fp, -8, %l1
 
@@ -85,12 +85,12 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContext__v1_0,ResumeContext,1.0)
 __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContextFull__v1_0,ResumeContextFull,1.0)
 .LResumeContextFull__v1_0:
     // Parameters:
-    //      %i0:    sparc_full_frame_t* context
+    //      %i0:    sparc32_full_frame_t* context
     //
     // Returns: <taken from the context>
 
     // Allocate a new register window and flush all other windows to the stack.
-    save    %sp, -(64+8), %sp       // ABI-required register save area plus two words for %sp and %pc.
+    save    %sp, -64, %sp       // ABI-required register save area.
     FLUSHW
 
     // Load the key information into the output registers.
@@ -116,14 +116,14 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContextFull__v1_0,ResumeContextFull
     ld      [ %o0 + 84 ], %l5
     ld      [ %o0 + 88 ], %l6
     ld      [ %o0 + 92 ], %l7
-    st      %l0, [ %fp + 32 ]
-    st      %l1, [ %fp + 36 ]
-    st      %l2, [ %fp + 40 ]
-    st      %l3, [ %fp + 44 ]
-    st      %l4, [ %fp + 48 ]
-    st      %l5, [ %fp + 52 ]
-    st      %l6, [ %fp + 56 ]
-    st      %l7, [ %fp + 60 ]
+    st      %l0, [ %fp + 0 ]
+    st      %l1, [ %fp + 4 ]
+    st      %l2, [ %fp + 8 ]
+    st      %l3, [ %fp + 12 ]
+    st      %l4, [ %fp + 16 ]
+    st      %l5, [ %fp + 20 ]
+    st      %l6, [ %fp + 24 ]
+    st      %l7, [ %fp + 28 ]
 
     // And the same for its input registers.
     ld      [ %o0 + 32 ], %l0
@@ -134,14 +134,14 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContextFull__v1_0,ResumeContextFull
     ld      [ %o0 + 52 ], %l5
     ld      [ %o0 + 56 ], %l6
     ld      [ %o0 + 60 ], %l7
-    st      %l0, [ %fp + 0 ]
-    st      %l1, [ %fp + 4 ]
-    st      %l2, [ %fp + 8 ]
-    st      %l3, [ %fp + 12 ]
-    st      %l4, [ %fp + 16 ]
-    st      %l5, [ %fp + 20 ]
-    st      %l6, [ %fp + 24 ]
-    st      %l7, [ %fp + 28 ]
+    st      %l0, [ %fp + 32 ]
+    st      %l1, [ %fp + 36 ]
+    st      %l2, [ %fp + 40 ]
+    st      %l3, [ %fp + 44 ]
+    st      %l4, [ %fp + 48 ]
+    st      %l5, [ %fp + 52 ]
+    st      %l6, [ %fp + 56 ]
+    st      %l7, [ %fp + 60 ]
 
     // Load all the mutable global registers.
     ld      [ %i0 + 4 ], %g1
@@ -180,22 +180,22 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,1.0)
     st      %o5, [ %o0 + 4 ]    // Return address.
 
     // Save the input and local registers as requested.
-    st      %i0, [ %o0 + 8 ]
-    st      %i1, [ %o0 + 12 ]
-    st      %i2, [ %o0 + 16 ]
-    st      %i3, [ %o0 + 20 ]
-    st      %i4, [ %o0 + 24 ]
-    st      %i5, [ %o0 + 28 ]
-    st      %i6, [ %o0 + 32 ]
-    st      %i7, [ %o0 + 36 ]
-    st      %l0, [ %o0 + 40 ]
-    st      %l1, [ %o0 + 44 ]
-    st      %l2, [ %o0 + 48 ]
-    st      %l3, [ %o0 + 52 ]
-    st      %l4, [ %o0 + 56 ]
-    st      %l5, [ %o0 + 60 ]
-    st      %l6, [ %o0 + 64 ]
-    st      %l7, [ %o0 + 68 ]
+    st      %l0, [ %o0 + 8 ]
+    st      %l1, [ %o0 + 12 ]
+    st      %l2, [ %o0 + 16 ]
+    st      %l3, [ %o0 + 20 ]
+    st      %l4, [ %o0 + 24 ]
+    st      %l5, [ %o0 + 28 ]
+    st      %l6, [ %o0 + 32 ]
+    st      %l7, [ %o0 + 36 ]
+    st      %i0, [ %o0 + 40 ]
+    st      %i1, [ %o0 + 44 ]
+    st      %i2, [ %o0 + 48 ]
+    st      %i3, [ %o0 + 52 ]
+    st      %i4, [ %o0 + 56 ]
+    st      %i5, [ %o0 + 60 ]
+    st      %i6, [ %o0 + 64 ]
+    st      %i7, [ %o0 + 68 ]
 
     // Store the return value.
     clr     [ %o4 + 0 ]
@@ -208,4 +208,4 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,1.0)
 .LCaptureContext__v1_0_end = .
 
 
-#endif // if defined(_ABIO32)
+#endif // if !defined(__arch64__)
