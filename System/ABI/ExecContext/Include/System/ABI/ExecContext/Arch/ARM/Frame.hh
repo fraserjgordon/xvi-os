@@ -23,7 +23,6 @@ struct arm32_frame_t
     std::uint32_t   r10;
     std::uint32_t   r11;
     std::uint32_t   sp;     // r13
-    std::uint32_t   lr;     // r14
     std::uint32_t   pc;     // r15 
 };
 
@@ -44,29 +43,28 @@ struct arm64_frame_t
     std::uint64_t   x26;
     std::uint64_t   x27;
     std::uint64_t   x28;
-    std::uint64_t   x29;
+    std::uint64_t   x29;    // May store the frame pointer.
+    std::uint64_t   sp;
     std::uint64_t   pc;
 };
 
 struct arm64_full_frame_t
 {
+    // Note: return PC is taken from LR (register x30).
     std::uint64_t   x[32];
-    std::uint64_t   pc;
 };
 
 
-#if defined(__arm__)
-#  if defined(__aarch64__)
+#if defined(__aarch64__)
 using arm_frame_t = arm64_frame_t;
 using arm_full_frame_t = arm64_full_frame_t;
-#  else
+#elif defined(__arm__)
 using arm_frame_t = arm32_frame_t;
 using arm_full_frame_t = arm32_full_frame_t;
-#  endif
 #endif
 
 
-#if defined(__arm__)
+#if defined(__arm__) || defined(__aarch64__)
 //! @brief Swaps stacks and execution state with the given context.
 //!
 //! This function implements the key operation for stackful co-routines: it switches from one execution stack to
@@ -85,7 +83,6 @@ using arm_full_frame_t = arm32_full_frame_t;
 //!
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
 [[gnu::returns_twice]]
-[[gnu::sysv_abi]]
 std::pair<arm_frame_t*, std::uintptr_t>
 SwapContexts(arm_frame_t* next, std::uintptr_t param)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(SwapContexts);
@@ -97,7 +94,6 @@ SwapContexts(arm_frame_t* next, std::uintptr_t param)
 //!
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
 [[noreturn]]
-[[gnu::sysv_abi]]
 void ResumeContext(arm_frame_t* next, std::uintptr_t param)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(ResumeContext);
 
@@ -108,7 +104,6 @@ void ResumeContext(arm_frame_t* next, std::uintptr_t param)
 //!
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
 [[noreturn]]
-[[gnu::sysv_abi]]
 void ResumeContextFull(arm_full_frame_t* next)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(ResumeContextFull);
 
@@ -125,7 +120,6 @@ void ResumeContextFull(arm_full_frame_t* next)
 //!
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
 [[gnu::returns_twice]]
-[[gnu::sysv_abi]]
 std::pair<arm_frame_t*, std::uintptr_t>
 CaptureContext(arm_frame_t* ctxt, std::uintptr_t param_first)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(CaptureContext);
@@ -151,14 +145,12 @@ using create_context_fn_t = void (*)(arm_frame_t* prev_frame, std::uintptr_t cal
 
 //! @brief Creates a context by wrapping a call to a function.
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
-[[gnu::sysv_abi]]
 arm_frame_t*
 CreateContext(void* stack, std::size_t stack_size, create_context_fn_t, std::uintptr_t bound_param)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(CreateContext);
 
 //! @brief Creates a context by wrapping a call to a function using some copied data.
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
-[[gnu::sysv_abi]]
 arm_frame_t*
 CreateContextWithData(void* stack, std::size_t stack_size, create_context_fn_t fn, const void* data, std::size_t data_size)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(CreateContextWithData);

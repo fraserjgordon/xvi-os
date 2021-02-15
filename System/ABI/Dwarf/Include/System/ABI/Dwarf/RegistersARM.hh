@@ -50,6 +50,11 @@ enum class reg_arm : std::uint16_t
     r14         = 14,
     r15         = 15,
 
+    // Aliases for registers with defined AAPCS32 purposes.
+    sp          = r13,
+    lr          = r14,
+    pc          = r15,
+
     // Obsolete encodings for FPA registers.
     // Note: overlaps with obsolete VFP encodings.
     obs_fpa_f0  = 16,
@@ -478,45 +483,53 @@ struct FrameTraitsARM
             gp[std::size_t(which)] = value;
         }
 
-        /*void CaptureFrame(const ExecContext::sysv_x64_frame_t& frame)
+        void CaptureFrame(const ExecContext::arm32_frame_t& frame)
         {
-            SetGPRegister(reg_x86_64::rsp, frame.rsp);
-            SetGPRegister(reg_x86_64::r12, frame.r12);
-            SetGPRegister(reg_x86_64::r13, frame.r13);
-            SetGPRegister(reg_x86_64::r14, frame.r14);
-            SetGPRegister(reg_x86_64::r15, frame.r15);
-            SetGPRegister(reg_x86_64::rbx, frame.rbx);
-            SetGPRegister(reg_x86_64::rbp, frame.rbp);
-            SetGPRegister(reg_x86_64::rsp, frame.rsp);
-            SetReturnAddress(frame.rip);
+            SetGPRegister(reg_arm::r4, frame.r4);
+            SetGPRegister(reg_arm::r5, frame.r5);
+            SetGPRegister(reg_arm::r6, frame.r6);
+            SetGPRegister(reg_arm::r7, frame.r7);
+            SetGPRegister(reg_arm::r8, frame.r8);
+            SetGPRegister(reg_arm::r9, frame.r9);
+            SetGPRegister(reg_arm::r10, frame.r10);
+            SetGPRegister(reg_arm::r11, frame.r11);
+            SetGPRegister(reg_arm::sp, frame.sp);   // Same as SetCFA().
+            SetGPRegister(reg_arm::pc, frame.pc);   // Same as SetReturnAddress().
         }
 
-        void ConfigureFrame(ExecContext::sysv_x64_frame_t& frame)
+        void ConfigureFrame(ExecContext::arm32_frame_t& frame)
         {
-            frame.r12 = GetGPRegister(reg_x86_64::r12);
-            frame.r13 = GetGPRegister(reg_x86_64::r13);
-            frame.r14 = GetGPRegister(reg_x86_64::r14);
-            frame.r15 = GetGPRegister(reg_x86_64::r15);
-            frame.rbx = GetGPRegister(reg_x86_64::rbx);
-            frame.rbp = GetGPRegister(reg_x86_64::rbp);
-            frame.rsp = GetCFA();
-            frame.rip = GetReturnAddress();
+            frame.r4 = GetGPRegister(reg_arm::r4);
+            frame.r5 = GetGPRegister(reg_arm::r5);
+            frame.r6 = GetGPRegister(reg_arm::r6);
+            frame.r7 = GetGPRegister(reg_arm::r7);
+            frame.r8 = GetGPRegister(reg_arm::r8);
+            frame.r9 = GetGPRegister(reg_arm::r9);
+            frame.r10 = GetGPRegister(reg_arm::r10);
+            frame.r11 = GetGPRegister(reg_arm::r11);
+            frame.sp = GetGPRegister(reg_arm::sp);  // Same as GetCFA().
+            frame.pc = GetGPRegister(reg_arm::pc);  // Same as GetReturnAddress();
         }
 
-        void ConfigureFullFrame(ExecContext::sysv_x64_integer_t& frame)
+        void ConfigureFullFrame(ExecContext::arm32_full_frame_t& frame)
         {
-            ConfigureFrame(frame);
-            frame.rax = GetGPRegister(reg_x86_64::rax);
-            frame.rcx = GetGPRegister(reg_x86_64::rcx);
-            frame.rdx = GetGPRegister(reg_x86_64::rdx);
-            frame.rsi = GetGPRegister(reg_x86_64::rsi);
-            frame.rdi = GetGPRegister(reg_x86_64::rdi);
-            frame.rbp = GetGPRegister(reg_x86_64::rbp);
-            frame.r8  = GetGPRegister(reg_x86_64::r8);
-            frame.r9  = GetGPRegister(reg_x86_64::r9);
-            frame.r10 = GetGPRegister(reg_x86_64::r10);
-            frame.r11 = GetGPRegister(reg_x86_64::r11);
-        }*/
+            frame.r[0] = GetGPRegister(reg_arm::r0);
+            frame.r[1] = GetGPRegister(reg_arm::r1);
+            frame.r[2] = GetGPRegister(reg_arm::r2);
+            frame.r[3] = GetGPRegister(reg_arm::r3);
+            frame.r[4] = GetGPRegister(reg_arm::r4);
+            frame.r[5] = GetGPRegister(reg_arm::r5);
+            frame.r[6] = GetGPRegister(reg_arm::r6);
+            frame.r[7] = GetGPRegister(reg_arm::r7);
+            frame.r[8] = GetGPRegister(reg_arm::r8);
+            frame.r[9] = GetGPRegister(reg_arm::r9);
+            frame.r[10] = GetGPRegister(reg_arm::r10);
+            frame.r[11] = GetGPRegister(reg_arm::r11);
+            frame.r[12] = GetGPRegister(reg_arm::r12);
+            frame.r[13] = GetGPRegister(reg_arm::r13);    // SP.
+            frame.r[14] = GetGPRegister(reg_arm::r14);    // LR.
+            frame.r[15] = GetGPRegister(reg_arm::r15);    // PC.
+        }
 
         // Validates the given general-purpose register number.
         static constexpr bool IsValidGPRegister(std::size_t n)
@@ -706,7 +719,8 @@ struct FrameTraitsARM64
             for (int i = 0; i < 32; ++i)
                 frame.x[i] = GetGPRegister(static_cast<reg_arm64>(static_cast<std::uint16_t>(reg_arm64::x0) + i));
 
-            frame.pc = GetReturnAddress();
+            // Note: trashing LR so we can store the return address.
+            frame.x[30] = GetReturnAddress();
         }
 
         // Validates the given general-purpose register number.

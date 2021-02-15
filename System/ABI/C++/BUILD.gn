@@ -191,9 +191,9 @@ library("Unwind")
         "Unwinder.cc",
     ]
 
-    if (current_arch == "arm")
+    if (current_arch == "arm" && arm_arch_major < 8)
     {
-        # The DWARF unwinder is not supported on ARM.
+        # The DWARF unwinder is not supported on 32-bit ARM.
         sources -=
         [
             "DwarfUnwinder.cc",

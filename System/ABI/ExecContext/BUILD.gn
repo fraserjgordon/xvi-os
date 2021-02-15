@@ -49,7 +49,8 @@ library("ExecContext")
         sources +=
         [
             "Arch/ARM/ARM.cc",
-            "Arch/ARM/AAPCS.S",
+            "Arch/ARM/AAPCS32.S",
+            "Arch/ARM/AAPCS64.S",
         ]
     }
     else if (current_arch == "mips")

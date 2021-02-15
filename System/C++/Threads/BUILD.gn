@@ -13,6 +13,7 @@ library("Threads")
         "../LanguageSupport",
         "../Utility",
 
+        "//ABI/Atomic",
         "//C/LanguageSupport",
     ]
 
