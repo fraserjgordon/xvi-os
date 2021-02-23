@@ -1,4 +1,3 @@
-#pragma once
 #ifndef __SYSTEM_C_BASEHEADERS_TYPES_H
 #define __SYSTEM_C_BASEHEADERS_TYPES_H
 
@@ -49,6 +48,8 @@ typedef __INT_FAST32_TYPE__     __int_fast32_t;
 typedef __INT_FAST64_TYPE__     __int_fast64_t;
 
 typedef __WINT_TYPE__           __wint_t;
+
+typedef __SIG_ATOMIC_TYPE__     __sig_atomic_t;
 
 #ifndef __cplusplus
 #define __WCHAR_TYPE__          __wchar_t;

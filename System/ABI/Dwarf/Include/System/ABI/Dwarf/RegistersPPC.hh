@@ -8,7 +8,7 @@
 #include <System/C++/LanguageSupport/StdDef.hh>
 #include <System/C++/LanguageSupport/StdInt.hh>
 
-#include <System/ABI/ExecContext/Arch/PowerPC/Frame.hh>
+#include <System/ABI/ExecContext/Arch/PowerPC/Frame.h>
 
 
 namespace System::ABI::Dwarf

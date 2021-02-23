@@ -1,6 +1,6 @@
 #if !defined(__arch64__)
 
-#include <System/ABI/ExecContext/Private/Config.hh>
+#include <System/ABI/ExecContext/Private/Config.h>
 
 
 #ifdef __sparc_v9__

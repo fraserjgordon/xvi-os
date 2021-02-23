@@ -15,18 +15,17 @@ extern "C"
 
 enum _Unwind_Reason_Code
 {
-    _URC_NO_REASON                  = 0,
+    _URC_NO_REASON                  = 0,                // Missing from ARM EHABI.
+    _URC_OK                         = _URC_NO_REASON,   // ARM EHABI addition.
     _URC_FOREIGN_EXCEPTION_CAUGHT   = 1,
-    _URC_FATAL_PHASE2_ERROR         = 2,
-    _URC_FATAL_PHASE1_ERROR         = 3,
-    _URC_NORMAL_STOP                = 4,
-    _URC_END_OF_STACK               = 5,
+    _URC_FATAL_PHASE2_ERROR         = 2,                // Missing from ARM EHABI.
+    _URC_FATAL_PHASE1_ERROR         = 3,                // Missing from ARM EHABI.
+    _URC_NORMAL_STOP                = 4,                // Missing from ARM EHABI.
+    _URC_END_OF_STACK               = 5,                // Missing from ARM EHABI.
     _URC_HANDLER_FOUND              = 6,
     _URC_INSTALL_CONTEXT            = 7,
     _URC_CONTINUE_UNWIND            = 8,
-#if defined(__SYSTEM_ABI_CXX_AEABI)
-    _URC_FAILURE                    = 9,
-#endif
+    _URC_FAILURE                    = 9,                // ARM EHABI addition.
 };
 
 #if defined(__SYSTEM_ABI_CXX_AEABI)
@@ -37,18 +36,22 @@ inline constexpr _Unwind_State _US_UNWIND_FRAME_STARTING    = 1;
 inline constexpr _Unwind_State _US_UNWIND_FRAME_RESUME      = 2;
 
 using _Unwind_EHT_Header = std::uint32_t;
+using _Unwind_Exception_Cleanup_Fn  = void (*)(_Unwind_Reason_Code, struct _Unwind_Control_Block*);
+
+struct _Unwind_Context;
 
 struct alignas(8) _Unwind_Control_Block
 {
-    char    exception_class[8];
+    char                            exception_class[8];
+    _Unwind_Exception_Cleanup_Fn    exception_cleanup;
 
     struct
     {
-        std::uint32_t   reserved1;
-        std::uint32_t   reserved2;
-        std::uint32_t   reserved3;
-        std::uint32_t   reserved4;
-        std::uint32_t   reserved5;
+        std::uint32_t   reserved1   = 0;
+        std::uint32_t   reserved2   = 0;
+        std::uint32_t   reserved3   = 0;
+        std::uint32_t   reserved4   = 0;
+        std::uint32_t   reserved5   = 0;
     } unwinder_cache;
 
     // The "propogation barrier" is the frame that handles the exception.
@@ -73,7 +76,41 @@ struct alignas(8) _Unwind_Control_Block
     } pr_cache;
 };
 
-#endif // if defined(__SYSTEM_ABI_CXX_AEABI)
+enum _Unwind_VRS_RegClass
+{
+    _UVRSC_CORE     = 0,
+    _UVRSC_VFP      = 1,
+    _UVRSC_WMMXD    = 3,
+    _UVRSC_WMMXC    = 4,
+};
+
+enum _Unwind_VRS_DataRepresentation
+{
+    _UVRSD_UINT32   = 0,
+    _UVRSD_VFPX     = 1,
+    _UVRSD_UINT64   = 3,
+    _UVRSD_FLOAT    = 4,
+    _UVRSD_DOUBLE   = 5,
+};
+
+enum _Unwind_VRS_Result
+{
+    _UVRSR_OK               = 0,
+    _UVRSR_NOT_IMPLEMENTED  = 1,
+    _UVRSR_FAILED           = 2,
+};
+
+
+__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_Reason_Code _Unwind_RaiseException(_Unwind_Control_Block*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT void _Unwind_Resume(_Unwind_Control_Block*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT void _Unwind_Complete(_Unwind_Control_Block*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT void _Unwind_DeleteException(_Unwind_Control_Block*);
+
+__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_VRS_Result _Unwind_VRS_Set(_Unwind_Context*, _Unwind_VRS_RegClass, std::uint32_t, _Unwind_VRS_DataRepresentation, void*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_VRS_Result _Unwind_VRS_Get(_Unwind_Context*, _Unwind_VRS_RegClass, std::uint32_t, _Unwind_VRS_DataRepresentation, void*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_VRS_Result _Unwind_VRS_Pop(_Unwind_Context*, _Unwind_VRS_RegClass, std::uint32_t, _Unwind_VRS_DataRepresentation);
+
+#else // if defined(__SYSTEM_ABI_CXX_AEABI)
 
 using _Unwind_Action = int;
 inline constexpr _Unwind_Action _UA_SEARCH_PHASE       = 0x00000001;
@@ -144,6 +181,8 @@ __SYSTEM_ABI_CXX_UNWIND_EXPORT void                __deregister_frame(const void
 
 // XVI extensions.
 __SYSTEM_ABI_CXX_UNWIND_EXPORT void                 _Unwind_XVI_RegisterEhFrameHdr(const std::byte*, std::uintptr_t text, std::uintptr_t data);
+
+#endif // if defined(__SYSTEM_ABI_CXX_AEABI)
 
 
 } // extern "C"

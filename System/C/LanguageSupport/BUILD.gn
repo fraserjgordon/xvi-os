@@ -8,10 +8,14 @@ library("LanguageSupport")
     public_headers =
     [
         "ErrorCodes.h",
+        "Limits.h",
         "IntTypes.h",
+        "ISO646.h",
+        "StdAlign.h",
         "StdArg.h",
         "StdBool.h",
         "StdDef.h",
         "StdInt.h",
+        "StdNoReturn.h",
     ]
 }

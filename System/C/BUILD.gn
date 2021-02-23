@@ -4,5 +4,6 @@ library_group("C")
     [
         "BaseHeaders",
         "LanguageSupport",
+        "StdLib",
     ]
 }

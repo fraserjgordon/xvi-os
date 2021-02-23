@@ -1,70 +1,50 @@
-#ifndef __SYSTEM_ABI_EXECCONTEXT_ARCH_POWERPC_FRAME_H
-#define __SYSTEM_ABI_EXECCONTEXT_ARCH_POWERPC_FRAME_H
+#ifndef __SYSTEM_ABI_EXECCONTEXT_ARCH_MIPS_ABI_H
+#define __SYSTEM_ABI_EXECCONTEXT_ARCH_MIPS_ABI_H
 
 
-#include <System/ABI/ExecContext/Private/Config.hh>
+#include <System/ABI/ExecContext/Private/Config.h>
 
-#include <System/C++/LanguageSupport/StdInt.hh>
+
+#if !defined(__mips__)
+#  error cannot detect MIPS ABI for non-MIPS builds
+#endif
+
+
+#if defined(_ABIO32)
+#  include <System/ABI/ExecContext/Arch/MIPS/O32.h>
+#elif defined(_ABIO64)
+#  include <System/ABI/ExecContext/Arch/MIPS/O64.h>
+#elif defined(_ABIN32)
+#  include <System/ABI/ExecContext/Arch/MIPS/N32.h>
+#elif defined(_ABIN64)
+#  include <System/ABI/ExecContext/Arch/MIPS/N64.h>
+#elif defined(__mips_eabi)
+#  if defined (__mips64)
+#    include <System/ABI/ExecContext/Arch/MIPS/EABI64.h>
+#  else
+#    include <System/ABI/ExecContext/Arch/MIPS/EABI32.h>
+#  endif
+#else
+#  error "Unknown MIPS ABI"
+#endif
+
+
+#ifdef __cplusplus
+#  if defined(_ABIN32)
+static_assert(sizeof(System::ABI::ExecContext::mips_frame_t) == sizeof(std::uint64_t) * __SYSTEM_ABI_EXECCONTEXT_JMPBUF_WORDS);
+#  else
+static_assert(sizeof(System::ABI::ExecContext::mips_frame_t) == sizeof(std::uintptr_t) * __SYSTEM_ABI_EXECCONTEXT_JMPBUF_WORDS);
+#  endif
+#endif
+
+
+#ifdef __cplusplus
 #include <System/C++/Utility/Pair.hh>
 
 
 namespace System::ABI::ExecContext
 {
 
-
-struct arm32_frame_t
-{
-    std::uint32_t   r4;
-    std::uint32_t   r5;
-    std::uint32_t   r6;
-    std::uint32_t   r7;
-    std::uint32_t   r8;
-    std::uint32_t   r9;
-    std::uint32_t   r10;
-    std::uint32_t   r11;
-    std::uint32_t   sp;     // r13
-    std::uint32_t   pc;     // r15 
-};
-
-struct arm32_full_frame_t
-{
-    std::uint32_t   r[16];
-};
-
-struct arm64_frame_t
-{
-    std::uint64_t   x19;
-    std::uint64_t   x20;
-    std::uint64_t   x21;
-    std::uint64_t   x22;
-    std::uint64_t   x23;
-    std::uint64_t   x24;
-    std::uint64_t   x25;
-    std::uint64_t   x26;
-    std::uint64_t   x27;
-    std::uint64_t   x28;
-    std::uint64_t   x29;    // May store the frame pointer.
-    std::uint64_t   sp;
-    std::uint64_t   pc;
-};
-
-struct arm64_full_frame_t
-{
-    // Note: return PC is taken from LR (register x30).
-    std::uint64_t   x[32];
-};
-
-
-#if defined(__aarch64__)
-using arm_frame_t = arm64_frame_t;
-using arm_full_frame_t = arm64_full_frame_t;
-#elif defined(__arm__)
-using arm_frame_t = arm32_frame_t;
-using arm_full_frame_t = arm32_full_frame_t;
-#endif
-
-
-#if defined(__arm__) || defined(__aarch64__)
 //! @brief Swaps stacks and execution state with the given context.
 //!
 //! This function implements the key operation for stackful co-routines: it switches from one execution stack to
@@ -83,8 +63,8 @@ using arm_full_frame_t = arm32_full_frame_t;
 //!
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
 [[gnu::returns_twice]]
-std::pair<arm_frame_t*, std::uintptr_t>
-SwapContexts(arm_frame_t* next, std::uintptr_t param)
+std::pair<mips_frame_t*, std::uintptr_t>
+SwapContexts(mips_frame_t* next, std::uintptr_t param)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(SwapContexts);
 
 //! @brief Resumes the given execution context and abandons the current context.
@@ -94,7 +74,7 @@ SwapContexts(arm_frame_t* next, std::uintptr_t param)
 //!
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
 [[noreturn]]
-void ResumeContext(arm_frame_t* next, std::uintptr_t param)
+void ResumeContext(mips_frame_t* next, std::uintptr_t param)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(ResumeContext);
 
 //! @brief Resumes the given execution context and abandons the current context.
@@ -104,7 +84,7 @@ void ResumeContext(arm_frame_t* next, std::uintptr_t param)
 //!
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
 [[noreturn]]
-void ResumeContextFull(arm_full_frame_t* next)
+void ResumeContextFull(mips_full_frame_t* next)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(ResumeContextFull);
 
 //! @brief Captures the execution context without switching to another context.
@@ -120,8 +100,8 @@ void ResumeContextFull(arm_full_frame_t* next)
 //!
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
 [[gnu::returns_twice]]
-std::pair<arm_frame_t*, std::uintptr_t>
-CaptureContext(arm_frame_t* ctxt, std::uintptr_t param_first)
+std::pair<mips_frame_t*, std::uintptr_t>
+CaptureContext(mips_frame_t* ctxt, std::uintptr_t param_first)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(CaptureContext);
 
 
@@ -141,25 +121,23 @@ CaptureContext(arm_frame_t* ctxt, std::uintptr_t param_first)
 //!             that returning will cause program termination. This applies regardless of how this function returns
 //!             (e.g. by returning normally, throwing an exception, unwinding the stack in some other way, etc).
 //!
-using create_context_fn_t = void (*)(arm_frame_t* prev_frame, std::uintptr_t call_param, std::uintptr_t bound_param);
+using create_context_fn_t = void (*)(mips_frame_t* prev_frame, std::uintptr_t call_param, std::uintptr_t bound_param);
 
 //! @brief Creates a context by wrapping a call to a function.
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
-arm_frame_t*
+mips_frame_t*
 CreateContext(void* stack, std::size_t stack_size, create_context_fn_t, std::uintptr_t bound_param)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(CreateContext);
 
 //! @brief Creates a context by wrapping a call to a function using some copied data.
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
-arm_frame_t*
+mips_frame_t*
 CreateContextWithData(void* stack, std::size_t stack_size, create_context_fn_t fn, const void* data, std::size_t data_size)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(CreateContextWithData);
 
 
-#endif /* ifdef __arm__ */
-
-
 } // namespace System::ABI::ExecContext
+#endif // ifdef __cplusplus
 
 
-#endif /* ifndef __SYSTEM_ABI_EXECCONTEXT_ARCH_POWERPC_FRAME_H */
+#endif /* ifndef __SYSTEM_ABI_EXECCONTEXT_ARCH_MIPS_ABI_H */

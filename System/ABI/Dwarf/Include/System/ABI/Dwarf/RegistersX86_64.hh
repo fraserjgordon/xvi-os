@@ -3,7 +3,7 @@
 #define __SYSTEM_ABI_DWARF_REGISTERS_X86_64_H
 
 
-#include <System/ABI/ExecContext/Arch/x86/SysV_x64.hh>
+#include <System/ABI/ExecContext/Arch/x86/SysV_x64.h>
 #include <System/C++/LanguageSupport/InitializerList.hh>
 #include <System/C++/LanguageSupport/StdDef.hh>
 #include <System/C++/LanguageSupport/StdInt.hh>

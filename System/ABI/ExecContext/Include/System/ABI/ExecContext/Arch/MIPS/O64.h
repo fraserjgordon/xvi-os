@@ -2,6 +2,12 @@
 #define __SYSTEM_ABI_EXECCONTEXT_ARCH_MIPS_O64_H
 
 
+#if defined(_ABIO64)
+#  define __SYSTEM_ABI_EXECCONTEXT_JMPBUF_WORDS 12
+#endif
+
+
+#ifdef __cplusplus
 #include <System/C++/LanguageSupport/StdInt.hh>
 
 
@@ -44,6 +50,7 @@ using mips_full_frame_t = mips_o64_full_frame_t;
 
 
 } // namespace System::ABI::ExecContext
+#endif // ifdef __cplusplus
 
 
 #endif /* ifndef __SYSTEM_ABI_EXECCONTEXT_ARCH_MIPS_O64_H */

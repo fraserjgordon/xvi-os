@@ -1,16 +1,20 @@
-#pragma once
 #ifndef __SYSTEM_ABI_EXECCONTEXT_ARCH_X86_SYSV_X64_H
 #define __SYSTEM_ABI_EXECCONTEXT_ARCH_X86_SYSV_X64_H
 
 
+#include <System/ABI/ExecContext/Private/Config.h>
+
+
+#if defined(__x86_64__)
+#  define __SYSTEM_ABI_EXECCONTEXT_JMPBUF_WORDS     8
+#endif
+
+
 // Note: included from assembly files.
 #ifdef __cplusplus
-
-
 #include <System/C++/LanguageSupport/StdInt.hh>
 #include <System/C++/Utility/Pair.hh>
 
-#include <System/ABI/ExecContext/Private/Config.hh>
 #include <System/ABI/ExecContext/Arch/x86/SSE.hh>
 
 
@@ -216,8 +220,7 @@ static_assert(sizeof(sysv_x64_integer_t) == __SYSV_X64_INTEGER_SIZE);
 
 // Validate the structure offsets match the #defines.
 }
-#endif
-
+#endif // ifdef __cplusplus
 
 
 #endif /* ifndef __SYSTEM_ABI_EXECCONTEXT_ARCH_X86_SYSV_X64_H */

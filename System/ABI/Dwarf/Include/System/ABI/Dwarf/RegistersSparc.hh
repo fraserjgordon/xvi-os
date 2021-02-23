@@ -2,7 +2,7 @@
 #define __SYSTEM_ABI_DWARF_REGISTERS_SPARC_H
 
 
-#include <System/ABI/ExecContext/Arch/Sparc/Frame.hh>
+#include <System/ABI/ExecContext/Arch/Sparc/Frame.h>
 
 #include <System/C++/LanguageSupport/InitializerList.hh>
 #include <System/C++/LanguageSupport/StdDef.hh>

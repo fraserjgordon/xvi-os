@@ -4,7 +4,7 @@
 #include <System/ABI/Dwarf/CFI.hh>
 #include <System/ABI/Dwarf/Decode.hh>
 #include <System/ABI/Dwarf/FDE.hh>
-#include <System/ABI/ExecContext/ExecContext.hh>
+#include <System/ABI/ExecContext/ExecContext.h>
 #include <System/C++/Containers/Vector.hh>
 #include <System/C++/Utility/Algorithm.hh>
 #include <System/C++/Utility/Array.hh>

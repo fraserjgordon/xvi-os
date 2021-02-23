@@ -30,13 +30,21 @@ struct __cxa_exception
     __cxa_exception*        nextException               = nullptr;
 
     int                     handlerCount                = 0;
+
+#if defined(__SYSTEM_ABI_CXX_AEABI)
+    int                     propagationCount            = 0;
+    __cxa_exception*        nextPropagatingException    = nullptr;
+
+    _Unwind_Control_Block   ucb                         = {};
+#else
     int                     handlerSwitchValue          = 0;
     const char*             actionRecord                = nullptr;
     const char*             languageSpecificDataArea    = nullptr;
     void*                   catchTemp                   = nullptr;
     void*                   adjustedPointer             = nullptr;
-
+    
     _Unwind_Exception       unwindHeader                = {};
+#endif
 };
 
 struct __cxa_dependent_exception
@@ -48,19 +56,31 @@ struct __cxa_dependent_exception
     __cxa_exception*        nextException               = nullptr;
 
     int                     handlerCount                = 0;
+
+#if defined(__SYSTEM_ABI_CXX_AEABI)
+    int                     propagationCount            = 0;
+    __cxa_exception*        nextPropagatingException    = nullptr;
+
+    _Unwind_Control_Block   ucb                         = {};
+#else
     int                     handlerSwitchValue          = 0;
     const char*             actionRecord                = nullptr;
     const char*             languageSpecificDataArea    = nullptr;
     void*                   catchTemp                   = nullptr;
     void*                   adjustedPointer             = nullptr;
-
+    
     _Unwind_Exception       unwindHeader                = {};
+#endif
 };
 
 struct __cxa_eh_globals
 {
     __cxa_exception*        caughtExceptions            = nullptr;
     unsigned int            uncaughtExceptions          = 0;
+
+#if defined(__SYSTEM_ABI_CXX_AEABI)
+    __cxa_exception*        propagatingExceptions       = nullptr;
+#endif
 };
 
 // The only permitted use of this class is in a catch clause; any expression involving this type (e.g. taking the
@@ -73,19 +93,49 @@ private:
     virtual ~__foreign_exception() = 0;
 };
 
+// Defined by the ARM EHABI rather than the generic ABI.
+enum __cxa_type_match_result
+{
+    __ctm_failed                        = 0,
+    __ctm_succeeded                     = 1,
+    __ctm_succeeded_with_ptr_to_base    = 2,
+};
+
 
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT __cxa_eh_globals*     __cxa_get_globals();
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT __cxa_eh_globals*     __cxa_get_globals_fast();
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT void*                 __cxa_allocate_exception(std::size_t);
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT void                  __cxa_free_exception(void*);
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT [[noreturn]] void     __cxa_throw(void*, std::type_info*, void (*)(void*));
+#if __SYSTEM_ABI_CXX_AEABI
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT void*                 __cxa_begin_catch(_Unwind_Control_Block*);
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT void*                 __cxa_get_exception_ptr(_Unwind_Control_Block*);
+#else
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT void*                 __cxa_get_exception_ptr(void*);
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT void*                 __cxa_begin_catch(void*);
+#endif
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT void                  __cxa_end_catch();
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT [[noreturn]] void     __cxa_rethrow();
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT [[noreturn]] void     __cxa_bad_cast();
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT [[noreturn]] void     __cxa_bad_typeid();
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT const std::type_info* __cxa_current_exception_type();
+
+// Functions used only by the ARM EHABI.
+#if __SYSTEM_ABI_CXX_AEABI
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT void                  __cxa_end_cleanup();
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT bool                  __cxa_begin_cleanup(_Unwind_Control_Block*);
+#endif
+
+// Functions defined only in the ARM EHABI and not the generic EHABI but which might be generally useful.
+#if __SYSTEM_ABI_CXX_AEABI
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT __cxa_type_match_result   __cxa_type_match(_Unwind_Control_Block*, const std::type_info*, bool, void**);
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT void                  __cxa_call_terminate(_Unwind_Control_Block*);
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT void                  __cxa_call_unexpected(_Unwind_Control_Block*);
+#else
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT __cxa_type_match_result   __cxa_type_match(void*, const std::type_info*, bool, void**);
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT void                  __cxa_call_terminate(void*);
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT void                  __cxa_call_unexpected(void*);
+#endif
 
 // Not documented in the exception handling ABI.
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT __cxa_dependent_exception*  __cxa_allocate_dependent_exception() noexcept;

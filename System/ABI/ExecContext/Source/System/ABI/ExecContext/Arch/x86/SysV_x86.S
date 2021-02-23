@@ -1,6 +1,6 @@
-#include <System/ABI/ExecContext/Arch/x86/SysV_x86.hh>
+#include <System/ABI/ExecContext/Arch/x86/SysV_x86.h>
 
-#include <System/ABI/ExecContext/Private/Config.hh>
+#include <System/ABI/ExecContext/Private/Config.h>
 
 
 #if defined(__i386__)

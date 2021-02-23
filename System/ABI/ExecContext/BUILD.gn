@@ -10,6 +10,9 @@ library("ExecContext")
 
     public_deps =
     [
+        "//C++/LanguageSupport:LanguageSupport_headers",
+        "//C++/TypeTraits",
+        "//C++/Utility:Utility_headers",
         "//HW/CPU/CPUID",
     ]
 
@@ -17,13 +20,13 @@ library("ExecContext")
     [
         "//ABI/String",
         "//ABI/C++:Guard",
-        "//C++/LanguageSupport:LanguageSupport_headers",
-        "//C++/Utility:Utility_headers",
     ]
 
     public_headers =
     [
-        "Private/Config.hh",
+        "ExecContext.h",
+
+        "Private/Config.h",
     ]
 
     if (current_arch == "x86")
@@ -34,8 +37,8 @@ library("ExecContext")
             "Arch/x86/FloatingPoint.hh",
             "Arch/x86/GeneralRegs.hh",
             "Arch/x86/SSE.hh",
-            "Arch/x86/SysV_x64.hh",
-            "Arch/x86/SysV_x86.hh",
+            "Arch/x86/SysV_x64.h",
+            "Arch/x86/SysV_x86.h",
             "Arch/x86/Xsave.hh",
         ]
     }

@@ -3,12 +3,12 @@
 #define __SYSTEM_ABI_DWARF_REGISTERS_MIPS_H
 
 
-#include <System/ABI/ExecContext/Arch/MIPS/EABI32.hh>
-#include <System/ABI/ExecContext/Arch/MIPS/EABI64.hh>
-#include <System/ABI/ExecContext/Arch/MIPS/N32.hh>
-#include <System/ABI/ExecContext/Arch/MIPS/N64.hh>
-#include <System/ABI/ExecContext/Arch/MIPS/O32.hh>
-#include <System/ABI/ExecContext/Arch/MIPS/O64.hh>
+#include <System/ABI/ExecContext/Arch/MIPS/EABI32.h>
+#include <System/ABI/ExecContext/Arch/MIPS/EABI64.h>
+#include <System/ABI/ExecContext/Arch/MIPS/N32.h>
+#include <System/ABI/ExecContext/Arch/MIPS/N64.h>
+#include <System/ABI/ExecContext/Arch/MIPS/O32.h>
+#include <System/ABI/ExecContext/Arch/MIPS/O64.h>
 
 #include <System/C++/LanguageSupport/InitializerList.hh>
 #include <System/C++/LanguageSupport/StdDef.hh>

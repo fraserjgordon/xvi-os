@@ -1,4 +1,4 @@
-#include <System/ABI/ExecContext/Private/Config.hh>
+#include <System/ABI/ExecContext/Private/Config.h>
 
 
 #if _ARCH_PPC64 && _CALL_ELF

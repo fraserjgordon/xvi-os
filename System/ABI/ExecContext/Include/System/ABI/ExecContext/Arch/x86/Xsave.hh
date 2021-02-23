@@ -10,7 +10,7 @@
 #  include <cstdint>
 #endif
 
-#include <System/ABI/ExecContext/Private/Config.hh>
+#include <System/ABI/ExecContext/Private/Config.h>
 #include <System/ABI/ExecContext/Arch/x86/FloatingPoint.hh>
 
 #include <System/HW/CPU/CPUID/Arch/x86/CPUID.hh>

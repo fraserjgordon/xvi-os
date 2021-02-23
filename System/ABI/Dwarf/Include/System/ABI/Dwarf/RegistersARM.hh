@@ -7,7 +7,7 @@
 #include <System/C++/LanguageSupport/StdDef.hh>
 #include <System/C++/LanguageSupport/StdInt.hh>
 
-#include <System/ABI/ExecContext/Arch/ARM/Frame.hh>
+#include <System/ABI/ExecContext/Arch/ARM/Frame.h>
 
 
 namespace System::ABI::Dwarf

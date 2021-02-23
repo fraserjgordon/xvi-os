@@ -1,4 +1,3 @@
-#pragma once
 #ifndef __SYSTEM_C_BASEHEADERS_NULL_H
 #define __SYSTEM_C_BASEHEADERS_NULL_H
 

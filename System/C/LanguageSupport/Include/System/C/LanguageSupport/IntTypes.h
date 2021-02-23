@@ -1,4 +1,3 @@
-#pragma once
 #ifndef __SYSTEM_C_LANGUAGESUPPORT_INTTYPES_H
 #define __SYSTEM_C_LANGUAGESUPPORT_INTTYPES_H
 
@@ -143,7 +142,7 @@
 #define SCNxMAX     "llx"
 
 
-//! @TODO: PRI?FAST? / SCN?FAST?
+//! @todo PRI?FAST? / SCN?FAST?
 
 
 typedef struct imaxdiv_t

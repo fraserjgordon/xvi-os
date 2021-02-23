@@ -2,8 +2,21 @@
 #define __SYSTEM_ABI_EXECCONTEXT_ARCH_POWERPC_FRAME_H
 
 
-#include <System/ABI/ExecContext/Private/Config.hh>
+#include <System/ABI/ExecContext/Private/Config.h>
 
+
+#if defined(_ARCH_PPC)
+#  if defined(_CALL_SYSV)
+#    define __SYSTEM_ABI_EXECCONTEXT_JMPBUF_WORDS       24
+#  elif _CALL_ELF == 1
+#    define __SYSTEM_ABI_EXECCONTEXT_JMPBUF_WORDS       26
+#  elif _CALL_ELF == 2
+#    define __SYSTEM_ABI_EXECCONTEXT_JMPBUF_WORDS       24
+#  endif
+#endif
+
+
+#ifdef __cplusplus
 #include <System/C++/LanguageSupport/StdInt.hh>
 #include <System/C++/Utility/Pair.hh>
 
@@ -311,6 +324,7 @@ using powerpc_full_frame_t = ppc64_elfv2_full_frame_t;
 #  else
 #    error unknown PowerPC ABI
 #  endif
+static_assert(sizeof(powerpc_frame_t) == sizeof(std::uintptr_t) * __SYSTEM_ABI_EXECCONTEXT_JMPBUF_WORDS);
 #endif
 
 
@@ -410,6 +424,7 @@ CreateContextWithData(void* stack, std::size_t stack_size, create_context_fn_t f
 
 
 } // namespace System::ABI::ExecContext
+#endif // ifdef __cplusplus
 
 
 #endif /* ifndef __SYSTEM_ABI_EXECCONTEXT_ARCH_POWERPC_FRAME_H */

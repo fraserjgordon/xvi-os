@@ -1,0 +1,64 @@
+library("StdLib")
+{
+    library_name    = "System.C.StdLib"
+    library_version = "0.1.0"
+
+    shared_define = "__SYSTEM_C_STDLIB_BUILD_SHARED"
+
+    use_stdlib = false
+
+    public_deps =
+    [
+        "//ABI/Atomic",
+        "//ABI/ExecContext",
+        "//C/BaseHeaders",
+        "//C/LanguageSupport",
+    ]
+
+    deps =
+    [
+    ]
+
+    public_headers =
+    [
+        "assert.h",
+        "complex.h",
+        "ctype.h",
+        "errno.h",
+        "fenv.h",
+        "float.h",
+        "inttypes.h",
+        "iso646.h",
+        "limits.h",
+        "locale.h",
+        "math.h",
+        "setjmp.h",
+        "signal.h",
+        "stdalign.h",
+        "stdarg.h",
+        "stdatomic.h",
+        "stdbool.h",
+        "stddef.h",
+        "stdint.h",
+        "stdio.h",
+        "stdlib.h",
+        "stdnoreturn.h",
+        "string.h",
+        "tgmath.h",
+        "threads.h",
+        "time.h",
+        "uchar.h",
+        "wchar.h",
+        "wctype.h",
+
+        "MBStateT.h",
+
+        "Private/Config.h",
+        "Private/AnnexK.h",
+    ]
+
+    sources =
+    [
+        "setjmp.cc",
+    ]
+}

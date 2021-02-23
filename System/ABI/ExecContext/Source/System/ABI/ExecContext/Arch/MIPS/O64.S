@@ -1,6 +1,6 @@
 #if defined(_ABIO64)
 
-#include <System/ABI/ExecContext/Private/Config.hh>
+#include <System/ABI/ExecContext/Private/Config.h>
 
 
 .set noat

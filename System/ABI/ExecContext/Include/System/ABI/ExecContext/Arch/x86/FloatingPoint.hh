@@ -5,7 +5,7 @@
 
 #include <System/C++/LanguageSupport/StdInt.hh>
 
-#include <System/ABI/ExecContext/Private/Config.hh>
+#include <System/ABI/ExecContext/Private/Config.h>
 
 
 namespace System::ABI::ExecContext
