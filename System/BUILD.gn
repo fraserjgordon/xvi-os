@@ -3,10 +3,12 @@ library_group("all_single_arch")
     deps =
     [
         "ABI",
-        "C",
+        "Boot",
+        #"C",
         "C++",
         "HW",
         "Rust",
+        "Unicode",
     ]
 }
 

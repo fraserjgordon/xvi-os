@@ -1,4 +1,3 @@
-#pragma once
 #ifndef __SYSTEM_CXX_LOCALE_CTYPE_H
 #define __SYSTEM_CXX_LOCALE_CTYPE_H
 
@@ -10,21 +9,21 @@ namespace __XVI_STD_LOCALE_NS
 {
 
 
-__SYSTEM_CXX_LOCALE_EXPORT int isalnum(int __c);
-__SYSTEM_CXX_LOCALE_EXPORT int isalpha(int __c);
-__SYSTEM_CXX_LOCALE_EXPORT int isblank(int __c);
-__SYSTEM_CXX_LOCALE_EXPORT int iscntrl(int __c);
-__SYSTEM_CXX_LOCALE_EXPORT int isdigit(int __c);
-__SYSTEM_CXX_LOCALE_EXPORT int isgraph(int __c);
-__SYSTEM_CXX_LOCALE_EXPORT int islower(int __c);
-__SYSTEM_CXX_LOCALE_EXPORT int isprint(int __c);
-__SYSTEM_CXX_LOCALE_EXPORT int ispunct(int __c);
-__SYSTEM_CXX_LOCALE_EXPORT int isspace(int __c);
-__SYSTEM_CXX_LOCALE_EXPORT int isupper(int __c);
-__SYSTEM_CXX_LOCALE_EXPORT int isxdigit(int __c);
+int isalnum(int);
+int isalpha(int);
+int isblank(int);
+int iscntrl(int);
+int isdigit(int);
+int isgraph(int);
+int islower(int);
+int isprint(int);
+int ispunct(int);
+int isspace(int);
+int isupper(int);
+int isxdigit(int);
 
-__SYSTEM_CXX_LOCALE_EXPORT int tolower(int __c);
-__SYSTEM_CXX_LOCALE_EXPORT int toupper(int __c);
+int tolower(int);
+int toupper(int);
 
 
 } // namespace __XVI_STD_LOCALE_NS

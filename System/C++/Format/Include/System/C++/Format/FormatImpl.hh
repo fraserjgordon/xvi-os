@@ -442,14 +442,6 @@ inline std::wstring vformat(const locale& __loc, wstring_view __fmt, wformat_arg
     return __out;
 }*/
 
-// REMOVE ME
-inline int toupper(int c)
-{
-    if ('a' <= c && c <= 'A')
-        return c - 'a' + 'A';
-    return c;
-}
-
 
 } // namespace __XVI_STD_FORMAT_NS
 

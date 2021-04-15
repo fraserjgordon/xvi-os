@@ -117,8 +117,8 @@ __SYSTEM_C_STDLIB_EXPORT int fprintf_s(FILE * __restrict, const char * __restric
 __SYSTEM_C_STDLIB_EXPORT int fscanf_s(FILE * __restrict, const char* __restrict, ...);
 __SYSTEM_C_STDLIB_EXPORT int printf_s(const char * __restrict, ...);
 __SYSTEM_C_STDLIB_EXPORT int scanf_s(const char* __restrict, ...);
-__SYSTEM_C_STDLIB_EXPORT int snprintf_s(char * __restrict, rsize_t, const char* __restrict, ...);
-__SYSTEM_C_STDLIB_EXPORT int sprintf_s(char  __restrict, rsize_t, const char* __restrict, ...);
+__SYSTEM_C_STDLIB_EXPORT int snprintf_s(char* __restrict, rsize_t, const char* __restrict, ...);
+__SYSTEM_C_STDLIB_EXPORT int sprintf_s(char*  __restrict, rsize_t, const char* __restrict, ...);
 __SYSTEM_C_STDLIB_EXPORT int sscanf_s(const char * __restrict, const char* __restrict, ...);
 __SYSTEM_C_STDLIB_EXPORT int vfprintf_s(FILE* __restrict, const char* __restrict, __varargs_va_list);
 __SYSTEM_C_STDLIB_EXPORT int vfscanf_s(FILE* __restrict, const char* __restrict, __varargs_va_list);

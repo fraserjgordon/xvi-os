@@ -1,4 +1,3 @@
-#pragma once
 #ifndef __SYSTEM_CXX_LOCALE_STDLIB_H
 #define __SYSTEM_CXX_LOCALE_STDLIB_H
 

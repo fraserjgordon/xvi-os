@@ -30,6 +30,13 @@ template("library_group")
         }
     }
 
+    if (defined(invoker.plain_deps))
+    {
+        static_deps += invoker.plain_deps
+        shared_deps += invoker.plain_deps
+        kernel_deps += invoker.plain_deps
+    }
+
     group("${target_name}__static")
     {
         deps = static_deps

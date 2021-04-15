@@ -10,7 +10,12 @@ library("Locale")
 
     public_deps =
     [
-        "../Utility"
+        "../Utility",
+    ]
+
+    deps =
+    [
+        "//Unicode/UTF:MiniUTF",
     ]
 
     public_headers =
@@ -19,6 +24,7 @@ library("Locale")
         "Locale.hh",
         "StdLib.hh",
         "UChar.hh",
+        "WChar.hh",
 
         "Private/Config.hh",
         "Private/Namespace.hh",
@@ -26,6 +32,8 @@ library("Locale")
 
     sources =
     [
+        "CType.cc",
         "Locale.cc",
+        "WChar.cc",
     ]
 }

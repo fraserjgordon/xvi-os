@@ -1,6 +1,10 @@
-library_group("StdLib")
+library("StdLib")
 {
-    deps =
+    library_name = "C++.StdLib"
+    library_version = "0.1.0"
+    use_stdlib = false    
+
+    public_deps =
     [
         "../Atomic",
         "../Chrono",
@@ -13,5 +17,10 @@ library_group("StdLib")
         "../TypeTraits",
 
         "//ABI/C++",
+    ]
+
+    public_headers =
+    [
+        # TODO
     ]
 }

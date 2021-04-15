@@ -6,7 +6,7 @@
 
 #include <System/C/BaseHeaders/Limits.h>
 #include <System/C/BaseHeaders/Null.h>
-#include <System/C/LanguageSupport/Types.h>
+#include <System/C/LanguageSupport/StdDef.h>
 
 #include <System/C/StdLib/Private/AnnexK.h>
 
@@ -78,7 +78,7 @@ __SYSTEM_C_STDLIB_EXPORT unsigned long strtoul(const char* __restrict, char** __
 __SYSTEM_C_STDLIB_EXPORT unsigned long long strtoull(const char* __restrict, char** __restrict, int);
 
 __SYSTEM_C_STDLIB_EXPORT int rand(void);
-__SYSTEM_C_STDLIB_EXPORT void srand(int);
+__SYSTEM_C_STDLIB_EXPORT void srand(unsigned int);
 
 __SYSTEM_C_STDLIB_EXPORT void* aligned_alloc(size_t, size_t);
 __SYSTEM_C_STDLIB_EXPORT void* calloc(size_t, size_t);

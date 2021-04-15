@@ -2,8 +2,9 @@
 #define __SYSTEM_C_STDLIB_INTTYPES_H
 
 
-#include <System/C/StdLib/Private/Config.hh>
+#include <System/C/StdLib/Private/Config.h>
 
+#include <System/C/BaseHeaders/Types.h>
 #include <System/C/LanguageSupport/IntTypes.h>
 
 

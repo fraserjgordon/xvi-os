@@ -167,6 +167,12 @@ config("no_stdlib")
     #]
 }
 
+# Don't use compiler built-in functions.
+config("no_builtins")
+{
+    cflags      = ["-fno-builtin"]
+}
+
 config("gcc_gc_crash_fix")
 {
     if (false && compiler_id == "gcc")

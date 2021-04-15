@@ -10,7 +10,7 @@
             "cStandard": "c17",
             "cppStandard": "c++20",
             "intelliSenseMode": "gcc-x64",
-            "compileCommands": "${workspaceRoot}/.xvi.build/compile_commands.json",
+            "compileCommands": "${workspaceRoot}/out/compile_commands.json",
             "configurationProvider": "vector-of-bool.cmake-tools",
             "browse": {
                 "limitSymbolsToIncludedHeaders": true

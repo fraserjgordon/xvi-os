@@ -1,0 +1,102 @@
+template("xvi_executable")
+{
+    prefix = invoker.prefix
+    
+    include_prefix = string_replace(prefix, ".", "/")
+    if (defined(invoker.include_prefix))
+    {
+        include_prefix  = invoker.include_prefix
+    }
+
+    output_name = target_name
+    if (defined(invoker.output_name))
+    {
+        output_name = invoker.output_name
+    }
+
+    # Apply the appropriate prefixes to the files.
+    if (defined(invoker.sources))
+    {
+        sources = []
+        source_prefix = "Source/${include_prefix}/"
+
+        foreach(source, invoker.sources)
+        {
+            sources += [ source_prefix + "${source}"]
+        }
+
+        not_needed(["source_prefix"])
+    }
+
+    if (defined(invoker.inputs))
+    {
+        inputs = []
+        foreach(input, invoker.inputs)
+        {
+            inputs += ["Source/${include_prefix}/${input}"]
+        }
+    }
+
+    # Standard library linking.
+    use_stdlib = true
+    if (defined(invoker.use_stdlib) && !invoker.use_stdlib)
+    {
+        use_stdlib = false
+    }
+
+    # Inherited settings.
+    configs         = []
+    deps            = []
+    defines         = []
+    include_dirs    = []
+    public_configs  = []
+    public_deps     = []
+
+    # Compile flags.
+    forward_variables_from(invoker, ["cflags", "cflags_c", "cflags_cc", "asmflags", "ldflags", "rustflags"])
+
+    # Other compile information.
+    forward_variables_from(invoker, ["crate_name", "include_dirs", "lib_dirs"])
+
+    if (defined(invoker.configs))
+    {
+        configs += invoker.configs
+    }
+
+    if (defined(invoker.deps))
+    {
+        deps += invoker.deps
+    }
+
+    if (defined(invoker.defines))
+    {
+        defines += invoker.defines
+    }
+
+    if (defined(invoker.public_configs))
+    {
+        public_configs += invoker.public_configs
+    }
+
+    if (defined(invoker.public_deps))
+    {
+        public_deps += invoker.public_deps
+    }
+
+    if (use_stdlib)
+    {
+        deps    += ["//C++/StdLib"]
+    }
+    else
+    {
+        configs += ["//build/config:no_stdlib"]
+    }
+
+    # Include paths.
+    include_dirs    += ["Source"]
+
+    executable(target_name)
+    {
+
+    }
+}

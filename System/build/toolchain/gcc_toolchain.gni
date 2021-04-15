@@ -128,7 +128,7 @@ template("gcc_toolchain")
             outputs                 = [ "{{output_dir}}/{{target_output_name}}{{output_extension}}" ]
             output_prefix           = ""
 
-            rspfile                 = "{{target_output_name}}{{output_extension}}.rsp"
+            rspfile                 = "{{target_out_dir}}/{{target_output_name}}{{output_extension}}.rsp"
             rspfile_content         = "{{inputs}}"
             
             command = "rm -f {{output}} && ${ar_exe} rcsD {{output}} @${rspfile}"
@@ -146,7 +146,7 @@ template("gcc_toolchain")
             soname  = "{{target_output_name}}{{output_extension}}"
             soflags = "-Wl,-soname=${soname}"
 
-            rspfile         = "${soname}.rsp"
+            rspfile         = "{{target_out_dir}}/${soname}.rsp"
             rspfile_content = "{{inputs}} {{solibs}} {{libs}}"
 
             command = "${cxx_exe} -shared ${arch_cflags} ${soflags} {{ldflags}} -o {{output}} @${rspfile}"
@@ -158,10 +158,10 @@ template("gcc_toolchain")
             description             = "Link (${toolchain_cpu}) {{target_output_name}}{{output_extension}}"
             outputs                 = [ "{{output_dir}}/{{target_output_name}}{{output_extension}}" ]
 
-            rspfile         = "{{target_output_name}}{{output_extension}}.rsp"
+            rspfile         = "{{target_out_dir}}/{{target_output_name}}{{output_extension}}.rsp"
             rspfile_content = "{{inputs}} {{solibs}} {{libs}}"
 
-            command = "${cxx_exe} ${arch_cflags} {{ldflags}} @${rspfile}"
+            command = "${cxx_exe} ${arch_cflags} {{ldflags}} -o {{output}} @${rspfile}"
         }
 
         tool("stamp")
@@ -184,7 +184,7 @@ template("gcc_toolchain")
             description             = "Rust (${toolchain_cpu}) (bin) {{target_output_name}}{{output_extension}}"
             outputs                 = [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
 
-            rspfile                 = "{{target_output_name}}{{output_extension}}.rsp"
+            rspfile                 = "{{target_out_dir}}/{{target_output_name}}{{output_extension}}.rsp"
             rspfile_content         = "{{externs}} {{rustdeps}} {{rustenv}}"
 
             command = "rustc +nightly ${arch_rustflags} {{rustflags}} --crate-type {{crate_type}} --crate-name {{crate_name}} ${rspfile_content} -o {{output}} {{source}}"
@@ -196,7 +196,7 @@ template("gcc_toolchain")
             description             = "Rust (${toolchain_cpu}) (cdylib) {{target_output_name}}{{output_extension}}"
             outputs                 = [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
 
-            rspfile                 = "{{target_output_name}}{{output_extension}}.rsp"
+            rspfile                 = "{{target_out_dir}}/{{target_output_name}}{{output_extension}}.rsp"
             rspfile_content         = "{{externs}} {{rustdeps}} {{rustenv}}"
             
             command = "rustc +nightly ${arch_rustflags} {{rustflags}} --crate-type {{crate_type}} --crate-name {{crate_name}} ${rspfile_content} -o {{output}} {{source}}"
@@ -208,7 +208,7 @@ template("gcc_toolchain")
             description             = "Rust (${toolchain_cpu}) (dylib) {{target_output_name}}{{output_extension}}"
             outputs                 = [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
 
-            rspfile                 = "{{target_output_name}}{{output_extension}}.rsp"
+            rspfile                 = "{{target_out_dir}}/{{target_output_name}}{{output_extension}}.rsp"
             rspfile_content         = "{{externs}} {{rustdeps}} {{rustenv}}"
 
             command = "rustc +nightly ${arch_rustflags} {{rustflags}} --crate-type {{crate_type}} --crate-name {{crate_name}} ${rspfile_content} -o {{output}} {{source}}"
@@ -219,7 +219,7 @@ template("gcc_toolchain")
             description             = "Rust (${toolchain_cpu}) (proc macro) {{target_output_name}}{{output_extension}}"
             outputs                 = [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
 
-            rspfile                 = "{{target_output_name}}{{output_extension}}.rsp"
+            rspfile                 = "{{target_out_dir}}/{{target_output_name}}{{output_extension}}.rsp"
             rspfile_content         = "{{externs}} {{rustdeps}} {{rustenv}}"
 
             command = "rustc +nightly ${arch_rustflags} {{rustflags}} --crate-type {{crate_type}} --crate-name {{crate_name}} ${rspfile_content} -o {{output}} {{source}}"
@@ -231,7 +231,7 @@ template("gcc_toolchain")
             description             = "Rust (${toolchain_cpu}) (rlib) {{target_output_name}}{{output_extension}}"
             outputs                 = [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
 
-            rspfile                 = "{{target_output_name}}{{output_extension}}.rsp"
+            rspfile                 = "{{target_out_dir}}/{{target_output_name}}{{output_extension}}.rsp"
             rspfile_content         = "{{externs}} {{rustdeps}} {{rustenv}}"
 
             command = "rustc +nightly ${arch_rustflags} {{rustflags}} --crate-type {{crate_type}} --crate-name {{crate_name}} ${rspfile_content} -o {{output}} {{source}}"
@@ -243,7 +243,7 @@ template("gcc_toolchain")
             description             = "Rust (${toolchain_cpu}) (static lib) {{target_output_name}}{{output_extension}}"
             outputs                 = [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
 
-            rspfile                 = "{{target_output_name}}{{output_extension}}.rsp"
+            rspfile                 = "{{target_out_dir}}/{{target_output_name}}{{output_extension}}.rsp"
             rspfile_content         = "{{externs}} {{rustdeps}} {{rustenv}}"
 
             command = "rustc +nightly ${arch_rustflags} {{rustflags}} --crate-type {{crate_type}} --crate-name {{crate_name}} ${rspfile_content} -o {{output}} {{source}}"

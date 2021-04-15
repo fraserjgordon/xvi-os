@@ -345,13 +345,6 @@ template("library")
         build_shared = filter_include(target_types, ["shared"]) != []
         build_kernel = filter_include(target_types, ["kernel"]) != []
 
-        # TODO: remove when shared library builds are enabled.
-        if (!build_shared && defined(invoker.shared_define))
-        {
-            shared_define = invoker.shared_define
-            not_needed(["shared_define"])
-        }
-
         if (use_stdlib)
         {
             if (!rust_only)
@@ -385,6 +378,11 @@ template("library")
             target(lib_type, "${target_name}__static")
             {
                 output_name = library_name
+
+                if (defined(invoker.static_define))
+                {
+                    defines += invoker.static_define
+                }
 
                 if (defined(invoker.deps_static))
                 {
@@ -453,6 +451,15 @@ template("library")
 
                 configs += ["//build/config/arch/${current_arch}:kernel_flags"]
                 defines += ["XVI_KERNEL"]
+
+                if (defined(invoker.kernel_define))
+                {
+                    defines += invoker.kernel_define
+                }
+                else if (defined(invoker.static_define))
+                {
+                    defines += invoker.static_define
+                }
 
                 if (defined(invoker.deps_kernel))
                 {
@@ -608,6 +615,11 @@ template("library")
 import("//build/config/default_configs.gni")
 
 set_defaults("library")
+{
+    configs = default_configs
+}
+
+set_defaults("xvi_executable")
 {
     configs = default_configs
 }

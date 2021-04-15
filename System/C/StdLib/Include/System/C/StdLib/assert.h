@@ -12,14 +12,14 @@ extern "C"
 
 #undef assert
 #undef __assert
-__SYSTEM_C_STDLIB_EXPORT void assert(int, const char*);
+__SYSTEM_C_STDLIB_EXPORT void __cstdlib_assert(int, const char*);
 
 
 #ifdef NDEBUG
 #  define assert(ignored)   ((void)0)
 #else
 #  define assert(expr)      __assert(expr)
-#  define __assert(expr)    assert(!((expr) == 0), \
+#  define __assert(expr)    __cstdlib_assert(!((expr) == 0), \
     __FILE__ ":" __LINE__ ": [" __func__ "] assertion failed: " #expr);
 #endif
 

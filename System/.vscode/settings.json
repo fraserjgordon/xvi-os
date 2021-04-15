@@ -1,6 +1,6 @@
 {
     "cmake.buildDirectory": "${workspaceRoot}/.xvi.build",
-    "cmake.configureOnOpen": true,
+    "cmake.configureOnOpen": false,
     "cmake.preferredGenerators": [ "Ninja", "Unix Makefiles" ],
     "C_Cpp.intelliSenseEngineFallback": "Enabled",
     "files.associations": {

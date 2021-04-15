@@ -1,4 +1,3 @@
-#pragma once
 #ifndef __SYSTEM_CXX_LOCALE_UCHAR_H
 #define __SYSTEM_CXX_LOCALE_UCHAR_H
 

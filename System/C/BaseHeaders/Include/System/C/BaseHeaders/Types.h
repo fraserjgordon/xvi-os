@@ -55,6 +55,17 @@ typedef __SIG_ATOMIC_TYPE__     __sig_atomic_t;
 #define __WCHAR_TYPE__          __wchar_t;
 typedef __CHAR16_TYPE__         __char16_t;
 typedef __CHAR32_TYPE__         __char32_t;
+#else
+typedef wchar_t                 __wchar_t;
+typedef char16_t                __char16_t;
+typedef char32_t                __char32_t;
+#endif
+
+#define __EOF                   (-1)
+#ifdef __cplusplus
+#  define __WEOF                (wint_t{0}-1)
+#else
+#  define __WEOF                ((wint_t)-1)
 #endif
 
 

@@ -1,0 +1,7 @@
+library_group("Boot")
+{
+    plain_deps =
+    [
+        "Igniter",
+    ]
+}

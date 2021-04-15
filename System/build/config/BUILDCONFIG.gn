@@ -24,5 +24,6 @@ import("//build/config/global_args.gni")
 set_default_toolchain("//build/toolchain/x86:x64")
 
 # Include common XVI templates.
+import("//build/templates/executable.gni")
 import("//build/templates/library.gni")
 import("//build/templates/library_group.gni")

@@ -11,12 +11,25 @@ library("StdLib")
     [
         "//ABI/Atomic",
         "//ABI/ExecContext",
+        "//ABI/Integer",
+        "//ABI/String",
+        "//ABI/TLS",
         "//C/BaseHeaders",
         "//C/LanguageSupport",
+        "//C++/Containers",
+        "//C++/Locale",
+        "//C++/TypeTraits",
+        "//C++/LanguageSupport",
+        "//C++/Utility:Utility_headers",
     ]
 
     deps =
     [
+    ]
+
+    configs +=
+    [
+        "//build/config:no_builtins",
     ]
 
     public_headers =
@@ -59,6 +72,45 @@ library("StdLib")
 
     sources =
     [
+        "StrToNum.hh",
+
+        "assert.cc",
+        "errno.cc",
         "setjmp.cc",
+
+        "alloc/malloc.cc",
+
+        "char/ctype.cc",
+
+        "runtime/abort.cc",
+        "runtime/exit.cc",
+
+        "stdlib/voidptr_iter.hh",
+
+        "stdlib/abs.cc",
+        "stdlib/atoi.cc",
+        "stdlib/atol.cc",
+        "stdlib/atoll.cc",
+        "stdlib/bsearch.cc",
+        "stdlib/div.cc",
+        "stdlib/imaxabs.cc",
+        "stdlib/imaxdiv.cc",
+        "stdlib/labs.cc",
+        "stdlib/ldiv.cc",
+        "stdlib/llabs.cc",
+        "stdlib/lldiv.cc",
+        "stdlib/qsort.cc",
+        "stdlib/rand.cc",
+        "stdlib/strtol.cc",
+        "stdlib/strtoll.cc",
+        "stdlib/strtoimax.cc",
+        "stdlib/strtoul.cc",
+        "stdlib/strtoull.cc",
+        "stdlib/strtoumax.cc",
+        "stdlib/wcstoimax.cc",
+        "stdlib/wcstoumax.cc",
+
+        "string/strdup.cc",
+        "string/strndup.cc",
     ]
 }

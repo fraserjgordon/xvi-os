@@ -1,0 +1,61 @@
+miniutf_public_headers =
+[
+    "EncodeState.hh",
+    "UTF-8.hh",
+]
+
+miniutf_sources =
+[
+    "EncodeStateInternal.hh",
+
+    "EncodeState.cc",
+    "UTF-8.cc",
+]
+
+library("UTF")
+{
+    library_name    = "System.Unicode.UTF"
+    library_version = "0.1.0"
+    include_prefix  = "System/Unicode/UTF"
+
+    #shared_define = "__SYSTEM_UNICODE_UTF_BUILD_SHARED"
+
+    public_headers = miniutf_public_headers
+
+    #sources = miniutf_sources
+}
+
+config("MiniUTF_Defines")
+{
+    defines =
+    [
+        "__SYSTEM_UNICODE_UTF_MINIUTF",
+    ]
+}
+
+# Dependency for the C++ standard library.
+library("MiniUTF")
+{
+    library_name    = "System.Unicode.MiniUTF"
+    library_version = "0.1.0"
+    include_prefix  = "System/Unicode/UTF"
+
+    target_types    = ["static", "kernel"]
+
+    use_stdlib = false
+
+    public_deps =
+    [
+        "//C++/LanguageSupport",
+        "//C++/Utility",
+    ]
+
+    public_headers = miniutf_public_headers
+
+    sources = miniutf_sources
+
+    public_configs =
+    [
+        ":MiniUTF_Defines",
+    ]
+}

@@ -85,7 +85,7 @@ template <class _T,
           class = enable_if_t<is_unsigned_v<_T>, void>>
 constexpr int countl_one(_T __x) noexcept
 {
-    return countl_zero(~__x);
+    return countl_zero(static_cast<_T>(~__x));
 }
 
 template <class _T,
@@ -116,7 +116,7 @@ template <class _T,
           class = enable_if_t<is_unsigned_v<_T>, void>>
 constexpr int countr_one(_T __x) noexcept
 {
-    return countr_zero(~__x);
+    return countr_zero(static_cast<_T>(~__x));
 }
 
 
