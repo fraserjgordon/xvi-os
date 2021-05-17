@@ -1,0 +1,14 @@
+library("ControlRegs")
+{
+    library_name = "System.HW.CPU.x86.ControlRegs"
+    library_version = "0.1.0"
+
+    include_prefix = "System/HW/CPU/Arch/x86/ControlRegs"
+
+    public_headers =
+    [
+        "CR.hh",
+        "EFLAGS.hh",
+        "MSR.hh",
+    ]
+}

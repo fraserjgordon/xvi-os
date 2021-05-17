@@ -3,6 +3,8 @@ library("LanguageSupport")
     library_name    = "System.C++.LanguageSupport"
     library_version = "0.1.0"
 
+    shared_define = "__SYSTEM_CXX_LANGUAGESUPPORT_BUILD_SHARED"
+
     define_header_target = true
     use_stdlib = false
 
@@ -12,6 +14,11 @@ library("LanguageSupport")
 
         "//ABI/C++:C++_headers",
         "//C/BaseHeaders",
+    ]
+
+    deps =
+    [
+        "//ABI/C++:Exception",
     ]
 
     public_headers =
@@ -30,5 +37,12 @@ library("LanguageSupport")
         "StdInt.hh",
         "TypeInfo.hh",
         "Utility.hh",
+    ]
+
+    sources =
+    [
+        "Exception.cc",
+        "New.cc",
+        "Terminate.cc",
     ]
 }

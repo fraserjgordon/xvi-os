@@ -49,8 +49,11 @@ xvi_executable("Stage2")
 
     deps =
     [
+        "//ABI/C++:C++__kernel",
         "//ABI/ExecContext:ExecContext__kernel",
+        "//Allocator/Classic:Classic__kernel",
         "//C++/StdLib:StdLib__kernel",
+        "//Utility/Logger:Logger__kernel",
     ]
 
     sources =
@@ -62,40 +65,79 @@ xvi_executable("Stage2")
         "Memory/Bitmap.cc",
     ]
 
+    inputs =
+    [
+    ]
+
     if (current_arch == "x86")
     {
         deps +=
         [
-            #"//Firmware/Arch/x86/BIOS:BIOS__kernel",
-            #"//HW/CPU/Arch/x86/IO:IO__kernel",
-            #"//HW/CPU/Arch/x86/MMU:MMU__kernel",
-            #"//HW/CPU/Arch/x86/Segmentation:Segmentation__kernel",
-            #"//HW/GPU/VGA:VGA__kernel",
+            "//Firmware/EFI:EFI__kernel",
+            "//HW/CPU/Arch/x86/IO:IO__kernel",
+            "//HW/CPU/Arch/x86/MMU:MMU__kernel",
+            "//HW/CPU/Arch/x86/Segmentation:Segmentation__kernel",
+            "//HW/GPU/VGA:VGA__kernel",
         ]
-        
+
         sources +=
         [
-            "Arch/x86/Stage2/Logging.hh",
-            "Arch/x86/Stage2/Interrupts.hh",
-            "Arch/x86/Stage2/Probe.hh",
-            "Arch/x86/Stage2/V86.hh",
-            "Arch/x86/Stage2/VGAConsole.hh",
-
-            "Arch/x86/Stage2/Entry.S",
-            "Arch/x86/Stage2/InterruptEntry.S",
-
             "Arch/x86/Stage2/Allocator.cc",
-            "Arch/x86/Stage2/Entry.cc",
             "Arch/x86/Stage2/Interrupts.cc",
-            "Arch/x86/Stage2/MultibootHeader.cc",
-            "Arch/x86/Stage2/Probe.cc",
-            "Arch/x86/Stage2/V86.cc",
-            "Arch/x86/Stage2/VGAConsole.cc",
         ]
 
-        inputs =
+        inputs +=
         [
-            "Arch/x86/Stage2/Stage2.ldscript",
         ]
+        
+        if (current_cpu == "x86")
+        {
+            deps +=
+            [
+                "//Firmware/Arch/x86/BIOS:BIOS__kernel",
+            ]
+            
+            sources +=
+            [
+                "Arch/x86/Stage2/Logging.hh",
+                "Arch/x86/Stage2/Interrupts.hh",
+                "Arch/x86/Stage2/Probe.hh",
+                "Arch/x86/Stage2/V86.hh",
+                "Arch/x86/Stage2/VGAConsole.hh",
+
+                "Arch/x86/Stage2/Entry.S",
+                "Arch/x86/Stage2/InterruptEntry.S",
+
+                "Arch/x86/Stage2/Entry.cc",
+                "Arch/x86/Stage2/MultibootHeader.cc",
+                "Arch/x86/Stage2/Probe.cc",
+                "Arch/x86/Stage2/V86.cc",
+                "Arch/x86/Stage2/VGAConsole.cc",
+            ]
+
+            inputs +=
+            [
+                "Arch/x86/Stage2/Stage2.ldscript",
+            ]
+
+            ldflags =
+            [
+                "-T", rebase_path("Source/System/Boot/Igniter/Arch/x86/Stage2/Stage2.ldscript", root_build_dir),
+            ]
+        }
+        else if (current_cpu == "x64")
+        {
+            deps +=
+            [
+            ]
+
+            sources +=
+            [
+            ]
+
+            inputs +=
+            [
+            ]
+        }
     }
 }

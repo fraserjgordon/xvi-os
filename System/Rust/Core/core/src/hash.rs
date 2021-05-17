@@ -29,7 +29,7 @@ pub trait Hash
     where
         Self: Sized
     {
-        for &d in data
+        for d in data
         {
             d.hash(state)
         }
@@ -181,7 +181,7 @@ hash_impl!{usize, write_usize}
 
 impl Hash for !
 {
-    fn hash<H: Hasher>(&self, state: &mut H) {}
+    fn hash<H: Hasher>(&self, _state: &mut H) {}
 }
 
 impl Hash for ()
@@ -202,6 +202,14 @@ impl Hash for char
     fn hash<H: Hasher>(&self, state: &mut H)
     {
         state.write_u32(*self as u32)
+    }
+}
+
+impl Hash for str
+{
+    fn hash<H: Hasher>(&self, state: &mut H)
+    {
+        todo!()
     }
 }
 

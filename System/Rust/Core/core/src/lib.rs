@@ -5,17 +5,30 @@
 #![feature(allow_internal_unstable)]
 #![feature(lang_items)]
 #![feature(rustc_attrs)]
+#![feature(rustc_allow_const_fn_unstable)]
+#![feature(staged_api)]
 
+#![feature(associated_type_bounds)]
+#![feature(auto_traits)]
+#![feature(const_caller_location)]
+#![feature(const_fn_union)]
+#![feature(const_panic)]
+#![feature(const_type_name)]
 #![feature(decl_macro)]
+#![feature(fundamental)]
 #![feature(intrinsics)]
-#![feature(min_const_generics)]
 #![feature(negative_impls)]
 #![feature(never_type)]
-#![feature(optin_builtin_traits)]
 #![feature(prelude_import)]
 #![feature(transparent_unions)]
 #![feature(unboxed_closures)]
 #![feature(untagged_unions)]
+
+// REMOVE THESE
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
+#![unstable(feature="alpha", issue="none")]
 
 
 // Primitive types.
@@ -55,7 +68,9 @@ pub mod u128; */
 #[allow(unused)]
 use prelude::v1::*;
 
+pub mod any;
 pub mod array;
+pub mod borrow;
 pub mod clone;
 pub mod cmp;
 pub mod convert;
@@ -72,8 +87,10 @@ pub mod ops;
 pub mod option;
 pub mod panic;
 pub mod panicking;
+pub mod pin;
 pub mod prelude;
 //pub mod primitive;
 pub mod ptr;
 pub mod result;
 pub mod slice;
+pub mod str;

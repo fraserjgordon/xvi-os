@@ -1,3 +1,5 @@
+.code32
+
 .altmacro
 .macro interrupt index
     .global interruptEntry\index

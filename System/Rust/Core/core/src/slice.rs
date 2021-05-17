@@ -1,4 +1,6 @@
+use crate::iterator;
 use crate::marker;
+use crate::mem;
 use crate::ops;
 use crate::ptr;
 
@@ -32,8 +34,11 @@ impl <'a, T> Iter<'a, T>
 {
     pub fn as_slice(&self) -> &'a [T]
     {
-        let len = self.end - self.begin.as_ptr();
-        ptr::slice_from_raw_parts(self.begin.as_ptr(), len)
+        unsafe
+        {
+            let len = self.end.offset_from(self.begin.as_ptr()) as usize;
+            &*ptr::slice_from_raw_parts(self.begin.as_ptr(), len)
+        }
     }
 }
 
@@ -48,22 +53,22 @@ pub struct IterMut<'a, T: 'a>
 
 pub fn from_ref<T>(s: &T) -> &[T]
 {
-    ptr::slice_from_raw_parts(s, 1)
+    unsafe { &*ptr::slice_from_raw_parts(s, 1) }
 }
 
 pub fn from_mut<T>(s: &mut T) -> &mut [T]
 {
-    ptr::slice_from_raw_parts_mut(s, 1)
+    unsafe { &mut *ptr::slice_from_raw_parts_mut(s, 1) }
 }
 
 pub unsafe fn from_raw_parts<'a, T>(data: *const T, len: usize) -> &'a [T]
 {
-    ptr::slice_from_raw_parts(data, len)
+    &*ptr::slice_from_raw_parts(data, len)
 }
 
 pub unsafe fn from_raw_parts_mut<'a, T>(data: *mut T, len: usize) -> &'a mut [T]
 {
-    ptr::slice_from_raw_parts_mut(data, len)
+    &mut *ptr::slice_from_raw_parts_mut(data, len)
 }
 
 
@@ -71,6 +76,7 @@ pub unsafe fn from_raw_parts_mut<'a, T>(data: *mut T, len: usize) -> &'a mut [T]
 impl <T> [T]
 {
     #[inline]
+    #[rustc_allow_const_fn_unstable(const_fn_union)]
     pub const fn len(&self) -> usize
     {
         unsafe
@@ -222,21 +228,15 @@ impl <T> [T]
     where
         I: SliceIndex<[T]>,
     {
-        unsafe
-        {
-            &*index.get_unchecked(self)
-        }
+        &*index.get_unchecked(self)
     }
 
     #[inline]
-    pub unsafe fn get_unchecked_mut<I>(&self, index: I) -> &mut <I as SliceIndex<[T]>>::Output
+    pub unsafe fn get_unchecked_mut<I>(&mut self, index: I) -> &mut <I as SliceIndex<[T]>>::Output
     where
         I: SliceIndex<[T]>,
     {
-        unsafe
-        {
-            &mut *index.get_unchecked_mut(self)
-        }
+        &mut *index.get_unchecked_mut(self)
     }
 
     #[inline]
@@ -254,7 +254,39 @@ impl <T> [T]
     #[inline]
     pub fn as_ptr_range(&self) -> ops::Range<*const T>
     {
+        ops::Range{ start: self.as_ptr(), end: unsafe { self.as_ptr().add(self.len()) } }
+    }
 
+    #[inline]
+    pub fn as_mut_ptr_range(&mut self) -> ops::Range<*mut T>
+    {
+        ops::Range{ start: self.as_mut_ptr(), end: unsafe { self.as_mut_ptr().add(self.len()) } }
+    }
+
+    #[inline]
+    pub fn swap(&mut self, a: usize, b: usize)
+    {
+        if a >= self.len() || b >= self.len()
+        {
+            panic!()
+        }
+
+        unsafe
+        {
+            mem::swap(&mut *self.as_mut_ptr().add(a), &mut *self.as_mut_ptr().add(b))
+        }
+    }
+
+    #[inline]
+    pub fn iter(&self) -> Iter<'_, T>
+    {
+        todo!()
+    }
+
+    #[inline]
+    pub fn iter_mut(&mut self) -> IterMut<'_, T>
+    {
+        todo!()
     }
 }
 
@@ -325,5 +357,394 @@ unsafe impl <T> SliceIndex<[T]> for usize
             Some(x) => x,
             None => panic!()
         }
+    }
+}
+
+unsafe impl <T> SliceIndex<[T]> for ops::Range<usize>
+{
+    type Output = [T];
+
+    #[inline]
+    fn get(self, slice: &[T]) -> Option<&[T]>
+    {
+        if self.start > self.end || self.end > slice.len()
+            { None }
+        else
+            { unsafe { Some(&*self.get_unchecked(slice)) } }
+    }
+
+    #[inline]
+    fn get_mut(self, slice: &mut [T]) -> Option<&mut [T]>
+    {
+        if self.start > self.end || self.end > slice.len()
+            { None }
+        else
+            { unsafe { Some(&mut *self.get_unchecked_mut(slice)) } }
+    }
+
+    #[inline]
+    unsafe fn get_unchecked(self, slice: *const [T]) -> *const [T]
+    {
+        ptr::slice_from_raw_parts(slice.as_ptr().add(self.start), self.end - self.start)
+    }
+
+    #[inline]
+    unsafe fn get_unchecked_mut(self, slice: *mut [T]) -> *mut [T]
+    {
+        ptr::slice_from_raw_parts_mut(slice.as_mut_ptr().add(self.start), self.end - self.start)
+    }
+
+    #[inline]
+    fn index(self, slice: &[T]) -> &[T]
+    {
+        match self.get(slice)
+        {
+            Some(x) => x,
+            None => panic!()
+        }
+    }
+
+    #[inline]
+    fn index_mut(self, slice: &mut [T]) -> &mut [T]
+    {
+        match self.get_mut(slice)
+        {
+            Some(x) => x,
+            None => panic!()
+        }
+    }
+}
+
+unsafe impl <T> SliceIndex<[T]> for ops::RangeFrom<usize>
+{
+    type Output = [T];
+
+    #[inline]
+    fn get(self, slice: &[T]) -> Option<&[T]>
+    {
+        if self.start > slice.len()
+            { None }
+        else
+            { unsafe { Some(&*self.get_unchecked(slice)) } }
+    }
+
+    #[inline]
+    fn get_mut(self, slice: &mut [T]) -> Option<&mut [T]>
+    {
+        if self.start > slice.len()
+            { None }
+        else
+            { unsafe { Some(&mut *self.get_unchecked_mut(slice)) } }
+    }
+
+    #[inline]
+    unsafe fn get_unchecked(self, slice: *const [T]) -> *const [T]
+    {
+        ptr::slice_from_raw_parts(slice.as_ptr().add(self.start), slice.len() - self.start)
+    }
+
+    #[inline]
+    unsafe fn get_unchecked_mut(self, slice: *mut [T]) -> *mut [T]
+    {
+        ptr::slice_from_raw_parts_mut(slice.as_mut_ptr().add(self.start), slice.len() - self.start)
+    }
+
+    #[inline]
+    fn index(self, slice: &[T]) -> &[T]
+    {
+        match self.get(slice)
+        {
+            Some(x) => x,
+            None => panic!()
+        }
+    }
+
+    #[inline]
+    fn index_mut(self, slice: &mut [T]) -> &mut [T]
+    {
+        match self.get_mut(slice)
+        {
+            Some(x) => x,
+            None => panic!()
+        }
+    }
+}
+
+unsafe impl <T> SliceIndex<[T]> for ops::RangeFull
+{
+    type Output = [T];
+
+    #[inline]
+    fn get(self, slice: &[T]) -> Option<&[T]>
+    {
+        Some(slice)
+    }
+
+    #[inline]
+    fn get_mut(self, slice: &mut [T]) -> Option<&mut [T]>
+    {
+        Some(slice)
+    }
+
+    #[inline]
+    unsafe fn get_unchecked(self, slice: *const [T]) -> *const [T]
+    {
+        slice
+    }
+
+    #[inline]
+    unsafe fn get_unchecked_mut(self, slice: *mut [T]) -> *mut [T]
+    {
+        slice
+    }
+
+    #[inline]
+    fn index(self, slice: &[T]) -> &[T]
+    {
+        slice
+    }
+
+    #[inline]
+    fn index_mut(self, slice: &mut [T]) -> &mut [T]
+    {
+        slice
+    }
+}
+
+/*unsafe impl <T> SliceIndex<[T]> for ops::RangeInclusive<usize>
+{
+    type Output = [T];
+
+    #[inline]
+    fn get(self, slice: &[T]) -> Option<&[T]>
+    {
+        if self.start > self.end || self.end > slice.len()
+            { None }
+        else
+            { unsafe { Some(&*self.get_unchecked(slice)) } }
+    }
+
+    #[inline]
+    fn get_mut(self, slice: &mut [T]) -> Option<&mut [T]>
+    {
+        if self.start > self.end || self.end > slice.len()
+            { None }
+        else
+            { unsafe { Some(&mut *self.get_unchecked_mut(slice)) } }
+    }
+
+    #[inline]
+    unsafe fn get_unchecked(self, slice: *const [T]) -> *const [T]
+    {
+        unsafe { ptr::slice_from_raw_parts(slice.as_ptr().add(self.start), self.end - self.start) }
+    }
+
+    #[inline]
+    unsafe fn get_unchecked_mut(self, slice: *mut [T]) -> *mut [T]
+    {
+        unsafe { ptr::slice_from_raw_parts_mut(slice.as_mut_ptr().add(self.start), self.end - self.start) }
+    }
+
+    #[inline]
+    fn index(self, slice: &[T]) -> &[T]
+    {
+        match self.get(slice)
+        {
+            Some(x) => x,
+            None => panic!()
+        }
+    }
+
+    #[inline]
+    fn index_mut(self, slice: &mut [T]) -> &mut [T]
+    {
+        match self.get_mut(slice)
+        {
+            Some(x) => x,
+            None => panic!()
+        }
+    }
+}*/
+
+unsafe impl <T> SliceIndex<[T]> for ops::RangeTo<usize>
+{
+    type Output = [T];
+
+    #[inline]
+    fn get(self, slice: &[T]) -> Option<&[T]>
+    {
+        if self.end > slice.len()
+            { None }
+        else
+            { unsafe { Some(&*self.get_unchecked(slice)) } }
+    }
+
+    #[inline]
+    fn get_mut(self, slice: &mut [T]) -> Option<&mut [T]>
+    {
+        if self.end > slice.len()
+            { None }
+        else
+            { unsafe { Some(&mut *self.get_unchecked_mut(slice)) } }
+    }
+
+    #[inline]
+    unsafe fn get_unchecked(self, slice: *const [T]) -> *const [T]
+    {
+        ptr::slice_from_raw_parts(slice.as_ptr(), self.end)
+    }
+
+    #[inline]
+    unsafe fn get_unchecked_mut(self, slice: *mut [T]) -> *mut [T]
+    {
+        ptr::slice_from_raw_parts_mut(slice.as_mut_ptr(), self.end)
+    }
+
+    #[inline]
+    fn index(self, slice: &[T]) -> &[T]
+    {
+        match self.get(slice)
+        {
+            Some(x) => x,
+            None => panic!()
+        }
+    }
+
+    #[inline]
+    fn index_mut(self, slice: &mut [T]) -> &mut [T]
+    {
+        match self.get_mut(slice)
+        {
+            Some(x) => x,
+            None => panic!()
+        }
+    }
+}
+
+/*unsafe impl <T> SliceIndex<[T]> for ops::RangeToInclusive<usize>
+{
+
+}*/
+
+impl <T, I> ops::Index<I> for [T]
+where
+    I: SliceIndex<[T]>
+{
+    type Output = <I as SliceIndex<[T]>>::Output;
+
+    fn index(&self, index: I) -> &Self::Output
+    {
+        index.index(self)
+    }
+}
+
+impl <T, I> ops::IndexMut<I> for [T]
+where
+    I: SliceIndex<[T]>
+{
+    fn index_mut(&mut self, index: I) -> &mut <I as SliceIndex<[T]>>::Output
+    {
+        index.index_mut(self)
+    }
+}
+
+
+impl <'a, T> Iterator for Iter<'a, T>
+{
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<&'a T>
+    {
+        todo!()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>)
+    {
+        todo!()
+    }
+
+    fn count(self) -> usize
+    {
+        todo!()
+    }
+
+    fn nth(&mut self, n: usize) -> Option<&'a T>
+    {
+        todo!()
+    }
+}
+
+impl <'a, T> Iterator for IterMut<'a, T>
+{
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<&'a mut T>
+    {
+        todo!()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>)
+    {
+        todo!()
+    }
+
+    fn count(self) -> usize
+    {
+        todo!()
+    }
+
+    fn nth(&mut self, n: usize) -> Option<&'a mut T>
+    {
+        todo!()
+    }
+}
+
+impl <'a, T> iterator::IntoIterator for &'a [T]
+{
+    type Item = &'a T;
+    type IntoIter = Iter<'a, T>;
+
+    fn into_iter(self) -> Iter<'a, T>
+    {
+        todo!()
+    }
+}
+
+impl <'a, T> iterator::IntoIterator for &'a mut [T]
+{
+    type Item = &'a mut T;
+    type IntoIter = IterMut<'a, T>;
+
+    fn into_iter(self) -> IterMut<'a, T>
+    {
+        todo!()
+    }
+}
+
+impl <A, B> PartialEq<[B]> for [A]
+where
+    A: PartialEq<B>
+{
+    fn eq(&self, other: &[B]) -> bool
+    {
+        if self.len() != other.len()
+        {
+            return false;
+        }
+
+        let n = self.len();
+        let mut i = 0usize;
+
+        while i < n
+        {
+            if self[i] != other[i]
+            {
+                return false;
+            }
+
+            i += 1;
+        }
+
+        return true;
     }
 }

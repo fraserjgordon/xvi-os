@@ -1,0 +1,20 @@
+library("Classic")
+{
+    library_name = "System.Allocator.Classic"
+    library_version = "0.1.0"
+
+    shared_define = "__SYSTEM_ALLOCATOR_CLASSIC_BUILD_SHARED"
+
+    public_headers =
+    [
+        "Classic.hh"
+    ]
+
+    sources =
+    [
+        "Arena.hh",
+        "Chunk.hh",
+
+        "Arena.cc",
+    ]
+}

@@ -1,0 +1,12 @@
+library("IO")
+{
+    library_name = "System.HW.CPU.x86.IO"
+    library_version = "0.1.0"
+
+    include_prefix = "System/HW/CPU/Arch/x86/IO"
+
+    public_headers =
+    [
+        "IO.hh",
+    ]
+}

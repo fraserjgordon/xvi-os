@@ -398,7 +398,10 @@ typename __library_formatter<_T, _CharT>::__parse_ctxt::iterator __library_forma
 } // namespace __detail
 
 
-inline std::string vformat(string_view __fmt, format_args __args)
+#ifdef __XVI_STD_FORMAT_HEADER_ONLY
+inline
+#endif
+std::string vformat(string_view __fmt, format_args __args)
 {
     std::string __out;
     __detail::__contiguous_append_iterator __iter(__out);
@@ -409,7 +412,10 @@ inline std::string vformat(string_view __fmt, format_args __args)
     return __out;
 }
 
-inline std::wstring vformat(wstring_view __fmt, wformat_args __args)
+#ifdef __XVI_STD_FORMAT_HEADER_ONLY
+inline
+#endif
+std::wstring vformat(wstring_view __fmt, wformat_args __args)
 {
     std::wstring __out;
     __detail::__contiguous_wappend_iterator __iter(__out);

@@ -1,0 +1,19 @@
+library("EFI")
+{
+    library_name = "System.Firmware.EFI"
+    library_version = "0.1.0"
+
+    target_types = ["kernel"]
+
+    public_headers =
+    [
+        "API.hh",
+        "Protocols.hh",
+        "Tables.hh",
+    ]
+
+    sources =
+    [
+        "EFI.cc",
+    ]
+}

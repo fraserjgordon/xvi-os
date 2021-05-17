@@ -1,0 +1,10 @@
+library("Endian")
+{
+    library_name = "System.Utility.Endian"
+    library_version = "0.1.0"
+
+    public_headers =
+    [
+        "Endian.hh",
+    ]
+}

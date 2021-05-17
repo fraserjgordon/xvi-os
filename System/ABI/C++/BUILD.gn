@@ -5,7 +5,7 @@ deps =
 [
     ":C++_headers",
 
-    "//C++/LanguageSupport",
+    "//C++/LanguageSupport:LanguageSupport_headers",
 ]
 
 if (current_arch == "arm" && arm_arch_major >= 8)

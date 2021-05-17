@@ -1,4 +1,7 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+use crate::mem;
+use crate::ops;
+
+#[derive(Debug, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Option<T>
 {
     #[lang = "None"]
@@ -80,7 +83,7 @@ impl <T> Option<T>
     {
         match self
         {
-            Some(x) => Some(&mut x),
+            Some(x) => Some(x),
             None => None,
         }
     }
@@ -239,8 +242,8 @@ impl <T> Option<T>
         match (self, optb)
         {
             (Some(_), Some(_)) => None,
-            (Some(_), None)    => self,
-            (None, Some(_))    => optb,
+            (Some(x), None)    => Some(x),
+            (None, Some(x))    => Some(x),
             (None, None)       => None,
         }
     }
@@ -255,8 +258,8 @@ impl <T> Option<T>
 
         match self
         {
-            Some(x) => &mut x,
-            None => crate::hints::unreachable_unchecked(),
+            Some(x) => x,
+            None => unsafe { crate::hints::unreachable_unchecked() },
         }
     }
 
@@ -270,29 +273,21 @@ impl <T> Option<T>
 
         match self
         {
-            Some(x) => &mut x,
-            None => crate::hints::unreachable_unchecked(),
+            Some(x) => x,
+            None => unsafe { crate::hints::unreachable_unchecked() },
         }
     }
 
     #[inline]
     pub fn take(&mut self) -> Option<T>
     {
-        match self
-        {
-            Some(x) => { *self = None; Some(*x) },
-            None => None,
-        }
+        mem::take(self)
     }
 
     #[inline]
     pub fn replace(&mut self, t: T) -> Option<T>
     {
-        match self
-        {
-            Some(x) => { *self = Some(t); Some(*x) }
-            None => { *self = Some(t); None }
-        }
+        mem::replace(self, Some(t))
     }
 
     #[inline]
@@ -404,27 +399,27 @@ impl <T: Default> Option<T>
     }
 }
 
-impl <T: crate::ops::Deref> Option<T>
+impl <T: ops::Deref> Option<T>
 {
     #[inline]
     pub fn as_deref(&self) -> Option<&T::Target>
     {
         match self
         {
-            Some(x) => Some(&*x),
+            Some(x) => Some(x.deref()),
             None => None,
         }
     }
 }
 
-impl <T: crate::ops::DerefMut> Option<T>
+impl <T: ops::DerefMut> Option<T>
 {
     #[inline]
     pub fn as_deref_mut(&mut self) -> Option<&mut T::Target>
     {
         match self
         {
-            Some(x) => Some(&mut *x),
+            Some(x) => Some(x.deref_mut()),
             None => None,
         }
     }
@@ -454,5 +449,37 @@ impl <T> Option<Option<T>>
             Some(Some(x)) => Some(x),
             _ => None,
         }
+    }
+}
+
+
+impl <T: Clone> Clone for Option<T>
+{
+    #[inline]
+    fn clone(&self) -> Self
+    {
+        match self
+        {
+            Some(x) => Some(x.clone()),
+            None => None,
+        }
+    }
+
+    #[inline]
+    fn clone_from(&mut self, source: &Self)
+    {
+        match (self, source)
+        {
+            (Some(to), Some(from)) => to.clone_from(from),
+            (to, from) => *to = from.clone(),
+        }
+    }
+}
+
+impl <T> Default for Option<T>
+{
+    fn default() -> Option<T>
+    {
+        None
     }
 }

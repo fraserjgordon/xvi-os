@@ -5,19 +5,57 @@ library("Core")
 
     use_stdlib = false
 
+    target_types = ["static", "kernel"]
+
     crate_name = "core"
+    crate_type = "rlib"
 
     sources =
     [
         "lib.rs",
 
+        "array.rs",
         "clone.rs",
+        "cmp.rs",
+        "convert.rs",
+        "default.rs",
+        "hash.rs",
+        "hints.rs",
+        "intrinsics.rs",
+        "iterator.rs",
         "marker.rs",
+        "mem.rs",
+        "ops.rs",
+        "option.rs",
+        "panic.rs",
+        "panicking.rs",
+        "primitive.rs",
+        "ptr.rs",
         "result.rs",
+        "slice.rs",
+
+        "fmt/mod.rs",
 
         "macros/mod.rs",
 
         "num/int_type.rs",
         "num/mod.rs",
+
+        "prelude/mod.rs",
+        "prelude/v1.rs",
+
+        "primitive_type/i8.rs",
+        "primitive_type/i16.rs",
+        "primitive_type/i32.rs",
+        "primitive_type/i64.rs",
+        "primitive_type/i128.rs",
+        "primitive_type/mod.rs",
+        "primitive_type/u8.rs",
+        "primitive_type/u16.rs",
+        "primitive_type/u32.rs",
+        "primitive_type/u64.rs",
+        "primitive_type/u128.rs",
     ]
+
+    #rustflags = [ "-Z", "macro-backtrace" ]
 }

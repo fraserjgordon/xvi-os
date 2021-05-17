@@ -110,10 +110,10 @@ impl <T, E> Result<T, E>
     #[inline]
     pub fn as_mut(&mut self) -> Result<&mut T, &mut E>
     {
-        match self
+        match *self
         {
-            Ok(x) => Ok(&mut x),
-            Err(x) => Err(&mut x),
+            Ok(ref mut x) => Ok(x),
+            Err(ref mut x) => Err(x),
         }
     }
 
@@ -170,9 +170,9 @@ impl <T, E> Result<T, E>
     #[inline]
     pub fn iter_mut(&mut self) -> IterMut<'_, T>
     {
-        match self
+        match *self
         {
-            Ok(x) => IterMut{ val: Some(&mut x) },
+            Ok(ref mut x) => IterMut{ val: Some(x) },
             Err(_) => IterMut{ val: None },
         }
     }
@@ -357,6 +357,7 @@ impl <T, E: Into<!>> Result<T, E>
         match self
         {
             Ok(x) => x,
+            Err(x) => x.into(),
         }
     }
 }
@@ -463,11 +464,7 @@ impl <T> Iterator for IntoIter<T>
     #[inline]
     fn next(&mut self) -> Option<Self::Item>
     {
-        match self.val
-        {
-            Some(x) => { self.val = None; Some(x) },
-            None => None,
-        }
+        self.val.take()
     }
 }
 
@@ -478,11 +475,7 @@ impl <'a, T> Iterator for Iter<'a, T>
     #[inline]
     fn next(&mut self) -> Option<Self::Item>
     {
-        match self.val
-        {
-            Some(x) => { self.val = None; Some(x) },
-            None => None,
-        }
+        self.val.take()
     }
 }
 
@@ -493,10 +486,6 @@ impl <'a, T> Iterator for IterMut<'a, T>
     #[inline]
     fn next(&mut self) -> Option<Self::Item>
     {
-        match self.val
-        {
-            Some(x) => { self.val = None; Some(x) },
-            None => None,
-        }
+        self.val.take()
     }
 }

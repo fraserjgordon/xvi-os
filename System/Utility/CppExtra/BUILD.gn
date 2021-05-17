@@ -1,0 +1,18 @@
+library("CppExtra")
+{
+    library_name = "System.Utility.C++Extra"
+    library_version = "0.1.0"
+
+    include_prefix = "System/Utility/CppExtra"
+
+    public_deps =
+    [
+        "//Utility/Endian",
+    ]
+
+    public_headers =
+    [
+        "ByteBuffer.hh",
+        "RefcountedPtr.hh",
+    ]
+}

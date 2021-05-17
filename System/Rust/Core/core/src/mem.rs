@@ -31,10 +31,7 @@ impl <T> ManuallyDrop<T>
     #[inline]
     pub unsafe fn take(slot: &mut ManuallyDrop<T>) -> T
     {
-        unsafe
-        {
-            ptr::read(&slot.contents)
-        }
+        ptr::read(&slot.contents)
     }
 }
 
@@ -43,10 +40,7 @@ impl <T: ?Sized> ManuallyDrop<T>
     #[inline]
     pub unsafe fn drop(slot: &mut ManuallyDrop<T>)
     {
-        unsafe
-        {
-            ptr::drop_in_place(&mut slot.contents)
-        }
+        ptr::drop_in_place(&mut slot.contents)
     }
 }
 
@@ -90,11 +84,11 @@ impl <T> MaybeUninit<T>
         MaybeUninit { empty: () }
     }
 
-    pub fn uninit_array<const Len: usize>() -> [Self; Len]
+    pub fn uninit_array<const LEN: usize>() -> [Self; LEN]
     {
         unsafe
         {
-            MaybeUninit::<[Self; Len]>::uninit().assume_init()
+            MaybeUninit::<[Self; LEN]>::uninit().assume_init()
         }
     }
 
@@ -114,20 +108,25 @@ impl <T> MaybeUninit<T>
     {
         unsafe
         {
-            ptr::write(self.as_mut_ptr(), val)
+            ptr::write(self.as_mut_ptr(), val);
+            &mut self.value.contents
         }
-
-        &mut *self.as_mut_ptr()
     }
 
     pub fn as_ptr(&self) -> *const T
     {
-        &self.value.contents
+        unsafe
+        {
+            &self.value.contents
+        }
     }
 
-    pub fn as_mut_ptr(&self) -> *mut T
+    pub fn as_mut_ptr(&mut self) -> *mut T
     {
-        &mut self.value.contents
+        unsafe
+        {
+            &mut self.value.contents
+        }
     }
 
     pub unsafe fn assume_init(self) -> T
@@ -137,7 +136,7 @@ impl <T> MaybeUninit<T>
 
     pub unsafe fn assume_init_read(&self) -> T
     {
-        *self.assume_init_ref()
+        self.as_ptr().read()
     }
 
     pub unsafe fn assume_init_ref(&self) -> &T
@@ -147,18 +146,12 @@ impl <T> MaybeUninit<T>
 
     pub unsafe fn slice_assume_init_ref(slice: &[Self]) -> &[T]
     {
-        unsafe
-        {
-            &*(slice as *const [Self] as *const [T])
-        }
+        &*(slice as *const [Self] as *const [T])
     }
 
     pub unsafe fn slice_assume_ini_mut(slice: &mut [Self]) -> &[T]
     {
-        unsafe
-        {
-            &mut *(slice as *mut [Self] as *mut [T])
-        }
+        &mut *(slice as *mut [Self] as *mut [T])
     }
 
     pub fn slice_as_ptr(this: &[MaybeUninit<T>]) -> *const T
@@ -190,7 +183,10 @@ pub const fn align_of<T>() -> usize
 #[inline]
 pub fn align_of_val<T: ?Sized>(val: &T) -> usize
 {
-    intrinsics::min_align_of_val(val)
+    unsafe
+    {
+        intrinsics::min_align_of_val(val)
+    }
 }
 
 #[inline]
@@ -235,7 +231,10 @@ pub const fn size_of<T>() -> usize
 #[inline]
 pub fn size_of_val<T: ?Sized>(val: &T) -> usize
 {
-    intrinsics::size_of_val(val)
+    unsafe
+    {
+        intrinsics::size_of_val(val)
+    }
 }
 
 #[inline]
@@ -253,28 +252,18 @@ pub fn take<T: Default>(dest: &mut T) -> T
     replace(dest, T::default())
 }
 
-#[inline]
-pub unsafe fn transmute<T, U>(e: T) -> U
-{
-    intrinsics::transmute(e)
-}
+pub use intrinsics::transmute;
 
 #[inline]
 pub unsafe fn transmute_copy<T, U>(src: &T) -> U
 {
     if align_of::<T>() < align_of::<U>()
     {
-        unsafe
-        {
-            ptr::read_unaligned(src as *const T as *const U)
-        }
+        ptr::read_unaligned(src as *const T as *const U)
     }
     else
     {
-        unsafe
-        {
-            ptr::read(src as *const T as *const U)
-        }
+        ptr::read(src as *const T as *const U)
     }
 }
 
@@ -287,9 +276,6 @@ pub fn variant_count<T>() -> usize
 #[inline]
 pub unsafe fn zeroed<T>() -> T
 {
-    unsafe
-    {
-        intrinsics::assert_zero_valid::<T>();
-        MaybeUninit::<T>::zeroed().assume_init()
-    }
+    intrinsics::assert_zero_valid::<T>();
+    MaybeUninit::<T>::zeroed().assume_init()
 }

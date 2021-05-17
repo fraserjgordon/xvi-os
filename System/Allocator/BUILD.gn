@@ -1,0 +1,8 @@
+library_group("Allocator")
+{
+    deps =
+    [
+        "Classic",
+        #"GAlloc",
+    ]
+}

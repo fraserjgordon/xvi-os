@@ -1,0 +1,39 @@
+library("Segmentation")
+{
+    library_name = "System.HW.CPU.x86.Segmentation"
+    library_version = "0.1.0"
+
+    include_prefix = "System/HW/CPU/Arch/x86/Segmentation"
+
+    target_types = ["static", "kernel"]
+
+    public_deps =
+    [
+        "//HW/CPU/Arch/x86/ControlRegs",
+    ]
+
+    public_headers =
+    [
+        "Descriptor.hh",
+        "DescriptorTable.hh",
+        "GDT.hh",
+        "IDT.hh",
+        "IVT.hh",
+        "LDT.hh",
+        "RealMode.hh",
+        "Selector.hh",
+        "TSS.hh",
+    ]
+
+    sources =
+    [
+        "Descriptor.cc",
+        "DescriptorTable.cc",
+        "GDT.cc",
+        "IDT.cc",
+        "IVT.cc",
+        "LDT.cc",
+        "Selector.cc",
+        "TSS.cc",
+    ]
+}

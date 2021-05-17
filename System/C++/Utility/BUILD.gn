@@ -9,7 +9,7 @@ library("Utility")
     header_deps =
     [
         "../Atomic",
-        "../LanguageSupport",
+        "../LanguageSupport:LanguageSupport_headers",
         "../TypeTraits",
 
         "//C/LanguageSupport",

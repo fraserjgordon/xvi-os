@@ -14,9 +14,9 @@ impl Ordering
     {
         match self
         {
-            Less => Ordering::Greater,
-            Equal => Ordering::Equal,
-            Greater => Ordering::Less,
+            Ordering::Less => Ordering::Greater,
+            Ordering::Equal => Ordering::Equal,
+            Ordering::Greater => Ordering::Less,
         }
     }
 
@@ -26,7 +26,7 @@ impl Ordering
     {
         match self
         {
-            Equal => other,
+            Ordering::Equal => other,
             _ => self
         }
     }
@@ -37,7 +37,7 @@ impl Ordering
     {
         match self
         {
-            Equal => f(),
+            Ordering::Equal => f(),
             _ => self
         }
     }
@@ -82,6 +82,7 @@ impl <T: PartialOrd> PartialOrd<Reverse<T>> for Reverse<T>
 
 impl <T: Ord> Ord for Reverse<T>
 {
+    #[inline]
     fn cmp(&self, other: &Reverse<T>) -> Ordering
     {
         other.0.cmp(&self.0)
@@ -345,7 +346,7 @@ ord_impl!
 
 impl PartialEq<!> for !
 {
-    fn eq(&self, other: &!) -> bool
+    fn eq(&self, _other: &!) -> bool
     {
         true
     }
@@ -353,7 +354,7 @@ impl PartialEq<!> for !
 
 impl PartialEq<()> for ()
 {
-    fn eq(&self, other: &()) -> bool
+    fn eq(&self, _other: &()) -> bool
     {
         true
     }
@@ -361,7 +362,7 @@ impl PartialEq<()> for ()
 
 impl PartialOrd<!> for !
 {
-    fn partial_cmp(&self, other: &!) -> Option<Ordering>
+    fn partial_cmp(&self, _other: &!) -> Option<Ordering>
     {
         Some(Ordering::Equal)
     }
@@ -369,7 +370,7 @@ impl PartialOrd<!> for !
 
 impl PartialOrd<()> for ()
 {
-    fn partial_cmp(&self, other: &()) -> Option<Ordering>
+    fn partial_cmp(&self, _other: &()) -> Option<Ordering>
     {
         Some(Ordering::Equal)
     }
@@ -384,3 +385,77 @@ impl PartialOrd<char> for char
 }
 
 impl Eq for bool {}
+
+#[stable(feature="rust1", since="1.0.0")]
+impl <T: ?Sized, U: ?Sized> PartialEq<&U> for &T
+where
+    T: PartialEq<U>
+{
+    #[inline]
+    fn eq(&self, other: &&U) -> bool
+    {
+        PartialEq::eq(*self, *other)
+    }
+}
+
+#[stable(feature="rust1", since="1.0.0")]
+impl <T: ?Sized, U: ?Sized> PartialEq<&mut U> for &mut T
+where
+    T: PartialEq<U>
+{
+    #[inline]
+    fn eq(&self, other: &&mut U) -> bool
+    {
+        PartialEq::eq(*self, *other)
+    }
+}
+
+#[stable(feature="rust1", since="1.0.0")]
+impl <T: ?Sized + Eq> Eq for &T {}
+
+#[stable(feature="rust1", since="1.0.0")]
+impl <T: ?Sized + Eq> Eq for &mut T {}
+
+#[stable(feature="rust1", since="1.0.0")]
+impl <T: ?Sized, U: ?Sized> PartialOrd<&U> for &T
+where
+    T: PartialOrd<U>
+{
+    #[inline]
+    fn partial_cmp(&self, other: &&U) -> Option<Ordering>
+    {
+        PartialOrd::partial_cmp(*self, *other)
+    }
+}
+
+#[stable(feature="rust1", since="1.0.0")]
+impl<T: ?Sized, U: ?Sized> PartialOrd<&mut U> for &mut T
+where
+    T: PartialOrd<U>
+{
+    #[inline]
+    fn partial_cmp(&self, other: &&mut U) -> Option<Ordering>
+    {
+        PartialOrd::partial_cmp(*self, *other)
+    }
+}
+
+#[stable(feature="rust1", since="1.0.0")]
+impl <T: ?Sized + Ord> Ord for &T
+{
+    #[inline]
+    fn cmp(&self, other: &&T) -> Ordering
+    {
+        Ord::cmp(*self, *other)
+    }
+}
+
+#[stable(feature="rust1", since="1.0.0")]
+impl <T: ?Sized + Ord> Ord for &mut T
+{
+    #[inline]
+    fn cmp(&self, other: &&mut T) -> Ordering
+    {
+        Ord::cmp(*self, *other)
+    }
+}

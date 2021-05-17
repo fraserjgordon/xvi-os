@@ -1,0 +1,11 @@
+library_group("x86")
+{
+    deps =
+    [
+        "ControlRegs",
+        "IO",
+        "MMU",
+        "Segmentation",
+        #"VM86",
+    ]
+}

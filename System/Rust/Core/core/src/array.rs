@@ -1,14 +1,22 @@
+use crate::borrow::{Borrow, BorrowMut};
+use crate::ops::{Index, IndexMut};
 use crate::slice;
 
 #[lang = "array"]
 impl <T, const N: usize> [T; N]
 {
     #[inline]
-    pub fn map<F, U>(self, f: F) -> [U; N]
+    pub fn map<F, U>(self, _f: F) -> [U; N]
     where
         F: FnMut(T) -> U
     {
+        todo!()
+    }
 
+    #[inline]
+    pub fn zip<U>(self, _rhs: [U; N]) -> [(T, U); N]
+    {
+        todo!()
     }
 
     #[inline]
@@ -21,6 +29,66 @@ impl <T, const N: usize> [T; N]
     pub fn as_mut_slice(&mut self) -> &mut [T]
     {
         &mut self[..]
+    }
+}
+
+impl <T, const N: usize> AsMut<[T]> for [T; N]
+{
+    #[inline]
+    fn as_mut(&mut self) -> &mut [T]
+    {
+        &mut self[..]
+    }
+}
+
+impl <T, const N: usize> AsRef<[T]> for [T; N]
+{
+    #[inline]
+    fn as_ref(&self) -> &[T]
+    {
+        &self[..]
+    }
+}
+
+impl <T, const N: usize> Borrow<[T]> for [T; N]
+{
+    #[inline]
+    fn borrow(&self) -> &[T]
+    {
+        &self[..]
+    }
+}
+
+impl <T, const N: usize> BorrowMut<[T]> for [T; N]
+{
+    #[inline]
+    fn borrow_mut(&mut self) -> &mut [T]
+    {
+        &mut self[..]
+    }
+}
+
+impl <T, I, const N: usize> Index<I> for [T; N]
+where
+    [T]: Index<I>
+{
+    type Output = <[T] as Index<I>>::Output;
+
+    #[inline]
+    fn index(&self, index: I) -> &Self::Output
+    {
+        Index::index(self as &[T], index)
+    }
+}
+
+impl <T, I, const N: usize> IndexMut<I> for [T; N]
+where
+    [T]: IndexMut<I>
+{
+    #[inline]
+    fn index_mut(&mut self, index: I) -> &mut Self::Output
+    {
+        IndexMut::index_mut(self as &mut [T], index)
     }
 }
 
@@ -51,7 +119,7 @@ where
     A: PartialEq<B>,
 {
     #[inline]
-    fn eq(&self, other: &[B]) -> bool
+    fn eq(&self, other: &&'b [B]) -> bool
     {
         self[..] == other[..]
     }
@@ -62,7 +130,7 @@ where
     A: PartialEq<B>
 {
     #[inline]
-    fn eq(&self, other: &[B]) -> bool
+    fn eq(&self, other: &&'b mut [B]) -> bool
     {
         self[..] == other[..]
     }
@@ -81,7 +149,7 @@ impl <'a, T, const N: usize> IntoIterator for &'a [T; N]
 
     fn into_iter(self) -> Self::IntoIter
     {
-        self.as_slice.into_iter()
+        self.as_slice().into_iter()
     }
 }
 

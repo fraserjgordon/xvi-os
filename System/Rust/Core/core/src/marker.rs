@@ -1,3 +1,5 @@
+use crate::fmt::Debug;
+
 #[lang = "copy"]
 pub trait Copy: Clone {}
 
@@ -5,12 +7,13 @@ pub trait Copy: Clone {}
 pub trait DiscriminantKind
 {
     #[lang = "discriminant_type"]
-    type Discriminant: Clone + Copy + crate::fmt::Debug + Eq + PartialEq + crate::hash::Hash + Send + Sync + Unpin;
+    type Discriminant: Clone + Copy + Debug + Eq + PartialEq + crate::hash::Hash + Send + Sync + Unpin;
 }
 
 pub unsafe auto trait Send {}
 
 #[lang = "sized"]
+#[fundamental]
 pub trait Sized {}
 
 #[lang = "structural_teq"]
@@ -28,11 +31,14 @@ pub unsafe auto trait Unpin {}
 #[lang = "unsize"]
 pub trait Unsize<T: ?Sized> {}
 
+#[lang = "freeze"]
+pub(crate) unsafe auto trait Freeze {}
+
 
 #[lang = "phantom_data"]
 pub struct PhantomData<T: ?Sized>;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct PhantomPinned;
 
 
@@ -86,9 +92,16 @@ impl <T: ?Sized> !Sync for *mut T{}
 impl !Unpin for PhantomPinned {}
 
 // Unpin impls.
-unsafe impl <T: ?Sized> Unpin for &'_ T {}
-unsafe impl <T: ?Sized> Unpin for &'_ mut T {}
+unsafe impl <'a, T: ?Sized + 'a> Unpin for &'a T {}
+unsafe impl <'a, T: ?Sized + 'a> Unpin for &'a mut T {}
 unsafe impl <T: ?Sized> Unpin for *const T {}
 unsafe impl <T: ?Sized> Unpin for *mut T {}
+
+// Freeze impls.
+unsafe impl <T: ?Sized> Freeze for PhantomData<T> {}
+unsafe impl <T: ?Sized> Freeze for *const T {}
+unsafe impl <T: ?Sized> Freeze for *mut T {}
+unsafe impl <T: ?Sized> Freeze for &T {}
+unsafe impl <T: ?Sized> Freeze for &mut T{}
 
 }

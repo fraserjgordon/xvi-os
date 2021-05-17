@@ -8,7 +8,7 @@
 
 
 #if defined(__x86_64__)
-#  define ABI       [[gnu::ms_abi]]
+#  define EFIAPI    [[gnu::ms_abi]]
 #elif defined(__i386__)
 #  define EFIAPI    [[gnu::cdecl]]
 #else

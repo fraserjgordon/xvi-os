@@ -1,4 +1,8 @@
 library_group("HW")
 {
-    deps = []
+    deps = 
+    [
+        "CPU",
+        "GPU",
+    ]
 }

@@ -6,6 +6,14 @@ pub enum Bound<T>
     Unbounded,
 }
 
+#[lang = "generator_state"]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
+pub enum GeneratorState<Y, R>
+{
+    Yielded(Y),
+    Complete(R),
+}
+
 #[lang = "Range"]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Range<Index>
@@ -167,9 +175,19 @@ pub trait FnMut<Args> : FnOnce<Args>
 #[must_use]
 pub trait FnOnce<Args>
 {
+    #[lang = "fn_once_output"]
     type Output;
 
     extern "rust-call" fn call_once(self, args: Args) -> Self::Output;
+}
+
+#[lang = "generator"]
+pub trait Generator<R = ()>
+{
+    type Yield;
+    type Return;
+
+    //fn resume(self: Pin<&mut Self>, arg: R) -> GeneratorState<Self::Yield, Self::Return>;
 }
 
 #[lang = "index"]
@@ -306,7 +324,7 @@ impl <Index> RangeInclusive<Index>
     }
 
     #[inline]
-    pub const fn into_inner(self) -> (Index, Index)
+    pub fn into_inner(self) -> (Index, Index)
     {
         (self._start, self._end)
     }
@@ -630,3 +648,22 @@ impl <'a, T: ?Sized + Unsize<U>, U: ?Sized> DispatchFromDyn<&'a mut U> for &'a m
 impl <T: ?Sized + Unsize<U>, U: ?Sized> DispatchFromDyn<*const U> for *const T {}
 
 impl <T: ?Sized + Unsize<U>, U: ?Sized> DispatchFromDyn<*mut U> for *mut T {}
+
+
+impl <'a, 'b: 'a, T: ?Sized + Unsize<U>, U: ?Sized> CoerceUnsized<&'a U> for &'b T {}
+
+impl <'a, 'b: 'a, T: ?Sized + Unsize<U>, U: ?Sized> CoerceUnsized<&'a U> for &'b mut T {}
+
+impl <'a, T: ?Sized + Unsize<U>, U: ?Sized> CoerceUnsized<&'a mut U> for &'a mut T {}
+
+impl <'a, T: ?Sized + Unsize<U>, U: ?Sized> CoerceUnsized<*const U> for &'a T {}
+
+impl <'a, T: ?Sized + Unsize<U>, U: ?Sized> CoerceUnsized<*const U> for &'a mut T {}
+
+impl <'a, T: ?Sized + Unsize<U>, U: ?Sized> CoerceUnsized<*mut U> for &'a mut T {}
+
+impl <T: ?Sized + Unsize<U>, U: ?Sized> CoerceUnsized<*const U> for *const T {}
+
+impl <T: ?Sized + Unsize<U>, U: ?Sized> CoerceUnsized<*const U> for *mut T {}
+
+impl <T: ?Sized + Unsize<U>, U: ?Sized> CoerceUnsized<*mut U> for *mut T {}

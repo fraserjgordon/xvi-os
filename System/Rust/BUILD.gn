@@ -2,6 +2,6 @@ library_group("Rust")
 {
     deps =
     [
-#        "Core",
+        "Core",
     ]
 }

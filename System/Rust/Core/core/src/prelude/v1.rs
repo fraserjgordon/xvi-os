@@ -1,3 +1,4 @@
+pub use crate::any::{Any};
 pub use crate::clone::{Clone};
 pub use crate::cmp::{Eq, Ord, PartialEq, PartialOrd};
 pub use crate::convert::{AsMut, AsRef, From, Into};
@@ -9,3 +10,4 @@ pub use crate::marker::{Copy, Send, Sized, Sync, Unpin};
 pub use crate::ops::{Drop, Fn, FnMut, FnOnce};
 pub use crate::option::{Option, Option::{Some, None}};
 pub use crate::result::{Result, Result::{Ok, Err}};
+pub use crate::macros::builtin::{derive};

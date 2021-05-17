@@ -1,0 +1,14 @@
+library_group("GPU")
+{
+    deps =
+    [
+    ]
+
+    if (current_arch == "x86")
+    {
+        deps +=
+        [
+            "VGA",
+        ]
+    }
+}

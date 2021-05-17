@@ -1,0 +1,28 @@
+library("VGA")
+{
+    library_name = "System.HW.GPU.VGA"
+    library_version = "0.1.0"
+
+    target_types = ["kernel"]
+
+    public_deps =
+    [
+        "//HW/CPU/Arch/x86/IO",
+    ]
+
+    public_headers =
+    [
+        "AttributeController.hh",
+        "CRTC.hh",
+        "DAC.hh",
+        "GraphicsController.hh",
+        "Sequencer.hh",
+        "VGA.hh"
+    ]
+
+    sources =
+    [
+        "CRTC.cc",
+        "VGA.cc",
+    ]
+}

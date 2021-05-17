@@ -1,0 +1,10 @@
+library_group("Firmware")
+{
+    deps =
+    [
+        #"ACPI",
+        "Arch",
+        #"DeviceTree",
+        "EFI",
+    ]
+}

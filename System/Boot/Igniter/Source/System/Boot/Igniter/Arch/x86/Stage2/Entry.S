@@ -1,3 +1,4 @@
+.code32
 .text
 
 .global _IgniterStage2MultibootEntry

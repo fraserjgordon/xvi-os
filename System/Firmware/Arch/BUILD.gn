@@ -1,0 +1,11 @@
+library_group("Arch")
+{
+    deps =
+    [
+    ]
+
+    if (current_arch == "x86")
+    {
+        deps += ["x86"]
+    }
+}

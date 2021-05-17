@@ -1,0 +1,10 @@
+library_group("Utility")
+{
+    deps =
+    [
+        "CppExtra",
+        "Endian",
+        "Logger",
+        #"UUID",
+    ]
+}

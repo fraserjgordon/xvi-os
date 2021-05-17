@@ -36,7 +36,6 @@
   "position-independent-executables": true,
   "relax-elf-relocations": true,
   "relro-level": "full",
-  "stack-probes": true,
   "static-position-independent-executables": true,
   "staticlib-prefix": "",
   "staticlib-suffix": ".a",

@@ -431,6 +431,24 @@ template("library")
                 }
             }
         }
+        else if (build_static)
+        {
+            # Link to shared library instead..
+            group("${target_name}__static")
+            {
+                deps = []
+                public_deps = ["${target_name}__shared"]
+            }
+        }
+        else
+        {
+            # Dummy target.
+            group("${target_name}__static")
+            {
+                deps = []
+                public_deps = []
+            }
+        }
 
         if (build_kernel)
         {
@@ -442,7 +460,7 @@ template("library")
             }
             else if (rust_only)
             {
-                #lib_type = "rust_library"
+                forward_variables_from(invoker, ["crate_type"])
             }
             
             target(lib_type, "${target_name}__kernel")

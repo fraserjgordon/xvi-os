@@ -1,0 +1,32 @@
+library("Logger")
+{
+    library_name = "System.Utility.Logger"
+    library_version = "0.1.0"
+
+    shared_define = "__BUILD_SYSTEM_UTILITY_LOGGER_SHARED"
+
+    deps =
+    [
+        "//Utility/CppExtra",
+    ]
+
+    public_headers =
+    [
+        "Logger.hh",
+        "Message.hh",
+        "Processor.hh",
+
+        "Private/Config.hh",
+    ]
+
+    sources =
+    [
+        "CircularBuffer.hh",
+        "MessageInternal.hh",
+        "ProcessorInternal.hh",
+
+        "Logger.cc",
+        "Message.cc",
+        "Processor.cc",
+    ]
+}

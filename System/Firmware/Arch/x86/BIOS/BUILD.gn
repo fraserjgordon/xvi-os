@@ -1,0 +1,21 @@
+library("BIOS")
+{
+    library_name = "System.Firmware.x86.BIOS"
+    library_version = "0.1.0"
+
+    target_types = ["kernel"]
+
+    include_prefix = "System/Firmware/Arch/x86/BIOS"
+
+    public_headers =
+    [
+        "Call.hh",
+        "DataArea.hh",
+        "MemoryDetect.hh",
+    ]
+
+    sources =
+    [
+        "Call.cc",
+    ]
+}

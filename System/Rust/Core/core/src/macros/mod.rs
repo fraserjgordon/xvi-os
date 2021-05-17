@@ -47,7 +47,7 @@ macro_rules! panic
 {
     () =>
         {
-            panic!("panic (no message)")
+            crate::panicking::panic("panic (no message)")
         };
 
     ($Msg:literal) =>
@@ -76,4 +76,31 @@ macro_rules! panic
 macro_rules! stringify
 {
     ($(_:tt)*) => { /* builtin macro */ }
+}
+
+
+#[macro_export]
+macro_rules! todo
+{
+    () => { panic!("TODO") };
+    ($($_:tt)+) => { todo!() };
+}
+
+#[macro_export]
+macro_rules! unimplemented
+{
+    () => { panic!("not implemented") };
+    ($($_:tt)+) => { unimplemented!() };
+}
+
+
+pub mod builtin
+{
+
+#[rustc_builtin_macro]
+pub macro derive($item:item)
+{
+    /* builtin macro */
+}
+
 }
