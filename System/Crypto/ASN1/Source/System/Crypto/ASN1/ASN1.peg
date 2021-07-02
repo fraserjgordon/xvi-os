@@ -1,0 +1,1059 @@
+%source {
+
+/*
+static const char *dbg_str[] = { "Evaluating rule", "Matched rule", "Abandoning rule" };
+#define PCC_DEBUG(event, rule, level, pos, buffer, length) \
+fprintf(stderr, "%*s%s %s @%lu [%.*s]\n", int(level * 2), "", dbg_str[event], rule, pos, int(length), buffer)
+*/
+
+}
+
+# Starting symbol (needs to come first).
+start <- ModuleDefinition !.
+
+# Keywords.
+ABSENT <- "ABSENT"
+#ABSTRACT_SYNTAX <- "ABSTRACT-SYNTAX"
+ALL <- "ALL"
+APPLICATION <- "APPLICATION"
+AUTOMATIC <- "AUTOMATIC"
+BEGIN <- "BEGIN"
+BIT <- "BIT"
+BMP_STRING <- "BMPString"
+BOOLEAN <- "BOOLEAN"
+#BY <- "BY"
+CHARACTER <- "CHARACTER"
+CHOICE <- "CHOICE"
+#CLASS <- "CLASS"
+COMPONENT <- "COMPONENT"
+COMPONENTS <- "COMPONENTS"
+#CONSTRAINED <- "CONSTRAINED"
+CONTAINING <- "CONTAINING"
+DATE <- "DATE"
+DATE_TIME <- "DATE-TIME"
+DEFAULT <- "DEFAULT"
+DEFINITIONS <- "DEFINITIONS"
+DURATION <- "DURATION"
+EMBEDDED <- "EMBEDDED"
+#ENCODED <- "ENCODED"
+#ENCODING_CONTROL <- "ENCODING-CONTROL"
+END <- "END"
+ENUMERATED <- "ENUMERATED"
+EXCEPT <- "EXCEPT"
+EXPLICIT <- "EXPLICIT"
+EXPORTS <- "EXPORTS"
+EXTENSIBILITY <- "EXTENSIBILITY"
+EXTERNAL <- "EXTERNAL"
+FALSE <- "FALSE"
+FROM <- "FROM"
+#GENERALIZED_TIME <- "GeneralizedTime"
+GENERAL_STRING <- "GeneralString"
+GRAPHIC_STRING <- "GraphicString"
+IA5_STRING <- "IA5String"
+IDENTIFIER <- "IDENTIFIER"
+IMPLICIT <- "IMPLICIT"
+IMPLIED <- "IMPLIED"
+IMPORTS <- "IMPORTS"
+INCLUDES <- "INCLUDES"
+INSTRUCTIONS <- "INSTRUCTIONS"
+INTEGER <- "INTEGER"
+INTERSECTION <- "INTERSECTION"
+ISO646_STRING <- "ISO646String"
+MAX <- "MAX"
+MIN <- "MIN"
+MINUS_INFINITY <- "MINUS-INFINITY"
+NOT_A_NUMBER <- "NOT-A-NUMBER"
+NULL <- "NULL"
+NUMERIC_STRING <- "NumericString"
+OBJECT <- "OBJECT"
+#OBJECT_DESCRIPTOR <- "ObjectDescriptor"
+OCTET <- "OCTET"
+OF <- "OF"
+OID_IRI <- "OID-IRI"
+OPTIONAL <- "OPTIONAL"
+PATTERN <- "PATTERN"
+PDV <- "PDV"
+PLUS_INFINITY <- "PLUS-INFINITY"
+PRESENT <- "PRESENT"
+PRINTABLE_STRING <- "PrintableString"
+PRIVATE <- "PRIVATE"
+REAL <- "REAL"
+RELATIVE_OID <- "RELATIVE-OID"
+RELATIVE_OID_IRI <- "RELATIVE-OID-IRI"
+SEQUENCE <- "SEQUENCE"
+SET <- "SET"
+SETTINGS <- "SETTINGS"
+SIZE <- "SIZE"
+STRING <- "STRING"
+#SYNTAX <- "SYNTAX"
+T61_STRING <- "T61String"
+TAGS <- "TAGS"
+TELETEX_STRING <- "TeletexString"
+TIME <- "TIME"
+TIME_OF_DAY <- "TIME-OF-DAY"
+TRUE <- "TRUE"
+#TYPE_IDENTIFIER <- "TYPE-IDENTIFIER"
+UNION <- "UNION"
+#UNIQUE <- "UNIQUE"
+UNIVERSAL <- "UNIVERSAL"
+UNIVERSAL_STRING <- "UniversalString"
+#UTC_TIME <- "UTCTime"
+UTF8_STRING <- "UTF8String"
+VIDEOTEX_STRING <- "VideotexString"
+VISIBLE_STRING <- "VisibleString"
+WITH <- "WITH"
+
+# Placeholders.
+EXTERNAL_THING <- "!!!!! EXTERNAL THING !!!!!"
+objectclassreference <- EXTERNAL_THING
+objectreference <- EXTERNAL_THING
+objectsetreference <- EXTERNAL_THING
+EncodingClassReference <- EXTERNAL_THING
+EncodingControlSections <- EXTERNAL_THING?
+EncodingInstruction <- EXTERNAL_THING
+GeneralConstraint <- EXTERNAL_THING?
+InstanceOfType <- EXTERNAL_THING
+InstanceOfValue <- EXTERNAL_THING
+#ItemId <- EXTERNAL_THING
+ObjectAssignment <- EXTERNAL_THING
+ObjectClassAssignment <- EXTERNAL_THING
+ObjectClassFieldType <- EXTERNAL_THING
+ObjectClassFieldValue <- EXTERNAL_THING
+ObjectSetAssignment <- EXTERNAL_THING
+ObjectSetElements <- EXTERNAL_THING
+ParameterizedAssignment <- EXTERNAL_THING
+ParameterizedReference <- EXTERNAL_THING
+ParameterizedType <- EXTERNAL_THING
+ParameterizedValue <- EXTERNAL_THING
+ParameterizedValueSetType <- EXTERNAL_THING
+TypeFromObject <- EXTERNAL_THING
+ValueFromObject <- EXTERNAL_THING
+ValueSetFromObjects <- EXTERNAL_THING
+XMLInstanceOfValue <- EXTERNAL_THING
+XMLObjectClassFieldValue <- EXTERNAL_THING
+
+# Identifiers, numbers, strings, etc.
+ht <- "\t"
+lf <- "\n"
+#vt <- "\v"
+#ff <- "\f"
+cr <- "\r"
+#sp <- " "
+#nbsp <- "\u00A0"
+whitespace <- [\t\n\v\f\r \u00A0]+
+newline <- [\n\v\f\r]+
+#lowercase <- [a-z]
+#uppercase <- [A-Z]
+#alnum <- [a-zA-Z0-9]
+#alnumhyphen <- alnum / '-' !'-'
+#loweridentifier <- lowercase alnumhyphen* alnum?
+#upperidentifier <- uppercase alnumhyphen* alnum?
+loweridentifier <- [a-z] ([a-zA-Z0-9] / '-' !'-' &[a-zA-Z0-9])* [a-zA-Z0-9]?
+upperidentifier <- [A-Z] ([a-zA-Z0-9] / '-' !'-' &[a-zA-Z0-9])* [a-zA-Z0-9]?
+typereference <- upperidentifier
+identifier <- loweridentifier
+valuereference <- identifier
+modulereference <- typereference
+linecomment <- "--" (!"--" !newline .)* ("--" / newline)
+blockcomment <- "/*" (blockcomment / !"/*" .)* "*/"
+comment <- linecomment / blockcomment
+empty <- ""
+number <- '0' / [1-9][0-9]*
+realnumber <- [0-9]+ ('.' [0-9]*)? ([eE] [+\-] ('0' / [1-9][0-9]*))?
+bstring <- "\'" ([0-9] / whitespace)* "\'B"
+xmlbstring <- ([0-9] / whitespace)*
+hstring <- "\'" ([0-9A-F] / whitespace)* "\'H"
+xmlhstring <- ([0-9A-Fa-f] / whitespace)*
+cstring <- '\"' ("\"\"" / !"\'" .)* '\"'
+xmlcstring <- (ht / lf / cr / [\u0020-\uD7FF] / [\uE000-\uFFFD] / [\U010000-\U10FFFF])* # FIXME: \U doesn't work properly.
+simplestring <- '\"' (!'\"' [\x20-\x7E])* '\"'
+tstring <- '\"' [0-9+\-:.,/CDHMRPSTWYZ]* '\"'
+xmltstring <- [0-9+\-:.,/CDHMRPSTWYZ]*
+#psname <- upperidentifier
+encodingreference <- typereference
+integerunicodelabel <- '0' / [1-9][0-9]*
+nonintegerunicodelabel <- [a-zA-Z][a-zA-Z0-9]* # FIXME
+extendedtrue <- "true" / "1"
+extendedfalse <- "false" / "0"
+xmlasn1typename <- [A-Z][A-Z_]*
+_ <- (whitespace / comment)*
+
+# Rules.
+ModuleDefinition <- 
+    _ ModuleIdentifier
+    _ DEFINITIONS
+    _ EncodingReferenceDefault
+    _ TagDefault
+    _ ExtensionDefault
+    _ "::="
+    _ BEGIN
+    _ ModuleBody
+    _ EncodingControlSections
+    _ END
+    _
+
+ModuleIdentifier <- modulereference _ DefinitiveIdentification
+
+DefinitiveIdentification <-
+        DefinitiveOID
+    /   DefinitiveOIDandIRI
+    /   empty
+
+DefinitiveOID <- '{' _ DefinitiveObjIdComponentList _ '}'
+
+DefinitiveOIDandIRI <- DefinitiveOID _ IRIValue
+
+DefinitiveObjIdComponentList <- (DefinitiveObjIdComponent _)+
+
+DefinitiveObjIdComponent <-
+        NameForm
+    /   DefinitiveNumberForm
+    /   DefinitiveNameAndNumberForm
+
+DefinitiveNumberForm <- number
+
+DefinitiveNameAndNumberForm <- identifier _ '(' _ DefinitiveNumberForm _ ')'
+
+EncodingReferenceDefault <-
+        encodingreference _ INSTRUCTIONS
+    /   empty
+
+TagDefault <-
+        EXPLICIT _ TAGS
+    /   IMPLICIT _ TAGS
+    /   AUTOMATIC _ TAGS
+    /   empty
+
+ExtensionDefault <-
+        EXTENSIBILITY _ IMPLIED
+    /   empty
+
+ModuleBody <-
+        Exports _ Imports _ AssignmentList
+    /   empty
+
+Exports <-
+        EXPORTS _ SymbolsExported _ ';'
+    /   EXPORTS _ ALL _ ';'
+    /   empty
+
+SymbolsExported <-
+        SymbolList
+    /   empty
+
+Imports <-
+        IMPORTS _ SymbolsImported _ ';'
+    /   empty
+
+SymbolsImported <-
+        SymbolsFromModuleList
+    /   empty
+
+SymbolsFromModuleList <- (SymbolsFromModule _)+
+
+SymbolsFromModule <- SymbolList _ FROM _ GlobalModuleReference
+
+GlobalModuleReference <- modulereference _ AssignedIdentifier
+
+AssignedIdentifier <-
+        ObjectIdentifierValue
+    /   DefinedValue
+    /   empty
+
+SymbolList <- Symbol (',' Symbol)*
+
+Symbol <-
+        Reference
+    /   ParameterizedReference
+
+Reference <-
+        typereference
+    /   valuereference
+    /   objectclassreference
+    /   objectreference
+    /   objectsetreference
+
+AssignmentList <- (Assignment _)+
+
+Assignment <-
+        TypeAssignment
+    /   ValueAssignment
+    /   XMLValueAssignment
+    /   ValueSetTypeAssignment
+    /   ObjectClassAssignment
+    /   ObjectAssignment
+    /   ObjectSetAssignment
+    /   ParameterizedAssignment
+
+DefinedType <-
+        ExternalTypeReference
+    /   typereference
+    /   ParameterizedType
+    /   ParameterizedValueSetType
+
+DefinedValue <-
+        ExternalValueReference
+    /   valuereference
+    /   ParameterizedValue
+
+NonParameterizedTypeName <-
+        ExternalTypeReference
+    /   typereference
+    /   xmlasn1typename
+
+ExternalTypeReference <- modulereference _ '.' _ typereference
+
+ExternalValueReference <- modulereference _ '.' _ valuereference
+
+#AbsoluteReference <- '@' _ ModuleIdentifier _ '.' _ ItemSpec
+
+#ItemSpec <-
+#        typereference
+#    /   ItemId _ '.' _ ComponentId
+
+#ComponentId <-
+#        identifier
+#    /   number
+#    /   '*'
+
+TypeAssignment <- typereference _ "::=" _ Type
+
+ValueAssignment <- valuereference _ Type _ "::=" _ Value
+
+XMLValueAssignment <- valuereference _ "::=" _ XMLTypedValue
+
+XMLTypedValue <-
+        "<" NonParameterizedTypeName _ ">" _ XMLValue _ "</" NonParameterizedTypeName _ ">"
+    /   "<" NonParameterizedTypeName _ "/>"
+
+ValueSetTypeAssignment <- typereference _ Type _ "::=" _ ValueSet
+
+ValueSet <- '{' _ ElementSetSpecs _ '}'
+
+Type <-
+        ConstrainedType
+    /   BuiltinType
+    /   ReferencedType
+
+BuiltinType <-
+        BitStringType
+    /   BooleanType
+    /   CharacterStringType
+    /   ChoiceType
+    /   DateType
+    /   DateTimeType
+    /   DurationType
+    /   EmbeddedPDVType
+    /   EnumeratedType
+    /   ExternalType
+    /   InstanceOfType
+    /   IntegerType
+    /   IRIType
+    /   NullType
+    /   ObjectClassFieldType
+    /   ObjectIdentifierType
+    /   OctetStringType
+    /   RealType
+    /   RelativeIRIType
+    /   RelativeOIDType
+    /   SequenceType
+    /   SequenceOfType
+    /   SetType
+    /   SetOfType
+    /   PrefixedType
+    /   TimeType
+    /   TimeOfDayType
+
+ReferencedType <-
+        DefinedType
+    /   UsefulType
+    /   SelectionType
+    /   TypeFromObject
+    /   ValueSetFromObjects
+
+NamedType <- identifier _ Type
+
+Value <-
+        BuiltinValue
+    /   ReferencedValue
+    /   ObjectClassFieldValue
+
+XMLValue <-
+        XMLBuiltinValue
+    /   XMLObjectClassFieldValue
+
+BuiltinValue <-
+        BitStringValue
+    /   BooleanValue
+    /   CharacterStringValue
+    /   ChoiceValue
+    /   EmbeddedPDVValue
+    /   EnumeratedValue
+    /   ExternalValue
+    /   InstanceOfValue
+    /   IntegerValue
+    /   IRIValue
+    /   NullValue
+    /   ObjectIdentifierValue
+    /   OctetStringValue
+    /   RealValue
+    /   RelativeIRIValue
+    /   RelativeOIDValue
+    /   SequenceValue
+    /   SequenceOfValue
+    /   SetValue
+    /   SetOfValue
+    /   PrefixedValue
+    /   TimeValue
+
+XMLBuiltinValue <-
+        XMLBitStringValue
+    /   XMLBooleanValue
+    /   XMLCharacterStringValue
+    /   XMLChoiceValue
+    /   XMLEmbeddedPDVValue
+    /   XMLEnumeratedValue
+    /   XMLExternalValue
+    /   XMLInstanceOfValue
+    /   XMLIntegerValue
+    /   XMLIRIValue
+    /   XMLNullValue
+    /   XMLObjectIdentifierValue
+    /   XMLOctetStringValue
+    /   XMLRealValue
+    /   XMLRelativeIRIValue
+    /   XMLRelativeOIDValue
+    /   XMLSequenceValue
+    /   XMLSequenceOfValue
+    /   XMLSetValue
+    /   XMLSetOfValue
+    /   XMLPrefixedValue
+    /   XMLTimeValue
+
+ReferencedValue <-
+        DefinedValue
+    /   ValueFromObject
+
+NamedValue <- identifier _ Value
+
+XMLNamedValue <- "<" identifier _ ">" _ XMLValue _ "<" identifier _ "/>"
+
+BooleanType <- BOOLEAN
+
+BooleanValue <-
+        TRUE
+    /   FALSE
+
+XMLBooleanValue <-
+        EmptyElementBoolean
+    /   TextBoolean
+
+EmptyElementBoolean <- "<" ("true" / "false") _ "/>"
+
+TextBoolean <-
+        extendedtrue
+    /   extendedfalse
+
+IntegerType <- INTEGER (_ '{' _ NamedNumberList _ '}')?
+
+NamedNumberList <- (NamedNumber _)+
+
+NamedNumber <- identifier _ '(' _ (SignedNumber / DefinedValue) _ ')'
+
+SignedNumber <- ('-' _)? number
+
+IntegerValue <-
+        SignedNumber
+    /   identifier
+
+XMLIntegerValue <-
+        XMLSignedNumber
+    /   EmptyElementInteger
+    /   TextInteger
+
+XMLSignedNumber <- '-'? number
+
+EmptyElementInteger <- "<" identifier _ "/>"
+
+TextInteger <- identifier
+
+EnumeratedType <- ENUMERATED _ '(' _ Enumerations _ ')'
+
+Enumerations <- RootEnumeration (_ ',' _ "..." _ ExceptionSpec (_ ',' _ AdditionalEnumeration)?)?
+
+RootEnumeration <- Enumeration
+
+AdditionalEnumeration <- Enumeration
+
+Enumeration <- EnumerationItem (_ ',' _ EnumerationItem)*
+
+EnumerationItem <-
+        identifier
+    /   NamedNumber
+
+EnumeratedValue <- identifier
+
+XMLEnumeratedValue <-
+        EmptyElementEnumerated
+    /   TextEnumerated
+
+EmptyElementEnumerated <- "<" identifier _ "/>"
+
+TextEnumerated <- identifier
+
+RealType <- REAL
+
+RealValue <-
+        NumericRealValue
+    /   SpecialRealValue
+
+NumericRealValue <-
+        ('-' _)? realnumber
+    /   SequenceValue
+
+SpecialRealValue <-
+        PLUS_INFINITY
+    /   MINUS_INFINITY
+    /   NOT_A_NUMBER
+
+XMLRealValue <-
+        XMLNumericRealValue
+    /   XMLSpecialRealValue
+
+XMLNumericRealValue <- '-'? realnumber
+
+XMLSpecialRealValue <-
+        EmptyElementReal
+    /   TextReal
+
+EmptyElementReal <- "<" (PLUS_INFINITY / MINUS_INFINITY / NOT_A_NUMBER) _ "/>"
+
+TextReal <-
+        '-'? "INF"
+    /   "NaN"
+
+BitStringType <- BIT _ STRING (_ '{' _ NamedBitList _ '}')
+
+NamedBitList <- NamedBit (_ ',' _ NamedBit)*
+
+NamedBit <- identifier _ '(' _ (number / DefinedValue) _ ')'
+
+BitStringValue <-
+        bstring
+    /   hstring
+    /   '{' _ IdentifierList? _ '}'
+    /   CONTAINING _ Value
+
+IdentifierList <- identifier (_ ',' _ identifier)*
+
+XMLBitStringValue <-
+        XMLTypedValue
+    /   xmlbstring
+    /   XMLIdentifierList
+    /   empty
+
+XMLIdentifierList <-
+        EmptyElementList
+    /   TextList
+
+EmptyElementList <- ("<" identifier _ "/>" _)+
+
+TextList <- (identifier _)+
+
+OctetStringType <- OCTET _ STRING
+
+OctetStringValue <-
+        bstring
+    /   hstring
+    /   CONTAINING _ Value
+
+XMLOctetStringValue <-
+        XMLTypedValue
+    /   xmlhstring
+
+NullType <- NULL
+
+NullValue <- NULL
+
+XMLNullValue <- empty
+
+SequenceType <- SEQUENCE _ '{' _ (ExtensionAndException _ OptionalExtensionMarker / ComponentTypeLists)? _ '}'
+
+ExtensionAndException <- "..." _ ExceptionSpec?
+
+OptionalExtensionMarker <- ("," _ "...")?
+
+ComponentTypeLists <-
+        RootComponentTypeList (_ ',' _ ExtensionAndException _ ExtensionAdditions _ (OptionalExtensionMarker / ExtensionEndMarker _ ',' _ RootComponentTypeList))?
+    /   ExtensionAndException _ ExtensionAdditions _ ExtensionEndMarker _ ',' _ RootComponentTypeList
+    /   ExtensionAndException _ ExtensionAdditions _ OptionalExtensionMarker
+
+RootComponentTypeList <- ComponentTypeList
+
+ExtensionEndMarker <- "," _ "..."
+
+ExtensionAdditions <-
+        "," _ ExtensionAdditionList
+    /   empty
+
+ExtensionAdditionList <- ExtensionAddition (_ ',' ExtensionAddition)*
+
+ExtensionAddition <-
+        ComponentType
+    /   ExtensionAdditionGroup
+
+ExtensionAdditionGroup <- "[[" _ VersionNumber _ ComponentTypeList _ "]]"
+
+VersionNumber <-
+        number _ ':'
+    /   empty
+
+ComponentTypeList <- ComponentType (_ ',' _ ComponentType)*
+
+ComponentType <-
+        NamedType (_ OPTIONAL / _ DEFAULT _ Value)?
+    /   COMPONENTS _ OF _ Type
+
+SequenceValue <- '{' _ ComponentValueList? _ '}'
+
+ComponentValueList <- NamedValue (_ ',' _ NamedValue)*
+
+XMLSequenceValue <-
+        XMLComponentValueList
+    /   empty
+
+XMLComponentValueList <- (XMLNamedValue _)+
+
+SequenceOfType <- SEQUENCE _ OF _ (Type / NamedType)
+
+SequenceOfValue <- '{' _ (ValueList / NamedValueList)? _ '}'
+
+ValueList <- Value (_ ',' _ Value)*
+
+NamedValueList <- NamedValue (_ ',' _ NamedValue)*
+
+XMLSequenceOfValue <-
+        XMLValueList
+    /   XMLDelimitedItemList
+    /   empty
+
+XMLValueList <- (XMLValueOrEmpty _)+
+
+XMLValueOrEmpty <-
+        XMLValue
+    /   "<" NonParameterizedTypeName _ "/>"
+
+XMLDelimitedItemList <- (XMLDelimitedItem _)+
+
+XMLDelimitedItem <-
+        "<" NonParameterizedTypeName _ ">" _ XMLValue _ "</" NonParameterizedTypeName _ ">"
+    /   "<" identifier _ ">" _ XMLValue _ "</" identifier _ ">"
+
+SetType <- SET _ '{' _ (ExtensionAndException OptionalExtensionMarker / ComponentTypeLists)? _ '}'
+
+SetValue <- '{' _ ComponentValueList? _ '}'
+
+XMLSetValue <-
+        XMLComponentValueList
+    /   empty
+
+SetOfType <- SET _ OF _ (Type / NamedType)
+
+SetOfValue <- '{' _ (ValueList / NamedValueList)? _ '}'
+
+XMLSetOfValue <-
+        XMLValueList
+    /   XMLDelimitedItemList
+    /   empty
+
+ChoiceType <- CHOICE _ '{' _ AlternativeTypeLists _ '}'
+
+AlternativeTypeLists <- RootAlternativeTypeList (_ ',' _ ExtensionAndException _ ExtensionAdditionAlternatives _ OptionalExtensionMarker)?
+
+RootAlternativeTypeList <- AlternativeTypeList
+
+ExtensionAdditionAlternatives <-
+        ',' _ ExtensionAdditionAlternativesList
+    /   empty
+
+ExtensionAdditionAlternativesList <- ExtensionAdditionAlternative (_ ',' ExtensionAdditionAlternative)*
+
+ExtensionAdditionAlternative <-
+        ExtensionAdditionAlternativesGroup
+    /   NamedType
+
+ExtensionAdditionAlternativesGroup <- "[[" _ VersionNumber _ AlternativeTypeList _ "]]"
+
+AlternativeTypeList <- NamedType (_ ',' NamedType)*
+
+ChoiceValue <- identifier _ ':' _ Value
+
+XMLChoiceValue <- "<" identifier _ "/>" _ XMLValue _ "</" identifier _ ">"
+
+SelectionType <- identifier _ '<' _ Type
+
+PrefixedType <-
+        TaggedType
+    /   EncodingPrefixedType
+
+PrefixedValue <- Value
+
+XMLPrefixedValue <- XMLValue
+
+EncodingPrefixedType <- EncodingPrefix _ Type
+
+EncodingPrefix <- '[' _ EncodingReference _ EncodingInstruction _ ']'
+
+TaggedType <-
+        Tag _ Type
+    /   Tag _ IMPLICIT _ Type
+    /   Tag _ EXPLICIT _ Type
+
+Tag <- '[' _ EncodingClassReference _ Class _ ClassNumber _ ']'
+
+EncodingReference <-
+        encodingreference _ ':'
+    /   empty
+
+ClassNumber <-
+        number
+    /   DefinedValue
+
+Class <-
+        UNIVERSAL
+    /   APPLICATION
+    /   PRIVATE
+    /   empty
+
+ObjectIdentifierType <- OBJECT _ IDENTIFIER
+
+ObjectIdentifierValue <- '{' _ DefinedValue? _ ObjIdComponentsList _ '}'
+
+ObjIdComponentsList <- (ObjIdComponents _)+
+
+ObjIdComponents <-
+        NameForm
+    /   NumberForm
+    /   NameAndNumberForm
+    /   DefinedValue
+
+NameForm <- identifier
+
+NumberForm <-
+        number
+    /   DefinedValue
+
+NameAndNumberForm <- identifier _ '(' _ NumberForm _ ')'
+
+XMLObjectIdentifierValue <- XMLObjIdComponentsList
+
+XMLObjIdComponentsList <- XMLObjIdComponent ('.' XMLObjIdComponent)*
+
+XMLObjIdComponent <-
+        NameForm
+    /   XMLNumberForm
+    /   XMLNameAndNumberForm
+
+XMLNumberForm <- number
+
+XMLNameAndNumberForm <- identifier '(' XMLNumberForm ')'
+
+RelativeOIDType <- RELATIVE_OID
+
+RelativeOIDValue <- '{' _ RelativeOIDComponentsList _ '}'
+
+RelativeOIDComponentsList <- (RelativeOIDComponents _)+
+
+RelativeOIDComponents <-
+        NameForm
+    /   NameAndNumberForm
+    /   DefinedValue
+
+XMLRelativeOIDValue <- XMLRelativeOIDComponentList
+
+XMLRelativeOIDComponentList <- XMLRelativeOIDComponent ('.' XMLRelativeOIDComponent)*
+
+XMLRelativeOIDComponent <-
+        XMLNumberForm
+    /   XMLNameAndNumberForm
+
+IRIType <- OID_IRI
+
+IRIValue <- '\"' _ FirstArcIdentifier _ SubsequentArcIdentifier _ '\"'
+
+FirstArcIdentifier <- '/' _ ArcIdentifier
+
+SubsequentArcIdentifier <- ('/' _ ArcIdentifier _)*
+
+ArcIdentifier <-
+        integerunicodelabel
+    /   nonintegerunicodelabel
+
+XMLIRIValue <- FirstArcIdentifier _ SubsequentArcIdentifier
+
+RelativeIRIType <- RELATIVE_OID_IRI
+
+RelativeIRIValue <- '\"' _ FirstRelativeArcIdentifier _ SubsequentArcIdentifier _ '\"'
+
+FirstRelativeArcIdentifier <- ArcIdentifier
+
+XMLRelativeIRIValue <- FirstRelativeArcIdentifier _ SubsequentArcIdentifier
+
+EmbeddedPDVType <- EMBEDDED _ PDV
+
+EmbeddedPDVValue <- SequenceValue
+
+XMLEmbeddedPDVValue <- XMLSequenceValue
+
+ExternalType <- EXTERNAL
+
+ExternalValue <- SequenceValue
+
+XMLExternalValue <- XMLSequenceValue
+
+TimeType <- TIME
+
+TimeValue <- tstring
+
+XMLTimeValue <- xmltstring
+
+DateType <- DATE
+
+TimeOfDayType <- TIME_OF_DAY
+
+DateTimeType <- DATE_TIME
+
+DurationType <- DURATION
+
+CharacterStringType <-
+        RestrictedCharacterStringType
+    /   UnrestrictedCharacterStringType
+
+CharacterStringValue <-
+        RestrictedCharacterStringValue
+    /   UnrestrictedCharacterStringValue
+
+XMLCharacterStringValue <-
+        XMLRestrictedCharacterStringValue
+    /   XMLUnrestrictedCharacterStringValue
+
+RestrictedCharacterStringType <-
+        BMP_STRING
+    /   GENERAL_STRING
+    /   GRAPHIC_STRING
+    /   IA5_STRING
+    /   ISO646_STRING
+    /   NUMERIC_STRING
+    /   PRINTABLE_STRING
+    /   TELETEX_STRING
+    /   T61_STRING
+    /   UNIVERSAL_STRING
+    /   UTF8_STRING
+    /   VIDEOTEX_STRING
+    /   VISIBLE_STRING
+
+RestrictedCharacterStringValue <-
+        cstring
+    /   CharacterStringList
+    /   Quadruple
+    /   Tuple
+
+CharacterStringList <- '{' _ CharSyms _ '}'
+
+CharSyms <- CharsDefn (_ ',' CharsDefn _)*
+
+CharsDefn <-
+        cstring
+    /   Quadruple
+    /   Tuple
+    /   DefinedValue
+
+Quadruple <- '{' _ Group _ ',' _ Plane _ ',' _ Row _ ',' _ Cell _ '}'
+
+Group <- number
+
+Plane <- number
+
+Row <- number
+
+Cell <- number
+
+Tuple <- '{' _ TableColumn _ ',' _ TableRow _ '}'
+
+TableColumn <- number
+
+TableRow <- number
+
+XMLRestrictedCharacterStringValue <- xmlcstring
+
+UnrestrictedCharacterStringType <- CHARACTER _ STRING
+
+UnrestrictedCharacterStringValue <- SequenceValue
+
+XMLUnrestrictedCharacterStringValue <- XMLSequenceValue
+
+UsefulType <- typereference
+
+ConstrainedType <-
+        Type _ Constraint
+    /   TypeWithConstraint
+
+TypeWithConstraint <-
+        SET _ Constraint _ OF _ Type
+    /   SET _ SizeConstraint _ OF _ Type
+    /   SEQUENCE _ Constraint _ OF _ Type
+    /   SEQUENCE _ SizeConstraint _ OF _ Type
+    /   SET _ Constraint _ OF _ NamedType
+    /   SET _ SizeConstraint _ OF _ NamedType
+    /   SEQUENCE _ Constraint _ OF _ NamedType
+    /   SEQUENCE _ SizeConstraint _ OF _ NamedType
+
+Constraint <- '(' _ ConstraintSpec _ ExceptionSpec _ ')'
+
+ConstraintSpec <- SubtypeConstraint _ GeneralConstraint
+
+SubtypeConstraint <- ElementSetSpecs
+
+ElementSetSpecs <- RootElementSpec (_ ',' _ "..." (_ ',' _ AdditionalElementSpec)?)?
+
+RootElementSpec <- ElementSetSpec
+
+AdditionalElementSpec <- ElementSetSpec
+
+ElementSetSpec <-
+        Unions
+    /   ALL _ Exclusions
+
+Unions <-
+        Intersections
+    /   UElems _ UnionMark _ Intersections
+
+UElems <- Unions
+
+Intersections <-
+        IntersectionElements
+    /   IElems _ IntersectionMark _ IntersectionElements
+
+IElems <- Intersections
+
+IntersectionElements <-
+        Elements
+    /   Elems _ Exclusions
+
+Elems <- Elements
+
+Exclusions <- EXCEPT _ Elements
+
+UnionMark <-
+        '|'
+    /   UNION
+
+IntersectionMark <-
+        '^'
+    /   INTERSECTION
+
+Elements <-
+        SubtypeElements
+    /   ObjectSetElements
+    /   '(' _ ElementSetSpec _ ')'
+
+SubtypeElements <-
+        ContainedSubtype
+    /   ValueRange
+    /   PermittedAlphabet
+    /   SizeConstraint
+    /   TypeConstraint
+    /   InnerTypeConstraints
+    /   PatternConstraint
+    /   PropertySettings
+    /   DurationRange
+    /   TimePointRange
+    /   RecurrenceRange
+    /   SingleValue
+
+SingleValue <- Value
+
+ContainedSubtype <- Includes _ Type
+
+Includes <-
+        INCLUDES
+    /   empty
+
+ValueRange <- LowerEndpoint _ ".." _ UpperEndpoint
+
+LowerEndpoint <- LowerEndValue _ '<'?
+
+UpperEndpoint <- '<'? _ UpperEndValue
+
+LowerEndValue <-
+        Value
+    /   MIN
+
+UpperEndValue <-
+        Value
+    /   MAX
+
+SizeConstraint <- SIZE _ Constraint
+
+TypeConstraint <- Type
+
+PermittedAlphabet <- FROM _ Constraint
+
+InnerTypeConstraints <-
+        WITH _ COMPONENT _ SingleTypeConstraint
+    /   WITH _ COMPONENTS _ MultipleTypeConstraints
+
+SingleTypeConstraint <- Constraint
+
+MultipleTypeConstraints <-
+        FullSpecification
+    /   PartialSpecification
+
+FullSpecification <- '{' _ TypeConstraints _ '}'
+
+PartialSpecification <- '{' _ "..." _ "," _ TypeConstraints _ '}'
+
+TypeConstraints <- NamedConstraint (_ ',' _ NamedConstraint)*
+
+NamedConstraint <- identifier _ ComponentConstraint
+
+ComponentConstraint <-
+        ValueConstraint
+    /   PresenceConstraint
+
+ValueConstraint <-
+        Constraint
+    /   empty
+
+PresenceConstraint <-
+        PRESENT
+    /   ABSENT
+    /   OPTIONAL
+    /   empty
+
+PatternConstraint <- PATTERN _ Value
+
+PropertySettings <- SETTINGS _ simplestring
+
+#PropertySettingsList <- (PropertyAndSettingPair _)+
+
+#PropertyAndSettingPair <- PropertyName _ "=" _ SettingName
+
+#PropertyName <- psname
+
+#SettingName <- psname
+
+DurationRange <- ValueRange
+
+TimePointRange <- ValueRange
+
+RecurrenceRange <- ValueRange
+
+ExceptionSpec <- 
+        '!' _ ExceptionIdentification
+    /   empty
+
+ExceptionIdentification <-
+        SignedNumber
+    /   DefinedValue
+    /   Type _ ':' _ Value
