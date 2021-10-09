@@ -1,0 +1,101 @@
+project Examples.ExampleProg
+{
+    library Core
+    {
+        # The version of this library.
+        #
+        # This string is interpreted according to semver.
+        version             = 1.2.3-alpha0;
+
+        # The version of the API provided by this library.
+        #
+        # The default value for this is the major and minor components of the
+        # main version number with a zero revision number. A non-default value
+        # may set a non-zero revision but this value must be less than or equal
+        # to the main version number.
+        #
+        # An api-version greater than the abi-version indicates that there has
+        # been an API change without a corresponding ABI change (e.g. adding a
+        # new inline function).
+        api-version         = 1.2.0;
+
+        # The minimum ABI version required when building against this library.
+        #
+        # The default value for this is equal to api-version. A non-default
+        # value may be set but this value must be less than or equal to the main
+        # version number.
+        #
+        # An abi-version greater than the api-version indicates that there has
+        # been an ABI change without a corresponding API change (e.g. adding a
+        # new export called from a pre-existing inlined function).
+        abi-version         = 1.2.0;
+
+        # The oldest API client that will successfully compile against this.
+        #
+        # The default value for this is the major component of the main version
+        # number with zeroes for the minor and revision numbers. A non-default
+        # value may set this to another value but only if that value is less
+        # than the default value.
+        #
+        # The main reason for setting this to a non-default value would be if
+        # the library underwent an ABI break while remaining API compatible with
+        # older versions (e.g. if a C++ class definition added new private
+        # members but kept a compatible API).
+        api-version-min     = 1.0.0;
+
+        # The oldest version that this library is binary-compatible with.
+        #
+        # The default value for this is the major component of the main version
+        # number with zeroes for the minor and revision numbers. A non-default
+        # value may set this to another value but only if that value is less
+        # than the default value.
+        abi-version-min     = 1.0.0;
+
+        api : { lang = c++; } =
+        [
+            "ExampleProgCore.hh",
+
+            [
+                "Private/ExampleProgCoreConfig.hh",
+            ] : { private = yes; },
+        ];
+
+        api : { lang = rust; } =
+        [
+            "ExampleProgCore.rs",
+        ];
+
+        deps =
+        [
+            [
+                System.C++.CoolTemplates : { version >= 2.0 },
+            ] : { dep-type = api; lang = c++; },
+
+            System.Util.Frobnicator,
+        ];
+
+        compile-definitions =
+        [
+            "EXAMPLE_PROG_AWESOME_LEVEL=42",
+        ],
+
+        sources =
+        [
+            "ExampleProgCoreInternal.hh",
+            
+            "ExampleProgCore.cc",
+            "ExampleProgCoreUtils.cc",
+            "SharedLibThings.cc" :
+                { output-type = shared; },
+
+            [
+                "Arch/ARM/Opt.cc"
+                "Arch/ARM/Opt64bit.cc"  : { bits = 64; },
+                "Arch/ARM/Optv6+.cc"    : { arch-level-min = 6; },
+                "Arch/ARM/Optv7.cc"     : { arch-level = 7; },
+                "Arch/ARM/OptNeon.cc"   : { arch-feature = neon; },
+                "Arch/ARM/OptNoNeon.cc" : { arch-feature = !neon; },
+            ] : { arch = arm; },
+        ];
+    }
+}

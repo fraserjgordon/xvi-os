@@ -46,7 +46,7 @@ library("MiniUTF")
 
     public_deps =
     [
-        "//C++/LanguageSupport",
+        "//C++/LanguageSupport:LanguageSupport_headers",
         "//C++/Utility",
     ]
 

@@ -47,7 +47,7 @@ static inline InterruptDescriptorTable32 getIDT()
 extern "C" std::array<SegmentDescriptor, 16> g_GDT;
 std::array<SegmentDescriptor, 16> g_GDT;
 
-// REturns a wrapper object for the GDT.
+// Returns a wrapper object for the GDT.
 static inline GlobalDescriptorTable getGDT()
 {
     std::span<SegmentDescriptor, g_GDT.size()> span = g_GDT;

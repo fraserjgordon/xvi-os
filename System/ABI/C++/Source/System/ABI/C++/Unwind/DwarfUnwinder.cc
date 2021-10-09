@@ -97,7 +97,7 @@ private:
     bool updateContextFDE(DwarfContext&);
 
     // Unwinds a frame by applying the rules from the FDE.
-    bool unwindFrame(const Dwarf::DwarfFDE&, Dwarf::FrameTraitsNative::reg_storage_t&);
+    bool unwindFrame(const Dwarf::DwarfFDE&, DwarfContext&);
 
 
     static DwarfUnwinder s_dwarfInstance;
@@ -195,6 +195,11 @@ public:
         return m_stopfunc(1, actions, exception->exception_class, exception, this, m_stopparam);
     }
 
+    void setArgsSize(std::uintptr_t size)
+    {
+        m_argsSize = size;
+    }
+
 private:
 
     // FDE associated with the current instruction pointer.
@@ -260,7 +265,7 @@ _Unwind_Reason_Code DwarfUnwinder::raise(_Unwind_Exception* raw_exception)
         return _URC_FATAL_PHASE1_ERROR; // Failed to find unwind info.
 
     // Unwind by a single frame (this will ensure the context has a valid CFA).
-    if (!unwindFrame(starting_fde, context->registers()))
+    if (!unwindFrame(starting_fde, *context))
         return _URC_FATAL_PHASE1_ERROR;
 
     // And update the FDE for the frame.
@@ -310,7 +315,7 @@ _Unwind_Reason_Code DwarfUnwinder::raise(_Unwind_Exception* raw_exception)
             break;
 
         // Otherwise, virtually unwind (i.e only the context is unwound; the real stack is left unmodified).
-        if (!unwindFrame(fde, context->registers()))
+        if (!unwindFrame(fde, *context))
             return _URC_FATAL_PHASE1_ERROR;
 
         // And update the FDE for the frame.
@@ -362,7 +367,7 @@ _Unwind_Reason_Code DwarfUnwinder::forcedUnwind(_Unwind_Exception* raw_exception
         return _URC_FATAL_PHASE2_ERROR; // Failed to find unwind info.
 
     // Unwind by a single frame (this will ensure the context has a valid CFA).
-    if (!unwindFrame(fde, context->registers()))
+    if (!unwindFrame(fde, *context))
         return _URC_FATAL_PHASE2_ERROR;
 
     // And update the FDE for the frame.
@@ -399,7 +404,7 @@ _Unwind_Reason_Code DwarfUnwinder::backtrace(_Unwind_Trace_Fn trace, void* trace
         return _URC_FATAL_PHASE1_ERROR; // Failed to find unwind info.
 
     // Unwind by a single frame (this will ensure the context has a valid CFA).
-    if (!unwindFrame(starting_fde, context.registers()))
+    if (!unwindFrame(starting_fde, context))
         return _URC_FATAL_PHASE1_ERROR;
 
     // And update the FDE for the frame.
@@ -419,7 +424,7 @@ _Unwind_Reason_Code DwarfUnwinder::backtrace(_Unwind_Trace_Fn trace, void* trace
             return result;
 
         // Next, virtually unwind (i.e only the context is unwound; the real stack is left unmodified).
-        if (!unwindFrame(context.getFDE(), context.registers()))
+        if (!unwindFrame(context.getFDE(), context))
             return _URC_FATAL_PHASE1_ERROR;
 
         // And update the FDE for the frame.
@@ -767,6 +772,7 @@ _Unwind_Reason_Code DwarfUnwinder::unwindPhase2(_Unwind_Exception* raw_exception
 
                     // Jump to the landingpad. This call does not return.
                     ExecContext::ResumeContextFull(&landingpad_frame);
+                    __builtin_unreachable();
                 }
 
                 default:
@@ -776,7 +782,7 @@ _Unwind_Reason_Code DwarfUnwinder::unwindPhase2(_Unwind_Exception* raw_exception
         }
 
         // Perform the unwind of this frame.
-        if (!unwindFrame(fde, frame))
+        if (!unwindFrame(fde, *context))
             return _URC_FATAL_PHASE2_ERROR;
 
         // And update the FDE for the frame.
@@ -797,15 +803,19 @@ bool DwarfUnwinder::updateContextFDE(DwarfContext& context)
     return true;
 }
 
-bool DwarfUnwinder::unwindFrame(const Dwarf::DwarfFDE& fde, Dwarf::FrameTraitsNative::reg_storage_t& frame)
+bool DwarfUnwinder::unwindFrame(const Dwarf::DwarfFDE& fde, DwarfContext& context)
 {
     // Copy of the frame containing the updated register values.
+    auto& frame = context.registers();
     auto output = frame;
     
     // Decode the CFI instructions from the FDE to give us the register restoration rules.
     Dwarf::reg_rule_row_native rules;
     if (!Dwarf::ParseCFIRules(fde, frame.GetReturnAddress(), rules))
         return false;
+
+    // Store the value, if any, of the gnu_args_size opcode.
+    context.setArgsSize(rules.arguments_size);
 
     // Apply the CFA rule.
     using rule_type = Dwarf::reg_rule::type;

@@ -340,10 +340,15 @@ template("library")
             is_source_set = invoker.is_source_set
         }
 
-        # TODO: enable shared library builds.
         build_static = filter_include(target_types, ["static"]) != []
         build_shared = filter_include(target_types, ["shared"]) != []
         build_kernel = filter_include(target_types, ["kernel"]) != []
+        build_static_pic = filter_include(target_types, ["static_pic"]) != []
+
+        if (build_static_pic && is_source_set)
+        {
+            assert(false, "static_pic target type and is_source_set flag are mutually-exclusive")
+        }
 
         if (use_stdlib)
         {
@@ -362,7 +367,7 @@ template("library")
         public_configs  += [":${target_name}_includes"]
         include_dirs    += ["Source"]
 
-        if (build_static)
+        if (build_static || build_static_pic)
         {
             lib_type = "static_library"
             if (is_source_set)
@@ -375,7 +380,7 @@ template("library")
                 lib_type = "rust_library"
             }
             
-            target(lib_type, "${target_name}__static")
+            static_build_info =
             {
                 output_name = library_name
 
@@ -393,47 +398,118 @@ template("library")
                 {
                     public_deps += invoker.public_deps_static
                 }
+            }
 
-                orig_deps = deps
-                deps = []
-                foreach(dep, orig_deps)
+            if (build_static)
+            {
+                target(lib_type, "${target_name}__static")
                 {
-                    # TODO: remove the if {} around the code.
-                    dep_name = get_label_info(dep, "name")
-                    if (string_replace(dep_name, "__", "") == dep_name)
-                    {
-                        dep_toolchain = get_label_info(dep, "toolchain")
-                        dep_label = get_label_info(dep, "label_no_toolchain")
-                        deps += ["${dep_label}__static(${dep_toolchain})"]
-                    }
-                    else
-                    {
-                        deps += [dep]
-                    }
-                }
+                    forward_variables_from(static_build_info, "*")
 
-                orig_public_deps = public_deps
-                public_deps = []
-                foreach(dep, orig_public_deps)
-                {
-                    # TODO: remove the if {} around the code.
-                    dep_name = get_label_info(dep, "name")
-                    if (string_replace(dep_name, "__", "") == dep_name)
+                    orig_deps = deps
+                    deps = []
+                    foreach(dep, orig_deps)
                     {
-                        dep_toolchain = get_label_info(dep, "toolchain")
-                        dep_label = get_label_info(dep, "label_no_toolchain")
-                        public_deps += ["${dep_label}__static(${dep_toolchain})"]
+                        # TODO: remove the if {} around the code.
+                        dep_name = get_label_info(dep, "name")
+                        if (string_replace(dep_name, "__", "") == dep_name)
+                        {
+                            dep_toolchain = get_label_info(dep, "toolchain")
+                            dep_label = get_label_info(dep, "label_no_toolchain")
+                            deps += ["${dep_label}__static(${dep_toolchain})"]
+                        }
+                        else
+                        {
+                            deps += [dep]
+                        }
                     }
-                    else
+
+                    orig_public_deps = public_deps
+                    public_deps = []
+                    foreach(dep, orig_public_deps)
                     {
-                        public_deps += [dep]
+                        # TODO: remove the if {} around the code.
+                        dep_name = get_label_info(dep, "name")
+                        if (string_replace(dep_name, "__", "") == dep_name)
+                        {
+                            dep_toolchain = get_label_info(dep, "toolchain")
+                            dep_label = get_label_info(dep, "label_no_toolchain")
+                            public_deps += ["${dep_label}__static(${dep_toolchain})"]
+                        }
+                        else
+                        {
+                            public_deps += [dep]
+                        }
                     }
                 }
             }
+            else if (build_static_pic)
+            {
+                # Link to static_pic instead.
+                group("${target_name}__static")
+                {
+                    deps = []
+                    public_deps = ["${target_name}__static_pic"]
+                }
+            }
+
+            if (build_static_pic)
+            {
+                target(lib_type, "${target_name}__static_pic")
+                {
+                    forward_variables_from(static_build_info, "*")
+
+                    orig_deps = deps
+                    deps = []
+                    foreach(dep, orig_deps)
+                    {
+                        # TODO: remove the if {} around the code.
+                        dep_name = get_label_info(dep, "name")
+                        if (string_replace(dep_name, "__", "") == dep_name)
+                        {
+                            dep_toolchain = get_label_info(dep, "toolchain")
+                            dep_label = get_label_info(dep, "label_no_toolchain")
+                            deps += ["${dep_label}__static_pic(${dep_toolchain})"]
+                        }
+                        else
+                        {
+                            deps += [dep]
+                        }
+                    }
+
+                    orig_public_deps = public_deps
+                    public_deps = []
+                    foreach(dep, orig_public_deps)
+                    {
+                        # TODO: remove the if {} around the code.
+                        dep_name = get_label_info(dep, "name")
+                        if (string_replace(dep_name, "__", "") == dep_name)
+                        {
+                            dep_toolchain = get_label_info(dep, "toolchain")
+                            dep_label = get_label_info(dep, "label_no_toolchain")
+                            public_deps += ["${dep_label}__static_pic(${dep_toolchain})"]
+                        }
+                        else
+                        {
+                            public_deps += [dep]
+                        }
+                    }
+                }
+            }
+            else if (false && build_static)
+            {
+                # Link to static instead. This is likely to lead to link failures!
+                group("${target_name}__static_pic")
+                {
+                    deps = []
+                    public_deps = []
+                    public_deps = ["${target_name}__static"]
+                }
+            }
         }
-        else if (build_static)
+        else if (build_shared)
         {
-            # Link to shared library instead..
+            # Link to shared library instead.
             group("${target_name}__static")
             {
                 deps = []

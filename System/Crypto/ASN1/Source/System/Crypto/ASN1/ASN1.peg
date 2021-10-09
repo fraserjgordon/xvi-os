@@ -1,4 +1,23 @@
-%source {
+# Prefix to be applied to the functions in the generated API.
+%prefix "asn1_parser"
+
+# Result type used by the rules.
+%value "std::unique_ptr<ASN1::ASTNode>"
+
+# Type of the auxiliary data passed to each rule.
+%auxil "ASN1::ParseContext*"
+
+%common
+{
+
+#include <memory>
+#include <System/Crypto/ASN1/ParserFramework.hh>
+
+}
+
+# Debugging hook.
+%source
+{
 
 /*
 static const char *dbg_str[] = { "Evaluating rule", "Matched rule", "Abandoning rule" };
