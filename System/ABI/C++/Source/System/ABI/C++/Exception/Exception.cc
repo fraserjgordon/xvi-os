@@ -2,6 +2,8 @@
 
 #include <System/C++/LanguageSupport/TypeInfo.hh>
 
+#include <System/ABI/C++/Exception/Utils.hh>
+
 
 // Only specific functions in this file are compiled with exception support (namely, those that call the 
 // _Unwind_RaiseException function because the stack needs to be unwound through them).
@@ -24,6 +26,13 @@ using namespace System::ABI::CXX;
 thread_local __cxa_eh_globals thread_ehGlobals;
 
 
+#ifdef __SYSTEM_ABI_CXX_AEABI
+using _Exception_T = _Unwind_Control_Block;
+#else
+using _Exception_T = void;
+#endif
+
+
 static inline __cxa_exception* fromObject(void* ptr)
 {
     return reinterpret_cast<__cxa_exception*>(ptr) - 1;
@@ -34,6 +43,43 @@ static inline void* toObject(__cxa_exception* e)
     return e + 1;
 }
 
+static inline auto* toExceptionT(void* e)
+{
+#ifdef __SYSTEM_ABI_CXX_AEABI
+    return &fromObject(e)->ucb;
+#else
+    return e;
+#endif
+}
+
+#ifdef __SYSTEM_ABI_CXX_AEABI
+// AEABI-specific overload as most of its API takes an UCB pointer rather than the exception object pointer.
+static inline __cxa_exception* fromObject(_Unwind_Control_Block* ptr)
+{
+    return reinterpret_cast<__cxa_exception*>(ptr + 1) - 1;
+}
+#endif
+
+static inline auto* unwindHeader(__cxa_exception* ptr)
+{
+#ifdef __SYSTEM_ABI_CXX_AEABI
+    return &ptr->ucb;
+#else
+    return &ptr->unwindHeader;
+#endif
+}
+
+static inline void setupException(__cxa_exception* e, std::uint64_t eclass, void (*cleanup)(_Unwind_Reason_Code, _Unwind_T*))
+{
+#ifdef __SYSTEM_ABI_CXX_AEABI
+    e->ucb.__exception_class = eclass;
+    e->ucb.exception_cleanup = cleanup;
+#else
+    e->unwindHeader.exception_class = eclass;
+    e->unwindHeader.exception_cleanup = cleanup;
+#endif
+}
+
 static inline __cxa_dependent_exception* dependentCast(__cxa_exception* e)
 {
     return reinterpret_cast<__cxa_dependent_exception*>(e + 1) - 1;
@@ -41,16 +87,12 @@ static inline __cxa_dependent_exception* dependentCast(__cxa_exception* e)
 
 static inline __cxa_exception* primaryException(__cxa_exception* e)
 {
-    if (e->unwindHeader.exception_class == CxxExceptionClass)
+    if (exceptionClass(unwindHeader(e)) == CxxExceptionClass)
         return e;
     else
         return fromObject(dependentCast(e)->primaryException);
 }
 
-static inline bool isNative(_Unwind_Exception* e)
-{
-    return e->exception_class == CxxExceptionClass || e->exception_class == CxxDependentClass;
-}
 
 static inline void incrementRefcount(__cxa_exception* e)
 {
@@ -69,14 +111,14 @@ static inline void decrementRefcount(__cxa_exception* e)
     }
 }
 
-static void exceptionCleanup(_Unwind_Reason_Code reason, _Unwind_Exception* exception)
+static void exceptionCleanup(_Unwind_Reason_Code reason, _Unwind_T* exception)
 {
     // This should only ever be called from a foreign runtime.
     if (reason != _URC_FOREIGN_EXCEPTION_CAUGHT)
         terminate();
 
     // Is this a dependent exception?
-    if (exception->exception_class == CxxExceptionClass)
+    if (exceptionClass(exception) == CxxExceptionClass)
     {
         // Decrease the parent's reference count and free the exception.
         auto header = fromObject(exception + 1);
@@ -94,14 +136,14 @@ static void exceptionCleanup(_Unwind_Reason_Code reason, _Unwind_Exception* exce
 }
 
 [[noreturn]]
-static void raiseExceptionFailed(_Unwind_Reason_Code, void* exception)
+static void raiseExceptionFailed(_Unwind_Reason_Code, _Exception_T* exception)
 {
     // All exception handling needs to call __cxa_begin_catch and terminating after a failed throw is no different.
     __cxa_begin_catch(exception);
 
     // Terminate.
     auto header = fromObject(exception);
-    if (isNative(&header->unwindHeader))
+    if (isNative(unwindHeader(header)))
         terminateWithHandler(header->terminateHandler);
     else
         terminate();
@@ -110,12 +152,13 @@ static void raiseExceptionFailed(_Unwind_Reason_Code, void* exception)
 
 __cxa_eh_globals* __cxa_get_globals()
 {
-    return &thread_ehGlobals;
+    // No one-time init needed by this library.
+    return __cxa_get_globals_fast();
 }
 
 __cxa_eh_globals* __cxa_get_globals_fast()
 {
-    return __cxa_get_globals();
+    return &thread_ehGlobals;
 }
 
 void* __cxa_allocate_exception(std::size_t size)
@@ -176,7 +219,7 @@ const std::type_info* __cxa_current_exception_type()
         return nullptr;
 
     // What type of exception are we dealing with?
-    switch (header->unwindHeader.exception_class)
+    switch (exceptionClass(unwindHeader(header)))
     {
         case CxxExceptionClass:
             // Get the type info from the header.
@@ -212,34 +255,43 @@ void __cxa_throw(void* exception, std::type_info* typeinfo, void (*destructor)(v
     incrementRefcount(header);
 
     // Fill in the language-independent exception information.
-    header->unwindHeader.exception_class = CxxExceptionClass;
-    header->unwindHeader.exception_cleanup = &exceptionCleanup;
+    setupException(header, CxxExceptionClass, &exceptionCleanup);
+
+#ifdef __SYSTEM_ABI_CXX_AEABI
+    // The reserved1 field of the unwinder cache is required by the ABI to be set to zero at throw time.
+    header->ucb.unwinder_cache.reserved1 = 0;
+#endif
 
     // There is now another uncaught exception in flight.
     __cxa_get_globals_fast()->uncaughtExceptions++;
 
     // Start the unwinding process. This doesn't normally return.
-    auto result = _Unwind_RaiseException(&header->unwindHeader);
+    auto result = _Unwind_RaiseException(unwindHeader(header));
 
-    raiseExceptionFailed(result, exception);
+    raiseExceptionFailed(result, toExceptionT(exception));
 }
 
-void* __cxa_get_exception_ptr(void* exception)
+void* __cxa_get_exception_ptr(_Exception_T* exception)
 {
+#ifdef __SYSTEM_ABI_CXX_AEABI
+    // Return the adjusted pointer that was stored in the header.
+    return reinterpret_cast<void*>(exception->barrier_cache.bitpattern[0]);
+#else
     // Get the pointer to the C++ exception header.
     auto header = fromObject(exception);
-
+    
     // Return the adjusted pointer that was stored in the header.
     return header->adjustedPointer;
+#endif
 }
 
-void* __cxa_begin_catch(void* exception)
+void* __cxa_begin_catch(_Exception_T* exception)
 {
     // Get the pointer to the C++ exception header.
     auto header = fromObject(exception);
 
     // Is this a native or foreign exception?
-    if (isNative(&header->unwindHeader))
+    if (isNative(unwindHeader(header)))
     {
         // Increment the catch count of this exception. It may have been negated in __cxa_rethrow and that needs to be
         // correctced here.
@@ -260,7 +312,11 @@ void* __cxa_begin_catch(void* exception)
         eh->uncaughtExceptions--;
 
         // Return the adjusted object pointer.
+#ifdef __SYSTEM_ABI_CXX_AEABI
+        return __cxa_get_exception_ptr(unwindHeader(header));
+#else
         return __cxa_get_exception_ptr(exception);
+#endif
     }
     else
     {
@@ -270,7 +326,7 @@ void* __cxa_begin_catch(void* exception)
         if (eh->caughtExceptions != nullptr)
             terminate();
 
-        // Push the (incorrect) __cxa_exception pointer onto the stack (the ABI requires this, unfortnately).
+        // Push the (incorrect) __cxa_exception pointer onto the stack (the ABI requires this, unfortunately).
         eh->caughtExceptions = header;
 
         // No change to the uncaught exception count - the exception is foreign so there won't have been a call to
@@ -292,14 +348,14 @@ void __cxa_end_catch()
         return;
 
     // Is this a native exception?
-    if (!isNative(&header->unwindHeader))
+    if (!isNative(unwindHeader(header)))
     {
         // Pop the exception from the catch list. It must be the only entry on the list as it doesn't have a C++
         // exception header (__cxa_exception) to store the next exception in.
         eh->caughtExceptions = nullptr;
 
         // Delete the exception.
-        _Unwind_DeleteException(&header->unwindHeader);
+        _Unwind_DeleteException(unwindHeader(header));
     }
 
     // Is this a rethrow? (if so, the handler count will be negative).
@@ -324,7 +380,7 @@ void __cxa_end_catch()
             eh->caughtExceptions = header->nextException;
 
             // Is this a dependent exception?
-            bool is_dependent = (header->unwindHeader.exception_class == CxxDependentClass);
+            bool is_dependent = (exceptionClass(unwindHeader(header)) == CxxDependentClass);
             auto dependent = is_dependent ? dependentCast(header) : nullptr;
             auto primary = is_dependent ? fromObject(dependent->primaryException) : header;
 
@@ -338,6 +394,35 @@ void __cxa_end_catch()
     }
 }
 
+#ifdef __SYSTEM_ABI_CXX_AEABI
+bool __cxa_begin_cleanup(_Unwind_Control_Block* exception)
+{
+    // Add to the list of propagating exceptions.
+    auto eh = __cxa_get_globals_fast();
+    auto header = fromObject(exception);
+    if (eh->propagatingExceptions != header)
+    {
+        header->nextPropagatingException = eh->propagatingExceptions;
+        eh->propagatingExceptions = header;
+    }
+
+    // Increment the refcount.
+    ++header->propagationCount;
+
+    return true;
+}
+
+//! @todo: must not modify any registers so requires an assembly wrapper.
+/*void __cxa_end_cleanup()
+{
+    // No housekeeping needed; just resume unwinding.
+    auto eh = __cxa_get_globals_fast();
+    auto header = eh->caughtExceptions;
+
+    _Unwind_Resume(&header->ucb);
+}*/
+#endif
+
 [[gnu::optimize("exceptions")]]
 void __cxa_rethrow()
 {
@@ -350,7 +435,7 @@ void __cxa_rethrow()
         terminate();
 
     // Is this a foreign exception?
-    bool native = isNative(&header->unwindHeader);
+    bool native = isNative(unwindHeader(header));
     if (native)
     {
         // Use a negative handler count to signal that we've requested a rethrow.
@@ -370,15 +455,17 @@ void __cxa_rethrow()
         eh->caughtExceptions = nullptr;
     }
 
+    // We're re-throwing so the catch has finished.
+    __cxa_end_catch();
+
     // Inform the unwinder library that a "new" exception has been raised. (Although the unwinder library has seen this
     // exception before, it considered it to have been handled when it was caught so, from the unwinder's point of view,
     // this is a different exception).
     //
     // This method will only return if some fatal unwinding error occurred.
-    auto result = _Unwind_RaiseException(&header->unwindHeader);
+    auto result = _Unwind_RaiseException(unwindHeader(header));
 
-    raiseExceptionFailed(result, toObject(header));
-
+    raiseExceptionFailed(result, toExceptionT(toObject(header)));
 }
 
 [[gnu::optimize("exceptions")]]
@@ -409,7 +496,7 @@ void* getCurrentException() noexcept
         return nullptr;
 
     // Fail if the current exception is foreign.
-    if (!__cxxabiv1::isNative(&header->unwindHeader))
+    if (!isNative(unwindHeader(header)))
         return nullptr;
 
     // Always return a pointer to the primary exception, never a dependent one.
@@ -451,7 +538,7 @@ void rethrowException(void* e)
 
     // We cannot rethrow foreign exceptions as a dependent exception.
     auto header = __cxxabiv1::fromObject(e);
-    if (!__cxxabiv1::isNative(&header->unwindHeader))
+    if (!isNative(unwindHeader(header)))
         terminate();
 
     // Ensure we're pointing to a primary exception.
@@ -480,7 +567,7 @@ void rethrowException(void* e)
     __cxxabiv1::__cxa_get_globals_fast()->uncaughtExceptions++;
 
     // Start the unwinding process. This doesn't normally return.
-    auto result = _Unwind_RaiseException(&header->unwindHeader);
+    auto result = _Unwind_RaiseException(unwindHeader(header));
 
     __cxxabiv1::raiseExceptionFailed(result, e);
 }
@@ -489,7 +576,7 @@ void rethrowException(void* e)
 void addExceptionRef(void* e)
 {
     auto header = __cxxabiv1::fromObject(e);
-    if (!__cxxabiv1::isNative(&header->unwindHeader))
+    if (!isNative(unwindHeader(header)))
         terminate();
 
     __cxxabiv1::incrementRefcount(header);
@@ -498,7 +585,7 @@ void addExceptionRef(void* e)
 void releaseExceptionRef(void* e)
 {
     auto header = __cxxabiv1::fromObject(e);
-    if (!__cxxabiv1::isNative(&header->unwindHeader))
+    if (!isNative(unwindHeader(header)))
         terminate();
 
     __cxxabiv1::decrementRefcount(header);

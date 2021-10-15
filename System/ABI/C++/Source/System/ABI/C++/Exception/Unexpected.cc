@@ -1,5 +1,7 @@
 #include <System/ABI/C++/Exception.hh>
 
+#include <System/ABI/C++/Exception/Utils.hh>
+
 
 namespace System::ABI::CXX
 {
@@ -38,3 +40,31 @@ std::unexpected_handler setUnexpectedExceptionHandler(std::unexpected_handler ha
 
 
 }
+
+
+namespace __cxxabiv1
+{
+
+
+#ifdef __SYSTEM_ABI_CXX_AEABI
+void __cxa_call_unexpected(_Unwind_Control_Block* exception)
+#else
+void __cxa_call_unexpected(_Unwind_Exception* exception)
+#endif
+{
+    // Catch the exception then terminate, using the appropriate terminate handler.
+    __cxa_begin_catch(exception);
+    bool native_exception = isNative(exception);
+    if (native_exception)
+    {
+        auto* cxa = getCxaException(exception);
+        System::ABI::CXX::unexpectedExceptionWithHandler(cxa->unexpectedHandler);
+    }
+    else
+    {
+        System::ABI::CXX::unexpectedException();
+    }
+}
+
+
+} // namespace __cxxabiv1

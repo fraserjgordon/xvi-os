@@ -5,6 +5,7 @@
 
 #include <System/ABI/C++/Unwinder.hh>
 
+#include <System/C++/LanguageSupport/StdInt.hh>
 #include <System/C++/TypeTraits/TypeTraits.hh>
 #include <System/C++/Utility/UniquePtr.hh>
 

@@ -2,6 +2,8 @@
 
 #include <System/C++/LanguageSupport/Exception.hh>
 
+#include <System/ABI/C++/Exception/Utils.hh>
+
 
 namespace System::ABI::CXX
 {
@@ -52,3 +54,27 @@ namespace std
 }
 
 } // namespace std
+
+
+namespace __cxxabiv1
+{
+
+
+void __cxa_call_terminate(_Exception_T* exception)
+{
+    // Catch the exception then terminate, using the appropriate terminate handler.
+    __cxa_begin_catch(exception);
+    bool native_exception = isNative(exception);
+    if (native_exception)
+    {
+        auto* cxa = getCxaException(exception);
+        System::ABI::CXX::terminateWithHandler(cxa->terminateHandler);
+    }
+    else
+    {
+        System::ABI::CXX::terminate();
+    }
+}
+
+
+} // namespace __cxxabiv1

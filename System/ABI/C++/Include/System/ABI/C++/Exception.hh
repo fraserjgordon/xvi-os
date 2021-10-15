@@ -129,12 +129,12 @@ __SYSTEM_ABI_CXX_EXCEPTION_EXPORT bool                  __cxa_begin_cleanup(_Unw
 // Functions defined only in the ARM EHABI and not the generic EHABI but which might be generally useful.
 #if __SYSTEM_ABI_CXX_AEABI
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT __cxa_type_match_result   __cxa_type_match(_Unwind_Control_Block*, const std::type_info*, bool, void**);
-__SYSTEM_ABI_CXX_EXCEPTION_EXPORT void                  __cxa_call_terminate(_Unwind_Control_Block*);
-__SYSTEM_ABI_CXX_EXCEPTION_EXPORT void                  __cxa_call_unexpected(_Unwind_Control_Block*);
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT [[noreturn]] void         __cxa_call_terminate(_Unwind_Control_Block*);
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT [[noreturn]] void         __cxa_call_unexpected(_Unwind_Control_Block*);
 #else
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT __cxa_type_match_result   __cxa_type_match(void*, const std::type_info*, bool, void**);
-__SYSTEM_ABI_CXX_EXCEPTION_EXPORT void                  __cxa_call_terminate(void*);
-__SYSTEM_ABI_CXX_EXCEPTION_EXPORT void                  __cxa_call_unexpected(void*);
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT [[noreturn]] void         __cxa_call_terminate(void*);
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT [[noreturn]] void         __cxa_call_unexpected(void*);
 #endif
 
 // Not documented in the exception handling ABI.

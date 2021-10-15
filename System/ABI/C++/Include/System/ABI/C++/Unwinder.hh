@@ -42,9 +42,15 @@ struct _Unwind_Context;
 
 struct alignas(8) _Unwind_Control_Block
 {
-    char                            exception_class[8];
-    _Unwind_Exception_Cleanup_Fn    exception_cleanup;
+    union
+    {
+        char                        exception_class[8];
+        std::uint64_t               __exception_class = 0;
+    };
 
+    _Unwind_Exception_Cleanup_Fn    exception_cleanup = nullptr;
+
+    // Unwinder cache.
     struct
     {
         std::uint32_t   reserved1   = 0;
@@ -57,22 +63,22 @@ struct alignas(8) _Unwind_Control_Block
     // The "propogation barrier" is the frame that handles the exception.
     struct
     {
-        std::uint32_t   sp;
-        std::uint32_t   bitpattern[5];
+        std::uint32_t   sp = 0;
+        std::uint32_t   bitpattern[5] = {};
     } barrier_cache;
 
     struct
     {
-        std::uint32_t   bitpattern[4];
+        std::uint32_t   bitpattern[4] = {};
     } cleanup_cache;
 
     // Personality routine cache.
     struct
     {
-        std::uint32_t       fnstart;
-        _Unwind_EHT_Header* ehtp;
-        std::uint32_t       additional;
-        std::uint32_t       reserved;
+        std::uint32_t       fnstart = 0;
+        _Unwind_EHT_Header* ehtp = nullptr;
+        std::uint32_t       additional = 0;
+        std::uint32_t       reserved = 0;
     } pr_cache;
 };
 
