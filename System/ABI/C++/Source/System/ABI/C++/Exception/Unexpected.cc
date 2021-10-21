@@ -46,11 +46,7 @@ namespace __cxxabiv1
 {
 
 
-#ifdef __SYSTEM_ABI_CXX_AEABI
-void __cxa_call_unexpected(_Unwind_Control_Block* exception)
-#else
-void __cxa_call_unexpected(_Unwind_Exception* exception)
-#endif
+void __cxa_call_unexpected(_Exception_T* exception)
 {
     // Catch the exception then terminate, using the appropriate terminate handler.
     __cxa_begin_catch(exception);

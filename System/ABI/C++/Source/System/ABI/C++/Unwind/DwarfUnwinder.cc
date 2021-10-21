@@ -300,7 +300,7 @@ _Unwind_Reason_Code DwarfUnwinder::raise(_Unwind_Exception* raw_exception)
                 case _URC_CONTINUE_UNWIND:
                     // We will need to continue unwinding.
                     //
-                    // As this we'll need to call this personality routine in phase 2, we can't skip re-unwinding.
+                    // As we'll need to call this personality routine in phase 2, we can't skip re-unwinding.
                     cleanup_needed = true;
                     break;
 
@@ -985,7 +985,7 @@ std::uintptr_t DwarfUnwinder::DwarfContext::getIPInfo(int* ip_before)
 }
 
 
-#ifndef __SYSTEM_ABI_CXX_UNWIND_NULL
+#ifdef __SYSTEM_ABI_CXX_UNWIND_DWARF
 Unwinder* Unwinder::instance()
 {
     return DwarfUnwinder::dwarfInstance();

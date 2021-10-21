@@ -40,6 +40,13 @@ using _Unwind_Exception_Cleanup_Fn  = void (*)(_Unwind_Reason_Code, struct _Unwi
 
 struct _Unwind_Context;
 
+
+// GCC extension.
+using _Unwind_Trace_Fn              = _Unwind_Reason_Code (*)(_Unwind_Context*, void*);
+
+// XVI extension (based on the SysV ABI).
+using _Unwind_Stop_Fn               = _Unwind_Reason_Code (*)(int, _Unwind_State, std::uint64_t, struct _Unwind_Control_Block*, struct _Unwind_Context*, void*);
+
 struct alignas(8) _Unwind_Control_Block
 {
     union
@@ -115,6 +122,12 @@ __SYSTEM_ABI_CXX_UNWIND_EXPORT void _Unwind_DeleteException(_Unwind_Control_Bloc
 __SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_VRS_Result _Unwind_VRS_Set(_Unwind_Context*, _Unwind_VRS_RegClass, std::uint32_t, _Unwind_VRS_DataRepresentation, void*);
 __SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_VRS_Result _Unwind_VRS_Get(_Unwind_Context*, _Unwind_VRS_RegClass, std::uint32_t, _Unwind_VRS_DataRepresentation, void*);
 __SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_VRS_Result _Unwind_VRS_Pop(_Unwind_Context*, _Unwind_VRS_RegClass, std::uint32_t, _Unwind_VRS_DataRepresentation);
+
+// GCC extension.
+__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_Reason_Code _Unwind_Backtrace(_Unwind_Trace_Fn, void*);
+
+// XVI extension (based on the SysV ABI).
+__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_Reason_Code _Unwind_ForcedUnwind(_Unwind_Control_Block*, _Unwind_Stop_Fn, void*);
 
 #else // if defined(__SYSTEM_ABI_CXX_AEABI)
 

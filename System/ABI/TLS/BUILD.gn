@@ -14,6 +14,11 @@ library("TLS")
         "//C++/Utility:Utility_headers"
     ]
 
+    deps_shared =
+    [
+        "//ABI/C++:EhShim",
+    ]
+
     public_headers =
     [
         "TLS.hh",

@@ -15,7 +15,7 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(SwapContexts__v1_0,SwapContexts,1.0)
 
     // Create a new stack frame and save the non-volatile registers to it.
     mov     r2, r0
-    mov     sp, r12
+    mov     r12, sp
     push    {r4-r12,lr}
     mov     r0, sp          // Output: pointer to the stored registers.
 

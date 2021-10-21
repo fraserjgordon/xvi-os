@@ -69,7 +69,8 @@ static inline auto* unwindHeader(__cxa_exception* ptr)
 #endif
 }
 
-static inline void setupException(__cxa_exception* e, std::uint64_t eclass, void (*cleanup)(_Unwind_Reason_Code, _Unwind_T*))
+template <class CxaExceptionT>
+static inline void setupException(CxaExceptionT* e, std::uint64_t eclass, void (*cleanup)(_Unwind_Reason_Code, _Unwind_T*))
 {
 #ifdef __SYSTEM_ABI_CXX_AEABI
     e->ucb.__exception_class = eclass;
@@ -412,15 +413,46 @@ bool __cxa_begin_cleanup(_Unwind_Control_Block* exception)
     return true;
 }
 
-//! @todo: must not modify any registers so requires an assembly wrapper.
-/*void __cxa_end_cleanup()
-{
-    // No housekeeping needed; just resume unwinding.
-    auto eh = __cxa_get_globals_fast();
-    auto header = eh->caughtExceptions;
+// Assembly wrapper for __cxa_end_cleanup.
+asm
+(R"(
 
-    _Unwind_Resume(&header->ucb);
-}*/
+.global __cxa_end_cleanup
+.protected __cxa_end_cleanup
+.type __cxa_end_cleanup, "function"
+__cxa_end_cleanup:
+
+    # Ensure that all potentially-significant registers are preserved across the call.
+    push    {r0-r12, lr}
+
+    # Call the real __cxa_end_cleanup function.
+    bl      __cxa_end_cleanup_impl
+
+    # Restore the registers.
+    pop     {r0-r12, lr}
+
+    # Tail-call into the unwinder with the correct register state. It shouldn't return.
+    b       _Unwind_Resume
+
+)");
+
+
+[[gnu::used]] static void __cxa_end_cleanup_impl()
+{
+    // Remove this exception from the list of propagating exceptions in cleanup.
+    auto eh = __cxa_get_globals_fast();
+    auto header = eh->propagatingExceptions;
+    if (!header)
+        __cxa_call_terminate(nullptr);
+
+    if (--header->propagationCount == 0)
+    {
+        eh->propagatingExceptions = header->nextPropagatingException;
+        header->nextPropagatingException = nullptr;
+    }
+
+    // The assembly wrapper for this calls _Unwind_Resume after restoring the register state.
+}
 #endif
 
 [[gnu::optimize("exceptions")]]
@@ -522,8 +554,7 @@ void* createException(std::size_t size, const std::type_info* type, void (*destr
     __cxxabiv1::incrementRefcount(header);
 
     // Fill in the unwind header for a primary exception.
-    header->unwindHeader.exception_class = __cxxabiv1::CxxExceptionClass;
-    header->unwindHeader.exception_cleanup = &__cxxabiv1::exceptionCleanup;
+    setupException(header, __cxxabiv1::CxxExceptionClass, &__cxxabiv1::exceptionCleanup);
 
     return exception;
 }
@@ -560,8 +591,7 @@ void rethrowException(void* e)
     incrementRefcount(header);
 
     // Fill in the unwind header.
-    dependent->unwindHeader.exception_class = __cxxabiv1::CxxDependentClass;
-    dependent->unwindHeader.exception_cleanup = &__cxxabiv1::exceptionCleanup;
+    setupException(dependent, __cxxabiv1::CxxDependentClass, &__cxxabiv1::exceptionCleanup);
 
     // There is now another uncaught exception in flight.
     __cxxabiv1::__cxa_get_globals_fast()->uncaughtExceptions++;
@@ -569,7 +599,7 @@ void rethrowException(void* e)
     // Start the unwinding process. This doesn't normally return.
     auto result = _Unwind_RaiseException(unwindHeader(header));
 
-    __cxxabiv1::raiseExceptionFailed(result, e);
+    __cxxabiv1::raiseExceptionFailed(result, toExceptionT(dependent + 1));
 }
 
 

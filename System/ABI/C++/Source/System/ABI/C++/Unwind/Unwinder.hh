@@ -10,6 +10,20 @@
 #include <System/C++/Utility/UniquePtr.hh>
 
 
+// Which unwinder to use by default?
+#if !defined(__SYSTEM_ABI_CXX_AEABI)
+#  if !defined(__SYSTEM_ABI_CXX_UNWIND_NULL)
+#    define __SYSTEM_ABI_CXX_UNWIND_DWARF
+#  endif
+#endif
+
+
+// Bridging between the SysV ABI and the ARM EHABI.
+#ifdef __SYSTEM_ABI_CXX_AEABI
+using _Unwind_Exception = _Unwind_Control_Block;
+#endif
+
+
 // Empty base class.
 struct _Unwind_Context {};
 
@@ -87,13 +101,21 @@ public:
 
     Context* context() const
     {
+#ifdef __SYSTEM_ABI_CXX_AEABI
+        return reinterpret_cast<Context*>(header()->unwinder_cache.reserved1);
+#else
         return reinterpret_cast<Context*>(header()->private1);
+#endif
     }
 
     std::unique_ptr<Context> takeContext()
     {
         std::unique_ptr<Context> ptr(context());
+#ifdef __SYSTEM_ABI_CXX_AEABI
+        header()->unwinder_cache.reserved1 = 0;
+#else
         header()->private1 = 0;
+#endif
         return ptr;
     }
 
@@ -101,18 +123,43 @@ public:
         requires std::is_base_of_v<Context, T>
     void setContext(std::unique_ptr<T> context)
     {
-        header()->private1 = reinterpret_cast<std::uintptr_t>(context.release());
+        auto value = reinterpret_cast<std::uintptr_t>(context.release());
+#ifdef __SYSTEM_ABI_CXX_AEABI
+        header()->unwinder_cache.reserved1 = value;
+#else
+        header()->private1 = value;
+#endif
     }
 
     std::uintptr_t handlerCFA() const
     {
+#ifdef __SYSTEM_ABI_CXX_AEABI
+        return header()->unwinder_cache.reserved2;
+#else
         return header()->private2;
+#endif
     }
 
     void setHandlerCFA(std::uintptr_t cfa)
     {
+#ifdef __SYSTEM_ABI_CXX_AEABI
+        header()->unwinder_cache.reserved2 = cfa;
+#else
         header()->private2 = cfa;
+#endif
     }
+
+#ifdef __SYSTEM_ABI_CXX_AEABI
+    void setFrameIP(std::uintptr_t ip)
+    {
+        header()->unwinder_cache.reserved3 = ip;
+    }
+
+    std::uintptr_t getFrameIP() const
+    {
+        return header()->unwinder_cache.reserved3;
+    }
+#endif
 
     const _Unwind_Exception* header() const
     {

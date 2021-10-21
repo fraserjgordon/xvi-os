@@ -18,6 +18,15 @@ if (current_arch == "arm" && arm_arch_major >= 8)
     ]
 }
 
+# Pre v8 ARM uses an ARM defined ABI rather than the usual SysV ABI.
+if (current_arch == "arm" && arm_arch_major < 8)
+{
+    public_configs =
+    [
+        ":aeabi"
+    ]
+}
+
 shared_define = "__SYSTEM_ABI_CXX_BUILD_SHARED"
 is_source_set = true
 
@@ -70,8 +79,20 @@ library("EhPersonality")
 
     sources =
     [
+        "Utils.hh",
+
         "GxxPersonality_v0.cc",
+        "TypeMatch.cc",
     ]
+
+    if (current_arch == "arm" && arm_arch_major < 8)
+    {
+        # ARM EHABI personality routines in addition to the GCC one.
+        sources +=
+        [
+            "AEABI.cc",
+        ]
+    }
 }
 
 library("Exception")
@@ -93,6 +114,8 @@ library("Exception")
 
     sources =
     [
+        "Utils.hh",
+
         "Exception.cc",
         "Terminate.cc",
         "Unexpected.cc",
@@ -282,14 +305,6 @@ library("C++")
         "//ABI/String",
         "//ABI/TLS",
     ]
-
-    if (current_arch == "arm" && arm_arch_major < 8)
-    {
-        public_configs =
-        [
-            ":aeabi"
-        ]
-    }
 }
 
 # Configuration applied when this library is building according to the ARM EABI
@@ -300,4 +315,28 @@ config("aeabi")
     [
         "__SYSTEM_ABI_CXX_AEABI"
     ]
+}
+
+# ARM EHABI workaround for libraries needing personality routine shims in
+# order to link correctly (see the comment in EhPersonality/AEABIShim.cc for
+# details).
+library("EhShim")
+{
+    library_name    = "System.ABI.C++.EhShim"
+    library_version = "0.1.0"
+
+    include_prefix  = "System/ABI/C++/EhPersonality"
+
+    is_source_set = true
+    use_stdlib = false
+
+    sources = []
+
+    if (current_arch == "arm" && arm_arch_major < 8)
+    {
+        sources +=
+        [
+            "AEABIShim.cc",
+        ]
+    }
 }

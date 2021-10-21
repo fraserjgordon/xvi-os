@@ -67,11 +67,12 @@ config("default_errors")
         "-Werror=write-strings",
         "-Werror=date-time",
         "-Werror=alloca",
+        "-Werror=missing-declarations",
     ]
 
     cflags_c =
     [
-        "-Werror=jump-misses_init",
+        "-Werror=jump-misses-init",
         "-Werror=strict-prototypes",
         "-Werror=old-style-declaration",
         "-Werror=old-style-definition",

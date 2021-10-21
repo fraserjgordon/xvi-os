@@ -91,6 +91,17 @@ template("library")
         not_needed(["source_prefix"])
     }
 
+    if (defined(invoker.sources_shared))
+    {
+        sources_shared = []
+        source_prefix = "Source/${include_prefix}/"
+
+        foreach(source, invoker.sources_shared)
+        {
+            shared_souces += [ source_prefix + "${source}" ]
+        }
+    }
+
     if (defined(invoker.inputs))
     {
         inputs = []
@@ -636,6 +647,11 @@ template("library")
                 configs += ["//build/config:shared"]
 
                 defines += [invoker.shared_define]
+
+                if (defined(sources_shared))
+                {
+                    sources += sources_shared
+                }
 
                 if (defined(invoker.deps_shared))
                 {

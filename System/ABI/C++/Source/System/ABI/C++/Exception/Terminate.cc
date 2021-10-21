@@ -62,6 +62,10 @@ namespace __cxxabiv1
 
 void __cxa_call_terminate(_Exception_T* exception)
 {
+    // Terminate directly if there's no exception.
+    if (!exception)
+        System::ABI::CXX::terminate();
+    
     // Catch the exception then terminate, using the appropriate terminate handler.
     __cxa_begin_catch(exception);
     bool native_exception = isNative(exception);
