@@ -43,75 +43,85 @@ void _Unwind_DeleteException(_Unwind_Exception* e)
         e->exception_cleanup(_URC_FOREIGN_EXCEPTION_CAUGHT, e);
 }
 
-#ifndef __SYSTEM_ABI_CXX_AEABI
+#ifdef __SYSTEM_ABI_CXX_AEABI
+std::uintptr_t _Unwind_GetGR(_Unwind_Context* c, int reg)
+{
+    std::uint32_t val;
+    _Unwind_VRS_Get(c, _UVRSC_CORE, reg, _UVRSD_UINT32, &val);
+    return val;
+}
+#else
 std::uintptr_t _Unwind_GetGR(_Unwind_Context* c, int reg)
 {
     return Unwinder::Context::from(c)->getGR(reg);
 }
 #endif
 
-#ifndef __SYSTEM_ABI_CXX_AEABI
+#ifdef __SYSTEM_ABI_CXX_AEABI
+void _Unwind_SetGR(_Unwind_Context* c, int reg, std::uintptr_t value)
+{
+    _Unwind_VRS_Set(c, _UVRSC_CORE, reg, _UVRSD_UINT32, &value);
+}
+#else
 void _Unwind_SetGR(_Unwind_Context* c, int reg, std::uintptr_t value)
 {
     Unwinder::Context::from(c)->setGR(reg, value);
 }
 #endif
 
-#ifndef __SYSTEM_ABI_CXX_AEABI
+#ifdef __SYSTEM_ABI_CXX_AEABI
+std::uintptr_t _Unwind_GetIP(_Unwind_Context* c)
+{
+    return _Unwind_GetGR(c, 15);
+}
+#else
 std::uintptr_t _Unwind_GetIP(_Unwind_Context* c)
 {
     return Unwinder::Context::from(c)->getIP();
 }
 #endif
 
-#ifndef __SYSTEM_ABI_CXX_AEABI
+#ifdef __SYSTEM_ABI_CXX_AEABI
+void _Unwind_SetIP(_Unwind_Context* c, std::uintptr_t value)
+{
+    _Unwind_SetGR(c, 15, value);
+}
+#else
 void _Unwind_SetIP(_Unwind_Context* c, std::uintptr_t value)
 {
     Unwinder::Context::from(c)->setIP(value);
 }
 #endif
 
-#ifndef __SYSTEM_ABI_CXX_AEABI
 std::uintptr_t _Unwind_GetLanguageSpecificData(_Unwind_Context* c)
 {
     return Unwinder::Context::from(c)->getLSDA();
 }
-#endif
 
-#ifndef __SYSTEM_ABI_CXX_AEABI
 std::uintptr_t _Unwind_GetRegionStart(_Unwind_Context* c)
 {
     return Unwinder::Context::from(c)->getRegionStart();
 }
-#endif
 
-#ifndef __SYSTEM_ABI_CXX_AEABI
 std::uintptr_t _Unwind_GetDataRelBase(_Unwind_Context* c)
 {
     return Unwinder::Context::from(c)->getDataRelBase();
 }
-#endif
 
-#ifndef __SYSTEM_ABI_CXX_AEABI
 std::uintptr_t _Unwind_GetTextRelBase(_Unwind_Context* c)
 {
     return Unwinder::Context::from(c)->getTextRelBase();
 }
-#endif
 
-#ifndef __SYSTEM_ABI_CXX_AEABI
 std::uintptr_t _Unwind_GetCFA(_Unwind_Context* c)
 {
     return Unwinder::Context::from(c)->getCFA();
 }
-#endif
 
-#ifndef __SYSTEM_ABI_CXX_AEABI
 std::uintptr_t _Unwind_GetIPInfo(_Unwind_Context* c, int* ip_before)
 {
     return Unwinder::Context::from(c)->getIPInfo(ip_before);
 }
-#endif
 
 _Unwind_Reason_Code _Unwind_Backtrace(_Unwind_Trace_Fn trace, void* trace_param)
 {

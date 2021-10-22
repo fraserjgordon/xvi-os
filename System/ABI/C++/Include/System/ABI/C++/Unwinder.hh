@@ -126,8 +126,19 @@ __SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_VRS_Result _Unwind_VRS_Pop(_Unwind_Contex
 // GCC extension.
 __SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_Reason_Code _Unwind_Backtrace(_Unwind_Trace_Fn, void*);
 
-// XVI extension (based on the SysV ABI).
+// XVI extensions (based on the SysV ABI).
 __SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_Reason_Code _Unwind_ForcedUnwind(_Unwind_Control_Block*, _Unwind_Stop_Fn, void*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetGR(_Unwind_Context*, int);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT void                _Unwind_SetGR(_Unwind_Context*, int, std::uintptr_t);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetIP(_Unwind_Context*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT void                _Unwind_SetIP(_Unwind_Context*, std::uintptr_t);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetLanguageSpecificData(_Unwind_Context*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetRegionStart(_Unwind_Context*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetDataRelBase(_Unwind_Context*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetTextRelBase(_Unwind_Context*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT void*               _Unwind_FindEnclosingFunction(void*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetCFA(_Unwind_Context*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetIPInfo(_Unwind_Context*, int*);
 
 #else // if defined(__SYSTEM_ABI_CXX_AEABI)
 

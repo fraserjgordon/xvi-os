@@ -17,7 +17,11 @@ namespace Dwarf = System::ABI::Dwarf;
 
 
 // This is the function that we need to export as the compiler automatically generates references to it.
+#ifdef __SYSTEM_ABI_CXX_AEABI
+extern "C" __SYSTEM_ABI_CXX_EHPERSONALITY_EXPORT _Unwind_Reason_Code __gxx_personality_v0(_Unwind_State, _Unwind_Control_Block*, _Unwind_Context*);
+#else
 extern "C" __SYSTEM_ABI_CXX_EHPERSONALITY_EXPORT _Unwind_Reason_Code __gxx_personality_v0(int, _Unwind_Action, std::uint64_t, _Unwind_Exception*, _Unwind_Context*);
+#endif
 
 
 // Holds the information parsed from the header of the LSDA.
@@ -283,7 +287,7 @@ static std::optional<handler_info> findMatchingAction(const lsda_header_info& in
                     catch_object = *reinterpret_cast<void**>(catch_object);
 
                 // Does this catch clause match the thrown type?
-                auto match_result = __cxa_type_match(exception_object, catch_type, false, &catch_object);
+                auto match_result = __cxa_type_match(toExceptionT(exception_object), catch_type, false, &catch_object);
                 if (match_result != __ctm_failed)
                 {
                     // Adjust the pointer to the exception object. This needs special handling if the exception type is
@@ -323,7 +327,7 @@ static std::optional<handler_info> findMatchingAction(const lsda_header_info& in
 }
 
 
-static _Unwind_Reason_Code unwindPhase1(_Unwind_Exception* exception, _Unwind_Context* context)
+static _Unwind_Reason_Code unwindPhase1(_Unwind_T* exception, _Unwind_Context* context)
 {
     // This is the first time we're seeing this exception. We need to consult the LSDA (if it exists) to find out what
     // we're supposed to do with it.
@@ -394,17 +398,26 @@ static _Unwind_Reason_Code unwindPhase1(_Unwind_Exception* exception, _Unwind_Co
     {
         // Note: the accessed fields are at the same location for normal and dependant exceptions.
         auto* cxa = getCxaException(exception);
+#ifdef __SYSTEM_ABI_CXX_AEABI
+        cxa->ucb.barrier_cache.sp = _Unwind_GetCFA(context);
+        cxa->ucb.barrier_cache.bitpattern[0] = action->switch_value;
+        cxa->ucb.barrier_cache.bitpattern[1] = reinterpret_cast<std::uint32_t>(action->action_record);
+        cxa->ucb.barrier_cache.bitpattern[2] = reinterpret_cast<std::uint32_t>(lsda_ptr);
+        cxa->ucb.barrier_cache.bitpattern[3] = call_site_info.landingpad;
+        cxa->ucb.barrier_cache.bitpattern[4] = reinterpret_cast<std::uint32_t>(action->adjusted_ptr);
+#else
         cxa->handlerSwitchValue = action->switch_value;
         cxa->actionRecord = action->action_record;
         cxa->languageSpecificDataArea = reinterpret_cast<const char*>(lsda_ptr);
         cxa->catchTemp = reinterpret_cast<void*>(call_site_info.landingpad);
         cxa->adjustedPointer = action->adjusted_ptr;
+#endif
     }
 
     return _URC_HANDLER_FOUND;
 }
 
-static _Unwind_Reason_Code unwindPhase2Cleanup(_Unwind_Exception* exception, _Unwind_Context* context)
+static _Unwind_Reason_Code unwindPhase2Cleanup(_Unwind_T* exception, _Unwind_Context* context)
 {
     // We're not the handling frame so all information needs to be looked up.
 
@@ -465,16 +478,22 @@ static _Unwind_Reason_Code unwindPhase2Cleanup(_Unwind_Exception* exception, _Un
     return _URC_INSTALL_CONTEXT;
 }
 
-static _Unwind_Reason_Code unwindPhase2Handler(_Unwind_Exception* exception, _Unwind_Context* context)
+static _Unwind_Reason_Code unwindPhase2Handler(_Unwind_T* exception, _Unwind_Context* context)
 {
     // If this is a native exception, we have all the info we need cached in the exception header already.
     bool native_exception = isNativeException(exception);
     if (native_exception) [[likely]]
     {
         auto cxa = getCxaException(exception);
+#ifdef __SYSTEM_ABI_CXX_AEABI
+        _Unwind_VRS_Set(context, _UVRSC_CORE, __builtin_eh_return_data_regno(0), _UVRSD_UINT32, &cxa->ucb.barrier_cache.bitpattern[4]);
+        _Unwind_VRS_Set(context, _UVRSC_CORE, __builtin_eh_return_data_regno(1), _UVRSD_UINT32, &cxa->ucb.barrier_cache.bitpattern[0]);
+        _Unwind_VRS_Set(context, _UVRSC_CORE, 15, _UVRSD_UINT32, &cxa->ucb.barrier_cache.bitpattern[3]);
+#else
         _Unwind_SetGR(context, __builtin_eh_return_data_regno(0), reinterpret_cast<std::uintptr_t>(cxa->adjustedPointer));
         _Unwind_SetGR(context, __builtin_eh_return_data_regno(1), static_cast<std::uintptr_t>(cxa->handlerSwitchValue));
         _Unwind_SetIP(context, reinterpret_cast<std::uintptr_t>(cxa->catchTemp));
+#endif
         return _URC_INSTALL_CONTEXT;
     }
 
@@ -511,6 +530,12 @@ static _Unwind_Reason_Code unwindPhase2Handler(_Unwind_Exception* exception, _Un
 //!
 //! @implements _Unwind_Personality_Fn
 //!
+#ifdef __SYSTEM_ABI_CXX_AEABI
+_Unwind_Reason_Code __gxx_personality_v0(_Unwind_State state, _Unwind_Control_Block* exception, _Unwind_Context* context)
+{
+
+}
+#else
 _Unwind_Reason_Code __gxx_personality_v0(int version, _Unwind_Action action, std::uint64_t exception_class, _Unwind_Exception* exception, _Unwind_Context* context)
 {
     // Note: this function performs minimal error checking as the LSDA is generated by the compiler and is expected to
@@ -529,3 +554,4 @@ _Unwind_Reason_Code __gxx_personality_v0(int version, _Unwind_Action action, std
     
     return _URC_FATAL_PHASE1_ERROR;
 }
+#endif

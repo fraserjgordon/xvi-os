@@ -413,6 +413,8 @@ bool __cxa_begin_cleanup(_Unwind_Control_Block* exception)
     return true;
 }
 
+static void __cxa_end_cleanup_impl() asm("__cxa_end_cleanup_impl");
+
 // Assembly wrapper for __cxa_end_cleanup.
 asm
 (R"(

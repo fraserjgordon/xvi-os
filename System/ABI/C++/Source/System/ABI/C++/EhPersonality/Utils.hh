@@ -65,5 +65,24 @@ inline bool isNativeException(void* e)
 }
 #endif
 
+inline __cxa_exception* fromObject(void* ptr)
+{
+    return reinterpret_cast<__cxa_exception*>(ptr) - 1;
+}
+
+inline void* toObject(__cxa_exception* e)
+{
+    return e + 1;
+}
+
+inline auto* toExceptionT(void* e)
+{
+#ifdef __SYSTEM_ABI_CXX_AEABI
+    return &fromObject(e)->ucb;
+#else
+    return e;
+#endif
+}
+
 
 #endif /* ifndef __SYSTEM_AB_CXX_EHPERONALITY_UTILS_H */
