@@ -30,9 +30,9 @@ static constexpr uint32_t  mul(uint32_t, uint32_t);
 static constexpr uint64_t  mul(uint64_t, uint64_t);
 static constexpr uint64_t  mulx(uint32_t, uint32_t);
 static constexpr int64_t   mulx(int32_t, int32_t);
-static constexpr uint32_t  negate(uint32_t);
-static constexpr uint64_t  negate(uint64_t);
-static constexpr uint128_t negate(uint128_t);
+static constexpr int32_t   negate(int32_t);
+static constexpr int64_t   negate(int64_t);
+static constexpr int128_t  negate(int128_t);
 static constexpr int       compare(int32_t, int32_t);
 static constexpr int       compare(int64_t, int64_t);
 static constexpr int       compare(int128_t, int128_t);
@@ -48,7 +48,7 @@ static constexpr int128_t  rshifta(int128_t, uint32_t);
 static constexpr uint128_t mul(uint128_t, uint128_t);
 static constexpr uint128_t mulx(uint64_t, uint64_t);
 static constexpr int128_t  mulx(int64_t, int64_t);
-static constexpr uint256_t negate(uint256_t);
+static constexpr int256_t negate(int256_t);
 static constexpr int       compare(int256_t, int256_t);
 static constexpr int       compare(uint256_t, uint256_t);
 #endif
@@ -296,12 +296,12 @@ static constexpr divide_result<T> udiv_nonrestoring_emul(T num, T denom)
         if (compare(r, zero) >= 0)
         {
             q |= T(1) << i;
-            r = sub(lshift(DT(r), 1), d);
+            r = static_cast<SDT>(sub(lshift(DT(r), 1), d));
         }
         else
         {
             q |= T(0) << i;
-            r = add(lshift(DT(r), 1), d);
+            r = static_cast<SDT>(add(lshift(DT(r), 1), d));
         }
     }
 
@@ -312,7 +312,7 @@ static constexpr divide_result<T> udiv_nonrestoring_emul(T num, T denom)
     if (compare(r, zero) < 0)
     {
         q -= 1;
-        r = add(DT(r), DT(d));
+        r = static_cast<SDT>(add(DT(r), DT(d)));
     }
 
     if constexpr (UsingEmulatedInt)
@@ -328,8 +328,8 @@ static constexpr divide_result<T> idiv_nonrestoring_emul(T num, T denom)
     using UT = make_unsigned_t<T>;
     bool nnum = (num < 0);
     bool ndenom = (denom < 0);
-    UT unum = nnum ? negate(UT(num)) : UT(num);
-    UT udenom = ndenom ? negate(UT(denom)) : UT(denom);
+    UT unum = nnum ? UT(negate(num)) : UT(num);
+    UT udenom = ndenom ? UT(negate(denom)) : UT(denom);
 
     // Perform the division as if the numbers were unsigned.
     auto [q, r] = udiv_nonrestoring_emul(unum, udenom);
@@ -579,17 +579,17 @@ static constexpr int128_t mulx(int64_t a, int64_t b)
 #endif
 
 
-static constexpr uint32_t negate(uint32_t u)
+static constexpr int32_t negate(int32_t u)
 {
     return -u;
 }
 
-static constexpr uint64_t negate(uint64_t u)
+static constexpr int64_t negate(int64_t u)
 {
     return -u;
 }
 
-static constexpr uint128_t negate(uint128_t u)
+static constexpr int128_t negate(int128_t u)
 {
 #if __SYSTEM_ABI_INTEGER_PROVIDE_128BIT
     return -u;
@@ -599,7 +599,7 @@ static constexpr uint128_t negate(uint128_t u)
 }
 
 #if __SYSTEM_ABI_INTEGER_PROVIDE_128BIT
-static constexpr uint256_t negate(uint256_t u)
+static constexpr int256_t negate(int256_t u)
 {
     return negate_emul(u);
 }

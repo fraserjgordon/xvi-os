@@ -56,6 +56,9 @@ protected:
     template <size_t _Padding = (sizeof(void*) - sizeof(_CharT)) / sizeof(_CharT)>
     using __flags_t = conditional_t<_Padding == 0, __unpadded_flags_t, __padded_flags_t<_Padding>>;
 
+    constexpr __basic_string_storage() {};
+    constexpr ~__basic_string_storage() {};
+
     union
     {
         struct
@@ -71,7 +74,7 @@ protected:
         {
             make_unsigned_t<_CharT> _M_inline_length = 0;
             _CharT                  _M_inline[_MaxInline] = {};
-            __unpadded_flags_t      _M_flags;
+            __unpadded_flags_t      _M_flags = {};
         };
     };
 };
@@ -1513,7 +1516,7 @@ operator+(const basic_string<_CharT, _Traits, _Alloc>& __lhs, const _CharT* __rh
     auto __rhs_len = _Traits::length(__rhs);
     
     basic_string<_CharT, _Traits, _Alloc> __r;
-    __r.reserve(__lhs.size() + __rhs.size());
+    __r.reserve(__lhs.size() + char_traits<_CharT>::length(__rhs));
     __r.append(__lhs).append(__rhs, __rhs_len);
     return __r;
 }
@@ -1665,7 +1668,11 @@ inline namespace string_literals
 
 // GCC doesn't always detect this as a system header properly and throws warnings about these suffixes.
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wliteral-suffix"
+#ifdef __llvm__
+#  pragma GCC diagnostic ignored "-Wuser-defined-literals"
+#else
+#  pragma GCC diagnostic ignored "-Wliteral-suffix"
+#endif
 
 constexpr string operator""s(const char* __str, size_t __len)
 {

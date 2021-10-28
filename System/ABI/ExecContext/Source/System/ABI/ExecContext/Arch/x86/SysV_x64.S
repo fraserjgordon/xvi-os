@@ -5,7 +5,7 @@
 
 #if defined(__x86_64__)
 
-__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(SwapContexts__v1_0,SwapContexts,1.0)
+__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(SwapContexts__v1_0,SwapContexts,_1.0)
 .LSwapContexts__v1_0:
 
     // Parameters:
@@ -81,7 +81,7 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(SwapContexts__v1_0,SwapContexts,1.0)
 .align 16
 
 
-__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContext__v1_0,ResumeContext,1.0)
+__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContext__v1_0,ResumeContext,_1.0)
 .LResumeContext__v1_0:
 
     // Parameters:
@@ -142,7 +142,7 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContext__v1_0,ResumeContext,1.0)
 .align 16
 
 
-__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContextFull__v1_0,ResumeContextFull,1.0)
+__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContextFull__v1_0,ResumeContextFull,_1.0)
 .LResumeContextFull__v1_0:
 
     // Parameters:
@@ -185,7 +185,7 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContextFull__v1_0,ResumeContextFull
 .align 16
 
 
-__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,1.0)
+__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,_1.0)
 .LCaptureContext__v1_0:
 
     // Parameters:
@@ -231,7 +231,7 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,1.0)
 .align 16
 
 
-__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CreateContext__v1_0,CreateContext,1.0)
+__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CreateContext__v1_0,CreateContext,_1.0)
 .LCreateContext__v1_0:
 
     // Parameters:

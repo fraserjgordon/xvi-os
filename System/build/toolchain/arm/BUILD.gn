@@ -66,6 +66,11 @@ vars_gcc_armv6 =
     arch_cflags += [ "-march=armv6" ]
     toolchain_cpu = "armv6"
 
+    if (use_clang)
+    {
+        arch_cflags += [ "-mfloat-abi=soft" ]
+    }
+
     _arch_toolchain_args =
     {
         forward_variables_from(arch_toolchain_args, "*")
@@ -130,30 +135,22 @@ vars_gcc_armv8_1a =
     arch_toolchain_args = _arch_toolchain_args
 }
 
-
-if (use_clang)
+gcc_toolchain("armv6")
 {
-
+    forward_variables_from(vars_gcc_armv6, "*")
 }
-else
+
+gcc_toolchain("armv7-a")
 {
-    gcc_toolchain("armv6")
-    {
-        forward_variables_from(vars_gcc_armv6, "*")
-    }
+    forward_variables_from(vars_gcc_armv7a, "*")
+}
 
-    gcc_toolchain("armv7-a")
-    {
-        forward_variables_from(vars_gcc_armv7a, "*")
-    }
+gcc_toolchain("armv8-a")
+{
+    forward_variables_from(vars_gcc_armv8a, "*")
+}
 
-    gcc_toolchain("armv8-a")
-    {
-        forward_variables_from(vars_gcc_armv8a, "*")
-    }
-
-    gcc_toolchain("armv8.1-a")
-    {
-        forward_variables_from(vars_gcc_armv8_1a, "*")
-    }
+gcc_toolchain("armv8.1-a")
+{
+    forward_variables_from(vars_gcc_armv8_1a, "*")
 }

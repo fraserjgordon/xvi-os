@@ -64,7 +64,7 @@
    .type   System.ABI.ExecContext.##internal, STT_FUNC; \
    .size   .L##internal, .L##internal##_end - .L##internal; \
    .equ    System.ABI.ExecContext.##internal, .L##internal; \
-   .symver System.ABI.ExecContext.##internal, System.ABI.ExecContext.##external##@@SYSTEM_ABI_EXECCONTEXT_##ver;
+   .symver System.ABI.ExecContext.##internal, System.ABI.ExecContext.##external##@@SYSTEM_ABI_EXECCONTEXT##ver;
 
 
 #endif /* ifndef __SYSTEM_ABI_EXECCONTEXT_H */

@@ -1150,10 +1150,10 @@ protected:
 
     using __base = __library_formatter_base<_CharT>;
 
-    using __alignment               = __base::__alignment;
-    using __sign_type               = __base::__sign_type;
-    using __presentation_type       = __base::__presentation_type;
-    using __width_precision_type    = __base::__width_precision_type;
+    using __alignment               = typename __base::__alignment;
+    using __sign_type               = typename __base::__sign_type;
+    using __presentation_type       = typename __base::__presentation_type;
+    using __width_precision_type    = typename __base::__width_precision_type;
 
     using __base::_M_fill;
     using __base::_M_align;

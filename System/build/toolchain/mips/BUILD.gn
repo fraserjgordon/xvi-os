@@ -74,19 +74,12 @@ vars_gcc_mips64 =
     toolchain_cpu = "mips64"
 }
 
-if (use_clang)
+gcc_toolchain("mips32")
 {
-
+    forward_variables_from(vars_gcc_mips32, "*")
 }
-else
-{
-    gcc_toolchain("mips32")
-    {
-        forward_variables_from(vars_gcc_mips32, "*")
-    }
 
-    gcc_toolchain("mips64")
-    {
-        forward_variables_from(vars_gcc_mips64, "*")
-    }
+gcc_toolchain("mips64")
+{
+    forward_variables_from(vars_gcc_mips64, "*")
 }

@@ -54,6 +54,7 @@ vars_gcc_32 =
     forward_variables_from(vars_gcc, "*")
 
     arch_cflags += [ "-m32" ]
+    clang_target = "i686"
     toolchain_cpu = "x86"
 }
 
@@ -64,30 +65,23 @@ vars_gcc_64 =
 
     arch_cflags += [ "-m64" ]
     arch_rustflags += [ "--target " + rebase_path("rust-x86_64.json") ]
+    clang_target = "x86_64"
     toolchain_cpu = "x86_64"
 
     toolchain_prefix = x64_toolchain_prefix
 }
 
-
-if (use_clang)
+gcc_toolchain("16")
 {
-
+    forward_variables_from(vars_gcc_16, "*")
 }
-else
+
+gcc_toolchain("x86")
 {
-    gcc_toolchain("16")
-    {
-        forward_variables_from(vars_gcc_16, "*")
-    }
+    forward_variables_from(vars_gcc_32, "*")
+}
 
-    gcc_toolchain("x86")
-    {
-        forward_variables_from(vars_gcc_32, "*")
-    }
-
-    gcc_toolchain("x64")
-    {
-        forward_variables_from(vars_gcc_64, "*")
-    }
+gcc_toolchain("x64")
+{
+    forward_variables_from(vars_gcc_64, "*")
 }

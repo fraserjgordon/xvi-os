@@ -135,7 +135,9 @@ constexpr int popcount(_T __x) noexcept
 
 // The GCC warning should be suppressed due to the constraints saying the same thing.
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#ifndef __llvm__
+#  pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
 template <class _To, class _From>
     requires (sizeof(_To) == sizeof(_From)
           && is_trivially_copyable_v<_To>

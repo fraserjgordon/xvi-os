@@ -287,12 +287,12 @@ constexpr bool is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __la
 
     for (; __start1 != __last1; ++__start1)
     {
-        auto __n1 = __XVI_STD_UTILITY_NS::count_if(__start1, __last1, [__pred, __start1]<class _T>(_T&& __t)
+        auto __n1 = __XVI_STD_UTILITY_NS::count_if(__start1, __last1, [__pred, __start1 = __start1]<class _T>(_T&& __t)
         {
             return __pred(*__start1, std::forward<_T>(__t));
         });
 
-        auto __n2 = __XVI_STD_UTILITY_NS::count_if(__start2, __last2, [__pred, __start1]<class _T>(_T&& __t)
+        auto __n2 = __XVI_STD_UTILITY_NS::count_if(__start2, __last2, [__pred, __start1 = __start1]<class _T>(_T&& __t)
         {
             return __pred(*__start1, std::forward<_T>(__t));
         });
@@ -1599,7 +1599,7 @@ constexpr _T min(__XVI_STD_NS::initializer_list<_T> __il, _Compare __comp)
     const _T& __min = *__il.begin();
 
     for (auto __i = __il.begin() + 1; __i != __il.end(); ++__i)
-        __min = __XVI_STD_NS::min(__min, *__i);
+        __min = __XVI_STD_NS::min(__min, *__i, __comp);
 
     return __min;
 }
@@ -1630,7 +1630,7 @@ constexpr _T max(__XVI_STD_NS::initializer_list<_T> __il, _Compare __comp)
     const _T& __max = *__il.begin();
 
     for (auto __i = __il.begin() + 1; __i != __il.end(); ++__i)
-        __max = __XVI_STD_NS::max(__max, *__i);
+        __max = __XVI_STD_NS::max(__max, *__i, __comp);
 
     return __max;
 }

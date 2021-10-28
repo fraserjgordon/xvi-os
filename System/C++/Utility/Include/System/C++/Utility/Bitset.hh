@@ -179,7 +179,7 @@ public:
     bitset& flip(size_t __n)
     {
         if (__n >= _N)
-            __XVI_CXX_UTILITY_THROW(out_of_range());
+            __XVI_CXX_UTILITY_THROW(out_of_range("out-of-bounds bitset access"));
 
         _M_words[__n / _WB] ^= (__word_t(1) << (__n % _WB));
 

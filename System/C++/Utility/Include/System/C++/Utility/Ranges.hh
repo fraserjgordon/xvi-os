@@ -1143,8 +1143,8 @@ public:
     constexpr ref_view(ref_view&&) = default;
 
     // Test functions for the _T&& constructor.
-    void __fun(_R&);
-    void __fun(_R&&) = delete;
+    static void __fun(_R&);
+    static void __fun(_R&&) = delete;
 
     template <__detail::__not_same_as<ref_view> _T>
         requires (convertible_to<_T, _R&>

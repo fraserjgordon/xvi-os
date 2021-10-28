@@ -899,7 +899,7 @@ struct __end
 
     template <class _T>
         requires (__lvalue_or_borrowed_range<_T> 
-            && !is_array_v<remove_cvref_t>
+            && !is_array_v<remove_cvref_t<_T>>
             && !requires(_T& __t) { { __decay_copy(__t.end()) } -> sentinel_for<decltype(__begin()(__t))>; }
             && requires(_T& __t) { { __decay_copy(end(__t)) } -> sentinel_for<decltype(__begin()(__t))>; })
     constexpr decltype(auto) operator()(_T&& __t) const
@@ -2931,11 +2931,11 @@ template <class _C> constexpr auto crend(const _C& __c) -> decltype(__XVI_STD_NS
 
 template <class _C> constexpr auto size(const _C& __c) -> decltype(__c.size())
     { return __c.size(); }
-template <class _T, size_t _N> constexpr size_t size(const _T (&__array)[_N]) noexcept
+template <class _T, size_t _N> constexpr size_t size(const _T (&)[_N]) noexcept
     { return _N; }
 template <class _C> [[nodiscard]] constexpr auto empty(const _C& __c) -> decltype(__c.empty())
     { return __c.empty();}
-template <class _T, size_t _N> [[nodiscard]] constexpr bool empty(const _T (&__array)[_N]) noexcept
+template <class _T, size_t _N> [[nodiscard]] constexpr bool empty(const _T (&)[_N]) noexcept
     { return false; }
 template <class _E> [[nodiscard]] constexpr bool empty(initializer_list<_E> __il) noexcept
     { return __il.size() == 0; }

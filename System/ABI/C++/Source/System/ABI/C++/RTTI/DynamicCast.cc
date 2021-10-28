@@ -90,16 +90,16 @@ static constexpr AccessType accessTypeVia(const __cxxabiv1::__base_class_type_in
 
 
 // Performs a base-to-derived dynamic cast.
-static const void* dynamicCastBaseToDerived(const void* obj, const __cxxabiv1::__class_type_info* src, const __cxxabiv1::__class_type_info* dest)
-{
-
-}
+//static const void* dynamicCastBaseToDerived(const void* obj, const __cxxabiv1::__class_type_info* src, const __cxxabiv1::__class_type_info* dest)
+//{
+//
+//}
 
 // Performs a cross-cast dynamic cast.
-static const void* dynamicCastCrossCast(const void* obj, const __cxxabiv1::__class_type_info* src, const __cxxabiv1::__class_type_info* dest)
-{
-
-}
+//static const void* dynamicCastCrossCast(const void* obj, const __cxxabiv1::__class_type_info* src, const __cxxabiv1::__class_type_info* dest)
+//{
+//
+//}
 
 
 } // namespace System::ABI:CXX

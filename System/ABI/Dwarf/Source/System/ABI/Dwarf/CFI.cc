@@ -549,7 +549,11 @@ static bool ParseCFIRulesWithCallback(const DwarfFDE& fde, std::uintptr_t pc, st
 
     //! @TODO: make nicer!
     #pragma GCC diagnostic push
-    #pragma GCC diagnostic warning "-Walloca" 
+    #ifdef __llvm__
+    #  pragma GCC diagnostic ignored "-Walloca"
+    #else
+    #  pragma GCC diagnostic warning "-Walloca" 
+    #endif
     auto cie_rules = new (__builtin_alloca(output_count * sizeof(reg_rule))) reg_rule[output_count];
     #pragma GCC diagnostic pop
 
@@ -611,7 +615,11 @@ static bool ParseCFIRulesWithCallback(const DwarfFDE& fde, std::uintptr_t pc, st
                 {
                     //! @TODO: make nicer!
                     #pragma GCC diagnostic push
-                    #pragma GCC diagnostic warning "-Walloca"
+                    #ifdef __llvm__
+                    #  pragma GCC diagnostic ignored "-Walloca"
+                    #else
+                    #  pragma GCC diagnostic warning "-Walloca" 
+                    #endif
                     rule_stack[push_depth] = new (__builtin_alloca(output_count * sizeof(reg_rule))) reg_rule[output_count];
                     #pragma GCC diagnostic pop
                 }

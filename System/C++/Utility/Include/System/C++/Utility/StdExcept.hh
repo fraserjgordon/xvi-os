@@ -6,8 +6,8 @@
 #include <System/C++/Atomic/Atomic.hh>
 #include <System/C++/LanguageSupport/Exception.hh>
 
+#include <System/C++/Utility/CharTraits.hh>
 #include <System/C++/Utility/StringFwd.hh>
-#include <System/C++/Utility/StringView.hh>
 #include <System/C++/Utility/Private/Config.hh>
 
 
@@ -141,12 +141,20 @@ __exception_string::__ptr __make_exception_string(_Args&&... __args)
 {
     auto __get_len = []<class _T>(const _T& __t)
     {
-        return string_view(__t).length();
+        if constexpr (is_same_v<_T, const char*> || is_same_v<_T, const char[]>)
+            return char_traits<char>::length(__t);
+        else if constexpr (is_array_v<_T>)
+            return extent_v<_T>;
+        else
+            return __t.size();
     };
 
     auto __get_ptr = []<class _T>(const _T& __t)
     {
-        return string_view(__t).data();
+        if constexpr (is_same_v<_T, const char*> || is_array_v<_T>)
+            return __t;
+        else
+            return __t.data();
     };
 
     size_t __len = (1 + ... + __get_len(__args));
@@ -177,6 +185,8 @@ public:
     {
         return _M_what;
     }
+
+    ~logic_error() = default;
 
 protected:
 

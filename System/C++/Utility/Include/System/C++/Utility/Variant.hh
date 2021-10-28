@@ -326,7 +326,7 @@ constexpr bool __ge(const __variant_storage_union_base<_T, _Types...>& __lhs,
 
 
 template <class... _Types>
-union __variant_storage_union
+union [[clang::trivial_abi]] __variant_storage_union
 {
     using __storage_t = aligned_union_t<0, _Types...>;
     using __inner_t = __variant_storage_union_base<_Types...>;
@@ -337,18 +337,23 @@ union __variant_storage_union
     // Note: does not initialise as any of the alternatives, only as raw storage.
     constexpr __variant_storage_union() : __raw() {}
 
+#ifndef __llvm__
+    //! @todo clang bug? - doesn't seem to handle the requires clause properly.
     ~__variant_storage_union() = default;
+#endif
 
     // Non-trivial but empty destructor for unions with non-trivial members.
     ~__variant_storage_union()
-    requires (!(is_trivially_destructible_v<_Types> && ...))
+#ifndef __llvm__
+        requires (!(is_trivially_destructible_v<_Types> && ...))
+#endif
     {
     }
 };
 
 
 template <class... _Types>
-struct __variant_storage_base
+struct [[clang::trivial_abi]] __variant_storage_base
 {
     using __union_t = __variant_storage_union<_Types...>;
 
@@ -625,7 +630,7 @@ struct __variant_storage
     : public __variant_storage_base<_Types...>
 {
     using _Base = __variant_storage_base<_Types...>;
-    using _T0 = __variant_storage_union<_Types...>::__inner_t::__value_t;    
+    using _T0 = typename __variant_storage_union<_Types...>::__inner_t::__value_t;    
 
     constexpr __variant_storage()
         requires is_default_constructible_v<_T0>
@@ -694,12 +699,17 @@ struct __variant_storage
     requires (!(is_move_constructible_v<_Types> && ...))
         = delete;
 
+#ifndef __llvm__
+    //! @todo clang bug? - doesn't seem to handle the requires clause properly.
     ~__variant_storage()
     requires (is_trivially_destructible_v<_Types> && ...)
         = default;
+#endif
 
     ~__variant_storage()
-    requires (!(is_trivially_destructible_v<_Types> && ...))
+#ifndef __llvm__
+        requires (!(is_trivially_destructible_v<_Types> && ...))
+#endif
     {
         auto __this = static_cast<_Base*>(this);
         

@@ -258,8 +258,8 @@ public:
                                   && is_same_v<pointer, element_type*>
                                   && is_same_v<typename unique_ptr<_U, _E>::pointer, typename unique_ptr<_U, _E>::element_type*>
                                   && is_convertible_v<element_type(*)[], typename unique_ptr<_U, _E>::element_type(*)[]>
-                                  && ((is_reference_v<_D> && is_same_v<_D, _E>
-                                      || !is_reference_v<_D> && is_convertible_v<_D, _E>)), void>>
+                                  && ((is_reference_v<_D> && is_same_v<_D, _E>)
+                                      || (!is_reference_v<_D> && is_convertible_v<_D, _E>)), void>>
     unique_ptr(unique_ptr<_U, _E>&& __u) noexcept
         : _M_ptr(__u._M_ptr),
           _M_deleter(__XVI_STD_NS::forward<_E>(__u._M_deleter))

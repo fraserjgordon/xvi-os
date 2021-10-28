@@ -5,6 +5,7 @@ deps =
 [
     ":C++_headers",
 
+    "//ABI/Integer:Integer",
     "//C++/LanguageSupport:LanguageSupport_headers",
 ]
 

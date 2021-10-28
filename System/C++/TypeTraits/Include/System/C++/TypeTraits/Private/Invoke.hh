@@ -252,7 +252,7 @@ constexpr auto _INVOKE_R(_Args&&... __args)
 }
 
 
-template <class _Fn, class... _Args> using __is_invocable_detector = __invoke_helper<_Fn, _Args...>::template __detector<_Fn, _Args...>;
+template <class _Fn, class... _Args> using __is_invocable_detector = typename __invoke_helper<_Fn, _Args...>::template __detector<_Fn, _Args...>;
 
 } // namespace __detail
 

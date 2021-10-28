@@ -17,7 +17,7 @@ namespace __XVI_STD_UTILITY_NS
 
 
 // Forward declarations.
-template <class, size_t> class array;
+template <class, size_t> struct array;
 template <class, size_t> class span;
 
 
@@ -273,7 +273,7 @@ as_writable_bytes(span<_ElementType, _Extent> __s) noexcept
 
 
 template <class _ElementType, size_t _Extent>
-inline constexpr bool ranges::enable_view<span<_ElementType, _Extent>> = _Extent == 0 || _Extent = dynamic_extent;
+inline constexpr bool ranges::enable_view<span<_ElementType, _Extent>> = _Extent == 0 || _Extent == dynamic_extent;
 
 template <class _ElementType, size_t _Extent>
 inline constexpr bool ranges::enable_borrowed_range<span<_ElementType, _Extent>> = true;

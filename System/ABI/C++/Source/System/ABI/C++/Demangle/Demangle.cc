@@ -639,7 +639,7 @@ struct template_arg
 
         if (auto t = parse_type(in); t)
         {
-            return template_arg(std::move(t));
+            return template_arg{std::move(t)};
         }
 
         in = in_orig;
@@ -822,7 +822,7 @@ struct decltype_expr
 
             in.remove_prefix(1);
 
-            return decltype_expr{id_expression(std::move(e))};
+            return decltype_expr{id_expression{std::move(e)}};
         }
         else if (in.starts_with("DT"))
         {
@@ -837,7 +837,7 @@ struct decltype_expr
 
             in.remove_prefix(1);
 
-            return decltype_expr{other_expression(std::move(e))};
+            return decltype_expr{other_expression{std::move(e)}};
         }
 
         return {};

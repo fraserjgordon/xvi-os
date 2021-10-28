@@ -49,13 +49,19 @@ typedef __INT_FAST64_TYPE__     __int_fast64_t;
 
 typedef __WINT_TYPE__           __wint_t;
 
+#ifdef __SIG_ATOMIC_TYPE__
 typedef __SIG_ATOMIC_TYPE__     __sig_atomic_t;
+#elif __SIG_ATOMIC_WIDTH__ == 32
+typedef __INT32_TYPE__          __sig_atomic_t;
+#elif __SIG_ATOMIC_WIDTH__ == 64
+typedef __INT64_TYPE__          __sig_atomic_t;
+#endif
 
 #ifndef __cplusplus
 #define __WCHAR_TYPE__          __wchar_t;
 typedef __CHAR16_TYPE__         __char16_t;
 typedef __CHAR32_TYPE__         __char32_t;
-#else
+#elif !defined(__llvm__)
 typedef wchar_t                 __wchar_t;
 typedef char16_t                __char16_t;
 typedef char32_t                __char32_t;

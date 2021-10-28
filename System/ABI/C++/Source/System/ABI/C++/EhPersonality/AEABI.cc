@@ -65,7 +65,7 @@ struct Scope
 
 
 // Decodes a "prel31" offset.
-static inline std::uint32_t decodePrel31(const std::uint32_t* ptr)
+/*static inline std::uint32_t decodePrel31(const std::uint32_t* ptr)
 {
 
 }
@@ -75,4 +75,4 @@ template <class ScopeT>
 static Scope parseScopeDescriptor(const ScopeT*& ptr)
 {
 
-}
+}*/

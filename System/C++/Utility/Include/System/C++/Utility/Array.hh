@@ -136,7 +136,7 @@ struct array
     constexpr reference at(size_type __n)
     {
         if (__n >= _N)
-            __XVI_CXX_UTILITY_THROW(out_of_range());
+            __XVI_CXX_UTILITY_THROW(out_of_range("out-of-bounds array access"));
 
         return _M_arr[__n];
     }
@@ -144,7 +144,7 @@ struct array
     constexpr const_reference at(size_type __n) const
     {
         if (__n >= _N)
-            __XVI_CXX_UTILITY_THROW(out_of_range());
+            __XVI_CXX_UTILITY_THROW(out_of_range("out-of-bounds array access"));
 
         return _M_arr[__n];
     }

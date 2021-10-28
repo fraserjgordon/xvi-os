@@ -34,6 +34,7 @@ using _Unwind_State = std::uint32_t;
 inline constexpr _Unwind_State _US_VIRTUAL_UNWIND_FRAME     = 0;
 inline constexpr _Unwind_State _US_UNWIND_FRAME_STARTING    = 1;
 inline constexpr _Unwind_State _US_UNWIND_FRAME_RESUME      = 2;
+inline constexpr _Unwind_State _US_FORCE_UNWIND             = 8;    // Flag - XVI extension.
 
 using _Unwind_EHT_Header = std::uint32_t;
 using _Unwind_Exception_Cleanup_Fn  = void (*)(_Unwind_Reason_Code, struct _Unwind_Control_Block*);
@@ -139,6 +140,8 @@ __SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetTextRelBase(_Unwin
 __SYSTEM_ABI_CXX_UNWIND_EXPORT void*               _Unwind_FindEnclosingFunction(void*);
 __SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetCFA(_Unwind_Context*);
 __SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetIPInfo(_Unwind_Context*, int*);
+
+
 
 #else // if defined(__SYSTEM_ABI_CXX_AEABI)
 

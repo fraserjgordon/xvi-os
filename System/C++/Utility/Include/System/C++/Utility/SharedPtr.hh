@@ -660,7 +660,7 @@ public:
     template <class _D>
     _D* __get_deleter() const noexcept
     {
-        return _M_owner.template __get_deleter<remove_cv_t<_D>>();
+        return _M_owner->template __get_deleter<remove_cv_t<_D>>();
     }
 
     static shared_ptr __make(element_type* __p, __detail::__shared_ptr_owner_base* __o)

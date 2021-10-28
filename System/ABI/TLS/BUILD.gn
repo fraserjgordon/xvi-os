@@ -1,3 +1,5 @@
+import("//build/config/arch/current_arch_config.gni")
+
 library("TLS")
 {
     library_name    = "System.ABI.TLS"
@@ -26,7 +28,14 @@ library("TLS")
         "Private/Config.hh"
     ]
 
-    if (current_arch == "mips")
+    if (current_arch == "arm")
+    {
+        public_headers +=
+        [
+            "Arch/ARM/TLS.hh",
+        ]
+    }
+    if (current_arch == "mips") 
     {
         public_headers +=
         [
@@ -37,10 +46,17 @@ library("TLS")
     {
         public_headers +=
         [
-            "Arch/x86/TLS.hh"
+            "Arch/PowerPC/TLS.hh",
         ]
     }
-    if (current_arch == "x86")
+    else if (current_arch == "sparc")
+    {
+        public_headers +=
+        [
+            "Arch/Sparc/TLS.hh",
+        ]
+    }
+    else if (current_arch == "x86")
     {
         public_headers +=
         [
@@ -57,7 +73,22 @@ library("TLS")
         "Image.cc",
     ]
 
-    if (current_arch == "mips")
+    if (current_arch == "arm")
+    {
+        sources +=
+        [
+            "Arch/ARM/TLS.cc",
+        ]
+
+        if (arm_arch_major < 8)
+        {
+            sources +=
+            [
+                "Arch/ARM/TP.S",
+            ]
+        }
+    }
+    else if (current_arch == "mips")
     {
         sources +=
         [
@@ -71,6 +102,13 @@ library("TLS")
             "Arch/PowerPC/TLS.cc",
         ]
     }
+    else if (current_arch == "sparc")
+    {
+        sources +=
+        [
+            "Arch/Sparc/TLS.cc",
+        ]
+    }
     else if (current_arch == "x86")
     {
         sources +=
@@ -80,6 +118,6 @@ library("TLS")
     }
     else
     {
-        #assert(false, "unsupported architecture: ${current_arch}")
+        assert(false, "unsupported architecture: ${current_arch}")
     }
 }

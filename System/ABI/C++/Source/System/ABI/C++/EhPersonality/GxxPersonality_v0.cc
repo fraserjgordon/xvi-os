@@ -531,10 +531,10 @@ static _Unwind_Reason_Code unwindPhase2Handler(_Unwind_T* exception, _Unwind_Con
 //! @implements _Unwind_Personality_Fn
 //!
 #ifdef __SYSTEM_ABI_CXX_AEABI
-_Unwind_Reason_Code __gxx_personality_v0(_Unwind_State state, _Unwind_Control_Block* exception, _Unwind_Context* context)
+/*_Unwind_Reason_Code __gxx_personality_v0(_Unwind_State state, _Unwind_Control_Block* exception, _Unwind_Context* context)
 {
 
-}
+}*/
 #else
 _Unwind_Reason_Code __gxx_personality_v0(int version, _Unwind_Action action, std::uint64_t exception_class, _Unwind_Exception* exception, _Unwind_Context* context)
 {

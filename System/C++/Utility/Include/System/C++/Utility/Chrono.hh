@@ -3149,7 +3149,11 @@ inline namespace chrono_literals
 
 // GCC doesn't always detect this as a system header properly and throws warnings about these suffixes.
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wliteral-suffix"
+#ifdef __llvm__
+#  pragma GCC diagnostic ignored "-Wuser-defined-literals"
+#else
+#  pragma GCC diagnostic ignored "-Wliteral-suffix"
+#endif
 
 constexpr chrono::hours operator""h(unsigned long long __n)
 {

@@ -383,7 +383,7 @@ public:
 
     using value_type = _T;
 
-    static constexpr bool is_always_lock_free   = __atomic_always_lock_free(sizeof(_T), 0);
+    static constexpr bool is_always_lock_free   = __atomic_always_lock_free(sizeof(_T), nullptr);
     static constexpr size_t required_alignment  = alignof(_T);
 
     __integral_atomic_ref& operator=(const __integral_atomic_ref&) = delete;
@@ -664,7 +664,7 @@ public:
 
     using value_type = _T;
 
-    static constexpr bool is_always_lock_free = __atomic_always_lock_free(sizeof(_T), 0);
+    static constexpr bool is_always_lock_free = __atomic_always_lock_free(sizeof(_T), nullptr);
 
     __atomic_integer() noexcept = default;
 
@@ -938,7 +938,7 @@ public:
     using value_type = _T;
     using difference_type = ptrdiff_t;
 
-    static constexpr bool is_always_lock_free = __atomic_always_lock_free(sizeof(_T), 0);
+    static constexpr bool is_always_lock_free = __atomic_always_lock_free(sizeof(_T), nullptr);
 
     __atomic_pointer() noexcept = default;
 
@@ -1151,7 +1151,7 @@ public:
 
     using value_type = _T;
 
-    static constexpr bool is_always_lock_free   = __atomic_always_lock_free(sizeof(_T), 0);
+    static constexpr bool is_always_lock_free   = __atomic_always_lock_free(sizeof(_T), nullptr);
     static constexpr size_t required_alignment  = alignof(_T);
 
     atomic_ref& operator=(const atomic_ref&) = delete;
@@ -1300,7 +1300,7 @@ public:
 
     using value_type = _T;
 
-    static constexpr bool is_always_lock_free = __atomic_always_lock_free(sizeof(_T), 0);
+    static constexpr bool is_always_lock_free = __atomic_always_lock_free(sizeof(_T), nullptr);
 
     atomic() noexcept = default;
 

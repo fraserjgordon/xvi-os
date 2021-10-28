@@ -173,7 +173,7 @@ public:
     [[nodiscard]] _Tp* allocate(size_t __n)
     {
         if (SIZE_MAX / sizeof(_Tp) < __n)
-            __XVI_CXX_UTILITY_THROW(length_error());
+            __XVI_CXX_UTILITY_THROW(length_error("array length overflow"));
 
         return static_cast<_Tp*>(_M_rsrc->allocate(__n * sizeof(_Tp), alignof(_Tp)));
     }
@@ -197,7 +197,7 @@ public:
     _T* allocate_object(size_t __n = 1)
     {
         if (SIZE_MAX / sizeof(_T) < __n)
-            __XVI_CXX_UTILITY_THROW(length_error());
+            __XVI_CXX_UTILITY_THROW(length_error("allocation length overflow"));
 
         return static_cast<_T*>(allocate_bytes(__n * sizeof(_T), alignof(_T)));
     }

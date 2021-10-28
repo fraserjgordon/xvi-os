@@ -61,6 +61,8 @@ vars_gcc_sparcv8 =
 {
     forward_variables_from(vars_gcc_32, "*")
 
+    clang_target = "sparc"
+
     #arch_cflags += [ "-mcpu=v8" ]
     toolchain_cpu = "sparcv8"
 }
@@ -70,23 +72,18 @@ vars_gcc_sparcv9 =
 {
     forward_variables_from(vars_gcc_64, "*")
 
+    clang_target = "sparcv9"
+
     #arch_cflags += [ "-mcpu=v9", "-m64" ]
     toolchain_cpu = "sparcv9"
 }
 
-if (use_clang)
+gcc_toolchain("v8")
 {
-
+    forward_variables_from(vars_gcc_sparcv8, "*")
 }
-else
-{
-    gcc_toolchain("v8")
-    {
-        forward_variables_from(vars_gcc_sparcv8, "*")
-    }
 
-    gcc_toolchain("v9")
-    {
-        forward_variables_from(vars_gcc_sparcv9, "*")
-    }
+gcc_toolchain("v9")
+{
+    forward_variables_from(vars_gcc_sparcv9, "*")
 }

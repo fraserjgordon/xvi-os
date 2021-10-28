@@ -159,7 +159,7 @@ _restgpr1_31:   ld      %r31, -8(%r12)
 #endif
 
 
-__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(SwapContexts__v1_0,SwapContexts,1.0)
+__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(SwapContexts__v1_0,SwapContexts,_1.0)
 .LSwapContexts__v1_0:
     // Parameters:
     //      r3:     ppc64_elfvX_frame_t* next
@@ -200,7 +200,7 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(SwapContexts__v1_0,SwapContexts,1.0)
 .LSwapContexts__v1_0_end = .
 
 
-__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContext__v1_0,ResumeContext,1.0)
+__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContext__v1_0,ResumeContext,_1.0)
 .LResumeContext__v1_0:
     // Parameters:
     //      r3:     ppc64_elfvX_frame_t* context
@@ -228,7 +228,7 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContext__v1_0,ResumeContext,1.0)
 .LResumeContext__v1_0_end = .
 
 
-__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContextFull__v1_0,ResumeContextFull,1.0)
+__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContextFull__v1_0,ResumeContextFull,_1.0)
 .LResumeContextFull__v1_0:
     // Parameters:
     //      r3:     ppc64_elfvX_full_frame_t* context
@@ -270,7 +270,7 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(ResumeContextFull__v1_0,ResumeContextFull
 .LResumeContextFull__v1_0_end = .
 
 
-__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,1.0)
+__SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,_1.0)
 .LCaptureContext__v1_0:
     // Parameters:
     //      r3:     ppc64_elfvX_frame_t* context

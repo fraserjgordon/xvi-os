@@ -27,17 +27,19 @@ template <class> struct __optional_storage;
 template <class _T>
 struct __optional_storage_base
 {
-    union __storage_t
+    union [[clang::trivial_abi]] __storage_t
     {
         aligned_storage_t<sizeof(_T), alignof(_T)> __raw;
         _T __val;
 
         constexpr __storage_t() : __raw() {}
 
-        constexpr ~__storage_t() requires is_trivially_destructible_v<_T> = default;
+#ifndef __llvm__
+        //! @todo: clang bug? - doesn't handle this properly
+        constexpr ~__storage_t() requires (is_trivially_destructible_v<_T>) = default;
+#endif
 
         constexpr ~__storage_t()
-            requires (!is_trivially_destructible_v<_T>)
         {
         }
     };
@@ -379,7 +381,7 @@ public:
 
     template <class _U = _T,
               class = enable_if_t<!is_same_v<remove_cvref_t<_U>, optional>
-                                  && !conjunction_v<is_scalar_v<_T>, is_same_v<_T, decay_t<_U>>>
+                                  && !conjunction_v<is_scalar<_T>, is_same<_T, decay_t<_U>>>
                                   && is_constructible_v<_T, _U>
                                   && is_assignable_v<_T&, _U>, void>>
     optional<_T>& operator=(_U&& __v)

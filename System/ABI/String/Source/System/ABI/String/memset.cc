@@ -3,7 +3,7 @@
 using namespace System::ABI::String;
 
 // The attribute prevents GCC from turning this function into a call to memset...
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__llvm__)
 [[gnu::optimize("-fno-tree-loop-distribute-patterns")]]
 #endif
 void* __memset(void* memory, int value, std::size_t n)

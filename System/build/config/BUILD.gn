@@ -23,12 +23,8 @@ config("default_warnings")
     [
         "-Wall",
         "-Wextra",
-        "-Wduplicated-cond",
-        "-Wduplicated-branches",
-        "-Wlogical-op",
         "-Wnull-dereference",
         "-Wdouble-promotion",
-        "-Wshadow-local",
         "-Wformat=2",
         #"-Wconversion",
         "-Wsign-conversion",
@@ -44,8 +40,6 @@ config("default_warnings")
     cflags_cc =
     [
         #"-Wuseless-cast",
-        "-Wimplicit-fallthrough=5",
-        "-Wsized-deallocation",
         "-Wmissing-declarations",
     ]
 
@@ -53,6 +47,30 @@ config("default_warnings")
     [
         "-Wall",
     ]
+
+    if (compiler_id == "gcc")
+    {
+        cflags +=
+        [
+            "-Wduplicated-cond",
+            "-Wduplicated-branches",
+            "-Wlogical-op",
+            "-Wshadow-local",
+        ]
+
+        cflags_cc +=
+        [
+            "-Wimplicit-fallthrough=5",
+            "-Wsized-deallocation",
+        ]
+    }
+    else if (compiler_id == "clang")
+    {
+        cflags_cc +=
+        [
+            "-Wimplicit-fallthrough",
+        ]
+    }
 }
 
 # Errors required by the XVI coding standard.
@@ -62,12 +80,13 @@ config("default_errors")
     [
         "-Werror=init-self",
         "-Werror=implicit-fallthrough",
-        "-Werror=trampolines",
         "-Werror=pointer-arith",
         "-Werror=write-strings",
         "-Werror=date-time",
         "-Werror=alloca",
         "-Werror=missing-declarations",
+        "-Werror=return-type",
+        ""
     ]
 
     cflags_c =
@@ -83,6 +102,22 @@ config("default_errors")
         "-Werror=old-style-cast",
         "-Werror=zero-as-null-pointer-constant",
     ]
+
+    if (compiler_id == "gcc")
+    {
+        cflags +=
+        [
+            "-Werror=trampolines",
+        ]
+    }
+    else if (compiler_id == "clang")
+    {
+        cflags_cc +=
+        [
+            # Causes problems with the System.ABI.Integer library.
+            "-Wno-error=return-type-c-linkage"
+        ]
+    }
 }
 
 # Default code generation options.
@@ -95,7 +130,7 @@ config("default_codegen")
         "-ffunction-sections",
     ]
 
-    if (compiler_id == "gnu")
+    if (compiler_id == "gcc")
     {
         cflags +=
         [
@@ -193,6 +228,13 @@ config("gcc_colour_output")
         cflags =
         [
             "-fdiagnostics-color=always",
+        ]
+    }
+    else if (compiler_id == "clang")
+    {
+        cflags =
+        [
+            "-fcolor-diagnostics",
         ]
     }
 }

@@ -1,3 +1,5 @@
+import("//build/config/global_args.gni")
+
 # Template for toolchains that behave mostly like GCC (e.g. Clang).
 template("gcc_toolchain")
 {
@@ -10,15 +12,45 @@ template("gcc_toolchain")
     toolchain_os = invoker.toolchain_os
 
     # Compiler executables.
-    cc_exe = "gcc"
-    cxx_exe = "g++"
-    ar_exe = "ar"
-
-    if (defined(invoker.toolchain_prefix))
+    if (use_clang)
     {
-        cc_exe = "${invoker.toolchain_prefix}${cc_exe}"
-        cxx_exe = "${invoker.toolchain_prefix}${cxx_exe}"
-        ar_exe = "${invoker.toolchain_prefix}${ar_exe}"
+        cc_exe = "clang"
+        cxx_exe = "clang++"
+        ar_exe = "llvm-ar"
+    }
+    else
+    {
+        cc_exe = "gcc"
+        cxx_exe = "g++"
+        ar_exe = "ar"
+    }
+
+    if (defined(invoker.clang_target))
+    {
+        clang_target = invoker.clang_target
+    }
+    else
+    {
+        clang_target = invoker.toolchain_arch
+    }
+
+    if (!use_clang)
+    {
+        if (defined(invoker.toolchain_prefix))
+        {
+            cc_exe = "${invoker.toolchain_prefix}${cc_exe}"
+            cxx_exe = "${invoker.toolchain_prefix}${cxx_exe}"
+            ar_exe = "${invoker.toolchain_prefix}${ar_exe}"
+        }
+
+        not_needed(["clang_target"])
+    }
+    else
+    {
+        if (defined(invoker.toolchain_prefix))
+        {
+            toolchain_prefix = invoker.toolchain_prefix
+        }
     }
 
     if (defined(invoker.toolchain_root))
@@ -53,9 +85,30 @@ template("gcc_toolchain")
     arch_cflags = ""
     #arch_ldflags = ""
     #arch_soflags = ""
+    if (use_clang)
+    {
+        arch_cflags = "-target ${clang_target}-xvi "
+
+        if (defined(toolchain_prefix) && toolchain_prefix != "${clang_target}-xvi-")
+        {
+            if (defined(invoker.toolchain_root))
+            {
+                arch_cflags += "-B ${invoker.toolchain_root}/bin/${toolchain_prefix} "
+            }
+            else
+            {
+                arch_cflags += "-B ${toolchain_prefix} "
+            }
+        }
+        else if (defined(invoker.toolchain_root))
+        {
+            arch_cflags += "-B ${invoker.toolchain_root}/bin "
+        }
+    }
+
     if (defined(invoker.arch_cflags))
     {
-        arch_cflags = string_join(" ", invoker.arch_cflags)
+        arch_cflags += string_join(" ", invoker.arch_cflags)
     }
     # if (defined(invoker.arch_ldflags))
     # {
@@ -81,7 +134,14 @@ template("gcc_toolchain")
             current_cpu     = toolchain_cpu
             current_os      = toolchain_os
 
-            compiler_id     = "gcc"
+            if (use_clang)
+            {
+                compiler_id = "clang"
+            }
+            else
+            {
+                compiler_id = "gcc"
+            }
 
             forward_variables_from(arch_toolchain_args, "*")
         }
@@ -249,26 +309,4 @@ template("gcc_toolchain")
             command = "rustc +nightly ${arch_rustflags} {{rustflags}} --crate-type {{crate_type}} --crate-name {{crate_name}} ${rspfile_content} -o {{output}} {{source}}"
         }
     }
-}
-
-# Special behaviours for Clang toolchains.
-template("clang_toolchain")
-{
-    # Clang target specification.
-    arch_flags = ""
-    if (defined(invoker.arch_flags))
-    {
-        arch_flags = invoker.arch_flags
-    }
-
-    if (defined(invoker.clang_target))
-    {
-        clang_target = invoker.clang_target
-        arch_flags += " -target ${clang_target}"
-    }
-    
-    gcc_toolchain(target_name)
-    {
-
-    } 
 }

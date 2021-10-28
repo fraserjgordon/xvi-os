@@ -25,8 +25,8 @@
 #  define __INTEGER_CLZ64_INTRINSIC __builtin_clzll
 #  define __INTEGER_CTZ32_INTRINSIC __builtin_ctz
 #  define __INTEGER_CTZ64_INTRINSIC __builtin_ctzll
-#  define __INTEGER_FFS32_INTRINSIC __builtin_ffs
-#  define __INTEGER_FFS64_INTRINSIC __builtin_ffsll
+#  define __INTEGER_FFS32_INTRINSIC(x) __builtin_ffs(static_cast<int>(x))
+#  define __INTEGER_FFS64_INTRINSIC(x) __builtin_ffsll(static_cast<long long>(x))
 #endif
 
 // Features available from ARMv6T2 onwards.
@@ -53,9 +53,11 @@
 #  endif
 #endif
 
-// Byte swaps are always supported natively (REV opcode).
-#define __INTEGER_BSWAP32_INTRINSIC __builtin_bswap32
-#define __INTEGER_BSWAP64_INTRINSIC __builtin_bswap64
+// Byte swaps are supported from ARMv6 onwards.
+#if __ARM_ARCH >= 6
+#  define __INTEGER_BSWAP32_INTRINSIC __builtin_bswap32
+#  define __INTEGER_BSWAP64_INTRINSIC __builtin_bswap64
+#endif
 
 
 #endif /* ifndef __SYSTEM_CRT_ARCH_X86_CAPABILITIES_H */

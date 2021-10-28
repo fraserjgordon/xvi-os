@@ -110,7 +110,8 @@ constexpr int parity_emul(T t)
         auto mask = (T(1) << shift) - 1;
         t = (t & mask) ^ (t >> shift);
     }
-    return t;
+
+    return static_cast<int>(t);
 }
 
 
@@ -143,30 +144,31 @@ constexpr int popcount_mul_emul(T t)
     t -= (t >> 1) & T(PopcountM1);
     t = (t & T(PopcountM2)) + ((t >> 2) & T(PopcountM2));
     t = (t + (t >> 4)) & T(PopcountM4);
-    return (t * T(PopcountH01)) >> ((8 * sizeof(T)) - 8);
+
+    return static_cast<int>((t * T(PopcountH01)) >> ((8 * sizeof(T)) - 8));
 }
 
 
-constexpr std::int16_t bswap_emul(std::int16_t i)
+constexpr std::uint16_t bswap_emul(std::uint16_t i)
 {
-    std::int16_t lower = ((i >> 8) & 0xFF);
-    std::int16_t upper = ((i << 8) & 0xFF00);
+    std::uint16_t lower = ((i >> 8) & 0xFF);
+    std::uint16_t upper = ((i << 8) & 0xFF00);
 
     return lower | upper;
 }
 
-constexpr std::int32_t bswap_emul(std::int32_t i)
+constexpr std::uint32_t bswap_emul(std::uint32_t i)
 {
-    auto lower = static_cast<std::int32_t>(bswap_emul(static_cast<std::int16_t>((i >> 16) & 0xFFFF)));
-    auto upper = static_cast<std::int32_t>(bswap_emul(static_cast<std::int16_t>(i & 0xFFFF))) << 16;
+    auto lower = static_cast<std::uint32_t>(bswap_emul(static_cast<std::uint16_t>((i >> 16) & 0xFFFF)));
+    auto upper = static_cast<std::uint32_t>(bswap_emul(static_cast<std::uint16_t>(i & 0xFFFF))) << 16;
 
     return lower | upper;
 }
 
-constexpr std::int64_t bswap_emul(std::int64_t i)
+constexpr std::uint64_t bswap_emul(std::uint64_t i)
 {
-    auto lower = static_cast<std::int64_t>(bswap_emul(static_cast<std::int32_t>((i >> 32) & 0xFFFFFFFF)));
-    auto upper = static_cast<std::int64_t>(bswap_emul(static_cast<std::int32_t>(i & 0xFFFFFFFF))) << 32;
+    auto lower = static_cast<std::uint64_t>(bswap_emul(static_cast<std::uint32_t>((i >> 32) & 0xFFFFFFFF)));
+    auto upper = static_cast<std::uint64_t>(bswap_emul(static_cast<std::uint32_t>(i & 0xFFFFFFFF))) << 32;
 
     return lower | upper;
 }
@@ -335,7 +337,7 @@ static inline std::int32_t popcount(__uint128_t u)
 #endif
 
 
-static inline std::int32_t bswap(std::int32_t i)
+static inline std::uint32_t bswap(std::uint32_t i)
 {
 #if defined(__INTEGER_BSWAP32_INTRINSIC)
     return __INTEGER_BSWAP32_INTRINSIC(i);
@@ -344,7 +346,7 @@ static inline std::int32_t bswap(std::int32_t i)
 #endif
 }
 
-static inline std::int64_t bswap(std::int64_t i)
+static inline std::uint64_t bswap(std::uint64_t i)
 {
 #if defined (__INTEGER_BSWAP64_INTRINSIC)
     return __INTEGER_BSWAP64_INTRINSIC(i);

@@ -13,6 +13,12 @@ extern "C"
 {
 
 
+// Suppress a false-positive warning from clang.
+#ifdef __llvm__
+#  pragma GCC diagnostic ignored "-Wreturn-type-c-linkage"
+#endif
+
+
 __SYSTEM_ABI_INTEGER_EXPORT std::int32_t __ashlsi3(std::int32_t, std::int32_t);
 __SYSTEM_ABI_INTEGER_EXPORT std::int64_t __ashldi3(std::int64_t, std::int32_t);
 __SYSTEM_ABI_INTEGER_EXPORT __int128_t __ashlti3(__int128_t, std::int32_t);

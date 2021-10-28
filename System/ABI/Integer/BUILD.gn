@@ -1,3 +1,5 @@
+import("//build/config/arch/current_arch_config.gni")
+
 library("Integer")
 {
     library_name    = "System.ABI.Integer"
@@ -10,6 +12,10 @@ library("Integer")
     deps =
     [
         "//C++/LanguageSupport:LanguageSupport_headers"
+    ]
+
+    defines =
+    [
     ]
 
     sources =
@@ -73,7 +79,18 @@ library("Integer")
         "umodti.cc",
     ]
 
-    if (current_arch == "x86")
+    if (current_arch == "arm")
+    {
+        if (arm_arch_major < 8)
+        {
+            # Ensure we generate ARM ABI symbols.
+            defines +=
+            [
+                "__SYSTEM_ABI_INTEGER_ARM_ABI"
+            ]
+        }
+    }
+    else if (current_arch == "x86")
     {
         sources +=
         [

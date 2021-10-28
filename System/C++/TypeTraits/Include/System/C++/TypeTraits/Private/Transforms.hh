@@ -180,7 +180,9 @@ template <class _T> struct add_pointer<_T, false> { using type = _T; };
 template <class _T> struct type_identity { using type = _T; };
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wduplicated-branches"
+#ifndef __llvm__
+#  pragma GCC diagnostic ignored "-Wduplicated-branches"
+#endif
 static constexpr size_t __get_default_alignment(size_t _Len)
 {
     if (_Len <= sizeof(char))

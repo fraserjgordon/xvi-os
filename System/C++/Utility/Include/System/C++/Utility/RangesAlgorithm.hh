@@ -531,12 +531,12 @@ struct __is_permutation
 
         for (; __start1 != __last1; ++__start1)
         {
-            auto __n1 = __count_if{}(__start1, __last1, [__pred, __proj1, __start1]<class _T>(_T&& __t)
+            auto __n1 = __count_if{}(__start1, __last1, [__pred, __proj1, __start1 = __start1]<class _T>(_T&& __t)
             {
                 return invoke(__pred, invoke(__proj1, *__start1), std::forward<_T>(__t));
             }, __proj1);
 
-            auto __n2 = __count_if{}(__start2, __last2, [__pred, __proj1, __start1]<class _T>(_T&& __t)
+            auto __n2 = __count_if{}(__start2, __last2, [__pred, __proj1, __start1 = __start1]<class _T>(_T&& __t)
             {
                 return invoke(__pred, invoke(__proj1, *__start1), std::forward<_T>(__t));
             }, __proj2);
@@ -570,7 +570,7 @@ struct __search
             auto __j = __first2;
             while (true)
             {
-                if (__j = __last2)
+                if (__j == __last2)
                     return {__first1, __i};
 
                 if (__i == __last1)
@@ -2775,7 +2775,7 @@ struct __next_permutation
             if (bool(invoke(__comp, invoke(__proj, *__i), invoke(__proj, *ranges::next(__i)))))
                 __k = __i;
 
-        if (__k = __last)
+        if (__k == __last)
         {
             // This is the last permutation and is in reverse-sorted order.
             __reverse{}(__first, __last);
@@ -2912,6 +2912,10 @@ inline constexpr __detail::__prev_permutation           prev_permutation = {};
 
 // Needs to be defined after ranges::mismatch.
 template <input_range _V, forward_range _Pattern>
+    requires view<_V>
+        && view<_Pattern>
+        && indirectly_comparable<iterator_t<_V>, iterator_t<_Pattern>, __detail::__equal_to>
+        && (forward_range<_V> || __detail::__tiny_range<_Pattern>)
 template <bool _Const>
 constexpr typename split_view<_V, _Pattern>::template __outer_iterator<_Const>& split_view<_V, _Pattern>::__outer_iterator<_Const>::operator++()
 {

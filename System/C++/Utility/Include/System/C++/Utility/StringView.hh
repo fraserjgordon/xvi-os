@@ -12,6 +12,7 @@
 #include <System/C++/Utility/CharTraits.hh>
 #include <System/C++/Utility/Iterator.hh>
 #include <System/C++/Utility/Ranges.hh>
+#include <System/C++/Utility/StdExcept.hh>
 #include <System/C++/Utility/StringFwd.hh>
 #include <System/C++/Utility/Private/Config.hh>
 
@@ -588,11 +589,11 @@ struct __char_comparison_category { using __type = weak_ordering; };
 #if __cpp_concepts
 template <class _Traits>
     requires requires { typename _Traits::comparison_category; }
-struct __char_comparison_category<_Traits> { using __type = _Traits::comparison_category; };
+struct __char_comparison_category<_Traits> { using __type = typename _Traits::comparison_category; };
 #endif
 
 template <class _Traits>
-using __char_comparison_category_t = __char_comparison_category<_Traits>::__type;
+using __char_comparison_category_t = typename __char_comparison_category<_Traits>::__type;
 
 } // namespace __detail
 
@@ -643,7 +644,11 @@ inline namespace string_view_literals
 
 // GCC doesn't always detect this as a system header properly and throws warnings about these suffixes.
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wliteral-suffix"
+#ifdef __llvm__
+#  pragma GCC diagnostic ignored "-Wuser-defined-literals"
+#else
+#  pragma GCC diagnostic ignored "-Wliteral-suffix"
+#endif
 
 constexpr string_view operator""sv(const char* __str, size_t __len) noexcept
 {

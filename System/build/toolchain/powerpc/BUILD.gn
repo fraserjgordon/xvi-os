@@ -74,19 +74,12 @@ vars_gcc_ppc64 =
     toolchain_cpu = "ppc64"
 }
 
-if (use_clang)
+gcc_toolchain("ppc32")
 {
-
+    forward_variables_from(vars_gcc_ppc32, "*")
 }
-else
-{
-    gcc_toolchain("ppc32")
-    {
-        forward_variables_from(vars_gcc_ppc32, "*")
-    }
 
-    gcc_toolchain("ppc64")
-    {
-        forward_variables_from(vars_gcc_ppc64, "*")
-    }
+gcc_toolchain("ppc64")
+{
+    forward_variables_from(vars_gcc_ppc64, "*")
 }

@@ -49,7 +49,11 @@ template <class _T, class _U> struct is_trivially_assignable
     : bool_constant<__is_trivially_assignable(_T, _U)> {};
 
 template <class _T> struct is_trivially_destructible
+#ifdef __llvm__
+    : bool_constant<__is_trivially_destructible(_T)> {};
+#else
     : bool_constant<__has_trivial_destructor(_T) && is_destructible<_T>::value> {};
+#endif
 
 template <class _T> struct has_virtual_destructor : bool_constant<__has_virtual_destructor(_T)> {};
 
