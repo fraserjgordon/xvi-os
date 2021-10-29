@@ -205,7 +205,7 @@ public:
             __test &= ~__valid;
 
             if (__test.any())
-                __XVI_CXX_UTILITY_THROW(overflow_error());
+                __XVI_CXX_UTILITY_THROW(overflow_error("bitset overflows ulong"));
         }
 
         return static_cast<unsigned long>(_M_words[0]);
@@ -220,7 +220,7 @@ public:
             __test &= ~__valid;
 
             if (__test.any())
-                __XVI_CXX_UTILITY_THROW(overflow_error());
+                __XVI_CXX_UTILITY_THROW(overflow_error("bitset overflows ullong"));
         }
 
         return static_cast<unsigned long long>(_M_words[0]);

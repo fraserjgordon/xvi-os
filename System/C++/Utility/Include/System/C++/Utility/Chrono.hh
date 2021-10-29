@@ -645,7 +645,7 @@ struct clock_time_conversion<utc_clock, utc_clock>
 
 // Used to allow references to static methods inside utc_clock without a definition of utc_clock being available.
 template <class>
-using __deferred_utc_clock = utc_clock;
+class __deferred_utc_clock;
 
 template <>
 struct clock_time_conversion<utc_clock, system_clock>
@@ -2069,26 +2069,37 @@ constexpr days __day_of_year(year __y, month __m, day __d)
     {
         case 12:
             __n += 30;
+            [[fallthrough]];
         case 11:
             __n += 31;
+            [[fallthrough]];
         case 10:
             __n += 30;
+            [[fallthrough]];
         case 9:
             __n += 31;
+            [[fallthrough]];
         case 8:
             __n += 31;
+            [[fallthrough]];
         case 7:
             __n += 30;
+            [[fallthrough]];
         case 6:
             __n += 31;
+            [[fallthrough]];
         case 5:
             __n += 30;
+            [[fallthrough]];
         case 4:
             __n += 31;
+            [[fallthrough]];
         case 3:
             __n += (__y.is_leap()) ? 29 : 28;
+            [[fallthrough]];
         case 2:
             __n += 31;
+            [[fallthrough]];
         case 1:
             break;
     }

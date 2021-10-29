@@ -27,7 +27,7 @@ template <class> struct __optional_storage;
 template <class _T>
 struct __optional_storage_base
 {
-    union [[clang::trivial_abi]] __storage_t
+    union __storage_t
     {
         aligned_storage_t<sizeof(_T), alignof(_T)> __raw;
         _T __val;

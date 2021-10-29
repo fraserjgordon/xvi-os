@@ -284,7 +284,7 @@ _Unwind_Reason_Code DwarfUnwinder::raise(_Unwind_Exception* raw_exception)
         auto& fde = context->getFDE();
         auto& cie = fde.getCIE();
         using personality_fn = _Unwind_Reason_Code (*)(int, _Unwind_Action, std::uint64_t, _Unwind_Exception*, _Unwind_Context*);
-        auto personality = reinterpret_cast<personality_fn>(cie.getPersonalityRoutine());
+        auto personality = reinterpret_cast<personality_fn>(const_cast<void*>(cie.getPersonalityRoutine()));
 
         // Call the personality routine (if any) to find out if it wants to handle this exception.
         if (personality)
@@ -703,7 +703,7 @@ _Unwind_Reason_Code DwarfUnwinder::unwindPhase2(_Unwind_Exception* raw_exception
         // Find the personality routine specified in the FDE.
         auto& cie = fde.getCIE();
         using personality_fn = _Unwind_Reason_Code (*)(int, _Unwind_Action, std::uint64_t, _Unwind_Exception*, _Unwind_Context*);
-        auto personality = reinterpret_cast<personality_fn>(cie.getPersonalityRoutine());
+        auto personality = reinterpret_cast<personality_fn>(const_cast<void*>(cie.getPersonalityRoutine()));
 
         // If this is a forced unwind, call the stop function.
         if (context->isForced())

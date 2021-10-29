@@ -326,7 +326,7 @@ constexpr bool __ge(const __variant_storage_union_base<_T, _Types...>& __lhs,
 
 
 template <class... _Types>
-union [[clang::trivial_abi]] __variant_storage_union
+union __variant_storage_union
 {
     using __storage_t = aligned_union_t<0, _Types...>;
     using __inner_t = __variant_storage_union_base<_Types...>;
@@ -353,7 +353,7 @@ union [[clang::trivial_abi]] __variant_storage_union
 
 
 template <class... _Types>
-struct [[clang::trivial_abi]] __variant_storage_base
+struct __variant_storage_base
 {
     using __union_t = __variant_storage_union<_Types...>;
 

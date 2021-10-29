@@ -813,8 +813,8 @@ void __do_vformat(basic_string_view<_CharT> __fmt, basic_format_context<_Out, _C
 }
 
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
-extern template __SYSTEM_CXX_FORMAT_EXPORT void __do_vformat<__contiguous_append_iterator, char>(string_view, format_context&);
-extern template __SYSTEM_CXX_FORMAT_EXPORT void __do_vformat(wstring_view, wformat_context&);
+extern template void __do_vformat<__contiguous_append_iterator, char>(string_view, format_context&) __SYSTEM_CXX_FORMAT_EXPORT;
+extern template void __do_vformat(wstring_view, wformat_context&) __SYSTEM_CXX_FORMAT_EXPORT;
 #endif
 
 } // namespace __detail
@@ -1539,17 +1539,17 @@ extern template class __library_formatter_base<wchar_t>;
 template <> struct __SYSTEM_CXX_FORMAT_EXPORT formatter<char, char> : __detail::__library_formatter<char, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<char, char>;
-    extern template format_context::iterator __detail::__library_formatter<char, char>::template format(char, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<char, char>::format(char, format_context&);
 #endif
 template <> struct formatter<char, wchar_t> : __detail::__library_formatter<char, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<char, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<char, wchar_t>::template format(char, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<char, wchar_t>::format(char, wformat_context&);
 #endif
 template <> struct formatter<wchar_t, wchar_t> : __detail::__library_formatter<wchar_t, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<wchar_t, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<wchar_t, wchar_t>::template format(wchar_t, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<wchar_t, wchar_t>::format(wchar_t, wformat_context&);
 #endif
 
 template <> struct formatter<char*, char> : __detail::__library_formatter<string_view, char> {};
@@ -1559,93 +1559,93 @@ template <class _Traits, class _Allocator> struct formatter<basic_string<char, _
 template <class _Traits> struct formatter<basic_string_view<char, _Traits>, char> : __detail::__library_formatter<string_view, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<string_view, char>;
-    extern template format_context::iterator __detail::__library_formatter<string_view, char>::template format(string_view, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<string_view, char>::format(string_view, format_context&);
 #endif
 
 template <> struct formatter<bool, char> : __detail::__library_formatter<bool, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<bool, char>;
-    extern template format_context::iterator __detail::__library_formatter<bool, char>::template format(bool, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<bool, char>::format(bool, format_context&);
 #endif
 template <> struct formatter<signed char, char> : __detail::__library_formatter<signed char, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<signed char, char>;
-    extern template format_context::iterator __detail::__library_formatter<signed char, char>::template format(signed char, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<signed char, char>::format(signed char, format_context&);
 #endif
 template <> struct formatter<unsigned char, char> : __detail::__library_formatter<unsigned char, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<unsigned char, char>;
-    extern template format_context::iterator __detail::__library_formatter<unsigned char, char>::template format(unsigned char, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<unsigned char, char>::format(unsigned char, format_context&);
 #endif
 template <> struct formatter<short, char> : __detail::__library_formatter<short, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<short, char>;
-    extern template format_context::iterator __detail::__library_formatter<short, char>::template format(short, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<short, char>::format(short, format_context&);
 #endif
 template <> struct formatter<unsigned short, char> : __detail::__library_formatter<unsigned short, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<unsigned short, char>;
-    extern template format_context::iterator __detail::__library_formatter<unsigned short, char>::template format(unsigned short, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<unsigned short, char>::format(unsigned short, format_context&);
 #endif
 template <> struct formatter<int, char> : __detail::__library_formatter<int, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<int, char>;
-    extern template format_context::iterator __detail::__library_formatter<int, char>::template format(int, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<int, char>::format(int, format_context&);
 #endif
 template <> struct formatter<unsigned int, char> : __detail::__library_formatter<unsigned int, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<unsigned int, char>;
-    extern template format_context::iterator __detail::__library_formatter<unsigned int, char>::template format(unsigned int, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<unsigned int, char>::format(unsigned int, format_context&);
 #endif
 template <> struct formatter<long, char> : __detail::__library_formatter<long, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<long, char>;
-    extern template format_context::iterator __detail::__library_formatter<long, char>::template format(long, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<long, char>::format(long, format_context&);
 #endif
 template <> struct formatter<unsigned long, char> : __detail::__library_formatter<unsigned long, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<unsigned long, char>;
-    extern template format_context::iterator __detail::__library_formatter<unsigned long, char>::template format(unsigned long, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<unsigned long, char>::format(unsigned long, format_context&);
 #endif
 template <> struct formatter<long long, char> : __detail::__library_formatter<long long, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<long long, char>;
-    extern template format_context::iterator __detail::__library_formatter<long long, char>::template format(long long, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<long long, char>::format(long long, format_context&);
 #endif
 template <> struct formatter<unsigned long long, char> : __detail::__library_formatter<unsigned long long, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<unsigned long long, char>;
-    extern template format_context::iterator __detail::__library_formatter<unsigned long long, char>::template format(unsigned long long, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<unsigned long long, char>::format(unsigned long long, format_context&);
 #endif
 template <> struct formatter<float, char> : __detail::__library_formatter<float, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<float, char>;
-    extern template format_context::iterator __detail::__library_formatter<float, char>::template format(float, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<float, char>::format(float, format_context&);
 #endif
 template <> struct formatter<double, char> : __detail::__library_formatter<double, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<double, char>;
-    extern template format_context::iterator __detail::__library_formatter<double, char>::template format(double, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<double, char>::format(double, format_context&);
 #endif
 template <> struct formatter<long double, char> : __detail::__library_formatter<long double, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<long double, char>;
-    extern template format_context::iterator __detail::__library_formatter<long double, char>::template format(long double, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<long double, char>::format(long double, format_context&);
 #endif
 template <> struct formatter<nullptr_t, char> : __detail::__library_formatter<nullptr_t, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<nullptr_t, char>;
-    extern template format_context::iterator __detail::__library_formatter<nullptr_t, char>::template format(nullptr_t, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<nullptr_t, char>::format(nullptr_t, format_context&);
 #endif
 template <> struct formatter<void*, char> : __detail::__library_formatter<void*, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<void*, char>;
-    extern template format_context::iterator __detail::__library_formatter<void*, char>::template format(void*, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<void*, char>::format(void*, format_context&);
 #endif
 template <> struct formatter<const void*, char> : __detail::__library_formatter<const void*, char> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<const void*, char>;
-    extern template format_context::iterator __detail::__library_formatter<const void*, char>::template format(const void*, format_context&);
+    extern template format_context::iterator __detail::__library_formatter<const void*, char>::format(const void*, format_context&);
 #endif
 
 template <> struct formatter<wchar_t*, wchar_t> : __detail::__library_formatter<wstring_view, wchar_t> {};
@@ -1655,93 +1655,93 @@ template <class _Traits, class _Allocator> struct formatter<basic_string<wchar_t
 template <class _Traits> struct formatter<basic_string_view<wchar_t, _Traits>, wchar_t> : __detail::__library_formatter<wstring_view, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<wstring_view, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<wstring_view, wchar_t>::template format(wstring_view, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<wstring_view, wchar_t>::format(wstring_view, wformat_context&);
 #endif
 
 template <> struct formatter<bool, wchar_t> : __detail::__library_formatter<bool, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<bool, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<bool, wchar_t>::template format(bool, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<bool, wchar_t>::format(bool, wformat_context&);
 #endif
 template <> struct formatter<signed char, wchar_t> : __detail::__library_formatter<signed char, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<signed char, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<signed char, wchar_t>::template format(signed char, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<signed char, wchar_t>::format(signed char, wformat_context&);
 #endif
 template <> struct formatter<unsigned char, wchar_t> : __detail::__library_formatter<unsigned char, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<unsigned char, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<unsigned char, wchar_t>::template format(unsigned char, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<unsigned char, wchar_t>::format(unsigned char, wformat_context&);
 #endif
 template <> struct formatter<short, wchar_t> : __detail::__library_formatter<short, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<short, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<short, wchar_t>::template format(short, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<short, wchar_t>::format(short, wformat_context&);
 #endif
 template <> struct formatter<unsigned short, wchar_t> : __detail::__library_formatter<unsigned short, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<unsigned short, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<unsigned short, wchar_t>::template format(unsigned short, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<unsigned short, wchar_t>::format(unsigned short, wformat_context&);
 #endif
 template <> struct formatter<int, wchar_t> : __detail::__library_formatter<int, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<int, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<int, wchar_t>::template format(int, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<int, wchar_t>::format(int, wformat_context&);
 #endif
 template <> struct formatter<unsigned int, wchar_t> : __detail::__library_formatter<unsigned int, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<unsigned int, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<unsigned int, wchar_t>::template format(unsigned int, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<unsigned int, wchar_t>::format(unsigned int, wformat_context&);
 #endif
 template <> struct formatter<long, wchar_t> : __detail::__library_formatter<long, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<long, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<long, wchar_t>::template format(long, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<long, wchar_t>::format(long, wformat_context&);
 #endif
 template <> struct formatter<unsigned long, wchar_t> : __detail::__library_formatter<unsigned long, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<unsigned long, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<unsigned long, wchar_t>::template format(unsigned long, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<unsigned long, wchar_t>::format(unsigned long, wformat_context&);
 #endif
 template <> struct formatter<long long, wchar_t> : __detail::__library_formatter<long long, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<long long, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<long long, wchar_t>::template format(long long, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<long long, wchar_t>::format(long long, wformat_context&);
 #endif
 template <> struct formatter<unsigned long long, wchar_t> : __detail::__library_formatter<unsigned long long, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<unsigned long long, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<unsigned long long, wchar_t>::template format(unsigned long long, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<unsigned long long, wchar_t>::format(unsigned long long, wformat_context&);
 #endif
 template <> struct formatter<float, wchar_t> : __detail::__library_formatter<float, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<float, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<float, wchar_t>::template format(float, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<float, wchar_t>::format(float, wformat_context&);
 #endif
 template <> struct formatter<double, wchar_t> : __detail::__library_formatter<double, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<double, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<double, wchar_t>::template format(double, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<double, wchar_t>::format(double, wformat_context&);
 #endif
 template <> struct formatter<long double, wchar_t> : __detail::__library_formatter<long double, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<long double, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<long double, wchar_t>::template format(long double, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<long double, wchar_t>::format(long double, wformat_context&);
 #endif
 template <> struct formatter<nullptr_t, wchar_t> : __detail::__library_formatter<nullptr_t, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<nullptr_t, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<nullptr_t, wchar_t>::template format(nullptr_t, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<nullptr_t, wchar_t>::format(nullptr_t, wformat_context&);
 #endif
 template <> struct formatter<void*, wchar_t> : __detail::__library_formatter<void*, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<void*, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<void*, wchar_t>::template format(void*, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<void*, wchar_t>::format(void*, wformat_context&);
 #endif
 template <> struct formatter<const void*, wchar_t> : __detail::__library_formatter<const void*, wchar_t> {};
 #if !defined(__XVI_STD_FORMAT_HEADER_ONLY)
     extern template class __detail::__library_formatter<const void*, wchar_t>;
-    extern template wformat_context::iterator __detail::__library_formatter<const void*, wchar_t>::template format(const void*, wformat_context&);
+    extern template wformat_context::iterator __detail::__library_formatter<const void*, wchar_t>::format(const void*, wformat_context&);
 #endif
 
 
