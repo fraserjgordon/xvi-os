@@ -6,7 +6,7 @@
 #ifdef __sparc_v9__
 #   define FLUSHW    flushw
 #else
-#   define FLUSHW    trap x03
+#   define FLUSHW    ta 3
 #endif
 
 

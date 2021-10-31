@@ -1,4 +1,4 @@
-#if defined(_ABIN32)
+#if defined(_ABIN32) || defined(__mips_n32)
 
 #include <System/ABI/ExecContext/Private/Config.h>
 
@@ -167,4 +167,4 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,_1.0)
 .LCaptureContext__v1_0_end = .
 
 
-#endif // if defined(_ABIN32)
+#endif // if defined(_ABIN32) || defined(__mips_n32)

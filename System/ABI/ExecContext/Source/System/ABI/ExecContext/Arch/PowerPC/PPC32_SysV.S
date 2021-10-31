@@ -1,7 +1,7 @@
 #include <System/ABI/ExecContext/Private/Config.h>
 
 
-#if _ARCH_PPC && !_ARCH_PPC64 && _CALL_SYSV
+#if _ARCH_PPC && !_ARCH_PPC64
 
 
 // General-purpose register saving routines.

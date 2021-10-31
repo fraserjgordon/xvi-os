@@ -2,7 +2,7 @@
 #define __SYSTEM_ABI_EXECCONTEXT_ARCH_MIPS_N64_H
 
 
-#if defined(_ABIN64)
+#if defined(_ABIN64) || defined(__mips_n64)
 #  define __SYSTEM_ABI_EXECCONTEXT_JMPBUF_WORDS 12
 #endif
 
@@ -41,7 +41,7 @@ struct mips_n64_full_frame_t
 };
 
 
-#if defined(_ABIN64)
+#if defined(_ABIN64) || defined(__mips_n64)
 using mips_frame_t = mips_n64_frame_t;
 using mips_full_frame_t = mips_n64_full_frame_t;
 #endif

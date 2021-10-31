@@ -5,7 +5,11 @@
     .global interruptEntry\index
     .type interruptEntry\index, "function"
     .size interruptEntry\index, 1f - interruptEntry\index
+#ifdef __llvm__
+    interruptEntry\index:
+#else
     interruptEntry\index&:
+#endif
 
     // Push a zero error code for exceptions that don't have one pushed by the CPU.
     .if (\index == 8 || \index == 17 || ((10 <= \index) && (\index <= 14)))

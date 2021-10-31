@@ -10,13 +10,13 @@
 #endif
 
 
-#if defined(_ABIO32)
+#if defined(_ABIO32) || defined(__mips_o32)
 #  include <System/ABI/ExecContext/Arch/MIPS/O32.h>
-#elif defined(_ABIO64)
+#elif defined(_ABIO64) || defined(__mips_o64)
 #  include <System/ABI/ExecContext/Arch/MIPS/O64.h>
-#elif defined(_ABIN32)
+#elif defined(_ABIN32) || defined(__mips_n32)
 #  include <System/ABI/ExecContext/Arch/MIPS/N32.h>
-#elif defined(_ABIN64)
+#elif defined(_ABIN64) || defined(__mips_n64)
 #  include <System/ABI/ExecContext/Arch/MIPS/N64.h>
 #elif defined(__mips_eabi)
 #  if defined (__mips64)
@@ -30,7 +30,7 @@
 
 
 #ifdef __cplusplus
-#  if defined(_ABIN32)
+#  if defined(_ABIN32) || defined(__mips_n32)
 static_assert(sizeof(System::ABI::ExecContext::mips_frame_t) == sizeof(std::uint64_t) * __SYSTEM_ABI_EXECCONTEXT_JMPBUF_WORDS);
 #  else
 static_assert(sizeof(System::ABI::ExecContext::mips_frame_t) == sizeof(std::uintptr_t) * __SYSTEM_ABI_EXECCONTEXT_JMPBUF_WORDS);

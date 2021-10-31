@@ -2,7 +2,7 @@
 #define __SYSTEM_ABI_EXECCONTEXT_ARCH_MIPS_O32_H
 
 
-#if defined(_ABIO32)
+#if defined(_ABIO32) || defined(__mips_o32)
 #  define __SYSTEM_ABI_EXECCONTEXT_JMPBUF_WORDS 12
 #endif
 
@@ -43,7 +43,7 @@ struct mips_o32_full_frame_t
 };
 
 
-#if defined(_ABIO32)
+#if defined(_ABIO32) || defined(__mips_o32)
 using mips_frame_t = mips_o32_frame_t;
 using mips_full_frame_t = mips_o32_full_frame_t;
 #endif

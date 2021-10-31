@@ -29,7 +29,7 @@ constexpr std::size_t TLSPtrOffset = 0x8000;
 struct TCB
 {
     void**          dtv = nullptr;  // Pointer to the dynamic thread vector (DTV).
-#if defined(_CALL_SYSV)
+#if defined(_CALL_SYSV) || !defined(__powerpc64__)
     std::uintptr_t  pad = 0;        // Unused.
 #endif
 };
@@ -47,7 +47,7 @@ static void* g_initialDTV[2];
 static inline void* getThreadPointer()
 {
     void* retval;
-#if _CALL_SYSV
+#if _CALL_SYSV || !defined(__powerpc64__)
     register void* r2 asm("r2");
     asm ("mr %0, %1" : "=r" (retval) : "r" (r2));
 #else
@@ -59,7 +59,7 @@ static inline void* getThreadPointer()
 
 static inline void setThreadPointer(void* tp)
 {
-#if _CALL_SYSV
+#if _CALL_SYSV || !defined(__powerpc64__)
     register void* r2 asm("r2");
     asm volatile ("mr %0, %1" : "=r" (r2) : "r" (tp));
 #else

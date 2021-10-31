@@ -38,11 +38,21 @@ library("Atomic")
             "Arch/ARM/Primitives_v8.cc",
         ]
     }
+    else if (current_arch == "mips")
+    {
+    }
     else if (current_arch == "powerpc")
     {
         sources +=
         [
             "Arch/PowerPC/Primitives.cc",
+        ]
+    }
+    else if (current_arch == "sparc")
+    {
+        sources +=
+        [
+            "Arch/Sparc/Primitives.cc",
         ]
     }
     else if (current_arch == "x86")
@@ -57,6 +67,6 @@ library("Atomic")
     }
     else
     {
-        #assert(false, "unsupported architecture: ${current_arch}")
+        assert(false, "unsupported architecture: ${current_arch}")
     }
 }

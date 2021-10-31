@@ -40,6 +40,8 @@ vars_gcc_32 =
 {
     forward_variables_from(vars_gcc_common, "*")
 
+    clang_target = "mips"
+
     if (mips_toolchain_prefix != "")
     {
         toolchain_prefix = mips_toolchain_prefix
@@ -49,6 +51,8 @@ vars_gcc_32 =
 vars_gcc_64 =
 {
     forward_variables_from(vars_gcc_common, "*")
+
+    clang_target = "mips64"
 
     if (mips64_toolchain_prefix != "")
     {

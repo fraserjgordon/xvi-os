@@ -42,6 +42,8 @@ vars_gcc_arm32 =
 {
     forward_variables_from(vars_gcc_common, "*")
 
+    clang_target = "arm"
+
     if (arm_toolchain_prefix != "")
     {
         toolchain_prefix = arm_toolchain_prefix
@@ -51,6 +53,8 @@ vars_gcc_arm32 =
 vars_gcc_arm64 =
 {
     forward_variables_from(vars_gcc_common, "*")
+
+    clang_target = "arm64"
 
     if (arm64_toolchain_prefix != "")
     {

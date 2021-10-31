@@ -23,6 +23,13 @@ namespace System::ABI::Atomic
 #  define EH_ATOMIC 0
 #endif
 
+// Elide the lwarx hints with Clang - its integrated assembler doesn't like them.
+#if defined(__llvm__)
+#  define __PPC_LWARX_HINT(x)
+#else
+#  define __PPC_LWARX_HINT(x)   ", " x
+#endif 
+
 
 // Condition register flags.
 #define CR_EQ 0b0010
@@ -158,7 +165,7 @@ type __Atomic_exchange_##n(volatile void* ptr, type value, int) \
     asm volatile \
     ( \
         "sync 0 \n\t" \
-        "1: l" suffix "arx  %[previous], 0, %[ptr], %[hint]\n\t" \
+        "1: l" suffix "arx  %[previous], 0, %[ptr]" __PPC_LWARX_HINT("%[hint]") "\n\t" \
         "st" suffix "cx.    %[value], 0, %[ptr]\n\t" \
         "bne-   1b\n\t" \
         "isync  \n\t" \
@@ -184,7 +191,7 @@ type __Atomic_exchange_##n(volatile void* ptr, type value, int) \
     asm volatile \
     ( \
         "sync 0     \n\t" \
-        "1: lwarx   %[previous], 0, %[ptr], %[hint] \n\t" \
+        "1: lwarx   %[previous], 0, %[ptr]" __PPC_LWARX_HINT("%[hint]") "\n\t" \
         "and        %[temp], %[previous], %[mask]\n\t" \
         "or         %[temp], %[temp], %[value]\n\t" \
         "stwcx.     %[temp], 0, %[ptr]\n\t" \
@@ -211,7 +218,7 @@ bool __Atomic_compare_exchange_##n(volatile void* ptr, void* expect, type desire
     ( \
         "crclr      4*cr0+eq\n\t" \
         "sync 0     \n\t" \
-        "1: l" suffix "arx %[previous], 0, %[ptr], %[hint]\n\t" \
+        "1: l" suffix "arx %[previous], 0, %[ptr]" __PPC_LWARX_HINT("%[hint]") "\n\t" \
         "cmp        cr1, %[l], %[previous], %[expect]\n\t" \
         "bne-       cr1, 2f\n\t" \
         "st" suffix "cx. %[desire], 0, %[ptr]\n\t" \
@@ -247,7 +254,7 @@ bool __Atomic_compare_exchange_##n(volatile void* ptr, void* expect, type desire
     ( \
         "crclr      4*cr0+eq\n\t" \
         "sync 0     \n\t" \
-        "1: lwarx   %[previous], 0, %[ptr], %[hint]\n\t" \
+        "1: lwarx   %[previous], 0, %[ptr]" __PPC_LWARX_HINT("%[hint]") "\n\t" \
         "and        %[temp], %[previous], %[mask]\n\t" \
         "or         %[cr], %[temp], %[expect]\n\t" \
         "or         %[temp], %[temp], %[desire]\n\t" \
@@ -283,7 +290,7 @@ type __Atomic_fetch_##name##_##n(volatile void* ptr, type value, int) \
     asm volatile \
     ( \
         "sync 0     \n\t" \
-        "1: l" suffix "arx %[previous], 0, %[ptr], %[hint]\n\t" \
+        "1: l" suffix "arx %[previous], 0, %[ptr]" __PPC_LWARX_HINT("%[hint]") "\n\t" \
         op "        %[result], %[previous], %[value]\n\t" \
         "st" suffix "cx. %[result], 0, %[ptr]\n\t" \
         "bne-       1b\n\t" \
@@ -306,7 +313,7 @@ type __Atomic_##name##_fetch_##n(volatile void* ptr, type value, int) \
     asm volatile \
     ( \
         "sync 0     \n\t" \
-        "1: l" suffix "arx %[previous], 0, %[ptr], %[hint]\n\t" \
+        "1: l" suffix "arx %[previous], 0, %[ptr]" __PPC_LWARX_HINT("%[hint]") "\n\t" \
         op "        %[result], %[previous], %[value]\n\t" \
         "st" suffix "cx. %[result], 0, %[ptr]\n\t" \
         "bne-       1b\n\t" \
@@ -335,7 +342,7 @@ type __Atomic_fetch_##name##_##n(volatile void* ptr, type value, int) \
     asm volatile \
     ( \
         "sync 0     \n\t" \
-        "1: lwarx   %[previous], 0, %[ptr], %[hint]\n\t" \
+        "1: lwarx   %[previous], 0, %[ptr]" __PPC_LWARX_HINT("%[hint]") "\n\t" \
         "and        %[temp], %[previous], %[mask]\n\t" \
         op "        %[result], %[previous], %[value]\n\t" \
         "nand       %[result], %[result], %[mask]\n\t" \
@@ -368,7 +375,7 @@ type __Atomic_##name##_fetch_##n(volatile void* ptr, type value, int) \
     asm volatile \
     ( \
         "sync 0     \n\t" \
-        "1: lwarx   %[previous], 0, %[ptr], %[hint]\n\t" \
+        "1: lwarx   %[previous], 0, %[ptr]" __PPC_LWARX_HINT("%[hint]") "\n\t" \
         "and        %[temp], %[previous], %[mask]\n\t" \
         op "        %[result], %[previous], %[value]\n\t" \
         "nand       %[result], %[result], %[mask]\n\t" \
@@ -646,7 +653,7 @@ void __Atomic_lock_acquire(volatile __uintptr_t* lock)
     asm volatile
     (
         "1:     \n\t"
-        "lwarx  %[temp], 0, %[ptr], %[hint]\n\t"
+        "lwarx  %[temp], 0, %[ptr]" __PPC_LWARX_HINT("%[hint]") "\n\t"
         "cmpw   %[temp], %[value]\n\t"
         "beq-   1b\n\t"
         "stwcx. %[value], 0, %[ptr]\n\t"

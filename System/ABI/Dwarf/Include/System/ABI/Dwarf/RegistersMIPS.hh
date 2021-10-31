@@ -31,13 +31,13 @@ struct FrameTraitsMIPS_EABI64;
 
 // Alias for MIPS targets.
 #if defined(__mips__)
-#  if defined(_ABIO32)
+#  if defined(_ABIO32) || defined(__mips_o32)
 using FrameTraitsNative = FrameTraitsMIPS_O32;
-#  elif defined(_ABIO64)
+#  elif defined(_ABIO64) || defined(__mips_o64)
 using FrameTraitsNative = FrameTraitsMIPS_O64;
-#  elif defined(_ABIN32)
+#  elif defined(_ABIN32) || defined(__mips_n32)
 using FrameTraitsNative = FrameTraitsMIPS_N32;
-#  elif defined(_ABIN64)
+#  elif defined(_ABIN64) || defined(__mips_n64)
 using FrameTraitsNative = FrameTraitsMIPS_N64;
 #  elif defined(__mips_eabi)
 #    if defined (__mips64)

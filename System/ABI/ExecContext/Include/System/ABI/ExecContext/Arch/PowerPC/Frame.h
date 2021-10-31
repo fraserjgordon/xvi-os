@@ -6,7 +6,7 @@
 
 
 #if defined(_ARCH_PPC)
-#  if defined(_CALL_SYSV)
+#  if defined(_CALL_SYSV) || !defined(__powerpc64__)
 #    define __SYSTEM_ABI_EXECCONTEXT_JMPBUF_WORDS       24
 #  elif _CALL_ELF == 1
 #    define __SYSTEM_ABI_EXECCONTEXT_JMPBUF_WORDS       26
@@ -312,7 +312,7 @@ static_assert(sizeof(ppc64_elfv2_full_frame_t) % 16 == 0, "invalid ELFv2 full_fr
 
 
 #if defined(_ARCH_PPC)
-#  if defined(_CALL_SYSV)
+#  if defined(_CALL_SYSV) || !defined(__powerpc64__)
 using powerpc_frame_t = ppc32_sysv_frame_t;
 using powerpc_full_frame_t = ppc32_sysv_full_frame_t;
 #  elif _CALL_ELF == 1

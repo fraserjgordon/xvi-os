@@ -18,6 +18,7 @@ library("LanguageSupport")
 
     deps =
     [
+        "//ABI/Atomic",
         "//ABI/C++:Exception",
     ]
 
