@@ -210,7 +210,7 @@ type __Atomic_exchange_##n(volatile void* ptr, type value, int) \
 
 
 #  define ATOMIC_CMPXCHG_N(n, type, suffix) \
-bool __Atomic_compare_exchange_##n(volatile void* ptr, void* expect, type desired, int, int) \
+bool __Atomic_compare_exchange_##n(volatile void* __restrict ptr, void* __restrict expect, type desired, int, int) \
 { \
     auto expect_ptr = static_cast<type*>(expect); \
     __uint32_t cr; \

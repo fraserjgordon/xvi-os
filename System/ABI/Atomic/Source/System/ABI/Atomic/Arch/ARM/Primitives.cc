@@ -292,7 +292,7 @@ type __Atomic_exchange_##n(volatile void* ptr, type value, int) \
 // Only ARMv6 and above have lockless cmpxchg.
 #if __CRT_ASSUME_ARMV6
 #  define ATOMIC_CMPXCHG_N(n, type, suffix) \
-bool __Atomic_compare_exchange_##n(volatile void* ptr, void* expect, type desired, int, int) \
+bool __Atomic_compare_exchange_##n(volatile void* __restrict ptr, void* __restrict expect, type desired, int, int) \
 { \
     auto expect_ptr = static_cast<type*>(expect); \
     __uint32_t fail; \
@@ -317,7 +317,7 @@ bool __Atomic_compare_exchange_##n(volatile void* ptr, void* expect, type desire
 }
 
 #  define ATOMIC_CMPXCHG_WORD_N(n, type) \
-bool __Atomic_compare_exchange_##n(volatile void* ptr, void* expect, type desire, int, int) \
+bool __Atomic_compare_exchange_##n(volatile void* __restrict ptr, void* __restrict expect, type desire, int, int) \
 { \
     __uintptr_t aligned_ptr = __uintptr_t(ptr) & ~(sizeof(__uint32_t) - 1); \
     __size_t shift = __uintptr_t(ptr) - aligned_ptr; \
