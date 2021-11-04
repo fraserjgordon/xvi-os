@@ -27,6 +27,7 @@ if (cross_toolchain_root != "" && mips64_toolchain_prefix == "")
 vars_gcc_common =
 {
     arch_cflags     = []
+    arch_ldflags    = []
     toolchain_arch  = "mips"
     toolchain_os    = "xvi"
 
@@ -65,7 +66,7 @@ vars_gcc_mips32 =
 {
     forward_variables_from(vars_gcc_32, "*")
 
-    #arch_cflags += [ "-march=mips32", "-mabi=${mips32_abi}", "-mabicalls" ]
+    arch_cflags += [ "-march=mips32", "-mabi=${mips32_abi}", "-mabicalls" ]
     toolchain_cpu = "mips32"
 }
 
@@ -74,7 +75,8 @@ vars_gcc_mips64 =
 {
     forward_variables_from(vars_gcc_64, "*")
 
-    #arch_cflags += [ "-march=mips64", "-mabi=${mips64_abi}", "-mabicalls" ]
+    arch_cflags += [ "-march=mips64", "-mabi=${mips64_abi}", "-mabicalls" ]
+    arch_ldflags += [ "-Wl,-m,elf64btsmip" ]
     toolchain_cpu = "mips64"
 }
 

@@ -16,7 +16,7 @@
 #  include <System/ABI/ExecContext/Arch/MIPS/O64.h>
 #elif defined(_ABIN32) || defined(__mips_n32)
 #  include <System/ABI/ExecContext/Arch/MIPS/N32.h>
-#elif defined(_ABIN64) || defined(__mips_n64)
+#elif defined(_ABI64) || defined(__mips_n64)
 #  include <System/ABI/ExecContext/Arch/MIPS/N64.h>
 #elif defined(__mips_eabi)
 #  if defined (__mips64)

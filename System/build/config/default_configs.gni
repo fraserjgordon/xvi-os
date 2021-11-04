@@ -26,3 +26,11 @@ else
         "//build/config:optimize_full"
     ]
 }
+
+if (werror)
+{
+    default_configs +=
+    [
+        "//build/config:werror",
+    ]
+}

@@ -15,6 +15,20 @@ namespace System::ABI::TLS
 // Note: this is essentially a carbon-copy of the PowerPC TLS ABI.
 
 
+// The rdhwr instruction is only defined from r2 onwards so we need to tell the assembler to allow it regardless.
+#if !defined(__mips_isa_rev) || __mips_isa_rev < 2
+#  ifdef __mips64
+#    define ISA_OVERRIDE ".set mips64r2\n\t"
+#  else
+#    define ISA_OVERRIDE ".set mips32r2\n\t"
+#  endif
+#  define ISA_RESTORE ".set mips0\n\t"
+#else
+#  define ISA_OVERRIDE
+#  define ISA_RESTORE
+#endif
+
+
 //! @todo: remove weak attribute.
 extern "C" [[gnu::weak]] void __set_tp(std::uintptr_t base) asm("Syscall.MIPS.SetThreadPointer");
 
@@ -56,7 +70,13 @@ static inline void* getThreadPointer()
     // The ABI specifies that this should be $r3 so that it has a fast-path emulation. This isn't strictly necessary and
     // the XVI MIPS kernel will work with any register.
     register void* r3 asm("3");
-    asm ("rdhwr %0, $29" : "=r" (r3));
+    asm
+    (
+        ISA_OVERRIDE
+        "rdhwr %0, $29\n\t"
+        ISA_RESTORE
+        : "=r" (r3)
+    );
     return r3;
 }
 

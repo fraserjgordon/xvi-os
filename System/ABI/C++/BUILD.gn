@@ -51,6 +51,11 @@ library("Demangle")
 
     use_stdlib = false
 
+    deps +=
+    [
+        "//C++/Locale:MiniLocale",
+    ]
+
     public_deps =
     [
         "//ABI/String",
@@ -287,7 +292,7 @@ library("C++")
 
     header_deps =
     [
-        "//C++/Atomic",
+        "//C++/Atomic:Atomic_headers",
     ]
 
     public_deps =

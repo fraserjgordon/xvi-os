@@ -9,4 +9,9 @@ library_group("ABI")
         "Integer",
         "TLS",
     ]
+
+    plain_deps =
+    [
+        "CRT",
+    ]
 }

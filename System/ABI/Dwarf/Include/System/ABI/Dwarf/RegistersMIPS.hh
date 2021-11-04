@@ -37,7 +37,7 @@ using FrameTraitsNative = FrameTraitsMIPS_O32;
 using FrameTraitsNative = FrameTraitsMIPS_O64;
 #  elif defined(_ABIN32) || defined(__mips_n32)
 using FrameTraitsNative = FrameTraitsMIPS_N32;
-#  elif defined(_ABIN64) || defined(__mips_n64)
+#  elif defined(_ABI64) || defined(__mips_n64)
 using FrameTraitsNative = FrameTraitsMIPS_N64;
 #  elif defined(__mips_eabi)
 #    if defined (__mips64)

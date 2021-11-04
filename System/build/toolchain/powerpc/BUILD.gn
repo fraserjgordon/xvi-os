@@ -27,6 +27,7 @@ if (powerpc64_toolchain_prefix == "" && powerpc_toolchain_prefix != "")
 vars_gcc_common =
 {
     arch_cflags     = []
+    arch_ldflags    = []
     toolchain_arch  = "powerpc"
     toolchain_os    = "xvi"
 

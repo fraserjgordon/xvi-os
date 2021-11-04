@@ -19,7 +19,11 @@ library("LanguageSupport")
     deps =
     [
         "//ABI/Atomic",
-        "//ABI/C++:Exception",
+    ]
+
+    deps_shared =
+    [
+        "//ABI/C++:C++__shared",
     ]
 
     public_headers =

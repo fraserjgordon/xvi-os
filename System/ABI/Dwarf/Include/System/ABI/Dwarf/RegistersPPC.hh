@@ -31,7 +31,7 @@ struct FrameTraitsPPC64ElfV2;
 
 // Alias for PowerPC targets.
 #if defined(_ARCH_PPC)
-#  if defined(_CALL_SYSV) || !defined(__powerpc64__)
+#  if defined(_CALL_SYSV) || !defined(_ARCH_PPC64)
 using FrameTraitsNative = FrameTraitsPPC32SysV;
 #  elif _CALL_ELF == 1
 using FrameTraitsNative = FrameTraitsPPC64ElfV1;

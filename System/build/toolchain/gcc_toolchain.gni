@@ -83,8 +83,8 @@ template("gcc_toolchain")
 
     # Mandatory GCC flags (e.g. target architecture options).
     arch_cflags = ""
-    #arch_ldflags = ""
-    #arch_soflags = ""
+    arch_ldflags = ""
+    arch_soflags = ""
     if (use_clang)
     {
         arch_cflags = "-target ${clang_target}-xvi "
@@ -110,14 +110,14 @@ template("gcc_toolchain")
     {
         arch_cflags += string_join(" ", invoker.arch_cflags)
     }
-    # if (defined(invoker.arch_ldflags))
-    # {
-    #     arch_ldflags = string_join(" ", invoker.arch_ldflags)
-    # }
-    # if (defined(invoker.arch_soflags))
-    # {
-    #     arch_soflags = string_join(" ", invoker.arch_soflags)
-    # }
+    if (defined(invoker.arch_ldflags))
+    {
+        arch_ldflags = string_join(" ", invoker.arch_ldflags)
+    }
+    if (defined(invoker.arch_soflags))
+    {
+        arch_soflags = string_join(" ", invoker.arch_soflags)
+    }
 
     # Mandatory Rust flags (e.g. target architecture options).
     arch_rustflags = ""
@@ -142,6 +142,8 @@ template("gcc_toolchain")
             {
                 compiler_id = "gcc"
             }
+
+            toolchain_out_dir = "${toolchain_arch}/${toolchain_cpu}"
 
             forward_variables_from(arch_toolchain_args, "*")
         }
@@ -209,7 +211,7 @@ template("gcc_toolchain")
             rspfile         = "{{target_out_dir}}/${soname}.rsp"
             rspfile_content = "{{inputs}} {{solibs}} {{libs}}"
 
-            command = "${cxx_exe} -shared ${arch_cflags} ${soflags} {{ldflags}} -o {{output}} @${rspfile}"
+            command = "${cxx_exe} -shared ${arch_cflags} ${arch_ldflags} ${arch_soflags} ${soflags} {{ldflags}} -o {{output}} @${rspfile}"
         }
 
         tool("link")
@@ -221,7 +223,7 @@ template("gcc_toolchain")
             rspfile         = "{{target_out_dir}}/{{target_output_name}}{{output_extension}}.rsp"
             rspfile_content = "{{inputs}} {{solibs}} {{libs}}"
 
-            command = "${cxx_exe} ${arch_cflags} {{ldflags}} -o {{output}} @${rspfile}"
+            command = "${cxx_exe} ${arch_cflags} ${arch_ldflags} {{ldflags}} -o {{output}} @${rspfile}"
         }
 
         tool("stamp")

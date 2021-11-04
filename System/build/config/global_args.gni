@@ -20,6 +20,9 @@ declare_args()
 
     # Compile debug-mode code if set; release-mode code if unset.
     debug = false
+
+    # Pass -Werror when compiling.
+    werror = false
 }
 
 # Compiler arguments
@@ -61,3 +64,14 @@ import("//build/config/arch.gni")
 
 # Import the architecture-specific arguments (for the target only).
 import("//build/config/arch/${target_arch}/arch_args.gni")
+
+declare_args()
+{
+    # Default final output dir for this toolchain.
+    toolchain_out_dir = ""
+}
+
+if (toolchain_out_dir == "")
+{
+    toolchain_out_dir = "${current_arch}/${current_cpu}"
+}

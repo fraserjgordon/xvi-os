@@ -8,6 +8,13 @@ library("Format")
 
     shared_define = "__BUILD_SYSTEM_CXX_FORMAT_SHARED"
 
+    header_deps =
+    [
+        "../LanguageSupport:LanguageSupport_headers",
+        "../Locale:Locale_headers",
+        "../Utility:Utility_headers",
+    ]
+
     public_deps =
     [
         "../LanguageSupport",

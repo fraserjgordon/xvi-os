@@ -1,0 +1,107 @@
+library_version = "0.1.0"
+
+use_stdlib = false
+is_source_set = true
+target_types = ["static"]
+
+include_prefix = "System/ABI/CRT"
+
+
+library("crti")
+{
+    library_name    = "System.ABI.CRT.crti"
+
+    defines =
+    [
+        "__CRTI",
+    ]
+
+    sources =
+    [
+        "CRT.cc",
+    ]
+}
+
+copy("crti")
+{
+    deps = [ ":crti__static" ]
+    sources = [ "${target_out_dir}/crti__static.CRT.cc.o" ]
+    outputs = [ "${root_out_dir}/${toolchain_out_dir}/System.ABI.C++.CRT.crti.o" ]
+}
+
+library("crtn")
+{
+    library_name    = "System.ABI.CRT.crtn"
+
+    defines =
+    [
+        "__CRTN",
+    ]
+
+    sources =
+    [
+        "CRT.cc",
+    ]
+}
+
+copy("crtn")
+{
+    deps = [ ":crtn__static" ]
+    sources = [ "${target_out_dir}/crtn__static.CRT.cc.o" ]
+    outputs = [ "${root_out_dir}/${toolchain_out_dir}/System.ABI.C++.CRT.crtn.o" ]
+}
+
+library("crtbeginS")
+{
+    library_name    = "System.ABI.CRT.crtbeginS"
+
+    defines =
+    [
+        "__CRTBEGINS",
+    ]
+
+    sources =
+    [
+        "CRT.cc",
+    ]
+}
+
+copy("crtbeginS")
+{
+    deps = [ ":crtbeginS__static" ]
+    sources = [ "${target_out_dir}/crtbeginS__static.CRT.cc.o" ]
+    outputs = [ "${root_out_dir}/${toolchain_out_dir}/System.ABI.C++.CRT.crtbeginS.o" ]
+}
+
+library("crtendS")
+{
+    library_name    = "System.ABI.CRT.crtendS"
+
+    defines =
+    [
+        "__CRTENDS",
+    ]
+
+    sources =
+    [
+        "CRT.cc",
+    ]
+}
+
+copy("crtendS")
+{
+    deps = [ ":crtendS__static" ]
+    sources = [ "${target_out_dir}/crtendS__static.CRT.cc.o" ]
+    outputs = [ "${root_out_dir}/${toolchain_out_dir}/System.ABI.C++.CRT.crtendS.o" ]
+}
+
+group("CRT")
+{
+    deps =
+    [
+        ":crtbeginS",
+        ":crtendS",
+        ":crti",
+        ":crtn",
+    ]
+}

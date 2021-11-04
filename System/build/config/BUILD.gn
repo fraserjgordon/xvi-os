@@ -120,6 +120,15 @@ config("default_errors")
     }
 }
 
+# Warnings-as-errors mode.
+config("werror")
+{
+    cflags =
+    [
+        "-Werror"
+    ]
+}
+
 # Default code generation options.
 config("default_codegen")
 {

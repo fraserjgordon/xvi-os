@@ -3,7 +3,7 @@ library("Locale")
     library_name    = "System.C++.Locale"
     library_version = "0.1.0"
 
-    #define_header_target = true
+    define_header_target = true
     use_stdlib = false
 
     shared_define = "__BUILD_SYSTEM_CXX_LOCALE_SHARED"
@@ -34,6 +34,44 @@ library("Locale")
     [
         "CType.cc",
         "Locale.cc",
+        "WChar.cc",
+    ]
+}
+
+library("MiniLocale")
+{
+    library_name    = "System.C++.MiniLocale"
+    library_version = "0.1.0"
+
+    target_types = ["static", "kernel"]
+
+    use_stdlib = false
+    include_prefix = "System/C++/Locale"
+
+    public_deps =
+    [
+        "../Utility",
+    ]
+
+    deps =
+    [
+        "//Unicode/UTF:MiniUTF",
+    ]
+
+    public_headers =
+    [
+        "CType.hh",
+        "StdLib.hh",
+        "UChar.hh",
+        "WChar.hh",
+
+        "Private/Config.hh",
+        "Private/Namespace.hh",
+    ]
+
+    sources =
+    [
+        "CType.cc",
         "WChar.cc",
     ]
 }

@@ -3,7 +3,17 @@ library("Atomic")
     library_name    = "System.C++.Atomic"
     library_version = "0.1.0"
 
+    define_header_target = true
     use_stdlib = false
+
+    public_deps =
+    [
+        "//ABI/Atomic",
+    ]
+
+    header_deps =
+    [
+    ]
 
     public_headers =
     [

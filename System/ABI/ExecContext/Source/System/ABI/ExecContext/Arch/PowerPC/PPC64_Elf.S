@@ -4,6 +4,10 @@
 #if _ARCH_PPC64 && _CALL_ELF
 
 
+// We need to mark an ABI version or the linker will fail to create an .so properly.
+.abiversion _CALL_ELF
+
+
 // General-purpose register saving routines.
 #define DECLARE_SAVEGPR(n) \
     .global     _savegpr0_##n; \

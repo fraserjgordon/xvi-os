@@ -272,7 +272,7 @@ type __Atomic_exchange_##n(volatile void* ptr, type value, int order) \
 }
 
 #define ATOMIC_EXCHANGE_LOCKED_N(n, type) \
-bool __Atomic_compare_exchange_##n(volatile void* ptr, type value, int order) \
+type __Atomic_exchange_##n(volatile void* ptr, type value, int order) \
 { \
     (void)order; \
     \
@@ -332,7 +332,7 @@ ATOMIC_EXCHANGE_LOCKED_N(8, uint64_t)
 ATOMIC_COMPARE_EXCHANGE_LOCKED_N(1, uint8_t)
 ATOMIC_COMPARE_EXCHANGE_LOCKED_N(2, uint16_t)
 ATOMIC_COMPARE_EXCHANGE_LOCKED_N(4, uint32_t)
-ATOMIC_COMPARE_EXCHANGE_LOCKED_N(8, uint32_t)
+ATOMIC_COMPARE_EXCHANGE_LOCKED_N(8, uint64_t)
 #endif
 
 
