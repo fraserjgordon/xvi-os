@@ -66,7 +66,7 @@ vars_gcc_64 =
     arch_cflags += [ "-m64" ]
     arch_rustflags += [ "--target " + rebase_path("rust-x86_64.json") ]
     clang_target = "x86_64"
-    toolchain_cpu = "x86_64"
+    toolchain_cpu = "x64"
 
     toolchain_prefix = x64_toolchain_prefix
 }

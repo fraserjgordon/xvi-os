@@ -39,7 +39,7 @@ library("CFI")
     library_version = "0.1.0"
     include_prefix  = "System/ABI/Dwarf"
 
-    target_types    = ["static", "kernel"]
+    target_types    = ["static_pic", "kernel"]
 
     use_stdlib = false
 

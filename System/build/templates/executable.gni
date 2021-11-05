@@ -86,6 +86,7 @@ template("xvi_executable")
     if (use_stdlib)
     {
         deps    += ["//C++/StdLib"]
+        configs += ["//build/config:stdlib"]
     }
     else
     {

@@ -212,6 +212,16 @@ config("no_stdlib")
     #]
 }
 
+# Settings for non-"no_stdlib" builds.
+config("stdlib")
+{
+    if (!build_sysroot)
+    {
+        ldflags = ["-B", "${toolchain_out_dir}"]
+        lib_dirs = ["${root_build_dir}/${toolchain_out_dir}"]
+    }
+}
+
 # Don't use compiler built-in functions.
 config("no_builtins")
 {

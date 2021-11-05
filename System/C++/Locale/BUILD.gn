@@ -43,7 +43,7 @@ library("MiniLocale")
     library_name    = "System.C++.MiniLocale"
     library_version = "0.1.0"
 
-    target_types = ["static", "kernel"]
+    target_types = ["static", "static_pic", "kernel"]
 
     use_stdlib = false
     include_prefix = "System/C++/Locale"
