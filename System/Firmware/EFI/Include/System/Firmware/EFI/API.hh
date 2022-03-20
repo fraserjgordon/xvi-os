@@ -8,9 +8,9 @@
 
 
 #if defined(__x86_64__)
-#  define EFIAPI    [[gnu::ms_abi]]
+#  define EFIAPI    __attribute__((ms_abi))
 #elif defined(__i386__)
-#  define EFIAPI    [[gnu::cdecl]]
+#  define EFIAPI    __attribute__((cdecl))
 #else
 #  error Unknown EFI calling convention for this architecture
 #endif

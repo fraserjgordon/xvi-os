@@ -11,9 +11,9 @@ config("c++20")
 }
 
 # Rust edition.
-config("rust_2018")
+config("rust_2021")
 {
-    rustflags = [ "--edition=2018" ]
+    rustflags = [ "--edition=2021" ]
 }
 
 # Warnings required by the XVI coding standard.

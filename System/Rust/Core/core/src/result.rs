@@ -298,7 +298,7 @@ impl <T, E: crate::fmt::Debug> Result<T, E>
         match self
         {
             Ok(x) => x,
-            Err(x) => panic!("{}: {?}", msg, x),
+            Err(x) => panic!("{}: {:?}", msg, x),
         }
     }
 
@@ -308,7 +308,7 @@ impl <T, E: crate::fmt::Debug> Result<T, E>
         match self
         {
             Ok(x) => x,
-            Err(x) => panic!("{?}", x),
+            Err(x) => panic!("{:?}", x),
         }
     }
 }
@@ -320,7 +320,7 @@ impl <T: crate::fmt::Debug, E> Result<T, E>
     {
         match self
         {
-            Ok(x) => panic!("{}: {?}", msg, x),
+            Ok(x) => panic!("{}: {:?}", msg, x),
             Err(x) => x,
         }
     }
@@ -330,7 +330,7 @@ impl <T: crate::fmt::Debug, E> Result<T, E>
     {
         match self
         {
-            Ok(x) => panic!("{?}", x),
+            Ok(x) => panic!("{:?}", x),
             Err(x) => x,
         }
     }

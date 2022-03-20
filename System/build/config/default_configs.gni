@@ -9,7 +9,7 @@ default_configs =
     "//build/config:default_warnings",
     "//build/config:gcc_colour_output",
     "//build/config:gcc_gc_crash_fix",
-    "//build/config:rust_2018",
+    "//build/config:rust_2021",
 ]
 
 if (debug)

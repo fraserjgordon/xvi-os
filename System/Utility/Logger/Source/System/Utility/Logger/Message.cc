@@ -185,7 +185,7 @@ bool message_internal::decode()
         std::span value {input.ptr<std::byte>(), static_cast<std::size_t>(*var_len - *name_len - header_len)};
         input.seek(value.size());
 
-        m_vars.emplace_back(name, static_cast<var_type>(*type), value);
+        m_vars.push_back({name, static_cast<var_type>(*type), value});
 
         if (name == SystemVariable::Message)
             m_msg = {reinterpret_cast<const char*>(value.data()), value.size()};

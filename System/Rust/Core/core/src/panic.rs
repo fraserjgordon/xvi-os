@@ -1,5 +1,27 @@
 #![stable(feature="core_panic_info", since="1.41.0")]
 
+#[unstable(feature = "edition_panic", issue = "none")]
+#[allow_internal_unstable(core_panic, const_format_args)]
+#[rustc_diagnostic_item = "core_panic_2021_macro"]
+#[rustc_macro_transparency = "semitransparent"]
+pub macro panic_2021
+{
+    () =>
+        {
+            $crate::panicking::panic("panic")
+        },
+
+    ("{}", $arg:expr $(,)?) =>
+        {
+            $crate::panicking::panic_display(&$arg)
+        },
+
+    ($($t:tt)+) =>
+        {
+            unsafe { $crate::panicking::panic_fmt($crate::const_format_args!($($t)+)) }
+        },
+}
+
 #[lang = "panic_location"]
 #[derive(Copy, Clone, Debug, Hash, PartialEq, PartialOrd, Eq, Ord)]
 #[stable(feature="panic_hooks", since="1.10.0")]
@@ -54,5 +76,16 @@ impl <'a> PanicInfo<'a>
     pub fn location(&self) -> Option<&Location<'_>>
     {
         Some(self.location)
+    }
+
+    // Constructor only used within the core crate.
+    pub(crate) fn construct(message: Option<&'a crate::fmt::Arguments<'a>>, location: &'a Location<'a>) -> PanicInfo<'a>
+    {
+        PanicInfo
+        {
+            payload: &0,
+            message: message, 
+            location: location,
+        }
     }
 }

@@ -18,10 +18,24 @@ pub macro Debug($_:item)
 
 
 pub use macros::Debug;
+use crate::mem;
 
 
 pub type Result = crate::result::Result<(), Error>;
 
+
+pub enum Alignment
+{
+    Left,
+    Right,
+    Center,
+}
+
+
+extern "C"
+{
+    type Opaque;
+}
 
 #[derive(Copy, Clone)]
 pub struct Arguments<'a>
@@ -29,7 +43,16 @@ pub struct Arguments<'a>
     // Contents are compiler-generated.
     pieces: &'a [&'static str],
     //fmt: Option<&'a [rt::v1::argument]>,
-    //args: &'a [ArgumentV1<'a>],
+    fmt: Option<i32>,
+    args: &'a [ArgumentV1<'a>],
+}
+
+#[derive(Copy, Clone)]
+#[allow(missing_debug_implementations)]
+pub struct ArgumentV1<'a>
+{
+    value: &'a Opaque,
+    formatter: fn(&Opaque, &mut Formatter<'_>) -> Result,
 }
 
 
@@ -103,19 +126,19 @@ pub struct DebugTuple<'a, 'b: 'a>
 #[allow(missing_debug_implementations)]
 pub struct DebugSet<'a, 'b: 'a>
 {
-    ormatter: &'a mut Formatter<'b>,
+    formatter: &'a mut Formatter<'b>,
 }
 
 #[allow(missing_debug_implementations)]
 pub struct DebugList<'a, 'b: 'a>
 {
-    ormatter: &'a mut Formatter<'b>,
+    formatter: &'a mut Formatter<'b>,
 }
 
 #[allow(missing_debug_implementations)]
 pub struct DebugMap<'a, 'b: 'a>
 {
-    ormatter: &'a mut Formatter<'b>,
+    formatter: &'a mut Formatter<'b>,
 }
 
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -127,6 +150,34 @@ pub struct Formatter<'a>
     buffer: &'a mut (dyn Write + 'a),
 }
 
+
+impl <'a> Arguments<'a>
+{
+    pub const unsafe fn new_v1(pieces: &'a [&'static str], args: &'a [ArgumentV1<'a>]) -> Arguments<'a>
+    {
+        Arguments
+        {
+            pieces: pieces,
+            fmt: None,
+            args: args,
+        }
+    }
+}
+
+impl <'a> ArgumentV1<'a>
+{
+    pub fn new<'b, T>(value: &'b T, formatter: fn(&T, &mut Formatter<'_>) -> Result) -> ArgumentV1<'b>
+    {
+        unsafe
+        {
+            ArgumentV1
+            {
+                value: mem::transmute(value),
+                formatter: mem::transmute(formatter),
+            }
+        }
+    }
+}
 
 impl <'a, 'b> DebugStruct<'a, 'b>
 {
@@ -156,6 +207,66 @@ impl <'a, 'b> DebugTuple<'a, 'b>
 
 impl <'a> Formatter<'a>
 {
+    pub fn pad_integral(&mut self, is_nonnegative: bool, prefix: &str, buf: &str) -> Result
+    {
+        todo!()
+    }
+
+    pub fn pad(&mut self, s: &str) -> Result
+    {
+        todo!()
+    }
+
+    pub fn write_str(&mut self, data: &str) -> Result
+    {
+        todo!()
+    }
+
+    pub fn write_fmt(&mut self, fmt: Arguments<'_>) -> Result
+    {
+        todo!()
+    }
+
+    pub fn fill(&self) -> char
+    {
+        todo!()
+    }
+
+    pub fn align(&self) -> Option<Alignment>
+    {
+        todo!()
+    }
+
+    pub fn width(&self) -> Option<usize>
+    {
+        todo!()
+    }
+
+    pub fn precision(&self) -> Option<usize>
+    {
+        todo!()
+    }
+
+    pub fn sign_plus(&self) -> bool
+    {
+        todo!()
+    }
+
+    pub fn sign_minus(&self) -> bool
+    {
+        todo!()
+    }
+
+    pub fn alternate(&self) -> bool
+    {
+        todo!()
+    }
+
+    pub fn sign_aware_zero_pad(&self) -> bool
+    {
+        todo!()
+    }
+
     pub fn debug_struct<'b>(&'b mut self, _name: &str) -> DebugStruct<'b, 'a>
     {
         todo!()
@@ -284,6 +395,48 @@ impl <T: ?Sized + Debug> Debug for RefMut<'_, T>
 impl Debug for Arguments<'_>
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result
+    {
+        todo!()
+    }
+}
+
+impl Display for str
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result
+    {
+        f.pad(self)
+    }
+}
+
+impl <T: ?Sized + Display> Display for &T
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result
+    {
+        Display::fmt(&**self, f)
+    }
+}
+
+impl <T: ?Sized + Display> Display for &mut T
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result
+    {
+        Display::fmt(&**self, f)
+    }
+}
+
+impl Write for Formatter<'_>
+{
+    fn write_str(&mut self, s: &str) -> Result
+    {
+        todo!()
+    }
+
+    fn write_char(&mut self, c: char) -> Result
+    {
+        todo!()
+    }
+
+    fn write_fmt(&mut self, args: Arguments<'_>) -> Result
     {
         todo!()
     }

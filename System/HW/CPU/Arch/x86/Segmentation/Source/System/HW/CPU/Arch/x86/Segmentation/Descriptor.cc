@@ -3,4 +3,3 @@
 
 using namespace System::HW::CPU::X86;
 
-SegmentDescriptor test = SegmentDescriptor::createUser(SegmentType::X);

@@ -681,7 +681,7 @@ struct __copy_if
         requires indirectly_copyable<iterator_t<_R>, _O>
     constexpr copy_if_result<safe_iterator_t<_R>, _O> operator()(_R&& __r, _O __result, _Pred __pred, _Proj __proj = {}) const
     {
-        return operator()(ranges::begin(std::forward<_R>(__r)), ranges::end(std::forward<_R>(__r)), std::move(__pred), std::move(__proj));
+        return operator()(ranges::begin(std::forward<_R>(__r)), ranges::end(std::forward<_R>(__r)), std::move(__result), std::move(__pred), std::move(__proj));
     }
 };
 
@@ -1210,7 +1210,7 @@ struct __reverse_copy
         requires indirectly_copyable<iterator_t<_R>, _O>
     constexpr reverse_copy_result<safe_iterator_t<_R>, _O> operator()(_R&& __r, _O __result) const
     {
-        return operator()(ranges::begin(std::forward<_R>(__r)), ranges::end(std::forward<_R>(__r)));
+        return operator()(ranges::begin(std::forward<_R>(__r)), ranges::end(std::forward<_R>(__r)), std::move(__result));
     }
 };
 
@@ -1632,7 +1632,7 @@ struct __stable_partition
 
         // Attempt to allocate a temporary buffer as large as possible.
         using _T = iter_value_t<_I>;
-        pair<void*, size_t> __buffer = {nullptr, 0};
+        pair<void*, size_t> __buffer = {nullptr, size_t{0}};
         if (!is_constant_evaluated())
         {
             // Note: arbitrary minimum size.
@@ -1753,7 +1753,7 @@ struct __inplace_merge
 
         // Attempt to allocate a temporary buffer as large as possible.
         using _T = iter_value_t<_I>;
-        pair<void*, size_t> __buffer = {nullptr, 0};
+        pair<void*, size_t> __buffer = {nullptr, size_t{0}};
         if (!is_constant_evaluated())
         {
             // Note: arbitrary minimum size.
@@ -2608,7 +2608,7 @@ protected:
     }
 
     template <random_access_iterator _I, class _Comp, class _Proj>
-    static constexpr _I __median_of_medians(_I __first, _I __last, iter_difference_t<_I> __k, _Comp __comp, _Proj __proj)
+    static constexpr _I __median_of_medians(_I __first, _I __last, _Comp __comp, _Proj __proj)
     {
         // Five elements is the theoretically optimal group size for median-of-medians.
         constexpr size_t _GroupSize = 5;
@@ -2662,7 +2662,7 @@ protected:
         if (__depth == 0)
         {
             // Fall back to median-of-medians for guaranteed O(n) worst-case behaviour.
-            __pivot = __median_of_medians(__first, __last, __k, __comp, __proj);
+            __pivot = __median_of_medians(__first, __last, __comp, __proj);
 
             // Bump the depth so that it doesn't overflow when we recurse below.
             __depth = 1;

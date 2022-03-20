@@ -59,7 +59,7 @@ mbr_begin:
     // Load the (first) block of the next stage block list.
     movw    next_stage_block_list_block, %ax
     movw    next_stage_block_list_block+2, %cx
-    movw    $0x7a00, %di
+    movw    $block_list_temp, %di
     call    load_block
 
     // Read the load address of the next stage.

@@ -98,7 +98,7 @@ impl <T> Option<T>
         match self
         {
             Some(x) => x,
-            None => panic!(msg),
+            None => panic!("{}", msg),
         }
     }
 
@@ -259,7 +259,7 @@ impl <T> Option<T>
         match self
         {
             Some(x) => x,
-            None => unsafe { crate::hints::unreachable_unchecked() },
+            None => unsafe { crate::hint::unreachable_unchecked() },
         }
     }
 
@@ -274,7 +274,7 @@ impl <T> Option<T>
         match self
         {
             Some(x) => x,
-            None => unsafe { crate::hints::unreachable_unchecked() },
+            None => unsafe { crate::hint::unreachable_unchecked() },
         }
     }
 

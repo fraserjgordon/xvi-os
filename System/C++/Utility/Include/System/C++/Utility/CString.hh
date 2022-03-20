@@ -14,7 +14,8 @@ namespace __XVI_STD_UTILITY_NS
 //! @TODO: finish this.
 
 
-void* memcpy(void*, const void*, std::size_t) asm("memcpy");
+void* memcpy(void* __restrict, const void* __restrict, std::size_t) asm("memcpy");
+void* memmove(void*, const void*, std::size_t) asm("memmove");
 
 
 } // namespace __XVI_STD_UTILITY_NS

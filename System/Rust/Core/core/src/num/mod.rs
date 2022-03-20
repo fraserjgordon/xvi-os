@@ -17,7 +17,7 @@ const _PTR_BITS: u32 =
     if      cfg!(target_pointer_width = "16") { 16 }
     else if cfg!(target_pointer_width = "32") { 32 }
     else if cfg!(target_pointer_width = "64") { 64 }
-    else                                      { panic!("unsupported pointer width") };
+    else                                      { 0 };
 
 int_type!{isize, _PTR_BITS, usize}
 uint_type!{usize, _PTR_BITS}

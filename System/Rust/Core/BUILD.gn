@@ -20,7 +20,7 @@ library("Core")
         "convert.rs",
         "default.rs",
         "hash.rs",
-        "hints.rs",
+        "hint.rs",
         "intrinsics.rs",
         "iterator.rs",
         "marker.rs",

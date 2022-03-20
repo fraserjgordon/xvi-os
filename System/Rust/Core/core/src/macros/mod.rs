@@ -30,9 +30,25 @@ macro_rules! concat_idents
 
 #[macro_export]
 #[rustc_builtin_macro]
+macro_rules! const_format_args
+{
+    ($fmt:expr) => { /* builtin macro */ };
+    ($fmt:expr, $($args:tt)*) => { /* builtin macro */ };
+}
+
+#[macro_export]
+#[rustc_builtin_macro]
 macro_rules! file
 {
     () => { /* builtin macro */ }
+}
+
+#[macro_export]
+#[rustc_builtin_macro]
+macro_rules! format_args
+{
+    ($fmt:expr) => { /* builtin macro */ };
+    ($fmt:expr, $($args:tt)*) => { /* builtin macro */ };
 }
 
 #[macro_export]
@@ -43,32 +59,10 @@ macro_rules! line
 }
 
 #[macro_export]
+#[rustc_builtin_macro(core_panic)]
 macro_rules! panic
 {
-    () =>
-        {
-            crate::panicking::panic("panic (no message)")
-        };
-
-    ($Msg:literal) =>
-        {
-            crate::panicking::panic($Msg);
-        };
-
-    ($Msg:expr) =>
-        {
-            crate::panicking::panic("FIXME");
-        };
-
-    ($Msg:expr,) =>
-        {
-            crate::panicking::panic("FIXME");
-        };
-
-    ($Format:expr, $($Arg:tt)+) =>
-        {
-            crate::panicking::panic("FIXME");
-        };
+    ($($t:tt)+) => { /* builtin macro */ }
 }
 
 #[macro_export]

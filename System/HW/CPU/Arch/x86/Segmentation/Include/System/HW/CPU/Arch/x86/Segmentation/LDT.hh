@@ -17,7 +17,7 @@ public:
 
     using SegmentDescriptorTable::SegmentDescriptorTable;
 
-    // Returns a segment selector for the given index. To be able to use the selector, this GDT must be active.
+    // Returns a segment selector for the given index. To be able to use the selector, this LDT must be active.
     constexpr SegmentSelector getSelector(int index, int rpl)
     {
         return SegmentDescriptorTable::getSelector(index, rpl, true);
@@ -27,7 +27,7 @@ public:
     // not run "lldt" on this descriptor in 64-bit mode.
     //
     // This 32-bit variant will wrap the base address if located >4GiB!
-    constexpr SegmentDescriptor getDescriptor32() const
+    SegmentDescriptor getDescriptor32() const
     {
         return SegmentDescriptor::createSystem(SegmentType::LDT, static_cast<std::uint32_t>(getBaseAddress()), getLimit());
     }
@@ -35,7 +35,7 @@ public:
     // Returns a segment descriptor that can be added to a GDT to make this LDT usable. This is the 64-bit variant; do
     // not run "lldt" on this descriptor in 16-/32-bit mode if located >4GiB as the upper 32 bits will be silently
     // ignored by the processor.
-    constexpr SegmentDescriptor64 getDescriptor64() const
+    SegmentDescriptor64 getDescriptor64() const
     {
         return SegmentDescriptor64::createSystem(SegmentType::LDT, getBaseAddress(), getLimit());
     }

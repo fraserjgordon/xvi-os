@@ -131,6 +131,14 @@ public:
     static constexpr std::uint8_t SS    = 12;   // Stack fault.
     static constexpr std::uint8_t GP    = 13;   // General protection fault.
 
+    // Recommended instruction sequence to use for trapping to the emulator from the VM86 code.
+    //
+    // Any sequence beginning c4 c4 ... is invalid in VM86 mode (but may represent a valid VEX prefix in protected
+    // mode!). 32-bit versions of Windows use this sequence to make calls to the NTVDM API so that means:
+    //  - it's unlikely to be found in real-mode code anywhere else and won't cause unintended breaks
+    //  - Intel/AMD are aware of this usage and won't gratuitously break it.
+    static constexpr std::initializer_list<std::byte> EmulatorBreak = { std::byte{0xC4}, std::byte{0xC4}, std::byte{0x00} };
+
 
     bool overflowException();
     bool boundsException();

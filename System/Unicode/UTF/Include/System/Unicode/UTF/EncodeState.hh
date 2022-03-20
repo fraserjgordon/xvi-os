@@ -25,8 +25,10 @@ namespace System::Unicode::UTF
 //!
 struct encode_state
 {
-    std::uint8_t    state[8] alignas(std::uintptr_t) = {};
+    alignas(std::uintptr_t) std::uint8_t    state[8] = {};
 };
+
+static_assert(sizeof(encode_state) == 8);
 
 
 __SYSTEM_UNICODE_UTF_EXPORT bool EncodeStateIsInitial(const encode_state*) __SYSTEM_UNICODE_UTF_SYMBOL(EncodeState.IsInitial);

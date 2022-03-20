@@ -159,8 +159,8 @@ private:
                 {
                     union
                     {
-                        char8_t     utf8[3];
-                        char16_t    utf16[1];
+                        char8_t     utf8[4];
+                        char16_t    utf16[2];
                     };
                 } m_in;
 

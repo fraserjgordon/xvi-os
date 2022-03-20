@@ -235,23 +235,6 @@ pub trait RangeBounds<T: ?Sized>
 #[lang = "receiver"]
 pub trait Receiver {}
 
-#[lang = "try"]
-pub trait Try
-{
-    type Ok;
-    type Error;
-
-    #[lang = "into_result"]
-    fn into_result(self) -> Result<Self::Ok, Self::Error>;
-
-    #[lang = "from_error"]
-    fn from_error(error: Self::Error) -> Self;
-
-    #[lang = "from_ok"]
-    fn from_ok(ok: Self::Ok) -> Self;
-}
-
-
 #[lang = "coerce_unsized"]
 pub trait CoerceUnsized<T: ?Sized> {}
 

@@ -73,6 +73,7 @@ pub fn type_name<T: ?Sized>() -> &'static str;
 
 pub fn unlikely(b: bool) -> bool;
 
+#[rustc_const_stable(feature="always", since="0.0.0")]
 pub fn unreachable() -> !;
 
 pub fn variant_count<T>() -> usize;

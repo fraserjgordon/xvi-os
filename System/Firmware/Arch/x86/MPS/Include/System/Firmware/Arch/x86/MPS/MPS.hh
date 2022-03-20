@@ -128,7 +128,7 @@ struct extended_entry_t : entry_t
 template <EntryType Type>
 struct dynamic_entry_t : extended_entry_t
 {
-    constexpr dynamic_entry_t() : entry_t{Type, entrySize(Type)} {}
+    constexpr dynamic_entry_t() : extended_entry_t{{Type}, entrySize(Type)} {}
 };
 
 // Describes a processor and its local APIC.

@@ -16,8 +16,8 @@ _IgniterStage2MultibootEntry:
 
     // Calculate the load address of this executable. We don't have a stack set up yet so we pick a location in memory
     // that we know exists (in this case, the address where the boot sector gets loaded) and then we use it as a
-    // temporary one-entry stack so we can get the instruction pointer. The contents of that word are preserved as there
-    // the Multiboot loader could have put something important there.
+    // temporary one-entry stack so we can get the instruction pointer. The contents of that word are preserved as the
+    // Multiboot loader could have put something important there.
     movl    0x7c00, %ebp
     movl    $0x7c04, %esp
     call    1f

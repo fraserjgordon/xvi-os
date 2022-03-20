@@ -160,8 +160,12 @@ public:
 
     void __duplicate_utils_to(void* __to) const final
     {
+        // Silence a warning about a non-destructor virtual on __function_utils_base.
+        _Pragma("GCC diagnostic push");
+        _Pragma("GCC diagnostic ignored \"-Wdelete-abstract-non-virtual-dtor\"");
         reinterpret_cast<__function_utils_base<_R(_Args...)>*>(__to)->~__function_utils_base();
         new (__to) __function_utils<_T, _R, _Args...>();
+        _Pragma("GCC diagnostic pop");
     }
 
     void __copy_construct_to(__function_storage_t& __to, const __function_storage_t& __from) const final
@@ -251,7 +255,7 @@ public:
         if (&__rhs == this)
             return *this;
 
-        __get_utils().__destroy(_M_data_storage);
+        __get_utils()->__destroy(_M_data_storage);
         __rhs.__get_utils()->__copy_construct_to(_M_data_storage, __rhs._M_data_storage);
         __rhs.__get_utils()->__duplicate_utils_to(&_M_utils_storage);
         return *this;
@@ -262,7 +266,7 @@ public:
         if (&__rhs == this)
             return *this;
 
-        __get_utils().__destroy(_M_data_storage);
+        __get_utils()->__destroy(_M_data_storage);
         __rhs.__get_utils()->__move_construct_to(_M_data_storage, __rhs._M_data_storage);
         __rhs.__get_utils()->__duplicate_utils_to(&_M_utils_storage);
         return *this;

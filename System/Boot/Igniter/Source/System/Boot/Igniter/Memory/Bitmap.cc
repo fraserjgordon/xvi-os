@@ -65,8 +65,8 @@ void PageBitmap::markRange(std::uintptr_t base, std::size_t size, bool available
     }
     else
     {
-        // When marking pages as available, we're greedy and mark all touched pages as unavailable. The first step is to
-        // round the base address down to the previous page boundary.
+        // When marking pages as unavailable, we're greedy and mark all touched pages as unavailable. The first step is
+        // to round the base address down to the previous page boundary.
         auto aligned_base = base & ~(PageSize - 1);
         auto alignment_gain = base - aligned_base;
     

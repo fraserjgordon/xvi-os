@@ -163,7 +163,7 @@ public:
             .dpl = 0,       // Non-zero DPL does not make sense for TSS/LDT segments.
             .p = 1,         // Reasonable default: segment is present.
             .limit_high = ((limit & 0xF0000) >> 16),
-            .os = 0,        // Initialise teh OS-use flag to zero.
+            .os = 0,        // Initialise the OS-use flag to zero.
             .l = 0,         // Flag not used for system segments.
             .db = 0,        // Flag not used for system segments.
             .g = g,
@@ -275,7 +275,7 @@ public:
         auto low = SegmentDescriptor::createSystem(type, static_cast<std::uint32_t>(base), limit);
 
         // Fill in the rest of the descriptor.
-        segment_descriptor_64_t d = {low.get().fields, static_cast<std::uint32_t>(base >> 32), 0};
+        segment_descriptor_64_t d = {{low.get().fields, static_cast<std::uint32_t>(base >> 32), 0}};
         return SegmentDescriptor64{d};
     }
 
@@ -287,7 +287,7 @@ public:
         auto low = SegmentDescriptor::createGate(type, dpl, selector, static_cast<std::uint32_t>(offset), 0);
 
         // Fill in the rest of the descriptor.
-        segment_descriptor_64_t d = {low.get().fields, static_cast<std::uint32_t>(offset >> 32), 0};
+        segment_descriptor_64_t d = {{low.get().fields, static_cast<std::uint32_t>(offset >> 32), 0}};
         return SegmentDescriptor64{d};
     }
 

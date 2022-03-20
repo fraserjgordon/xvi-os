@@ -27,7 +27,7 @@ static std::vector<facility_info> g_facilities;
 facility registerFacility(const char* name_ptr, std::size_t name_len)
 {
     std::string_view name(name_ptr, name_len);
-    g_facilities.emplace_back(name, priority::all);
+    g_facilities.push_back({name, priority::all});
     return static_cast<facility>(g_facilities.size());
 }
 

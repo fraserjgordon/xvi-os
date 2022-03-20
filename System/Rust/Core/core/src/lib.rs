@@ -11,14 +11,15 @@
 #![feature(associated_type_bounds)]
 #![feature(auto_traits)]
 #![feature(const_caller_location)]
-#![feature(const_fn_union)]
-#![feature(const_panic)]
 #![feature(const_type_name)]
 #![feature(decl_macro)]
+#![feature(edition_panic)]
+#![feature(extern_types)]
 #![feature(fundamental)]
 #![feature(intrinsics)]
 #![feature(negative_impls)]
 #![feature(never_type)]
+#![feature(no_coverage)]
 #![feature(prelude_import)]
 #![feature(transparent_unions)]
 #![feature(unboxed_closures)]
@@ -77,7 +78,7 @@ pub mod convert;
 pub mod default;
 pub mod fmt;
 pub mod hash;
-pub mod hints;
+pub mod hint;
 pub mod intrinsics;
 pub mod iterator;
 pub mod marker;

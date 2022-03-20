@@ -1,0 +1,26 @@
+library("Deflate")
+{
+    library_name = "System.Compress.Deflate"
+    library_version = "0.1.0"
+
+    target_types = ["static", "static_pic", "shared", "kernel"]
+
+    shared_define = "__SYSTEM_COMPRESS_DEFLATE_BUILD_SHARED"
+
+    public_headers =
+    [
+    ]
+
+    sources =
+    [
+        "Bitstream.hh",
+        "BlockDecoder.hh",
+        "Huffman.hh",
+        "LZ77.hh",
+
+        "Bitstream.cc",
+        "BlockDecoder.cc",
+        "Huffman.cc",
+        "LZ77.cc",
+    ]
+}

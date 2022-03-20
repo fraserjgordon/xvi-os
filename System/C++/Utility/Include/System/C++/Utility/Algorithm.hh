@@ -1102,7 +1102,7 @@ constexpr _BidirectionalIterator stable_partition(_BidirectionalIterator __first
 
     // Attempt to allocate a temporary buffer as large as possible.
     using _T = typename iterator_traits<_BidirectionalIterator>::value_type;
-    pair<void*, size_t> __buffer = {nullptr, 0};
+    pair<void*, size_t> __buffer = {nullptr, size_t{0}};
     if (!is_constant_evaluated())
     {
         // Note: arbitrary minimum size
@@ -1188,7 +1188,7 @@ constexpr void inplace_merge(_BidirectionalIterator __first, _BidirectionalItera
 
     // Attempt to allocate a temporary buffer as large as possible.
     using _T = typename iterator_traits<_BidirectionalIterator>::value_type;
-    pair<void*, size_t> __buffer = {nullptr, 0};
+    pair<void*, size_t> __buffer = {nullptr, size_t{0}};
     if (!is_constant_evaluated())
     {
         // Note: arbitrary minimum size

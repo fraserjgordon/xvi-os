@@ -19,7 +19,7 @@ class VM86Monitor
 private:
 
     // The emulator instance used to emulate instructions that can't be directly executed in VM86 mode.
-    std::unique_ptr<VM86Emulator> m_monitor;
+    std::unique_ptr<VM86Emulator> m_emulator;
 
     // 
 };

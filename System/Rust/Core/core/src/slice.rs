@@ -76,7 +76,6 @@ pub unsafe fn from_raw_parts_mut<'a, T>(data: *mut T, len: usize) -> &'a mut [T]
 impl <T> [T]
 {
     #[inline]
-    #[rustc_allow_const_fn_unstable(const_fn_union)]
     pub const fn len(&self) -> usize
     {
         unsafe

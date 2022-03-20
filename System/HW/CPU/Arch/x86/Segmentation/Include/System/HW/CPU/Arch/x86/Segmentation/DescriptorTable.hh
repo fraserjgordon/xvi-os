@@ -72,7 +72,7 @@ protected:
     // Frees the resources allocated for the table.
     void clear() noexcept;
 
-    constexpr std::uintptr_t getBaseAddress() const
+    std::uintptr_t getBaseAddress() const
     {
         return reinterpret_cast<std::uintptr_t>(m_table);
     }
