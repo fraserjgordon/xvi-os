@@ -2,8 +2,6 @@
 #define __SYSTEM_CXX_FORMAT_FORMAT_H
 
 
-#include <System/C++/Containers/Vector.hh>
-#include <System/C++/LanguageSupport/InitializerList.hh>
 #include <System/C++/TypeTraits/Concepts.hh>
 #include <System/C++/Utility/Algorithm.hh>
 #include <System/C++/Utility/Array.hh>
@@ -28,7 +26,9 @@ namespace __detail
 
 // Forward declarations.
 //template <class _CharT> class __basic_fmt_contiguous_iter;
-template <class _Context, class... _Args> struct __format_arg_store;
+template <class _CharT> class __basic_fmt_n_iter;
+template <class _CharT> class __basic_fmt_measuring_iter;
+template <class _Context, class... _Args> class __format_arg_store;
 
 }
 
@@ -51,8 +51,8 @@ using wformat_context = basic_format_context<__detail::__basic_fmt_contiguous_it
 using format_args = basic_format_args<format_context>;
 using wformat_args = basic_format_args<wformat_context>;
 
-template <class... _Args> using format_string = basic_format_string<char, _Args...>;
-template <class... _Args> using wformat_string = basic_format_string<wchar_t, _Args...>;
+template <class... _Args> using format_string = basic_format_string<char, std::type_identity_t<_Args>...>;
+template <class... _Args> using wformat_string = basic_format_string<wchar_t, std::type_identity_t<_Args>...>;
 
 template <class _T, class _CharT = char> struct formatter;
 
@@ -70,37 +70,37 @@ template <class _Visitor, class _Context> constexpr decltype(auto) visit_format_
 template <class _Context = format_context, class... _Args> constexpr __detail::__format_arg_store<_Context, _Args...> make_format_args(_Args&&... __args);
 template <class... _Args> constexpr __detail::__format_arg_store<wformat_context, _Args...> make_wformat_args(_Args&&... __args);
 
-template <class... _Args> std::string format(format_string<_Args...> __fmt, _Args&&... __args);
-template <class... _Args> std::wstring format(wformat_string<_Args...> __fmt, _Args&&... __args);
-template <class... _Args> std::string format(const locale&, format_string<_Args...> __fmt, _Args&&... __args);
-template <class... _Args> std::wstring format(const locale&, wformat_string<_Args...> __fmt, _Args&&... __args);
+template <class... _Args> constexpr std::string format(format_string<_Args...> __fmt, _Args&&... __args);
+template <class... _Args> constexpr std::wstring format(wformat_string<_Args...> __fmt, _Args&&... __args);
+template <class... _Args> constexpr std::string format(const locale&, format_string<_Args...> __fmt, _Args&&... __args);
+template <class... _Args> constexpr std::wstring format(const locale&, wformat_string<_Args...> __fmt, _Args&&... __args);
 
 constexpr std::string vformat(std::string_view __fmt, format_args __args);
 constexpr std::wstring vformat(std::wstring_view __fmt, wformat_args __args);
 constexpr std::string vformat(const locale&, std::string_view __fmt, format_args __args);
 constexpr std::wstring vformat(const locale&, std::wstring_view, wformat_args __args);
 
-template <class _Out, class... _Args> _Out format_to(_Out __out, format_string<_Args...> __fmt, _Args&&... __args);
-template <class _Out, class... _Args> _Out format_to(_Out __out, wformat_string<_Args...> __fmt, _Args&&... __args);
-template <class _Out, class... _Args> _Out format_to(_Out __out, const locale&, format_string<_Args...> __fmt, _Args&&... __args);
-template <class _Out, class... _Args> _Out format_to(_Out __out, const locale&, wformat_string<_Args...> __fmt, _Args&&... ___args);
+template <class _Out, class... _Args> constexpr _Out format_to(_Out __out, format_string<_Args...> __fmt, _Args&&... __args);
+template <class _Out, class... _Args> constexpr _Out format_to(_Out __out, wformat_string<_Args...> __fmt, _Args&&... __args);
+template <class _Out, class... _Args> constexpr _Out format_to(_Out __out, const locale&, format_string<_Args...> __fmt, _Args&&... __args);
+template <class _Out, class... _Args> constexpr _Out format_to(_Out __out, const locale&, wformat_string<_Args...> __fmt, _Args&&... ___args);
 
-template <class _Out> _Out vformat_to(_Out __out, std::string_view __fmt, format_args __args);
-template <class _Out> _Out vformat_to(_Out __out, std::wstring_view __fmt, wformat_args __args);
-template <class _Out> _Out vformat_to(_Out __out, const locale&, std::string_view __fmt, format_args __args);
-template <class _Out> _Out vformat_to(_Out __out, const locale&, std::wstring_view __fmt, wformat_args __args);
+template <class _Out> constexpr _Out vformat_to(_Out __out, std::string_view __fmt, format_args __args);
+template <class _Out> constexpr _Out vformat_to(_Out __out, std::wstring_view __fmt, wformat_args __args);
+template <class _Out> constexpr _Out vformat_to(_Out __out, const locale&, std::string_view __fmt, format_args __args);
+template <class _Out> constexpr _Out vformat_to(_Out __out, const locale&, std::wstring_view __fmt, wformat_args __args);
 
 template <class _Out> struct format_to_n_result;
 
-template <class _Out, class... _Args> format_to_n_result<_Out> format_to_n(_Out __out, std::iter_difference_t<_Out> __n, format_string<_Args...> __fmt, _Args&&... __args);
-template <class _Out, class... _Args> format_to_n_result<_Out> format_to_n(_Out __out, std::iter_difference_t<_Out> __n, wformat_string<_Args...> __fmt, _Args&&... __args);
-template <class _Out, class... _Args> format_to_n_result<_Out> format_to_n(_Out __out, std::iter_difference_t<_Out> __n, const locale&, format_string<_Args...> __fmt, _Args&&... __args);
-template <class _Out, class... _Args> format_to_n_result<_Out> format_to_n(_Out __out, std::iter_difference_t<_Out> __n, const locale&, wformat_string<_Args...> __fmt, _Args&&... __args);
+template <class _Out, class... _Args> constexpr format_to_n_result<_Out> format_to_n(_Out __out, std::iter_difference_t<_Out> __n, format_string<_Args...> __fmt, _Args&&... __args);
+template <class _Out, class... _Args> constexpr format_to_n_result<_Out> format_to_n(_Out __out, std::iter_difference_t<_Out> __n, wformat_string<_Args...> __fmt, _Args&&... __args);
+template <class _Out, class... _Args> constexpr format_to_n_result<_Out> format_to_n(_Out __out, std::iter_difference_t<_Out> __n, const locale&, format_string<_Args...> __fmt, _Args&&... __args);
+template <class _Out, class... _Args> constexpr format_to_n_result<_Out> format_to_n(_Out __out, std::iter_difference_t<_Out> __n, const locale&, wformat_string<_Args...> __fmt, _Args&&... __args);
 
-template <class... _Args> std::size_t formatted_size(format_string<_Args...> __fmt, _Args&&... __args);
-template <class... _Args> std::size_t formatted_size(wformat_string<_Args...> __fmt, _Args&&... __args);
-template <class... _Args> std::size_t formatted_size(const locale&, format_string<_Args...> __fmt, _Args&&... __args);
-template <class... _Args> std::size_t formatted_size(const locale&, wformat_string<_Args...> __fmt, _Args&&... __args);
+template <class... _Args> constexpr std::size_t formatted_size(format_string<_Args...> __fmt, _Args&&... __args);
+template <class... _Args> constexpr std::size_t formatted_size(wformat_string<_Args...> __fmt, _Args&&... __args);
+template <class... _Args> constexpr std::size_t formatted_size(const locale&, format_string<_Args...> __fmt, _Args&&... __args);
+template <class... _Args> constexpr std::size_t formatted_size(const locale&, wformat_string<_Args...> __fmt, _Args&&... __args);
 
 
 class format_error :
@@ -122,10 +122,6 @@ public:
 
 namespace __detail
 {
-
-
-// Utility function that causes a function to be not a constant expression if called.
-inline void __fmt_not_constexpr() {};
 
 
 // Scans a format string for the next replacement field.
@@ -172,7 +168,7 @@ constexpr std::basic_string_view<_CharT> __find_next_replacement_field(const std
                 if (__depth == 1)
                 {
                     // Last matching '}' has been found.
-                    return {__p, std::distance(__p, std::next(__next))};
+                    return {__p, static_cast<std::size_t>(std::next(__next) - __p)};
                 }
 
                 --__depth;
@@ -185,27 +181,6 @@ constexpr std::basic_string_view<_CharT> __find_next_replacement_field(const std
 
     // No more replacements found. Return an empty one at the end of the input string.
     return __s.substr(__s.size(), 0);
-}
-
-
-// Locates all of the replacement fields in a format string.
-template <class _CharT>
-constexpr std::vector<std::basic_string_view<_CharT>> __get_replacement_fields(std::basic_string_view<_CharT> __s)
-{
-    std::vector<std::basic_string_view<_CharT>> __replacements {};
-    auto __remaining = __s;
-    while (!__remaining.empty())
-    {
-        // Find the next replacement field. If it has a zero length, the end of the string was reached.
-        auto __field = __find_next_replacement_field(__remaining);
-        if (__field.empty())
-            break;
-
-        __replacements.push(__field);
-        __remaining = {__field.end(), __s.end()};
-    }
-
-    return __replacements;
 }
 
 
@@ -250,7 +225,7 @@ constexpr std::size_t __extract_int(std::basic_string_view<_CharT>& __s)
 
     while (!__s.empty() && __is_digit(__s[0]))
     {
-        __val = (10 * __val) + (__s[0] - static_cast<_CharT>('0'));
+        __val = (10 * __val) + static_cast<std::size_t>(__s[0] - static_cast<_CharT>('0'));
         __s.remove_prefix(1);
     }
 
@@ -287,7 +262,7 @@ constexpr __replacement_field_info<_CharT> __parse_replacement_field(std::basic_
         {
             // Read and calculate the argument ID.
             while (__is_digit(*__p))
-                __info.__arg_id = (10 * __info.__arg_id) + (*__p++ - static_cast<_CharT>('0'));
+                __info.__arg_id = (10 * __info.__arg_id) + static_cast<std::size_t>(*__p++ - static_cast<_CharT>('0'));
         }
     }
 
@@ -295,7 +270,7 @@ constexpr __replacement_field_info<_CharT> __parse_replacement_field(std::basic_
     if (*__p == static_cast<_CharT>(':'))
     {
         // The rest of the string is the format specifier.
-        __info.__format_spec = {__p + 1, __s.end() - (__p + 1) - 1};
+        __info.__format_spec = {__p + 1, static_cast<std::size_t>(__s.end() - (__p + 1) - 1)};
         __p = __s.end() - 1;
     }
 
@@ -435,43 +410,54 @@ constexpr decltype(auto) __visit_format_arg(__fmt_arg_type __type, const __basic
 }
 
 
+// Templated struct allowing compile-time detection of the storage type used by __store_format_arg.
+template <__fmt_arg_type _Type> struct __fmt_arg_type_tag {};
+
+
 template <class _Context, class _T, class _Char = typename _Context::char_type>
-constexpr void __store_format_arg(_T&& __v, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
+constexpr auto __store_format_arg(_T&& __v, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
 {
     if constexpr (std::is_same_v<_T, bool>)
     {
         __type = __fmt_arg_type::__bool;
         __data._U_bool = __v;
+        return __fmt_arg_type_tag<__fmt_arg_type::__bool>{};
     }
     else if constexpr (std::is_same_v<_T, _Char>)
     {
         __type = __fmt_arg_type::__char,
         __data._U_char = __v;
+        return __fmt_arg_type_tag<__fmt_arg_type::__char>{};
     }
     else if constexpr (std::is_same_v<_T, char> && std::is_same_v<_Char, wchar_t>)
     {
         __type = __fmt_arg_type::__char,
         __data._U_char = static_cast<wchar_t>(__v);
+        return __fmt_arg_type_tag<__fmt_arg_type::__char>{};
     }
     else if constexpr (std::is_integral_v<_T> && std::is_signed_v<_T> && sizeof(_T) <= sizeof(int))
     {
         __type = __fmt_arg_type::__int;
         __data._U_int = static_cast<int>(__v);
+        return __fmt_arg_type_tag<__fmt_arg_type::__int>{};
     }
     else if constexpr (std::is_integral_v<_T> && std::is_unsigned_v<_T> && sizeof(_T) <= sizeof(unsigned int))
     {
         __type = __fmt_arg_type::__unsigned_int;
         __data._U_unsigned_int = static_cast<unsigned int>(__v);
+        return __fmt_arg_type_tag<__fmt_arg_type::__unsigned_int>{};
     }
     else if constexpr (std::is_integral_v<_T> && std::is_signed_v<_T> && sizeof(_T) <= sizeof(long long int))
     {
         __type = __fmt_arg_type::__long_long_int;
         __data._U_long_long_int = static_cast<long long int>(__v);
+        return __fmt_arg_type_tag<__fmt_arg_type::__long_long_int>{};
     }
     else if constexpr (std::is_integral_v<_T> && std::is_unsigned_v<_T> && sizeof(_T) <= sizeof(unsigned long long))
     {
         __type = __fmt_arg_type::__unsigned_long_long_int;
         __data._U_unsigned_long_long_int = static_cast<unsigned long long int>(__v);
+        return __fmt_arg_type_tag<__fmt_arg_type::__unsigned_long_long_int>{};
     }
     else
     {
@@ -496,7 +482,7 @@ constexpr void __store_format_arg(_T&& __v, __fmt_arg_type& __type, __basic_form
             if (!__parse_only)
             {
                 auto& __fc = *reinterpret_cast<_Context*>(__format);
-                __fc.advance_to(__f.format(*const_cast<_TQ>(static_cast<const _TD*>(__ptr)), __fc));
+                __fc.advance_to(__f.format(*const_cast<_TQ*>(static_cast<const _TD*>(__ptr)), __fc));
             }
         };
 
@@ -505,64 +491,74 @@ constexpr void __store_format_arg(_T&& __v, __fmt_arg_type& __type, __basic_form
             .__data = std::addressof(__v),
             .__fmt_fn = __format_lambda,
         };
+
+        return __fmt_arg_type_tag<__fmt_arg_type::__handle>{};
     }
 }
 
 template <class _Context, class _Char = typename _Context::char_type>
-constexpr void __store_format_arg(float __f, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
+constexpr auto __store_format_arg(float __f, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
 {
     __type = __fmt_arg_type::__float;
     __data._U_float = __f;
+    return __fmt_arg_type_tag<__fmt_arg_type::__float>{};
 }
 
 template <class _Context, class _Char = typename _Context::char_type>
-constexpr void __store_format_arg(double __f, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
+constexpr auto __store_format_arg(double __f, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
 {
     __type = __fmt_arg_type::__double;
     __data._U_double = __f;
+    return __fmt_arg_type_tag<__fmt_arg_type::__double>{};
 }
 
 template <class _Context, class _Char = typename _Context::char_type>
-constexpr void __store_format_arg(long double __f, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
+constexpr auto __store_format_arg(long double __f, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
 {
     __type = __fmt_arg_type::__long_double;
     __data._U_long_double = __f;
+    return __fmt_arg_type_tag<__fmt_arg_type::__long_double>{};
 }
 
 template <class _Context, class _Char = typename _Context::char_type>
-constexpr void __store_format_arg(const _Char* __s, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
+constexpr auto __store_format_arg(const _Char* __s, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
 {
     __type = __fmt_arg_type::__cstring;
     __data._U_cstring = __s;
+    return __fmt_arg_type_tag<__fmt_arg_type::__cstring>{};
 }
 
 template <class _Context, class _Traits, class _Char = typename _Context::char_type>
-constexpr void __store_format_arg(std::basic_string_view<_Char, _Traits> __s, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
+constexpr auto __store_format_arg(std::basic_string_view<_Char, _Traits> __s, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
 {
     __type = __fmt_arg_type::__string_view;
     __data._U_string_view = {__s.data(), __s.size()};
+    return __fmt_arg_type_tag<__fmt_arg_type::__string_view>{};
 }
 
 template <class _Context, class _Traits, class _Allocator, class _Char = typename _Context::char_type>
-constexpr void __store_format_arg(std::basic_string<_Char, _Traits, _Allocator> __s, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
+constexpr auto __store_format_arg(std::basic_string<_Char, _Traits, _Allocator> __s, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
 {
     __type = __fmt_arg_type::__string_view;
     __data._U_string_view = {__s.data(), __s.size()};
+    return __fmt_arg_type_tag<__fmt_arg_type::__string_view>{};
 }
 
 template <class _Context, class _Char = typename _Context::char_type>
-constexpr void __store_format_arg(std::nullptr_t, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
+constexpr auto __store_format_arg(std::nullptr_t, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
 {
     __type = __fmt_arg_type::__void_ptr;
     __data._U_void_ptr = nullptr;
+    return __fmt_arg_type_tag<__fmt_arg_type::__void_ptr>{};
 }
 
 template <class _Context, class _T, class _Char = typename _Context::char_type>
     requires std::is_void_v<_T>
-constexpr void __store_format_arg(_T* __p, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
+constexpr auto __store_format_arg(_T* __p, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
 {
     __type = __fmt_arg_type::__void_ptr;
     __data._U_void_ptr = __p;
+    return __fmt_arg_type_tag<__fmt_arg_type::__void_ptr>{};
 }
 
 
@@ -641,7 +637,7 @@ public:
 
     constexpr void advance_to(const_iterator __it)
     {
-        _M_fmt = {__it, std::distance(__it, end())};
+        _M_fmt = {__it, static_cast<std::size_t>(end() - __it)};
     }
 
     constexpr void __set(std::basic_string_view<_CharT> __sv)
@@ -703,6 +699,7 @@ public:
             _M_fmt_fn(__pc, nullptr, nullptr);
         }
 
+        // Not constexpr as the type erasure is incompatible with constexpr evaluation.
         void format(basic_format_parse_context<char_type>& __pc, _Context& __context) const
         {
             _M_fmt_fn(__pc, &__context, _M_ptr);
@@ -1148,7 +1145,7 @@ struct __stdfmt_formatter_base
     constexpr typename _PC::iterator parse(_PC& __pc)
     {
         // Do a type-generic parse of the format specification.
-        std::basic_string_view<_CharT> __sv{__pc.begin(), std::distance(__pc.begin(), __pc.end())};
+        std::basic_string_view<_CharT> __sv{__pc.begin(), static_cast<std::size_t>(__pc.end() - __pc.begin())};
         _M_spec = __parse_stdfmt_format_spec(__sv);
 
         // Validate any extra arguments consumed (i.e runtime width and precision values).
@@ -1336,20 +1333,22 @@ struct __stdfmt_formatter_base
     template <class _Out>
     constexpr _Out __do_output(_Out __out, std::basic_string_view<_CharT> __formatted)
     {
+        using __len_t = std::iter_difference_t<_Out>;
+
         // Calculate the amount of fill needed.
-        std::size_t __fill_size = 0;
+        __len_t __fill_size = 0;
         if (_M_spec.__width != __stdfmt_wp_type::__none)
         {
             //! @todo the spec requires this to be similar to wcswidth, not an element count.
             auto __est_width = __formatted.size();
 
             if (__est_width < _M_spec.__width_val)
-                __fill_size = _M_spec.__width_val - __est_width;
+                __fill_size = static_cast<__len_t>(_M_spec.__width_val - __est_width);
         }
 
         // Split the fill into pre-fill and post-fill, based on the requested alignment type.
-        std::size_t __pre_fill = 0;
-        std::size_t __post_fill = 0;
+        __len_t __pre_fill = 0;
+        __len_t __post_fill = 0;
         switch (_M_spec.__align)
         {
             case __stdfmt_align_type::__begin:
@@ -1396,7 +1395,7 @@ struct __stdfmt_formatter_base
             *__ptr++ = static_cast<_CharT>(*__str++);
 
         // We pass to the string formatting method so precisions still get applied.
-        return __format_string_view(std::move(__out), std::basic_string_view<_CharT>{__arr, __ptr - __arr});
+        return __format_string_view(std::move(__out), std::basic_string_view<_CharT>{__arr, static_cast<std::size_t>(__ptr - __arr)});
     }
 
     template <class _Out, class _T>
@@ -1419,7 +1418,7 @@ struct __stdfmt_formatter_base
         else
         {
             auto __end = std::char_traits<_CharT>::find(__s, _M_spec.__precision_val, 0);
-            __length = __end ? __end - __s : _M_spec.__precision_val;
+            __length = __end ? static_cast<std::size_t>(__end - __s) : _M_spec.__precision_val;
         }
 
         return __do_output(std::move(__out), std::basic_string_view<_CharT>(__s, __length));
@@ -1450,7 +1449,7 @@ struct __stdfmt_formatter_base
 
         // Determine the base and the alt-form prefix, if needed.
         const char* __prefix = nullptr;
-        _T __base;
+        unsigned int __base;
         bool __upper = false;
         switch (_M_spec.__type)
         {
@@ -1496,7 +1495,7 @@ struct __stdfmt_formatter_base
         }
 
         // Calculate the sign.
-        using _UT = std::make_signed_t<_T>;
+        using _UT = std::make_unsigned_t<_T>;
         _CharT __sign = 0;
         _UT __un;
         if (__n < 0)
@@ -1586,11 +1585,15 @@ struct __stdfmt_formatter_base
         if (__sign)
             *__ptr-- = __sign;
 
-        return __do_output(std::move(__out), std::basic_string_view<_CharT>{__ptr + 1, __end - __ptr});
+        return __do_output(std::move(__out), std::basic_string_view<_CharT>{__ptr + 1, static_cast<std::size_t>(__end - __ptr)});
     }
 
     template <class _Out, class _T>
-    constexpr _Out __format_float(_Out __out, _T __f);
+    constexpr _Out __format_float(_Out __out, _T __f)
+    {
+        //! @todo: implement
+        return std::move(__out);
+    }
 
     template <class _Out>
     constexpr _Out __format_pointer(_Out __out, const void* __p)
@@ -1727,7 +1730,7 @@ struct __integer_formatter : __stdfmt_formatter_base<_CharT>
         switch (__stdfmt_formatter_base<_CharT>::_M_spec.__type)
         {
             case __stdfmt_presentation_type::__c:
-                if (__t < std::numeric_limits<_CharT>::min() || __t > std::numeric_limits<_CharT>::max())
+                if (static_cast<_T>(static_cast<_CharT>(__t)) != __t)
                     throw format_error("numeric value outside range of valid character values");
                 return this->__format_char(__fc.out(), static_cast<_CharT>(__t));
 
@@ -1748,7 +1751,13 @@ struct __integer_formatter : __stdfmt_formatter_base<_CharT>
 template <class _CharT, class _T>
 struct __float_formatter : __stdfmt_formatter_base<_CharT>
 {
-
+    template <class _Out>
+    constexpr _Out format(_T __t, basic_format_context<_Out, _CharT>& __fc)
+    {
+        //! @todo: implement.
+        (void)__t;
+        return std::move(__fc.out());
+    }
 };
 
 template <class _CharT, class _T>
@@ -1786,15 +1795,15 @@ template <> struct formatter<wchar_t, wchar_t> : __detail::__char_formatter<wcha
 
 template <> struct formatter<char*, char> : __detail::__cstring_formatter<char> {};
 template <> struct formatter<const char*, char> : __detail::__cstring_formatter<char> {};
-template <std::size_t _N> struct formatter<const char[_N]> : __detail::__char_array_formatter<char, _N> {};
-template <class _Traits, class _Allocator> struct formatter<std::basic_string<char, _Traits, _Allocator>> : __detail::__string_view_formatter<char> {};
-template <class _Traits> struct formatter<std::basic_string_view<char, _Traits>> : __detail::__string_view_formatter<char> {};
+template <std::size_t _N> struct formatter<const char[_N], char> : __detail::__char_array_formatter<char, _N> {};
+template <class _Traits, class _Allocator> struct formatter<std::basic_string<char, _Traits, _Allocator>, char> : __detail::__string_view_formatter<char> {};
+template <class _Traits> struct formatter<std::basic_string_view<char, _Traits>, char> : __detail::__string_view_formatter<char> {};
 
 template <> struct formatter<wchar_t*, wchar_t> : __detail::__cstring_formatter<wchar_t> {};
 template <> struct formatter<const wchar_t*, wchar_t> : __detail::__cstring_formatter<wchar_t> {};
-template <std::size_t _N> struct formatter<const wchar_t[_N]> : __detail::__char_array_formatter<wchar_t, _N> {};
-template <class _Traits, class _Allocator> struct formatter<std::basic_string<wchar_t, _Traits, _Allocator>> : __detail::__string_view_formatter<wchar_t> {};
-template <class _Traits> struct formatter<std::basic_string_view<wchar_t, _Traits>> : __detail::__string_view_formatter<wchar_t> {};
+template <std::size_t _N> struct formatter<const wchar_t[_N], wchar_t> : __detail::__char_array_formatter<wchar_t, _N> {};
+template <class _Traits, class _Allocator> struct formatter<std::basic_string<wchar_t, _Traits, _Allocator>, wchar_t> : __detail::__string_view_formatter<wchar_t> {};
+template <class _Traits> struct formatter<std::basic_string_view<wchar_t, _Traits>, wchar_t> : __detail::__string_view_formatter<wchar_t> {};
 
 template <> struct formatter<bool, char> : __detail::__bool_formatter<char> {};
 template <> struct formatter<signed char, char> : __detail::__integer_formatter<char, signed char> {};
@@ -1835,27 +1844,32 @@ template <> struct formatter<void*, wchar_t> : __detail::__pointer_formatter<wch
 template <> struct formatter<const void*, wchar_t> : __detail::__pointer_formatter<wchar_t, const void*> {};
 
 
-constexpr std::string vformat(std::string_view __fmt, format_args __args)
+namespace __detail
 {
-    // Target.
-    std::string __formatted;
-    auto __out = std::back_inserter(__formatted);
 
+
+template <class _Out, class _CharT, bool _OnlyParse = false>
+constexpr _Out __parse_and_format_to(_Out __out, std::basic_string_view<_CharT> __fmt, basic_format_args<basic_format_context<_Out, _CharT>> __args)
+{
     // Parse context.
-    format_parse_context __parse {__fmt, __args.__size()};
+    basic_format_parse_context<_CharT> __parse {__fmt, __args.__size()};
 
     // Format context.
-    auto __fc = basic_format_context<decltype(__out), char>::__make(__args, __out);
+    //
+    // Note that the format context takes ownership of the output iterator.
+    using _FC = basic_format_context<_Out, _CharT>;
+    auto __fc = _FC::__make(__args, std::move(__out));
 
     // Iterate over the literal output and replacement fields.
     while (!__fmt.empty())
     {
         // Find the next replacement and all the text before it.
         auto __field = __detail::__find_next_replacement_field(__fmt);
-        auto __before = __fmt.substr(0, std::distance(__fmt.begin(), __field.begin()));
+        auto __before = __fmt.substr(0, static_cast<std::size_t>(__field.begin() - __fmt.begin()));
 
         // Output the literal text. This also takes back the output iterator from the format context.
-        __out = (std::ranges::copy(__before, __fc.out())).out;
+        if constexpr (!_OnlyParse)
+            __out = (std::ranges::copy(__before, __fc.out())).out;
 
         // If the replacement field is empty, we are done.
         if (__field.empty())
@@ -1868,9 +1882,15 @@ constexpr std::string vformat(std::string_view __fmt, format_args __args)
         // Check for literal replacements.
         if (__info.__replacement_char)
         {
-            // Just write out the literal.
-            *__out = __info.__replacement_char;
-            ++__out;
+            if constexpr (!_OnlyParse)
+            {
+                // Just write out the literal.
+                *__out = __info.__replacement_char;
+                ++__out;
+
+                // Update the formatting context so that the iterator is in the same place in both cases.
+                __fc.advance_to(std::move(__out));
+            }
         }
         else
         {
@@ -1897,79 +1917,94 @@ constexpr std::string vformat(std::string_view __fmt, format_args __args)
             {
                 if constexpr (std::is_same_v<_T, bool>)
                 {
-                    std::formatter<bool, char> __f;
+                    std::formatter<bool, _CharT> __f;
                     __f.parse(__parse);
-                    __fc.advance_to(__f.format(__arg, __fc));
+                    if constexpr (!_OnlyParse)
+                        __fc.advance_to(__f.format(__arg, __fc));
                 }
-                else if constexpr (std::is_same_v<_T, char>)
+                else if constexpr (std::is_same_v<_T, _CharT>)
                 {
-                    std::formatter<char, char> __f;
+                    std::formatter<_CharT, _CharT> __f;
                     __f.parse(__parse);
-                    __fc.advance_to(__f.format(__arg, __fc));
+                    if constexpr (!_OnlyParse)
+                        __fc.advance_to(__f.format(__arg, __fc));
                 }
                 else if constexpr (std::is_same_v<_T, int>)
                 {
-                    std::formatter<int, char> __f;
+                    std::formatter<int, _CharT> __f;
                     __f.parse(__parse);
-                    __fc.advance_to(__f.format(__arg, __fc));
+                    if constexpr (!_OnlyParse)
+                        __fc.advance_to(__f.format(__arg, __fc));
                 }
                 else if constexpr (std::is_same_v<_T, unsigned int>)
                 {
-                    std::formatter<unsigned int, char> __f;
+                    std::formatter<unsigned int, _CharT> __f;
                     __f.parse(__parse);
-                    __fc.advance_to(__f.format(__arg, __fc));
+                    if constexpr (!_OnlyParse)
+                        __fc.advance_to(__f.format(__arg, __fc));
                 }
                 else if constexpr (std::is_same_v<_T, long long>)
                 {
-                    std::formatter<long long, char> __f;
+                    std::formatter<long long, _CharT> __f;
                     __f.parse(__parse);
-                    __fc.advance_to(__f.format(__arg, __fc));
+                    if constexpr (!_OnlyParse)
+                        __fc.advance_to(__f.format(__arg, __fc));
                 }
                 else if constexpr (std::is_same_v<_T, unsigned long long>)
                 {
-                    std::formatter<unsigned long long, char> __f;
+                    std::formatter<unsigned long long, _CharT> __f;
                     __f.parse(__parse);
-                    __fc.advance_to(__f.format(__arg, __fc));
+                    if constexpr (!_OnlyParse)
+                        __fc.advance_to(__f.format(__arg, __fc));
                 }
                 else if constexpr (std::is_same_v<_T, float>)
                 {
-                    std::formatter<float , char> __f;
+                    std::formatter<float, _CharT> __f;
                     __f.parse(__parse);
-                    //__fc.advance_to(__f.format(__arg, __fc));
+                    if constexpr (!_OnlyParse)
+                        __fc.advance_to(__f.format(__arg, __fc));
                 }
                 else if constexpr (std::is_same_v<_T, double>)
                 {
-                    std::formatter<double , char> __f;
+                    std::formatter<double, _CharT> __f;
                     __f.parse(__parse);
-                    //__fc.advance_to(__f.format(__arg, __fc));
+                    if constexpr (!_OnlyParse)
+                        __fc.advance_to(__f.format(__arg, __fc));
                 }
                 else if constexpr (std::is_same_v<_T, long double>)
                 {
-                    std::formatter<long double, char> __f;
+                    std::formatter<long double, _CharT> __f;
                     __f.parse(__parse);
-                    //__fc.advance_to(__f.format(__arg, __fc));
+                    if constexpr (!_OnlyParse)
+                        __fc.advance_to(__f.format(__arg, __fc));
                 }
-                else if constexpr (std::is_same_v<_T, const char*>)
+                else if constexpr (std::is_same_v<_T, const _CharT*>)
                 {
-                    std::formatter<const char*, char> __f;
+                    std::formatter<const _CharT*, _CharT> __f;
                     __f.parse(__parse);
-                    __fc.advance_to(__f.format(__arg, __fc));
+                    if constexpr (!_OnlyParse)
+                        __fc.advance_to(__f.format(__arg, __fc));
                 }
-                else if constexpr (std::is_same_v<_T, std::string_view>)
+                else if constexpr (std::is_same_v<_T, std::basic_string_view<_CharT>>)
                 {
-                    std::formatter<std::string_view, char> __f;
+                    std::formatter<std::basic_string_view<_CharT>, _CharT> __f;
                     __f.parse(__parse);
-                    __fc.advance_to(__f.format(__arg, __fc));
+                    if constexpr (!_OnlyParse)
+                        __fc.advance_to(__f.format(__arg, __fc));
                 }
                 else if constexpr (std::is_same_v<_T, const void*>)
                 {
-                    std::formatter<const void*, char> __f;
+                    std::formatter<const void*, _CharT> __f;
                     __f.parse(__parse);
-                    __fc.advance_to(__f.format(__arg, __fc));
+                    if constexpr (!_OnlyParse)
+                        __fc.advance_to(__f.format(__arg, __fc));
                 }
-                else if constexpr (std::is_same_v<_T, basic_format_arg<decltype(__fc)>::handle>)
+                else if constexpr (std::is_same_v<_T, typename basic_format_arg<_FC>::handle>)
                 {
-                    __arg.format(__parse, __fc);
+                    if constexpr (_OnlyParse)
+                        __arg.__parse(__parse);
+                    else
+                        __arg.format(__parse, __fc);
                 }
                 else
                 {
@@ -1980,66 +2015,265 @@ constexpr std::string vformat(std::string_view __fmt, format_args __args)
         }
 
         // This field has been processed.
-        __fmt = __fmt.substr(std::distance(__fmt.begin(), __field.end()));
+        __fmt = __fmt.substr(static_cast<std::size_t>(__field.end() - __fmt.begin()));
     }
+
+    return __fc.out();
+}
+
+
+class __stdfmt_dummy_iter_assign
+{
+public:
+
+    template <class _T>
+    constexpr void operator= (const _T&) const noexcept {};
+};
+
+
+class __stdfmt_dummy_iter
+{
+public:
+
+    constexpr __stdfmt_dummy_iter_assign operator*() const noexcept { return {}; };
+
+    constexpr void operator++() const noexcept {};
+};
+
+
+template <class _CharT>
+consteval void __consteval_parse_impl(std::basic_string_view<_CharT> __fmt, basic_format_args<basic_format_context<__stdfmt_dummy_iter, _CharT>> __args)
+{
+    // Evaluated for side-effects only, i.e does it throw?
+    __parse_and_format_to<__stdfmt_dummy_iter, _CharT, true>(__stdfmt_dummy_iter{}, __fmt, __args);
+}
+
+
+template <class> struct __fmt_arg_type_extractor {};
+template <__fmt_arg_type _T> struct __fmt_arg_type_extractor<__fmt_arg_type_tag<_T>> { static constexpr auto __value = _T; };
+
+
+template <class _CharT, class _Arg>
+consteval decltype(auto) __generate_dummy_format_arg()
+{
+    // If we were to attempt to store an arg of type _Arg, what 'kind' would it be?
+    using _Context = basic_format_context<__stdfmt_dummy_iter, _CharT>;
+    using _TypeTag = decltype(__store_format_arg<_Context>(declval<_Arg>(), declval<__fmt_arg_type&>(), declval<__basic_format_arg_storage<_CharT>&>()));
+    constexpr auto _Type = __fmt_arg_type_extractor<_TypeTag>::__value;
+
+    // For anything except handles, we can trivially generate a default-constructed value and be sure of no side-effects
+    // or other weird non-consteval behaviour.
+    if constexpr (_Type == __fmt_arg_type::__handle)
+    {
+        // Oh dear; this is a non-standard type with a user-defined formatter.
+        //
+        // We need to return something with the correct type, so that we'll use the right parser when we generate the
+        // type-erased handle. If we can trivially default-construct the type, go ahead and do that.
+        if constexpr (std::is_trivially_default_constructible_v<_Arg>)
+        {
+            return _Arg{};
+        }
+        else
+        {
+            // Be very naughty and return a reference obtained by dereferencing a null pointer...
+            _Arg* __naughty = nullptr;
+            return static_cast<_Arg&>(*__naughty);
+        }
+    }
+    else
+    {
+        // Just go ahead and construct the arg as normal.
+        return _Arg{};
+    }
+}
+
+
+template <class _CharT, class... _Args>
+consteval void __consteval_parse(std::basic_string_view<_CharT> __fmt)
+{
+    // Generate placeholder values for all args.
+    using _Context = basic_format_context<__stdfmt_dummy_iter, _CharT>;
+    __consteval_parse_impl(__fmt, basic_format_args<_Context>(make_format_args<_Context>(std::forward<_Args>(__generate_dummy_format_arg<_CharT, _Args>())...)));
+}
+
+
+template <class _CharT>
+class __basic_fmt_measuring_iter
+{
+public:
+
+    using value_type        = _CharT;
+    using difference_type   = std::ptrdiff_t;
+    using pointer           = _CharT*;
+    using reference         = _CharT&;
+    using iterator_category = std::output_iterator_tag;
+
+    constexpr __basic_fmt_measuring_iter() = default;
+
+    constexpr reference operator*() const
+    {
+        return _M_dummy;
+    }
+
+    constexpr __basic_fmt_measuring_iter& operator++()
+    {
+        ++_M_count;
+        return *this;
+    }
+
+    constexpr __basic_fmt_measuring_iter& operator++(int)
+    {
+        ++_M_count;
+        return *this;
+    }
+
+    constexpr std::size_t __count() const noexcept
+    {
+        return _M_count;
+    }
+
+private:
+
+    std::size_t     _M_count = 0;
+    mutable _CharT  _M_dummy;
+};
+
+
+template <class _CharT>
+constexpr std::size_t __vformatted_size(std::basic_string_view<_CharT> __fmt, basic_format_args<basic_format_context<__basic_fmt_measuring_iter<_CharT>, _CharT>> __args)
+{
+    __basic_fmt_measuring_iter<_CharT> __out {};
+
+    __out = __parse_and_format_to(std::move(__out), __fmt, __args);
+
+    return __out.__count();
+}
+
+
+template <class _CharT, class... _Args>
+constexpr std::size_t __formatted_size(std::basic_string_view<_CharT> __fmt, _Args&&... __args)
+{
+    using _Context = basic_format_context<__basic_fmt_measuring_iter<_CharT>, _CharT>;
+    return __vformatted_size(__fmt, basic_format_args<_Context>{make_format_args<_Context>(std::forward<_Args>(__args)...)});
+}
+
+
+} // namespace __detail
+
+
+template <class _CharT, class... _Args>
+template <class _T>
+    requires std::convertible_to<const _T&, std::basic_string_view<_CharT>>
+consteval basic_format_string<_CharT, _Args...>::basic_format_string(const _T& __s) :
+    _M_str{__s}
+{
+    // Evaluate this for side-effects (i.e throwing if parsing fails).
+    __detail::__consteval_parse<_CharT, _Args...>(_M_str);
+}
+
+
+constexpr std::string vformat(std::string_view __fmt, format_args __args)
+{
+    // Target.
+    std::string __formatted;
+    auto __out = std::back_inserter(__formatted);
+
+    __detail::__parse_and_format_to(std::move(__out), __fmt, __args);
 
     return __formatted;
 }
 
 
-template <class... _Args>
-std::string format(format_string<_Args...> __fmt, _Args&&... __args)
+constexpr std::wstring vformat(std::wstring_view __fmt, wformat_args __args)
 {
-    return vformat(__fmt.get(), make_format_args(__args...));
+    // Target.
+    std::wstring __formatted;
+    auto __out = std::back_inserter(__formatted);
+
+    __detail::__parse_and_format_to(std::move(__out), __fmt, __args);
+
+    return __formatted;
+}
+
+
+template <class _Out>
+constexpr _Out vformat_to(_Out __out, std::string_view __fmt, format_args __args)
+{
+    return __detail::__parse_and_format_to(std::move(__out), __fmt, __args);
+}
+
+
+template <class _Out>
+constexpr _Out vformat_to(_Out __out, std::wstring_view __fmt, wformat_args __args)
+{
+    return __detail::__parse_and_format_to(std::move(__out), __fmt, __args);
 }
 
 
 template <class... _Args>
-std::wstring format(wformat_string<_Args...> __fmt, _Args&&... __args)
+constexpr std::string format(format_string<_Args...> __fmt, _Args&&... __args)
 {
-    return vformat(__fmt.get(), make_wformat_args(__args...));
+    return vformat(__fmt.get(), make_format_args(std::forward<_Args>(__args)...));
 }
 
 
 template <class... _Args>
-std::string format(const locale& __loc, format_string<_Args...> __fmt, _Args&&... __args)
+constexpr std::wstring format(wformat_string<_Args...> __fmt, _Args&&... __args)
 {
-    return vformat(__loc, __fmt.get(), make_format_args(__args...));
+    return vformat(__fmt.get(), make_wformat_args(std::forward<_Args>(__args)...));
 }
 
 
 template <class... _Args>
-std::wstring format(const locale& __loc, wformat_string<_Args...> __fmt, _Args&&... __args)
+constexpr std::string format(const locale& __loc, format_string<_Args...> __fmt, _Args&&... __args)
 {
-    return vformat(__loc, __fmt.get(), make_wformat_args(__args...));
+    return vformat(__loc, __fmt.get(), make_format_args(std::forward<_Args>(__args)...));
+}
+
+
+template <class... _Args>
+constexpr std::wstring format(const locale& __loc, wformat_string<_Args...> __fmt, _Args&&... __args)
+{
+    return vformat(__loc, __fmt.get(), make_wformat_args(std::forward<_Args>(__args)...));
 }
 
 
 template <class _Out, class... _Args>
-_Out format_to(_Out __out, format_string<_Args...> __fmt, _Args&&... __args)
+constexpr _Out format_to(_Out __out, format_string<_Args...> __fmt, _Args&&... __args)
 {
-    return vformat_to(std::move(__out), __fmt.get(), make_format_args(__args...));
+    return vformat_to(std::move(__out), __fmt.get(), make_format_args(std::forward<_Args>(__args)...));
 }
 
 
 template <class _Out, class... _Args>
-_Out format_to(_Out __out, wformat_string<_Args...> __fmt, _Args&&... __args)
+constexpr _Out format_to(_Out __out, wformat_string<_Args...> __fmt, _Args&&... __args)
 {
-    return vformat_to(std::move(__out), __fmt.get(), make_wformat_args(__args...));
+    return vformat_to(std::move(__out), __fmt.get(), make_wformat_args(std::forward<_Args>(__args)...));
 }
 
 
 template <class _Out, class... _Args>
-_Out format_to(_Out __out, const locale& __loc, format_string<_Args...> __fmt, _Args&&... __args)
+constexpr _Out format_to(_Out __out, const locale& __loc, format_string<_Args...> __fmt, _Args&&... __args)
 {
-    return vformat_to(std::move(__out), __loc, __fmt.get(), make_format_args(__args...));
+    return vformat_to(std::move(__out), __loc, __fmt.get(), make_format_args(std::forward<_Args>(__args)...));
 }
 
 
 template <class _Out, class... _Args>
-_Out format_to(_Out __out, const locale& __loc, wformat_string<_Args...> __fmt, _Args&&... __args)
+constexpr _Out format_to(_Out __out, const locale& __loc, wformat_string<_Args...> __fmt, _Args&&... __args)
 {
-    return vformat_to(std::move(__out), __loc, __fmt.get(), make_wformat_args(__args...));
+    return vformat_to(std::move(__out), __loc, __fmt.get(), make_wformat_args(std::forward<_Args>(__args)...));
+}
+
+
+template <class... _Args> constexpr std::size_t formatted_size(format_string<_Args...> __fmt, _Args&&... __args)
+{
+    return __detail::__formatted_size(__fmt.get(), std::forward<_Args>(__args)...);
+}
+
+template <class... _Args> constexpr std::size_t formatted_size(wformat_string<_Args...> __fmt, _Args&&... __args)
+{
+    return __detail::__formatted_size(__fmt.get(), std::forward<_Args>(__args)...);
 }
 
 
