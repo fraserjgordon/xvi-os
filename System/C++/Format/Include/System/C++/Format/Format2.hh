@@ -295,10 +295,10 @@ public:
 };
 
 
-template <class _T, class _CharT>
-concept __has_enabled_formatter = requires (_T& __t, basic_format_context<__basic_fmt_contiguous_iter<_CharT>, _CharT>& __ctxt)
+template <class _T, class _Context>
+concept __is_formattable = requires (_T& __t, _Context& __ctxt)
 {
-    formatter<_T, _CharT>()(__t, __ctxt);
+    (typename _Context::template formatter_type<_T>()).format(__t, __ctxt);
 };
 
 
@@ -407,6 +407,8 @@ constexpr decltype(auto) __visit_format_arg(__fmt_arg_type __type, const __basic
         case __fmt_arg_type::__none:
             throw format_error("visiting empty format arg");
     }
+
+    throw format_error("internal error: this statement should be unreachable");
 }
 
 
@@ -414,153 +416,177 @@ constexpr decltype(auto) __visit_format_arg(__fmt_arg_type __type, const __basic
 template <__fmt_arg_type _Type> struct __fmt_arg_type_tag {};
 
 
-template <class _Context, class _T, class _Char = typename _Context::char_type>
-constexpr auto __store_format_arg(_T&& __v, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
+template <class _Context, class _Char = typename _Context::char_type>
+struct __store_format_arg_helper
 {
-    if constexpr (std::is_same_v<_T, bool>)
-    {
-        __type = __fmt_arg_type::__bool;
-        __data._U_bool = __v;
-        return __fmt_arg_type_tag<__fmt_arg_type::__bool>{};
-    }
-    else if constexpr (std::is_same_v<_T, _Char>)
-    {
-        __type = __fmt_arg_type::__char,
-        __data._U_char = __v;
-        return __fmt_arg_type_tag<__fmt_arg_type::__char>{};
-    }
-    else if constexpr (std::is_same_v<_T, char> && std::is_same_v<_Char, wchar_t>)
-    {
-        __type = __fmt_arg_type::__char,
-        __data._U_char = static_cast<wchar_t>(__v);
-        return __fmt_arg_type_tag<__fmt_arg_type::__char>{};
-    }
-    else if constexpr (std::is_integral_v<_T> && std::is_signed_v<_T> && sizeof(_T) <= sizeof(int))
-    {
-        __type = __fmt_arg_type::__int;
-        __data._U_int = static_cast<int>(__v);
-        return __fmt_arg_type_tag<__fmt_arg_type::__int>{};
-    }
-    else if constexpr (std::is_integral_v<_T> && std::is_unsigned_v<_T> && sizeof(_T) <= sizeof(unsigned int))
-    {
-        __type = __fmt_arg_type::__unsigned_int;
-        __data._U_unsigned_int = static_cast<unsigned int>(__v);
-        return __fmt_arg_type_tag<__fmt_arg_type::__unsigned_int>{};
-    }
-    else if constexpr (std::is_integral_v<_T> && std::is_signed_v<_T> && sizeof(_T) <= sizeof(long long int))
-    {
-        __type = __fmt_arg_type::__long_long_int;
-        __data._U_long_long_int = static_cast<long long int>(__v);
-        return __fmt_arg_type_tag<__fmt_arg_type::__long_long_int>{};
-    }
-    else if constexpr (std::is_integral_v<_T> && std::is_unsigned_v<_T> && sizeof(_T) <= sizeof(unsigned long long))
-    {
-        __type = __fmt_arg_type::__unsigned_long_long_int;
-        __data._U_unsigned_long_long_int = static_cast<unsigned long long int>(__v);
-        return __fmt_arg_type_tag<__fmt_arg_type::__unsigned_long_long_int>{};
-    }
-    else
-    {
-        // Stored as a handle.
-        __type = __fmt_arg_type::__handle;
+    __fmt_arg_type& __type;
+    __basic_format_arg_storage<_Char>& __data;
 
-        // Generate a lambda to handle the formatting.
-        auto __format_lambda = [](basic_format_parse_context<_Char>& __parse, void* /*_Context&*/ __format, const void* /*const _T&*/ __ptr) constexpr
+    template <class _Tr>
+        requires __is_formattable<std::remove_cvref_t<_Tr>, _Context>
+    constexpr auto __store_format_arg(_Tr&& __v) noexcept
+    {
+        using _T = std::remove_cvref_t<_Tr>;
+
+        if constexpr (std::is_same_v<_T, bool>)
         {
-            using _TD = std::remove_cvref_t<_T>;
-            using _TQ = std::conditional_t<__is_const_formattable<_TD, _Context>, const _TD, _TD>;
+            __type = __fmt_arg_type::__bool;
+            __data._U_bool = __v;
+            return __fmt_arg_type_tag<__fmt_arg_type::__bool>{};
+        }
+        else if constexpr (std::is_same_v<_T, _Char>)
+        {
+            __type = __fmt_arg_type::__char,
+            __data._U_char = __v;
+            return __fmt_arg_type_tag<__fmt_arg_type::__char>{};
+        }
+        else if constexpr (std::is_same_v<_T, char> && std::is_same_v<_Char, wchar_t>)
+        {
+            __type = __fmt_arg_type::__char,
+            __data._U_char = static_cast<wchar_t>(__v);
+            return __fmt_arg_type_tag<__fmt_arg_type::__char>{};
+        }
+        else if constexpr (std::is_integral_v<_T> && std::is_signed_v<_T> && sizeof(_T) <= sizeof(int))
+        {
+            __type = __fmt_arg_type::__int;
+            __data._U_int = static_cast<int>(__v);
+            return __fmt_arg_type_tag<__fmt_arg_type::__int>{};
+        }
+        else if constexpr (std::is_integral_v<_T> && std::is_unsigned_v<_T> && sizeof(_T) <= sizeof(unsigned int))
+        {
+            __type = __fmt_arg_type::__unsigned_int;
+            __data._U_unsigned_int = static_cast<unsigned int>(__v);
+            return __fmt_arg_type_tag<__fmt_arg_type::__unsigned_int>{};
+        }
+        else if constexpr (std::is_integral_v<_T> && std::is_signed_v<_T> && sizeof(_T) <= sizeof(long long int))
+        {
+            __type = __fmt_arg_type::__long_long_int;
+            __data._U_long_long_int = static_cast<long long int>(__v);
+            return __fmt_arg_type_tag<__fmt_arg_type::__long_long_int>{};
+        }
+        else if constexpr (std::is_integral_v<_T> && std::is_unsigned_v<_T> && sizeof(_T) <= sizeof(unsigned long long))
+        {
+            __type = __fmt_arg_type::__unsigned_long_long_int;
+            __data._U_unsigned_long_long_int = static_cast<unsigned long long int>(__v);
+            return __fmt_arg_type_tag<__fmt_arg_type::__unsigned_long_long_int>{};
+        }
+        else
+        {
+            // Stored as a handle.
+            __type = __fmt_arg_type::__handle;
 
-            // If called without an object, we're only parsing the format spec, not actually formatting anything.
-            bool __parse_only = !__ptr;
-
-            typename _Context::template formatter_type<_TD> __f;
-
-            // We can parse as a constexpr (no casts of void pointers required).
-            __parse.advance_to(__f.parse(__parse));
-
-            // But we can't format as constexpr (void* casts are not allowed).
-            if (!__parse_only)
+            // Generate a lambda to handle the formatting.
+            auto __format_lambda = [](basic_format_parse_context<_Char>& __parse, void* /*_Context&*/ __format, const void* /*const _T&*/ __ptr) constexpr
             {
-                auto& __fc = *reinterpret_cast<_Context*>(__format);
-                __fc.advance_to(__f.format(*const_cast<_TQ*>(static_cast<const _TD*>(__ptr)), __fc));
-            }
-        };
+                using _TD = std::remove_cvref_t<_T>;
+                using _TQ = std::conditional_t<__is_const_formattable<_TD, _Context>, const _TD, _TD>;
 
-        __data._U_handle =
-        {
-            .__data = std::addressof(__v),
-            .__fmt_fn = __format_lambda,
-        };
+                // If called without an object, we're only parsing the format spec, not actually formatting anything.
+                bool __parse_only = !__ptr;
 
-        return __fmt_arg_type_tag<__fmt_arg_type::__handle>{};
+                typename _Context::template formatter_type<_TD> __f;
+
+                // We can parse as a constexpr (no casts of void pointers required).
+                __parse.advance_to(__f.parse(__parse));
+
+                // But we can't format as constexpr (void* casts are not allowed).
+                if (!__parse_only)
+                {
+                    auto& __fc = *reinterpret_cast<_Context*>(__format);
+                    __fc.advance_to(__f.format(*const_cast<_TQ*>(static_cast<const _TD*>(__ptr)), __fc));
+                }
+            };
+
+            __data._U_handle =
+            {
+                .__data = std::addressof(__v),
+                .__fmt_fn = __format_lambda,
+            };
+
+            return __fmt_arg_type_tag<__fmt_arg_type::__handle>{};
+        }
     }
-}
 
-template <class _Context, class _Char = typename _Context::char_type>
-constexpr auto __store_format_arg(float __f, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
+    constexpr auto __store_format_arg(float __f)
+    {
+        __type = __fmt_arg_type::__float;
+        __data._U_float = __f;
+        return __fmt_arg_type_tag<__fmt_arg_type::__float>{};
+    }
+
+    constexpr auto __store_format_arg(double __f) noexcept
+    {
+        __type = __fmt_arg_type::__double;
+        __data._U_double = __f;
+        return __fmt_arg_type_tag<__fmt_arg_type::__double>{};
+    }
+
+    constexpr auto __store_format_arg(long double __f) noexcept
+    {
+        __type = __fmt_arg_type::__long_double;
+        __data._U_long_double = __f;
+        return __fmt_arg_type_tag<__fmt_arg_type::__long_double>{};
+    }
+
+    constexpr auto __store_format_arg(const _Char* __s) noexcept
+    {
+        __type = __fmt_arg_type::__cstring;
+        __data._U_cstring = __s;
+        return __fmt_arg_type_tag<__fmt_arg_type::__cstring>{};
+    }
+
+    template <class _Traits>
+    constexpr auto __store_format_arg(std::basic_string_view<_Char, _Traits> __s) noexcept
+    {
+        __type = __fmt_arg_type::__string_view;
+        __data._U_string_view = {__s.data(), __s.size()};
+        return __fmt_arg_type_tag<__fmt_arg_type::__string_view>{};
+    }
+
+    template <class _Traits, class _Allocator>
+    constexpr auto __store_format_arg(const std::basic_string<_Char, _Traits, _Allocator>& __s) noexcept
+    {
+        __type = __fmt_arg_type::__string_view;
+        __data._U_string_view = {__s.data(), __s.size()};
+        return __fmt_arg_type_tag<__fmt_arg_type::__string_view>{};
+    }
+
+    constexpr auto __store_format_arg(std::nullptr_t) noexcept
+    {
+        __type = __fmt_arg_type::__void_ptr;
+        __data._U_void_ptr = nullptr;
+        return __fmt_arg_type_tag<__fmt_arg_type::__void_ptr>{};
+    }
+
+    template <class _T>
+        requires std::is_void_v<_T>
+    constexpr auto __store_format_arg(_T* __p) noexcept
+    {
+        __type = __fmt_arg_type::__void_ptr;
+        __data._U_void_ptr = __p;
+        return __fmt_arg_type_tag<__fmt_arg_type::__void_ptr>{};
+    }
+};
+
+
+template <class _Context, class _T, class _CharT = typename _Context::char_type>
+constexpr auto __store_format_arg(_T&& __t, __fmt_arg_type& __type, __basic_format_arg_storage<_CharT>& __data)
 {
-    __type = __fmt_arg_type::__float;
-    __data._U_float = __f;
-    return __fmt_arg_type_tag<__fmt_arg_type::__float>{};
-}
+    // Perform some type calculus to make sure the correct overload is used:
+    //
+    //  - step 1: strip all references for fundamental or pointer types.
+    //  - step 2: add const to pointers, if we can.
+    //  - step 3: add const to references, if we can.
+    using _T0 = std::remove_cvref_t<_T>;
+    using _T1 = std::conditional_t<std::is_fundamental_v<_T0> || std::is_pointer_v<_T0> || std::is_member_pointer_v<_T0>, _T0, _T>;
+    using _T2 = std::conditional_t<std::is_pointer_v<_T1> && __is_formattable<std::add_pointer_t<const std::remove_pointer_t<_T1>>, _Context>, std::add_pointer_t<const std::remove_pointer_t<_T1>>, _T1>;
+    using _T3 = std::conditional_t<std::is_reference_v<_T2> && __is_const_formattable<std::remove_cvref_t<_T2>, _Context>, const std::remove_cvref_t<_T2>&, _T2>;
 
-template <class _Context, class _Char = typename _Context::char_type>
-constexpr auto __store_format_arg(double __f, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
-{
-    __type = __fmt_arg_type::__double;
-    __data._U_double = __f;
-    return __fmt_arg_type_tag<__fmt_arg_type::__double>{};
+    if constexpr (std::is_reference_v<_T3>)
+        return __store_format_arg_helper<_Context, _CharT>{__type, __data}.__store_format_arg(std::forward<_T3>(__t));
+    else
+        return __store_format_arg_helper<_Context, _CharT>{__type, __data}.__store_format_arg(static_cast<_T3>(__t));
 }
-
-template <class _Context, class _Char = typename _Context::char_type>
-constexpr auto __store_format_arg(long double __f, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
-{
-    __type = __fmt_arg_type::__long_double;
-    __data._U_long_double = __f;
-    return __fmt_arg_type_tag<__fmt_arg_type::__long_double>{};
-}
-
-template <class _Context, class _Char = typename _Context::char_type>
-constexpr auto __store_format_arg(const _Char* __s, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
-{
-    __type = __fmt_arg_type::__cstring;
-    __data._U_cstring = __s;
-    return __fmt_arg_type_tag<__fmt_arg_type::__cstring>{};
-}
-
-template <class _Context, class _Traits, class _Char = typename _Context::char_type>
-constexpr auto __store_format_arg(std::basic_string_view<_Char, _Traits> __s, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
-{
-    __type = __fmt_arg_type::__string_view;
-    __data._U_string_view = {__s.data(), __s.size()};
-    return __fmt_arg_type_tag<__fmt_arg_type::__string_view>{};
-}
-
-template <class _Context, class _Traits, class _Allocator, class _Char = typename _Context::char_type>
-constexpr auto __store_format_arg(std::basic_string<_Char, _Traits, _Allocator> __s, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
-{
-    __type = __fmt_arg_type::__string_view;
-    __data._U_string_view = {__s.data(), __s.size()};
-    return __fmt_arg_type_tag<__fmt_arg_type::__string_view>{};
-}
-
-template <class _Context, class _Char = typename _Context::char_type>
-constexpr auto __store_format_arg(std::nullptr_t, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
-{
-    __type = __fmt_arg_type::__void_ptr;
-    __data._U_void_ptr = nullptr;
-    return __fmt_arg_type_tag<__fmt_arg_type::__void_ptr>{};
-}
-
-template <class _Context, class _T, class _Char = typename _Context::char_type>
-    requires std::is_void_v<_T>
-constexpr auto __store_format_arg(_T* __p, __fmt_arg_type& __type, __basic_format_arg_storage<_Char>& __data) noexcept
-{
-    __type = __fmt_arg_type::__void_ptr;
-    __data._U_void_ptr = __p;
-    return __fmt_arg_type_tag<__fmt_arg_type::__void_ptr>{};
-}
-
 
 
 template <class _Context, class... _Args>
@@ -2022,30 +2048,35 @@ constexpr _Out __parse_and_format_to(_Out __out, std::basic_string_view<_CharT> 
 }
 
 
-class __stdfmt_dummy_iter_assign
-{
-public:
-
-    template <class _T>
-    constexpr void operator= (const _T&) const noexcept {};
-};
-
-
+template <class _CharT>
 class __stdfmt_dummy_iter
 {
 public:
 
-    constexpr __stdfmt_dummy_iter_assign operator*() const noexcept { return {}; };
+    using difference_type = std::ptrdiff_t;
 
-    constexpr void operator++() const noexcept {};
+    constexpr _CharT& operator*() noexcept { return _M_ignored; }
+
+    constexpr __stdfmt_dummy_iter& operator++() noexcept { return *this; }
+
+    constexpr __stdfmt_dummy_iter operator++(int) noexcept
+    {
+        auto __copy = *this;
+        operator++();
+        return __copy;
+    }
+
+private:
+
+    _CharT _M_ignored = {};
 };
 
 
 template <class _CharT>
-consteval void __consteval_parse_impl(std::basic_string_view<_CharT> __fmt, basic_format_args<basic_format_context<__stdfmt_dummy_iter, _CharT>> __args)
+consteval void __consteval_parse_impl(std::basic_string_view<_CharT> __fmt, basic_format_args<basic_format_context<__stdfmt_dummy_iter<_CharT>, _CharT>> __args)
 {
     // Evaluated for side-effects only, i.e does it throw?
-    __parse_and_format_to<__stdfmt_dummy_iter, _CharT, true>(__stdfmt_dummy_iter{}, __fmt, __args);
+    __parse_and_format_to<__stdfmt_dummy_iter<_CharT>, _CharT, true>(__stdfmt_dummy_iter<_CharT>{}, __fmt, __args);
 }
 
 
@@ -2056,8 +2087,10 @@ template <__fmt_arg_type _T> struct __fmt_arg_type_extractor<__fmt_arg_type_tag<
 template <class _CharT, class _Arg>
 consteval decltype(auto) __generate_dummy_format_arg()
 {
+    using _ArgT = std::remove_cvref_t<_Arg>;
+
     // If we were to attempt to store an arg of type _Arg, what 'kind' would it be?
-    using _Context = basic_format_context<__stdfmt_dummy_iter, _CharT>;
+    using _Context = basic_format_context<__stdfmt_dummy_iter<_CharT>, _CharT>;
     using _TypeTag = decltype(__store_format_arg<_Context>(declval<_Arg>(), declval<__fmt_arg_type&>(), declval<__basic_format_arg_storage<_CharT>&>()));
     constexpr auto _Type = __fmt_arg_type_extractor<_TypeTag>::__value;
 
@@ -2071,19 +2104,19 @@ consteval decltype(auto) __generate_dummy_format_arg()
         // type-erased handle. If we can trivially default-construct the type, go ahead and do that.
         if constexpr (std::is_trivially_default_constructible_v<_Arg>)
         {
-            return _Arg{};
+            return _ArgT{};
         }
         else
         {
             // Be very naughty and return a reference obtained by dereferencing a null pointer...
-            _Arg* __naughty = nullptr;
-            return static_cast<_Arg&>(*__naughty);
+            _ArgT* __naughty = nullptr;
+            return static_cast<_Arg>(*__naughty);
         }
     }
     else
     {
         // Just go ahead and construct the arg as normal.
-        return _Arg{};
+        return _ArgT{};
     }
 }
 
@@ -2092,7 +2125,7 @@ template <class _CharT, class... _Args>
 consteval void __consteval_parse(std::basic_string_view<_CharT> __fmt)
 {
     // Generate placeholder values for all args.
-    using _Context = basic_format_context<__stdfmt_dummy_iter, _CharT>;
+    using _Context = basic_format_context<__stdfmt_dummy_iter<_CharT>, _CharT>;
     __consteval_parse_impl(__fmt, basic_format_args<_Context>(make_format_args<_Context>(std::forward<_Args>(__generate_dummy_format_arg<_CharT, _Args>())...)));
 }
 
