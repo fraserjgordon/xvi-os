@@ -6,8 +6,6 @@ library("Format")
     define_header_target = true
     use_stdlib = false
 
-    shared_define = "__BUILD_SYSTEM_CXX_FORMAT_SHARED"
-
     header_deps =
     [
         "../LanguageSupport:LanguageSupport_headers",
@@ -22,27 +20,11 @@ library("Format")
         "../Utility",
     ]
 
-    deps =
-    [
-        "//ABI/String",
-    ]
-
-    deps_shared =
-    [
-        "//ABI/C++",
-    ]
-
     public_headers =
     [
         "Format.hh",
-        "FormatImpl.hh",
 
         "Private/Config.hh",
         "Private/Namespace.hh",
-    ]
-
-    sources =
-    [
-        "Format.cc",
     ]
 }

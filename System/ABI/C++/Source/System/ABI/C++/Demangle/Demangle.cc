@@ -6,7 +6,6 @@
 
 #include <System/C++/Containers/Vector.hh>
 #include <System/C++/Format/Format.hh>
-#include <System/C++/Format/FormatImpl.hh>
 #include <System/C++/LanguageSupport/Exception.hh>
 #include <System/C++/Utility/Memory.hh>
 #include <System/C++/Utility/Optional.hh>

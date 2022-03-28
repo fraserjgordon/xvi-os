@@ -1744,7 +1744,7 @@ struct __inplace_merge
     // Note: not constexpr.
     template <bidirectional_iterator _I, sentinel_for<_I> _S, class _Comp = ranges::less, class _Proj = identity>
         requires sortable<_I, _Comp, _Proj>
-    _I operator()(_I __first, _I __middle, _S __last, _Comp __comp = {}, _Proj __proj = {}) const
+    constexpr _I operator()(_I __first, _I __middle, _S __last, _Comp __comp = {}, _Proj __proj = {}) const
     {
         auto __n1 = ranges::distance(__first, __middle);
         auto __n2 = ranges::distance(__middle, __last);
