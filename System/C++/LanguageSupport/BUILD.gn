@@ -31,7 +31,7 @@ library("LanguageSupport")
         "CFloat.hh",
         "CLimits.hh",
         "Compare.hh",
-        "Contract.hh",
+        "Coroutine.hh",
         "Exception.hh",
         "InitializerList.hh",
         "Limits.hh",

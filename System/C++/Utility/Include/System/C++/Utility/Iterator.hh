@@ -11,8 +11,10 @@
 #include <System/C++/Utility/FunctionalUtils.hh>
 #include <System/C++/Utility/IosFwd.hh>
 #include <System/C++/Utility/PointerTraits.hh>
+#include <System/C++/Utility/Swap.hh>
 #include <System/C++/Utility/Variant.hh>
 #include <System/C++/Utility/Private/Config.hh>
+#include <System/C++/Utility/Private/Concepts.hh>
 
 
 namespace __XVI_STD_UTILITY_NS
@@ -131,15 +133,23 @@ template <class _I>
 struct indirectly_readable_traits<const _I> :
     indirectly_readable_traits<_I> {};
 
-template <class _T>
-    requires requires { typename _T::value_type; }
+template <__detail::__has_member_value_type _T>
 struct indirectly_readable_traits<_T> :
     __detail::__cond_value_type<typename _T::value_type> {};
 
-template <class _T>
-    requires requires { typename _T::element_type; }
+template <__detail::__has_member_element_type _T>
 struct indirectly_readable_traits<_T> :
     __detail::__cond_value_type<typename _T::element_type> {};
+
+template <__detail::__has_member_value_type _T>
+    requires __detail::__has_member_value_type<_T>
+struct indirectly_readable_traits<_T> {};
+
+template <__detail::__has_member_value_type _T>
+    requires __detail::__has_member_element_type<_T>
+        && same_as<remove_cv_t<typename _T::element_type>, remove_cv_t<typename _T::value_type>>
+struct indirectly_readable_traits<_T> :
+    __detail::__cond_value_type<typename _T::value_type> {};
 
 
 namespace __detail
@@ -163,13 +173,14 @@ namespace __detail
 {
 
 template <class _I>
-concept __cpp17_iterator = copyable<_I>
-    && requires(_I __i)
+concept __cpp17_iterator =
+    requires(_I __i)
     {
         {   *__i } -> __can_reference;
         {  ++__i } -> same_as<_I&>;
         { *__i++ } -> __can_reference;
-    };
+    }
+    && copyable<_I>;
 
 template <class _I>
 concept __cpp17_input_iterator = __cpp17_iterator<_I>
@@ -186,8 +197,7 @@ concept __cpp17_input_iterator = __cpp17_iterator<_I>
 template <class _I>
 concept __cpp17_forward_iterator = __cpp17_input_iterator<_I>
     && constructible_from<_I>
-    //&& is_lvalue_reference_v<iter_reference_t<_I>> // does the wrong thing for iota_view
-    /* TODO: remove me */ && !is_rvalue_reference_v<iter_reference_t<_I>>
+    && is_lvalue_reference_v<iter_reference_t<_I>>
     && same_as<remove_cvref_t<iter_reference_t<_I>>, typename indirectly_readable_traits<_I>::value_type>
     && requires(_I __i)
     {
@@ -357,20 +367,30 @@ namespace ranges
 namespace __detail
 {
 
+
+// Undefined function.
+void iter_move();
+
+template <class _T>
+concept __iter_move_alt1 = (std::is_class_v<_T> || std::is_enum_v<_T>)
+    && requires (_T&& __t) { iter_move(std::forward<_T>(__t)); };
+
+template <class _T>
+concept __iter_move_alt2 = requires (_T __t) { *std::forward<_T>(__t); };
+
 struct __iter_move
 {
     template <class _T>
-        requires requires(_T&& __t) { iter_move(std::forward<_T>(__t)); }
-    auto operator()(_T&& __t) const
+        requires __iter_move_alt1<_T>
+    constexpr decltype(auto) operator()(_T&& __t) const
         noexcept(noexcept(iter_move(std::forward<_T>(__t))))
     {
         return iter_move(std::forward<_T>(__t));
     }
 
     template <class _T>
-        requires (!requires(_T&& __t) { iter_move(std::forward<_T>(__t)); }
-            && requires(_T&& __t) { *std::forward<_T>(__t); })
-    auto operator()(_T&& __t) const
+        requires (!__iter_move_alt1<_T> && __iter_move_alt2<_T>)
+    constexpr decltype(auto) operator()(_T&& __t) const
         noexcept(noexcept(*std::forward<_T>(__t)))
     {
         if constexpr (is_rvalue_reference_v<decltype(*std::forward<_T>(__t))>)
@@ -450,38 +470,47 @@ template <class _I1, class _I2>
 void iter_swap(_I1, _I2) = delete;
 
 template <class _X, class _Y>
-constexpr iter_value_t<remove_reference_t<_X>> __iter_exchange_move(_X&& __x, _Y&& __y)
-    noexcept(noexcept(iter_value_t<remove_reference_t<_X>>(iter_move(__x))) && noexcept(*__x = iter_move(__y)))
+constexpr iter_value_t<_X> __iter_exchange_move(_X&& __x, _Y&& __y)
+    noexcept(noexcept(iter_value_t<_X>(iter_move(__x))) && noexcept(*__x = iter_move(__y)))
 {
-    iter_value_t<remove_reference_t<_X>> __old_value(iter_move(__x));
+    iter_value_t<_X> __old_value(iter_move(__x));
     *__x = iter_move(__y);
     return __old_value;
 }
 
+template <class _E1, class _E2>
+concept __iter_swap_alt1 = (__enumeration_or_class<_E1> || __enumeration_or_class<_E2>)
+    && requires (_E1&& __e1, _E2&& __e2) { iter_swap(std::forward<_E1>(__e1), std::forward<_E2>(__e2)); };
+
+template <class _E1, class _E2>
+concept __iter_swap_alt2 = indirectly_readable<_E1>
+    && indirectly_readable<_E2>
+    && swappable_with<_E1, _E2>;
+
+template <class _E1, class _E2>
+concept __iter_swap_alt3 = indirectly_movable_storable<_E1, _E2>
+    && indirectly_movable_storable<_E2, _E1>;
+
 struct __iter_swap
 {
     template <class _T, class _U>
-        requires requires(_T __t, _U __u) { iter_swap(__t, __u); }
-    void operator()(_T&& __t, _U&& __u) const noexcept(noexcept(iter_swap(declval<_T>(), declval<_U>())))
+        requires __iter_swap_alt1<_T, _U>
+    constexpr void operator()(_T&& __t, _U&& __u) const noexcept(noexcept(iter_swap(declval<_T>(), declval<_U>())))
     {
         iter_swap(std::forward<_T>(__t), std::forward<_U>(__u));
     }
 
-    template <class _T, class _U, class _E1 = remove_reference_t<_T>, class _E2 = remove_reference_t<_U>>
-        requires (!requires(_T __t, _U __u) { iter_swap(__t, __u); }
-            && indirectly_readable<_E1> && indirectly_readable<_E2> && swappable_with<_T, _U>)
-    void operator()(_T&& __t, _U&& __u) const
+    template <class _T, class _U>
+        requires (!__iter_swap_alt1<_T, _U> && __iter_swap_alt2<_T, _U>)
+    constexpr void operator()(_T&& __t, _U&& __u) const
         noexcept(noexcept(ranges::swap(*declval<_T>(), *declval<_U>())))
     {
         ranges::swap(*std::forward<_T>(__t), std::forward<_U>(__u));
     }
 
-    template <class _T, class _U, class _E1 = remove_reference_t<_T>, class _E2 = remove_reference_t<_U>>
-        requires (!requires(_T __t, _U __u) { iter_swap(__t, __u); }
-            && !(indirectly_readable<_E1> && indirectly_readable<_E2> && swappable_with<_T, _U>)
-            && indirectly_movable_storable<_T, _U>
-            && indirectly_movable_storable<_U, _T>)
-    void operator()(_T&& __t, _U&& __u) const
+    template <class _T, class _U>
+        requires (!__iter_swap_alt1<_T, _U> && !__iter_swap_alt2<_T, _U> && __iter_swap_alt3<_T, _U>)
+    constexpr void operator()(_T&& __t, _U&& __u) const
         noexcept(noexcept(__iter_exchange_move(std::forward<_T>(__t), std::forward<_U>(__u))))
     {
         *std::forward<_T>(__t) = __iter_exchange_move(std::forward<_U>(__u), std::forward<_T>(__t));
@@ -547,8 +576,7 @@ template <indirectly_readable _T>
 using iter_common_reference_t = common_reference_t<iter_reference_t<_T>, iter_value_t<_T>&>;
 
 template <class _I>
-concept weakly_incrementable = default_constructible<_I>
-    && movable<_I>
+concept weakly_incrementable = movable<_I>
     && requires(_I __i)
     {
         typename iter_difference_t<_I>;
@@ -724,7 +752,10 @@ concept indirectly_copyable = indirectly_readable<_In>
 
 template <class _In, class _Out>
 concept indirectly_copyable_storable = indirectly_copyable<_In, _Out>
+    && indirectly_writable<_Out, iter_value_t<_In>&>
     && indirectly_writable<_Out, const iter_value_t<_In>&>
+    && indirectly_writable<_Out, iter_value_t<_In>&&>
+    && indirectly_writable<_Out, const iter_value_t<_In>&&>
     && copyable<iter_value_t<_In>>
     && constructible_from<iter_value_t<_In>, iter_reference_t<_In>>
     && assignable_from<iter_value_t<_In>&, iter_reference_t<_In>>;
@@ -732,7 +763,7 @@ concept indirectly_copyable_storable = indirectly_copyable<_In, _Out>
 template <class _I1, class _I2 = _I1>
 concept indirectly_swappable = indirectly_readable<_I1>
     && indirectly_readable<_I2>
-    && requires(_I1& __i1, _I2& __i2)
+    && requires(const _I1 __i1, const _I2 __i2)
     {
         ranges::iter_swap(__i1, __i1);
         ranges::iter_swap(__i1, __i2);
@@ -1512,7 +1543,7 @@ constexpr bool operator>=(const reverse_iterator<_Iter1>& __x, const reverse_ite
     return __x.base() <= __y.base();
 }
 
-template <class _Iterator1, three_way_comparable_with<_Iterator1, weak_equality> _Iterator2>
+template <class _Iterator1, three_way_comparable_with<_Iterator1> _Iterator2>
 constexpr compare_three_way_result_t<_Iterator1, _Iterator2> operator<=>(const reverse_iterator<_Iterator1>& __x, const reverse_iterator<_Iterator2>& __y)
 {
     return __y.base() <=> __x.base();
@@ -2104,7 +2135,7 @@ constexpr bool operator>=(const move_iterator<_Iterator1>& __x, const move_itera
     return !(__x < __y);
 }
 
-template <class _Iterator1, three_way_comparable_with<_Iterator1, weak_equality> _Iterator2>
+template <class _Iterator1, three_way_comparable_with<_Iterator1> _Iterator2>
 constexpr compare_three_way_result_t<_Iterator1, _Iterator2> operator<=>(const move_iterator<_Iterator1>& __x, const move_iterator<_Iterator2>& __y)
 {
     return __x.base() <=> __y.base();

@@ -170,7 +170,7 @@ target_link_libraries(System.ABI.C++
 add_library(System.ABI.C++.Unwind.Test SHARED)
 target_sources(System.ABI.C++.Unwind.Test PRIVATE Test/test.cc)
 target_compile_options(System.ABI.C++.Unwind.Test PRIVATE 
-    -std=c++20
+    -std=c++2b
     -ffunction-sections
     -fdata-sections
 )

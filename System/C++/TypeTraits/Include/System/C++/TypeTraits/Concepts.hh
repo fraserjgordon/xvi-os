@@ -7,14 +7,17 @@
 #include <System/C++/TypeTraits/Private/Namespace.hh>
 
 
+// The 'swappable' and 'swappable_with' concepts are not defined here as they depend on ranges::swap.
+
 namespace __XVI_STD_TYPETRAITS_NS
 {
 
 
-namespace ranges
+// We need to forward-declare this for the 'swappable' and 'swappable_with' concepts.
+namespace ranges::__detail
 {
 
-template <class _E1, class _E2> void swap(_E1&, _E2&);
+class __swap;
 
 } // namespace ranges
 
@@ -36,7 +39,10 @@ concept derived_from = is_base_of_v<_Base, _Derived> && is_convertible_v<const v
 
 template <class _From, class _To>
 concept convertible_to = is_convertible_v<_From, _To>
-    && requires(_From (&f)()) { static_cast<_To>(f()); };
+    && requires
+    {
+        static_cast<_To>(declval<_From>());
+    };
 
 template <class _T, class _U>
 concept common_reference_with = same_as<common_reference_t<_T, _U>, common_reference_t<_U, _T>>
@@ -77,16 +83,16 @@ concept assignable_from = is_lvalue_reference_v<_LHS>
     };
 
 template <class _T>
-concept swappable = requires(_T& __a, _T& __b) { ranges::swap(__a, __b); };
+concept swappable = requires(_T& __a, _T& __b) { declval<ranges::__detail::__swap>()(__a, __b); };
 
 template <class _T, class _U>
 concept swappable_with = common_reference_with<const remove_reference_t<_T>&, const remove_reference_t<_U>&>
     && requires(_T&& __t, _U&& __u)
     {
-        ranges::swap(__XVI_STD_NS::forward<_T>(__t), __XVI_STD_NS::forward<_T>(__t));
-        ranges::swap(__XVI_STD_NS::forward<_U>(__u), __XVI_STD_NS::forward<_U>(__u));
-        ranges::swap(__XVI_STD_NS::forward<_T>(__t), __XVI_STD_NS::forward<_U>(__u));
-        ranges::swap(__XVI_STD_NS::forward<_U>(__u), __XVI_STD_NS::forward<_T>(__t));
+        declval<ranges::__detail::__swap>()(__XVI_STD_NS::forward<_T>(__t), __XVI_STD_NS::forward<_T>(__t));
+        declval<ranges::__detail::__swap>()(__XVI_STD_NS::forward<_U>(__u), __XVI_STD_NS::forward<_U>(__u));
+        declval<ranges::__detail::__swap>()(__XVI_STD_NS::forward<_T>(__t), __XVI_STD_NS::forward<_U>(__u));
+        declval<ranges::__detail::__swap>()(__XVI_STD_NS::forward<_U>(__u), __XVI_STD_NS::forward<_T>(__t));
     };
 
 template <class _T>
@@ -96,7 +102,15 @@ template <class _T, class... _Args>
 concept constructible_from = destructible<_T> && is_constructible_v<_T, _Args...>;
 
 template <class _T>
-concept default_constructible = constructible_from<_T>;
+concept default_initializable = constructible_from<_T>
+    && requires
+    {
+        _T{};
+
+        // The spec requires the constraint to be that the variable definition 'T t;' would be valid. But we can only
+        // test an expression here, so use the 'new' operator to make it an expression.
+        new _T;
+    };
 
 template <class _T>
 concept move_constructible = constructible_from<_T, _T> && convertible_to<_T, _T>;
@@ -106,12 +120,6 @@ concept copy_constructible = move_constructible<_T>
     && constructible_from<_T, _T&> && convertible_to<_T&, _T>
     && constructible_from<_T, const _T&> && convertible_to<const _T&, _T>
     && constructible_from<_T, const _T> && convertible_to<const _T, _T>;
-
-template <class _T>
-concept movable = is_object_v<_T> && move_constructible<_T> && assignable_from<_T&, _T> && swappable<_T>;
-
-template <class _T>
-concept copyable = copy_constructible<_T> && movable<_T> && assignable_from<_T&, const _T&>;
 
 
 namespace __detail
@@ -174,7 +182,13 @@ concept totally_ordered_with = totally_ordered<_T> && totally_ordered<_U>
     && __detail::__partially_ordered_with<_T, _U>;
 
 template <class _T>
-concept semiregular = copyable<_T> && default_constructible<_T>;
+concept movable = is_object_v<_T> && move_constructible<_T> && assignable_from<_T&, _T> && swappable<_T>;
+
+template <class _T>
+concept copyable = copy_constructible<_T> && movable<_T> && assignable_from<_T&, _T&> && assignable_from<_T&, const _T&> && assignable_from<_T&, const _T>;
+
+template <class _T>
+concept semiregular = copyable<_T> && default_initializable<_T>;
 
 template <class _T>
 concept regular = semiregular<_T> && equality_comparable<_T>;
@@ -183,7 +197,7 @@ template <class _F, class... _Args>
 concept invocable =
     requires(_F&& __f, _Args&&... __args)
     {
-        invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::forward<_Args>(__args)...);
+        invoke(std::forward<_F>(__f), std::forward<_Args>(__args)...);
     };
 
 template <class _F, class... _Args>

@@ -20,23 +20,32 @@ class __SYSTEM_ABI_CXX_RTTI_EXPORT type_info
 public:
 
     virtual ~type_info();
-    bool operator==(const type_info&) const;
-    bool operator!=(const type_info&) const;
-    bool before(const type_info&) const;
+    constexpr bool operator==(const type_info&) const noexcept;
+    bool before(const type_info&) const noexcept;
+    std::size_t hash_code() const noexcept;
     const char* name() const;
+
+    type_info(const type_info&) = delete;
+    type_info& operator=(const type_info&) = delete;
 
 private:
 
     const char*     __type_name;
-
-    type_info(const type_info&);
-    type_info& operator=(const type_info&);
 
 protected:
 
     // Custom deleter.
     void operator delete(void*) noexcept;
 };
+
+
+constexpr bool std::type_info::operator==(const type_info& other) const noexcept
+{
+    // The ABI requires each type has only one, global string for its name, even if multiple type_info objects refer to
+    // the type (e.g. a complete class type_info and an incomplete class type_info). This means that the type_info
+    // object addresses can't be used for declaring type equality but type names can.
+    return __type_name == other.__type_name;
+}
 
 
 } // namespace std

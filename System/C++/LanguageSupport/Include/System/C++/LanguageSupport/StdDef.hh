@@ -6,8 +6,10 @@
 #include <System/C/BaseHeaders/OffsetOf.h>
 #include <System/C/BaseHeaders/Null.h>
 #include <System/C/BaseHeaders/Types.h>
-#include <System/C++/LanguageSupport/Private/Namespace.hh>
 #include <System/C++/TypeTraits/TypeTraits.hh>
+
+#include <System/C++/LanguageSupport/Private/Namespace.hh>
+
 
 
 namespace __XVI_STD_LANGSUPPORT_NS
@@ -59,9 +61,10 @@ constexpr byte& operator&=(byte& __b, byte __r) noexcept
 constexpr byte& operator^=(byte& __b, byte __r) noexcept
     { return __b = __b ^ __r; };
 
-template <class _IntType, class = enable_if_t<is_integral_v<_IntType>, void>>
-    constexpr _IntType to_integer(byte __b) noexcept
-        { return static_cast<_IntType>(__b); }
+template <class _IntType>
+    requires std::is_integral_v<_IntType>
+constexpr _IntType to_integer(byte __b) noexcept
+    { return static_cast<_IntType>(__b); }
 
 
 

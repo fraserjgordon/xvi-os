@@ -24,23 +24,20 @@ std::type_info::~type_info()
     // this destructor doesn't need to do anything. It is only virtual to make the class a polymorphic type.
 }
 
-bool std::type_info::operator==(const type_info& other) const
-{
-    // The ABI requires each type has only one, global string for its name, even if multiple type_info objects refer to
-    // the type (e.g. a complete class type_info and an incomplete class type_info). This means that the type_info
-    // object addresses can't be used for declaring type equality but type names can.
-    return __type_name == other.__type_name;
-}
 
-bool std::type_info::operator!=(const type_info& other) const
-{
-    return !operator==(other);
-}
-
-bool std::type_info::before(const type_info& other) const
+bool std::type_info::before(const type_info& other) const noexcept
 {
     return __type_name < other.__type_name;
 }
+
+
+std::size_t std::type_info::hash_code() const noexcept
+{
+    // Because of the ABI rules requiring the type_info type name strings to have a single, unique address, we can use
+    // that address as the hash code for the type_info.
+    return reinterpret_cast<std::size_t>(__type_name);
+}
+
 
 const char* std::type_info::name() const
 {

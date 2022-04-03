@@ -60,11 +60,6 @@ inline bool operator==(const memory_resource& __a, const memory_resource& __b) n
     return &__a == &__b || __a.is_equal(__b);
 }
 
-inline bool operator!=(const memory_resource& __a, const memory_resource& __b) noexcept
-{
-    return !(__a == __b);
-}
-
 
 namespace __detail
 {
@@ -183,7 +178,7 @@ public:
         _M_rsrc->deallocate(__p, __n * sizeof(_Tp), alignof(_Tp));
     }
 
-    void* allocate_bytes(size_t __nbytes, size_t __alignment = alignof(max_align_t))
+    [[nodiscard]] void* allocate_bytes(size_t __nbytes, size_t __alignment = alignof(max_align_t))
     {
         return _M_rsrc->allocate(__nbytes, __alignment);
     }
@@ -194,7 +189,7 @@ public:
     }
 
     template <class _T>
-    _T* allocate_object(size_t __n = 1)
+    [[nodiscard]] _T* allocate_object(size_t __n = 1)
     {
         if (SIZE_MAX / sizeof(_T) < __n)
             __XVI_CXX_UTILITY_THROW(length_error("allocation length overflow"));
@@ -209,7 +204,7 @@ public:
     }
 
     template <class _T, class... _CtorArgs>
-    _T* new_object(_CtorArgs&&... __ctor_args)
+    [[nodiscard]] _T* new_object(_CtorArgs&&... __ctor_args)
     {
         _T* __p = allocate_object<_T>();
         __XVI_CXX_UTILITY_TRY
@@ -228,20 +223,14 @@ public:
     template <class _T>
     void delete_object(_T* __p)
     {
-        destroy(__p);
+        allocator_traits<polymorphic_allocator>::destroy(*this, __p);
         deallocate_object(__p);
     }
 
     template <class _T, class... _Args>
     void construct(_T* __p, _Args&&... __args)
     {
-        uninitialized_construct_using_allocator(__p, *this, __XVI_STD_NS::forward<_Args>(__args)...);
-    }
-
-    template <class _T>
-    void destroy(_T* __p)
-    {
-        __p->~_T();
+        uninitialized_construct_using_allocator(__p, *this, std::forward<_Args>(__args)...);
     }
 
     polymorphic_allocator select_on_container_copy_construction() const
@@ -264,12 +253,6 @@ template <class _T1, class _T2>
 bool operator==(const polymorphic_allocator<_T1>& __x, const polymorphic_allocator<_T2>& __y) noexcept
 {
     return __x.resource() == __y.resource();
-}
-
-template <class _T1, class _T2>
-bool operator!=(const polymorphic_allocator<_T1>& __x, const polymorphic_allocator<_T2>& __y) noexcept
-{
-    return !(__x == __y);
 }
 
 

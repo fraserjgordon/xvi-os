@@ -435,6 +435,9 @@ template <class _T> inline constexpr bool is_unsigned_v = is_unsigned<_T>::value
 template <class _T> struct is_trivial : __detail::is_trivial<_T> {};
 template <class _T> inline constexpr bool is_trivial_v = is_trivial<_T>::value;
 
+template <class _T> struct is_scoped_enum : __detail::is_scoped_enum<_T> {};
+template <class _T> inline constexpr bool is_scoped_enum_v = is_scoped_enum<_T>::value;
+
 template <class _T> struct is_trivially_copyable : __detail::is_trivially_copyable<_T> {};
 template <class _T> inline constexpr bool is_trivially_copyable_v = is_trivially_copyable<_T>::value;
 
@@ -554,6 +557,18 @@ template <class _T> inline constexpr size_t rank_v = rank<_T>::value;
 
 template <class _T, unsigned _I = 0> struct extent : __detail::extent<_T, _I> {};
 template <class _T, unsigned _I = 0> inline constexpr size_t extent_v = extent<_T, _I>::value;
+
+template <class _T> struct is_bounded_array : bool_constant<is_array_v<_T> &&  extent_v<_T> != 0> {};
+template <class _T> inline constexpr bool is_bounded_array_v = is_bounded_array<_T>::value;
+
+template <class _T> struct is_unbounded_array : bool_constant<is_array_v<_T> && extent_v<_T> == 0> {};
+template <class _T> inline constexpr bool is_unbounded_array_v = is_unbounded_array<_T>::value;
+
+template <class _T, class _U> struct reference_constructs_from_temporary : __detail::reference_constructs_from_temporary<_T, _U> {};
+template <class _T, class _U> inline constexpr bool reference_constructs_from_temporary_v = reference_constructs_from_temporary<_T, _U>::value;
+
+template <class _T, class _U> struct reference_converts_from_temporary : __detail::reference_converts_from_temporary<_T, _U> {};
+template <class _T, class _U> inline constexpr bool reference_converts_from_temporary_v = reference_converts_from_temporary<_T, _U>::value;
 
 
 } // namespace __XVI_STD_TYPETRAITS_NS

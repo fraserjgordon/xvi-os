@@ -49,7 +49,10 @@ __SYSTEM_CXX_LANGUAGESUPPORT_EXPORT new_handler set_new_handler(new_handler) noe
 
 template <class _T>
 [[nodiscard]] constexpr _T* launder(_T* __p) noexcept
-    { return __builtin_launder(__p); }
+{
+    static_assert(!std::is_function_v<_T> && !std::is_void_v<_T>);
+    return __builtin_launder(__p);
+}
 
 //inline constexpr size_t hardware_constructive_interference_size = ?
 //inline constexpr size_t hardware_destructive_interference_size = ?

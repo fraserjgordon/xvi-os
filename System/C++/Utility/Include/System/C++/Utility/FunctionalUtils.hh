@@ -412,7 +412,10 @@ struct identity
 };
 
 
-#ifdef __cpp_concepts
+namespace ranges
+{
+
+
 namespace __detail
 {
 
@@ -421,9 +424,6 @@ concept _BUILTIN_PTR_CMP = is_pointer_v<remove_cvref_t<_T>> && is_pointer_v<remo
 
 } // namespace __detail
 
-
-namespace ranges
-{
 
 struct equal_to
 {
@@ -508,7 +508,6 @@ struct __compare_3way
 };
 
 } // namespace ranges
-#endif // ifdef __cpp_concepts
 
 
 } // namespace __XVI_STD_UTILITY_NS

@@ -2,7 +2,7 @@
 default_configs =
 [
     "//build/config:c11",
-    "//build/config:c++20",
+    "//build/config:c++23",
     "//build/config:default_codegen",
     "//build/config:default_debug_info",
     "//build/config:default_errors",

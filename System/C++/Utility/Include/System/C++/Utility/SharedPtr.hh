@@ -115,12 +115,10 @@ public:
         return false;
     }
 
-#ifdef __cpp_impl_destroying_delete
     void operator delete(__shared_ptr_owner_base* __ptr, destroying_delete_t)
     {
         __ptr->__delete_this_owner();
     }
-#endif // ifdef __cpp_impl_destroying_delete
 
     size_t __get_elem_count() const
     {
@@ -239,13 +237,6 @@ private:
 };
 
 
-template <class _T> using __delete_detector = decltype(delete declval<_T*>());
-template <class _T> using __delete_arr_detector = decltype(delete[] declval<_T*>());
-
-template <class _T> inline constexpr bool __has_delete_v = is_detected_v<__delete_detector, _T>;
-template <class _T> inline constexpr bool __has_array_delete_v = is_detected_v<__delete_arr_detector, _T>;
-
-
 #ifdef __XVI_CXX_UTILITY_NO_EXCEPTIONS
 [[noreturn]] inline void __bad_weak_pointer() noexcept
 {
@@ -258,8 +249,41 @@ template <class _T> inline constexpr bool __has_array_delete_v = is_detected_v<_
 }
 #endif
 
-// Stand-in for when a void reference or other invalid construct would be needed.
-struct __invalid_type {};
+
+template <class _T, class _Y>
+concept __shared_ptr_valid_conversion =
+    (std::is_array_v<_T>
+        && requires (_Y* __p)
+        {
+            delete[] __p; 
+        }
+        && ((std::extent_v<_T> != 0 && std::convertible_to<_Y(*)[std::extent_v<_T>], _T*>)
+            || (std::extent_v<_T> == 0 && std::convertible_to<_Y(*)[], _T*>)))
+    || (!std::is_array_v<_T>
+        && requires (_Y* __p)
+        {
+            delete __p;
+        }
+        && std::convertible_to<_Y*, _T*>);
+
+template <class _T, class _D>
+concept __shared_ptr_valid_deleter = requires (_T* __p, _D __d) { __d(__p); };
+
+template <class _T, class _Y, class _D>
+concept __shared_ptr_valid_conversion_d = __shared_ptr_valid_deleter<_Y, _D>
+    && ((std::is_array_v<_T>
+        && ((std::extent_v<_T> != 0 && std::convertible_to<_Y(*)[std::extent_v<_T>], _T*>)
+            || (std::extent_v<_T> == 0 && std::convertible_to<_Y(*)[], _T*>)))
+        || (!std::is_array_v<_T> && std::convertible_to<_Y*, _T*>));
+
+template <class _T, class _Y>
+concept __shared_ptr_compatible_ptrs = std::convertible_to<_Y*, _T*>
+    || (std::is_array_v<_Y>
+        && std::extent_v<_Y> != 0
+        && std::is_array_v<_T>
+        && std::extent_v<_T> == 0
+        && std::is_same_v<std::remove_extent_t<_Y>, std::remove_cv_t<std::remove_extent_t<_T>>>);
+
 
 } // namespace __detail
 
@@ -279,26 +303,6 @@ private:
         }
         else
             static_cast<void>(__p); // Silence warning about unused parameter.
-    }
-
-    template <class _Y>
-    constexpr bool __valid_ptr_type()
-    {
-        if constexpr (is_array_v<_T>)
-        {
-            if constexpr (!__detail::__has_array_delete_v<_Y>)
-                return false;
-            
-            constexpr size_t _N = extent_v<_T>;
-            if constexpr (_N == 0)
-                return is_convertible_v<_Y(*)[], _T*>;
-            else
-                return is_convertible_v<_Y(*)[_N], _T*>;
-        }
-        else
-        {
-            return __detail::__has_delete_v<_Y> && is_convertible_v<_Y*, _T*>;
-        }
     }
 
     template <class _Y, class _D>
@@ -330,8 +334,8 @@ public:
         : _M_ptr(nullptr), _M_owner(nullptr) {}
     constexpr shared_ptr(nullptr_t) noexcept : shared_ptr() {};
 
-    template <class _Y,
-              class = enable_if_t<__valid_ptr_type<_Y>(), void>>
+    template <class _Y>
+        requires __detail::__shared_ptr_valid_conversion<_T, _Y>
     explicit shared_ptr(_Y* __p) __XVI_CXX_UTILITY_FN_TRY
         : _M_ptr(__p),
           _M_owner(new __detail::__shared_ptr_owner<false, _Y>(__p))
@@ -351,9 +355,8 @@ public:
         throw;
     })
 
-    template <class _Y, class _D,
-              class = enable_if_t<__valid_ptr_type<_Y, _D>()
-                                  && is_move_constructible_v<_D>, void>>
+    template <class _Y, class _D>
+        requires std::is_move_constructible_v<_D> && __detail::__shared_ptr_valid_conversion_d<_T, _Y, _D>
     shared_ptr(_Y* __p, _D __d) __XVI_CXX_UTILITY_FN_TRY
         : _M_ptr(__p),
           _M_owner(new __detail::__shared_ptr_owner<false, _Y, _D>(__p, __XVI_STD_NS::move(__d)))
@@ -369,9 +372,8 @@ public:
         throw;
     })
 
-    template <class _Y, class _D, class _A,
-              class = enable_if_t<__valid_ptr_type<_Y, _D>()
-                                  && is_move_constructible_v<_D>, void>>
+    template <class _Y, class _D, class _A>
+        requires std::is_move_constructible_v<_D> && __detail::__shared_ptr_valid_conversion_d<_T, _Y, _D>
     shared_ptr(_Y* __p, _D __d, _A __a) __XVI_CXX_UTILITY_FN_TRY
         : _M_ptr(__p),
           _M_owner(nullptr)
@@ -391,9 +393,8 @@ public:
         throw;
     })
 
-    template <class _D,
-              class = enable_if_t<__valid_ptr_type<element_type, _D>()
-                                  && is_move_constructible_v<_D>, void>>
+    template <class _D>
+        requires std::is_move_constructible_v<_D> && __detail::__shared_ptr_valid_deleter<std::nullptr_t, _D>
     shared_ptr(nullptr_t, _D __d) __XVI_CXX_UTILITY_FN_TRY
         : _M_ptr(nullptr),
           _M_owner(new __detail::__shared_ptr_owner<false, _T, _D>(nullptr, __XVI_STD_NS::move(__d)))
@@ -406,9 +407,8 @@ public:
         throw;
     })
 
-    template <class _D, class _A,
-              class = enable_if_t<__valid_ptr_type<_T, _D>()
-                                  && is_move_constructible_v<_D>, void>>
+    template <class _D, class _A>
+        requires std::is_move_constructible_v<_D> && __detail::__shared_ptr_valid_deleter<std::nullptr_t, _D>
     shared_ptr(nullptr_t, _D __d, _A __a) __XVI_CXX_UTILITY_FN_TRY
         : _M_ptr(nullptr),
           _M_owner(nullptr)
@@ -434,7 +434,8 @@ public:
             _M_owner->__add_strong_ref();
     }
 
-    template <class _Y> shared_ptr(shared_ptr<_T>&& __r, element_type* __p) noexcept
+    template <class _Y>
+    shared_ptr(shared_ptr<_T>&& __r, element_type* __p) noexcept
         : _M_ptr(__p),
           _M_owner(__r._M_owner)
     {
@@ -450,8 +451,8 @@ public:
             _M_owner->__add_strong_ref();
     }
 
-    template <class _Y,
-              class = enable_if_t<is_convertible_v<_Y*, _T*>, void>>
+    template <class _Y>
+        requires __detail::__shared_ptr_compatible_ptrs<_T, _Y>
     shared_ptr(const shared_ptr<_Y>& __r) noexcept
         : _M_ptr(__r._M_ptr),
           _M_owner(__r._M_owner)
@@ -468,8 +469,8 @@ public:
         __r._M_owner = nullptr;
     }
 
-    template <class _Y,
-              class = enable_if_t<is_convertible_v<_Y*, _T*>, void>>
+    template <class _Y>
+        requires __detail::__shared_ptr_compatible_ptrs<_T, _Y>
     shared_ptr(shared_ptr<_Y>&& __r) noexcept
         : _M_ptr(__r._M_ptr),
           _M_owner(__r._M_owner)
@@ -478,8 +479,8 @@ public:
         __r._M_owner = nullptr;
     }
 
-    template <class _Y,
-              class = enable_if_t<is_convertible_v<_Y*, _T*>, void>>
+    template <class _Y>
+        requires __detail::__shared_ptr_compatible_ptrs<_T, _Y>
     explicit shared_ptr(const weak_ptr<_Y>& __r)
         : _M_ptr(__r._M_ptr),
           _M_owner(__r._M_owner)
@@ -488,9 +489,9 @@ public:
             __detail::__bad_weak_pointer();
     }
 
-    template <class _Y, class _D,
-              class = enable_if_t<is_convertible_v<_Y*, _T*>
-                                  && is_convertible_v<typename unique_ptr<_Y, _D>::pointer, element_type*>, void>>
+    template <class _Y, class _D>
+        requires __detail::__shared_ptr_compatible_ptrs<_T, _Y>
+            && std::convertible_to<typename unique_ptr<_T, _D>::pointer, element_type*>
     shared_ptr(unique_ptr<_Y, _D>&& __r)
         : shared_ptr()
     {
@@ -522,8 +523,8 @@ public:
         return *this;
     }
 
-    template <class _Y,
-              class = enable_if_t<is_convertible_v<_Y*, _T*>, void>>
+    template <class _Y>
+        requires __detail::__shared_ptr_compatible_ptrs<_T, _Y>
     shared_ptr& operator=(const shared_ptr<_Y>& __r) noexcept
     {
         _M_ptr = __r._M_ptr;
@@ -551,8 +552,8 @@ public:
         return *this;
     }
 
-    template <class _Y,
-              class = enable_if_t<is_convertible_v<_Y*, _T*>, void>>
+    template <class _Y>
+        requires __detail::__shared_ptr_compatible_ptrs<_T, _Y>
     shared_ptr& operator=(shared_ptr<_Y>&& __r) noexcept
     {
         _M_ptr = __r._M_ptr;
@@ -567,12 +568,12 @@ public:
         return *this;
     }
 
-    template <class _Y, class _D,
-              class = enable_if_t<is_convertible_v<_Y*, _T*>
-                                  && is_convertible_v<typename unique_ptr<_Y, _D>::pointer, element_type*>, void>>
+    template <class _Y, class _D>
+        requires __detail::__shared_ptr_compatible_ptrs<_T, _Y>
+            && std::convertible_to<typename unique_ptr<_T, _D>::pointer, element_type*>
     shared_ptr& operator=(unique_ptr<_Y, _D>&& __r)
     {
-        shared_ptr(__XVI_STD_NS::move(__r)).swap(*this);
+        shared_ptr(std::move(__r)).swap(*this);
         return *this;
     }
 
@@ -595,18 +596,21 @@ public:
     }
 
     template <class _Y>
+        requires __detail::__shared_ptr_valid_conversion<_T, _Y>
     void reset(_Y* __p)
     {
         shared_ptr(__p).swap(*this);
     }
 
     template <class _Y, class _D>
+        requires std::is_move_constructible_v<_D> && __detail::__shared_ptr_valid_conversion_d<_T, _Y, _D>
     void reset(_Y* __p, _D __d)
     {
         shared_ptr(__p, __d).swap(*this);
     }
 
     template <class _Y, class _D, class _A>
+        requires stD::is_move_constructible_v<_D> && __detail::__shared_ptr_valid_conversion_d<_T, _Y, _D>
     void reset(_Y* __p, _D __d, _A __a)
     {
         shared_ptr(__p, __d, __a).swap(*this);
@@ -617,20 +621,23 @@ public:
         return _M_ptr;
     }
 
-    conditional_t<is_void_v<_T>, __detail::__invalid_type,_T&>
+    conditional_t<std::is_void_v<_T>, void, _T&>
     operator*() const noexcept
+        requires (!std::is_void_v<_T>)
     {
-        return *get();
+            return *get();
     }
 
-    conditional_t<is_array_v<_T>, __detail::__invalid_type, _T*>
+    conditional_t<std::is_array_v<_T>, void, _T*>
     operator->() const noexcept
+        requires (!std::is_array_v<_T>)
     {
         return get();
     }
 
-    conditional_t<is_array_v<_T>, element_type&, __detail::__invalid_type>
+    conditional_t<std::is_array_v<_T>, element_type&, void>
     operator[](ptrdiff_t __i) const
+        requires std::is_array_v<_T>
     {
         return get()[__i];
     }
@@ -690,8 +697,8 @@ template <class _T, class _D>
 shared_ptr(unique_ptr<_T, _D>) -> shared_ptr<_T>;
 
 
-template <class _T, class... _Args,
-          class = enable_if_t<!is_array_v<_T>, void>>
+template <class _T, class... _Args>
+    requires (!std::is_array_v<_T>)
 shared_ptr<_T> make_shared(_Args&&... __args)
 {
     using __owner_t = __detail::__shared_ptr_owner<true, _T>;
@@ -714,8 +721,8 @@ shared_ptr<_T> make_shared(_Args&&... __args)
     return shared_ptr<_T>::__make(&__mem->_M_data[0], &__mem->_M_owner);
 }
 
-template <class _T, class _A, class... _Args,
-          class = enable_if_t<!is_array_v<_T>, void>>
+template <class _T, class _A, class... _Args>
+    requires (!std::is_array_v<_T>)
 shared_ptr<_T> allocate_shared(const _A& __a, _Args&&... __args)
 {
     using _U = remove_cv_t<_T>;
@@ -740,8 +747,8 @@ shared_ptr<_T> allocate_shared(const _A& __a, _Args&&... __args)
     return shared_ptr<_T>::__make(&__mem->_M_data[0], &__mem->_M_owner);
 }
 
-template <class _T,
-          class = enable_if_t<is_array_v<_T> && extent_v<_T> == 0, void>>
+template <class _T>
+    requires std::is_array_v<_T> && (std::extent_v<_T> == 0)
 shared_ptr<_T> make_shared(size_t __n)
 {
     using _U = remove_extent_t<_T>;
@@ -766,8 +773,8 @@ shared_ptr<_T> make_shared(size_t __n)
     return shared_ptr<_T>::__make(&__mem->_M_data[0], &__mem->_M_owner);
 }
 
-template <class _T, class _A,
-          class = enable_if_t<is_array_v<_T> && extent_v<_T> == 0, void>>
+template <class _T, class _A>
+    requires std::is_array_v<_T> && (std::extent_v<_T> == 0)
 shared_ptr<_T> allocate_shared(const _A& __a, size_t __n)
 {
     using _U = remove_extent_t<_T>;
@@ -794,8 +801,8 @@ shared_ptr<_T> allocate_shared(const _A& __a, size_t __n)
     return shared_ptr<_T>::__make(&__mem->_M_data[0], &__mem->_M_owner);
 }
 
-template <class _T,
-          class = enable_if_t<is_array_v<_T> && extent_v<_T> != 0, void>>
+template <class _T>
+    requires std::is_array_v<_T> && (std::extent_v<_T> != 0)
 shared_ptr<_T> make_shared()
 {
     using _U = remove_extent_t<_T>;
@@ -821,8 +828,8 @@ shared_ptr<_T> make_shared()
     return shared_ptr<_T>::__make(&__mem->_M_data[0], &__mem->_M_owner);
 }
 
-template <class _T, class _A,
-          class = enable_if_t<is_array_v<_T> && extent_v<_T> != 0, void>>
+template <class _T, class _A>
+    requires std::is_array_v<_T> && (std::extent_v<_T> != 0)
 shared_ptr<_T> allocate_shared(const _A& __a)
 {
     using _U = remove_extent_t<_T>;
@@ -850,8 +857,8 @@ shared_ptr<_T> allocate_shared(const _A& __a)
     return shared_ptr<_T>::__make(&__mem->_M_data[0], &__mem->_M_owner);
 }
 
-template <class _T,
-          class = enable_if_t<is_array_v<_T> && extent_v<_T> == 0, void>>
+template <class _T>
+    requires std::is_array_v<_T> && (std::extent_v<_T> == 0)
 shared_ptr<_T> make_shared(size_t __n, const remove_extent_t<_T>& __u)
 {
     using _U = remove_extent_t<_T>;
@@ -876,8 +883,8 @@ shared_ptr<_T> make_shared(size_t __n, const remove_extent_t<_T>& __u)
     return shared_ptr<_T>::__make(&__mem->_M_data[0], &__mem->_M_owner);
 }
 
-template <class _T, class _A,
-          class = enable_if_t<is_array_v<_T> && extent_v<_T> == 0, void>>
+template <class _T, class _A>
+    requires std::is_array_v<_T> && (std::extent_v<_T> == 0)
 shared_ptr<_T> allocate_shared(const _A& __a, size_t __n, const remove_extent_t<_T>& __u)
 {
     using _U = remove_extent_t<_T>;
@@ -904,8 +911,8 @@ shared_ptr<_T> allocate_shared(const _A& __a, size_t __n, const remove_extent_t<
     return shared_ptr<_T>::__make(&__mem->_M_data[0], &__mem->_M_owner);
 }
 
-template <class _T,
-          class = enable_if_t<is_array_v<_T> && extent_v<_T> != 0, void>>
+template <class _T>
+    requires std::is_array_v<_T> && (std::extent_v<_T> != 0)
 shared_ptr<_T> make_shared(const remove_extent_t<_T>& __u)
 {
     using _U = remove_extent_t<_T>;
@@ -931,8 +938,8 @@ shared_ptr<_T> make_shared(const remove_extent_t<_T>& __u)
     return shared_ptr<_T>::__make(&__mem->_M_data[0], &__mem->_M_owner);
 }
 
-template <class _T, class _A,
-          class = enable_if_t<is_array_v<_T> && extent_v<_T> != 0, void>>
+template <class _T, class _A>
+    requires std::is_array_v<_T> && (std::extent_v<_T> != 0)
 shared_ptr<_T> allocate_shared(const _A& __a, const remove_extent_t<_T>& __u)
 {
     using _U = remove_extent_t<_T>;
@@ -961,12 +968,12 @@ shared_ptr<_T> allocate_shared(const _A& __a, const remove_extent_t<_T>& __u)
     return shared_ptr<_T>::__make(&__mem->_M_data[0], &__mem->_M_owner);
 }
 
-template <class _T,
-          class = enable_if_t<is_array_v<_T> && extent_v<_T> != 0, void>>
-shared_ptr<_T> make_shared_default_init()
+template <class _T>
+    requires (!(std::is_array_v<_T> && std::extent_v<_T> == 0))
+shared_ptr<_T> make_shared_for_overwrite()
 {
     using _U = remove_extent_t<_T>;
-    constexpr size_t __n = extent_v<_T>;
+    constexpr size_t __n = std::extent_v<_T>;
     using __owner_t = __detail::__shared_ptr_owner<true, _T>;
     allocator<_T> __alloc;
     auto* __mem = __owner_t::__allocate(__alloc, __n);
@@ -988,9 +995,9 @@ shared_ptr<_T> make_shared_default_init()
     return shared_ptr<_T>::__make(&__mem->_M_data[0], &__mem->_M_owner);
 }
 
-template <class _T, class _A,
-          class = enable_if_t<is_array_v<_T> && extent_v<_T> != 0, void>>
-shared_ptr<_T> allocate_shared_default_init(const _A& __a)
+template <class _T, class _A>
+    requires (!(std::is_array_v<_T> && std::extent_v<_T> == 0))
+shared_ptr<_T> allocate_shared_for_overwrite(const _A& __a)
 {
     using _U = remove_extent_t<_T>;
     constexpr size_t __n = extent_v<_T>;
@@ -1017,9 +1024,9 @@ shared_ptr<_T> allocate_shared_default_init(const _A& __a)
     return shared_ptr<_T>::__make(&__mem->_M_data[0], &__mem->_M_owner);
 }
 
-template <class _T,
-          class = enable_if_t<is_array_v<_T> && extent_v<_T> == 0, void>>
-shared_ptr<_T> make_shared_default_init(size_t __n)
+template <class _T>
+    requires std::is_array_v<_T> && (std::extent_v<_T> == 0)
+shared_ptr<_T> make_shared_for_overwrite(size_t __n)
 {
     using _U = remove_extent_t<_T>;
     using __owner_t = __detail::__shared_ptr_owner<true, _T>;
@@ -1043,9 +1050,9 @@ shared_ptr<_T> make_shared_default_init(size_t __n)
     return shared_ptr<_T>::__make(&__mem->_M_data[0], &__mem->_M_owner);
 }
 
-template <class _T, class _A,
-          class = enable_if_t<is_array_v<_T> && extent_v<_T> == 0, void>>
-shared_ptr<_T> allocate_shared_default_init(const _A& __a, size_t __n)
+template <class _T, class _A>
+    requires std::is_array_v<_T> && (std::extent_v<_T> == 0)
+shared_ptr<_T> allocate_shared_for_overwrite(const _A& __a, size_t __n)
 {
     using _U = remove_extent_t<_T>;
     using __owner_t = __detail::__shared_ptr_owner<true, _T, __detail::__default_delete_for<_T>, _A>;
@@ -1079,9 +1086,9 @@ bool operator==(const shared_ptr<_T>& __t, const shared_ptr<_U>& __u) noexcept
 }
 
 template <class _T, class _U>
-bool operator< (const shared_ptr<_T>& __t, const shared_ptr<_U>& __u) noexcept
+std::strong_ordering operator<=>(const shared_ptr<_T>& __t, const shared_ptr<_U>& __u) noexcept
 {
-    return less<>()(__t.get(), __u.get());
+    return std::compare_three_way()(__t.get(), __u.get());
 }
 
 template <class _T>
@@ -1091,69 +1098,9 @@ bool operator==(const shared_ptr<_T>& __p, nullptr_t) noexcept
 }
 
 template <class _T>
-bool operator==(nullptr_t, const shared_ptr<_T>& __p) noexcept
+std::strong_ordering operator<=>(const shared_ptr<_T>& __t, std::nullptr_t) noexcept
 {
-    return !__p;
-}
-
-template <class _T>
-bool operator!=(const shared_ptr<_T>& __p, nullptr_t) noexcept
-{
-    return static_cast<bool>(__p);
-}
-
-template <class _T>
-bool operator!=(nullptr_t, const shared_ptr<_T>& __p) noexcept
-{
-    return static_cast<bool>(__p);
-}
-
-template <class _T>
-bool operator< (const shared_ptr<_T>& __p, nullptr_t) noexcept
-{
-    return less<typename shared_ptr<_T>::element_type*>()(__p.get(), nullptr);
-}
-
-template <class _T>
-bool operator< (nullptr_t, const shared_ptr<_T>& __p) noexcept
-{
-    return less<typename shared_ptr<_T>::element_type*>()(nullptr, __p.get());
-}
-
-template <class _T>
-bool operator> (const shared_ptr<_T>& __p, nullptr_t) noexcept
-{
-    return nullptr < __p;
-}
-
-template <class _T>
-bool operator> (nullptr_t, const shared_ptr<_T>& __p) noexcept
-{
-    return __p < nullptr;
-}
-
-template <class _T>
-bool operator<=(const shared_ptr<_T>& __p, nullptr_t) noexcept
-{
-    return !(nullptr < __p);
-}
-
-template <class _T>
-bool operator<=(nullptr_t, const shared_ptr<_T>& __p) noexcept
-{
-    return !(__p < nullptr);
-}
-
-template <class _T>
-bool operator>=(const shared_ptr<_T>& __p, nullptr_t) noexcept
-{
-    return !(__p < nullptr);
-}
-
-template <class _T>
-bool operator>=(nullptr_t, const shared_ptr<_T>& __p) noexcept
-{
-    return !(nullptr < __p);
+    return std::compare_three_way()(__t.get(), static_cast<typename shared_ptr<_T>::element_type*>(nullptr));
 }
 
 
@@ -1173,7 +1120,7 @@ shared_ptr<_T> static_pointer_cast(const shared_ptr<_U>& __r) noexcept
 template <class _T, class _U>
 shared_ptr<_T> static_pointer_cast(shared_ptr<_U>&& __r) noexcept
 {
-    return shared_ptr<_T>(__XVI_STD_NS::move(__r), static_cast<typename shared_ptr<_T>::element_type*>(__r.get()));
+    return shared_ptr<_T>(std::move(__r), static_cast<typename shared_ptr<_T>::element_type*>(__r.get()));
 }
 
 template <class _T, class _U>
@@ -1191,7 +1138,7 @@ shared_ptr<_T> dynamic_pointer_cast(shared_ptr<_U>&& __r) noexcept
 {
     auto __p = dynamic_cast<typename shared_ptr<_T>::element_type*>(__r.get());
     if (__p)
-        return shared_ptr<_T>(__XVI_STD_NS::move(__r), __p);
+        return shared_ptr<_T>(std::move(__r), __p);
     else
         return shared_ptr<_T>();
 }
@@ -1205,7 +1152,7 @@ shared_ptr<_T> const_pointer_cast(const shared_ptr<_U>& __r) noexcept
 template <class _T, class _U>
 shared_ptr<_T> const_pointer_cast(shared_ptr<_U>&& __r) noexcept
 {
-    return shared_ptr<_T>(__XVI_STD_NS::move(__r), const_cast<typename shared_ptr<_T>::element_type*>(__r.get()));
+    return shared_ptr<_T>(std::move(__r), const_cast<typename shared_ptr<_T>::element_type*>(__r.get()));
 }
 
 template <class _T, class _U>
@@ -1217,7 +1164,7 @@ shared_ptr<_T> reinterpret_pointer_cast(const shared_ptr<_U>& __r) noexcept
 template <class _T, class _U>
 shared_ptr<_T> reinterpret_pointer_cast(shared_ptr<_U>&& __r) noexcept
 {
-    return shared_ptr<_T>(__XVI_STD_NS::move(__r), reinterpret_cast<typename shared_ptr<_T>::element_type*>(__r.get()));
+    return shared_ptr<_T>(std::move(__r), reinterpret_cast<typename shared_ptr<_T>::element_type*>(__r.get()));
 }
 
 
@@ -1249,8 +1196,8 @@ public:
     {
     }
 
-    template <class _Y,
-              class = enable_if_t<is_convertible_v<_Y*, _T*>, void>>
+    template <class _Y>
+        requires __detail::__shared_ptr_compatible_ptrs<_T, _Y>
     weak_ptr(const shared_ptr<_Y>& __r) noexcept
         : _M_ptr(__r._M_ptr),
           _M_owner(__r._M_owner)
@@ -1267,8 +1214,8 @@ public:
             _M_owner->__add_weak_ref();
     }
 
-    template <class _Y,
-              class = enable_if_t<is_convertible_v<_Y*, _T*>, void>>
+    template <class _Y>
+        requires __detail::__shared_ptr_compatible_ptrs<_T, _Y>
     weak_ptr(const weak_ptr<_Y>& __r) noexcept
         : _M_ptr(__r._M_ptr),
           _M_owner(__r._M_owner)
@@ -1285,8 +1232,8 @@ public:
         __r._M_owner = nullptr;
     }
 
-    template <class _Y,
-              class = enable_if_t<is_convertible_v<_Y*, _Y*>, void>>
+    template <class _Y>
+        requires __detail::__shared_ptr_compatible_ptrs<_T, _Y>
     weak_ptr(weak_ptr<_Y>&& __r) noexcept
         : _M_ptr(__r._M_ptr),
           _M_owner(__r._M_owner)
@@ -1318,8 +1265,8 @@ public:
         return *this;
     }
 
-    template <class _Y,
-              class = enable_if_t<is_convertible_v<_Y*, _T*>, void>>
+    template <class _Y>
+        requires __detail::__shared_ptr_compatible_ptrs<_T, _Y>
     weak_ptr& operator=(const weak_ptr<_Y>& __r) noexcept
     {
         if (__r._M_owner != _M_owner)
@@ -1338,8 +1285,8 @@ public:
         return *this;
     }
 
-    template <class _Y,
-              class = enable_if_t<is_convertible_v<_Y*, _T*>, void>>
+    template <class _Y>
+        requires __detail::__shared_ptr_compatible_ptrs<_T, _Y>
     weak_ptr& operator=(const shared_ptr<_Y>& __r) noexcept
     {
         if (__r._M_owner != _M_owner)
@@ -1374,8 +1321,8 @@ public:
         return *this;
     }
 
-    template <class _Y,
-              class = enable_if_t<is_convertible_v<_Y*, _T*>, void>>
+    template <class _Y>
+        requires __detail::__shared_ptr_compatible_ptrs<_T, _Y>
     weak_ptr& operator=(weak_ptr<_Y>&& __r) noexcept
     {
         if (&__r == this)

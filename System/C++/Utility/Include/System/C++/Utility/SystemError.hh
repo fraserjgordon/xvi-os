@@ -214,14 +214,9 @@ public:
         return this == &__rhs;
     }
 
-    bool operator!=(const error_category& __rhs) const noexcept
+    strong_ordering operator<=>(const error_category& __rhs) const noexcept
     {
-        return !(*this == __rhs);
-    }
-
-    bool operator< (const error_category& __rhs) const noexcept
-    {
-        return less<const error_category*>()(this, &__rhs);
+        return compare_three_way()(this, &__rhs);
     }
 };
 
@@ -346,46 +341,26 @@ inline bool operator==(const error_code& __lhs, const error_condition& __rhs) no
     return __lhs.category().equivalent(__lhs.value(), __rhs) || __rhs.category().equivalent(__lhs, __rhs.value());
 }
 
-inline bool operator==(const error_condition& __lhs, const error_code& __rhs) noexcept
-{
-    return __rhs.category().equivalent(__rhs.value(), __lhs) || __lhs.category().equivalent(__rhs, __lhs.value());
-}
-
 inline bool operator==(const error_condition& __lhs, const error_condition& __rhs) noexcept
 {
     return __lhs.category() == __rhs.category() && __lhs.value() == __rhs.value();
 }
 
-inline bool operator!=(const error_code& __lhs, const error_code& __rhs) noexcept
+inline strong_ordering operator<=>(const error_code& __lhs, const error_code& __rhs) noexcept
 {
-    return !(__lhs == __rhs);
+    if (auto __c = __lhs.category() <=> __rhs.category(); __c != 0)
+        return __c;
+
+    return __lhs.value() <=> __rhs.value();
 }
 
-inline bool operator!=(const error_code& __lhs, const error_condition& __rhs) noexcept
+inline strong_ordering operator<=>(const error_condition& __lhs, const error_condition& __rhs) noexcept
 {
-    return !(__lhs == __rhs);
-}
+    if (auto __c = __lhs.category() <=> __rhs.category(); __c != 0)
+        return __c;
 
-inline bool operator!=(const error_condition& __lhs, const error_code& __rhs) noexcept
-{
-    return !(__lhs == __rhs);
+    return __lhs.value() <=> __rhs.value();
 }
-
-inline bool operator!=(const error_condition& __lhs, const error_condition& __rhs) noexcept
-{
-    return !(__lhs == __rhs);
-}
-
-inline bool operator<(const error_code& __lhs, const error_code& __rhs) noexcept
-{
-    return __lhs.category() < __rhs.category() || (__lhs.category() == __rhs.category() && __lhs.value() < __rhs.value());
-}
-
-inline bool operator<(const error_condition& __lhs, const error_condition& __rhs) noexcept
-{
-    return __lhs.category() < __rhs.category() || (__lhs.category() == __rhs.category() && __lhs.value() < __rhs.value());
-}
-
 
 inline bool error_category::equivalent(int __code, const error_condition& __condition) const noexcept
 {

@@ -571,13 +571,11 @@ private:
 };
 
 
-#if __cpp_concepts
 template <class _CharT, class _Traits>
 inline constexpr bool ranges::enable_view<basic_string_view<_CharT, _Traits>> = true;
 
 template <class _CharT, class _Traits>
 inline constexpr bool ranges::enable_borrowed_range<basic_string_view<_CharT, _Traits>> = true;
-#endif
 
 
 namespace __detail
@@ -586,11 +584,9 @@ namespace __detail
 template <class>
 struct __char_comparison_category { using __type = weak_ordering; };
 
-#if __cpp_concepts
 template <class _Traits>
     requires requires { typename _Traits::comparison_category; }
 struct __char_comparison_category<_Traits> { using __type = typename _Traits::comparison_category; };
-#endif
 
 template <class _Traits>
 using __char_comparison_category_t = typename __char_comparison_category<_Traits>::__type;

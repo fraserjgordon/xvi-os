@@ -37,124 +37,127 @@ public:
     using element_type = _T;
     using deleter_type = _D;
 
-    constexpr unique_ptr() noexcept = default;
+    constexpr unique_ptr() noexcept
+        requires (!std::is_pointer_v<_D> && std::is_default_constructible_v<_D>)
+        = default;
 
     constexpr unique_ptr(nullptr_t) noexcept
+        requires (!std::is_pointer_v<_D> && std::is_default_constructible_v<_D>)
         : unique_ptr()
     {
     }
 
-    template <class = enable_if_t<!is_pointer_v<deleter_type> && is_default_constructible_v<deleter_type>, void>>
-    explicit unique_ptr(pointer __p) noexcept
+    constexpr explicit unique_ptr(type_identity_t<pointer> __p) noexcept
+        requires (!std::is_pointer_v<_D> && std::is_default_constructible_v<_D>)
         : _M_ptr(__p)
     {
     }
 
-    template <class = enable_if_t<is_constructible_v<_D, const _D&>, void>>
-    unique_ptr(pointer __p, const _D& __d) noexcept
+    constexpr unique_ptr(type_identity_t<pointer> __p, const _D& __d) noexcept
+        requires std::is_constructible_v<_D, decltype(__d)>
         : _M_ptr(__p),
           _M_deleter(__d)
     {
     }
 
-    template <class _DD = remove_reference_t<_D>&&, class = enable_if_t<is_constructible_v<_D, _DD>
-                                  && !is_reference_v<_D>, void>>
-    unique_ptr(pointer __p, type_identity<_DD> __d) noexcept
+    constexpr unique_ptr(type_identity_t<pointer> __p, std::remove_reference_t<_D>&& __d) noexcept
+        requires (std::is_constructible_v<_D, decltype(__d)> && !std::is_reference_v<_D>)
         : _M_ptr(__p),
-          _M_deleter(__XVI_STD_NS::forward<decltype(__d)>(__d))
+          _M_deleter(std::forward<decltype(__d)>(__d))
     {
     }
 
-    template <class = void, class _DD = remove_reference_t<_D>&&, class = enable_if_t<is_constructible_v<_D, _DD>
-                                  && is_reference_v<_D>, void>>
-    unique_ptr(pointer, type_identity<_DD>) = delete;
+    constexpr unique_ptr(type_identity_t<pointer>, std::remove_reference_t<_D>&&)
+        requires std::is_reference_v<_D>
+        = delete;
 
-    unique_ptr(unique_ptr&& __u) noexcept
+    constexpr unique_ptr(unique_ptr&& __u) noexcept
+        requires std::is_move_constructible_v<_D>
         : _M_ptr(__u._M_ptr),
-          _M_deleter(__XVI_STD_NS::forward<_D>(__u._M_deleter))
+          _M_deleter(std::forward<_D>(__u._M_deleter))
     {
         __u._M_ptr = nullptr;
     }
 
-    template <class _U, class _E,
-              class = enable_if_t<is_convertible_v<pointer, typename unique_ptr<_U, _E>::pointer>
-                                  && !is_array_v<_U>
-                                  && ((is_reference_v<_D> && is_same_v<_D, _E>)
-                                      || (!is_reference_v<_D> && is_convertible_v<_D, _E>)), void>>
-    unique_ptr(unique_ptr<_U, _E>&& __u) noexcept
+    template <class _U, class _E>
+        requires std::is_convertible_v<typename unique_ptr<_U, _E>::pointer, pointer>
+            && (!std::is_array_v<_U>)
+            && ((std::is_reference_v<_D> && std::is_same_v<_D, _E>) || (!std::is_reference_v<_D> && std::is_convertible_v<_E, _D>))
+    constexpr unique_ptr(unique_ptr<_U, _E>&& __u) noexcept
         : _M_ptr(__u._M_ptr),
-          _M_deleter(__XVI_STD_NS::forward<_E>(__u._M_deleter))
+          _M_deleter(std::forward<_E>(__u._M_deleter))
     {
         __u._M_ptr = nullptr;
     }
 
-    ~unique_ptr()
+    constexpr ~unique_ptr()
     {
-        if (_M_ptr != nullptr)
+        if (get())
             get_deleter()(get());
     }
 
-    unique_ptr& operator=(unique_ptr&& __u) noexcept
+    constexpr unique_ptr& operator=(unique_ptr&& __u) noexcept
+        requires std::is_move_assignable_v<_D>
     {
         reset(__u.release());
         get_deleter() = __XVI_STD_NS::forward<_D>(__u.get_deleter());
         return *this;
     }
 
-    template <class _U, class _E,
-              class = enable_if_t<is_convertible_v<pointer, typename unique_ptr<_U, _E>::pointer>
-                                  && !is_array_v<_U>
-                                  && is_assignable_v<_D&, _E&&>, void>>
-    unique_ptr& operator=(unique_ptr<_U, _E>&& __u) noexcept
+    template <class _U, class _E>
+        requires std::is_convertible_v<typename unique_ptr<_U, _E>::pointer, pointer>
+            && (!std::is_array_v<_U>)
+            && std::is_assignable_v<_D&, _E&&>
+    constexpr unique_ptr& operator=(unique_ptr<_U, _E>&& __u) noexcept
     {
         reset(__u.release());
-        get_deleter() = __XVI_STD_NS::forward<_E>(__u.get_deleter());
+        get_deleter() = std::forward<_E>(__u.get_deleter());
         return *this;
     }
 
-    unique_ptr& operator=(nullptr_t) noexcept
+    constexpr unique_ptr& operator=(nullptr_t) noexcept
     {
         reset();
     }
 
-    add_lvalue_reference_t<_T> operator*() const
+    constexpr add_lvalue_reference_t<_T> operator*() const noexcept(noexcept(*declval<pointer>()))
     {
         return *get();
     }
 
-    pointer operator->() const noexcept
+    constexpr pointer operator->() const noexcept
     {
         return get();
     }
 
-    pointer get() const noexcept
+    constexpr pointer get() const noexcept
     {
         return _M_ptr;
     }
 
-    deleter_type& get_deleter() noexcept
+    constexpr deleter_type& get_deleter() noexcept
     {
         return _M_deleter;
     }
 
-    const deleter_type& get_deleter() const noexcept
+    constexpr const deleter_type& get_deleter() const noexcept
     {
         return _M_deleter;
     }
 
-    explicit operator bool() const noexcept
+    constexpr explicit operator bool() const noexcept
     {
         return get() != nullptr;
     }
 
-    pointer release() noexcept
+    constexpr pointer release() noexcept
     {
         pointer __p = _M_ptr;
         _M_ptr = nullptr;
         return __p;
     }
 
-    void reset(pointer __p = pointer()) noexcept
+    constexpr void reset(pointer __p = pointer()) noexcept
     {
         pointer __old_p = _M_ptr;
         _M_ptr = __p;
@@ -163,9 +166,9 @@ public:
             get_deleter()(__old_p);
     }
 
-    void swap(unique_ptr& __u) noexcept
+    constexpr void swap(unique_ptr& __u) noexcept
     {
-        using __XVI_STD_NS::swap;
+        using std::swap;
         swap(_M_ptr, __u._M_ptr);
         swap(_M_deleter, __u._M_deleter);
     }
@@ -175,7 +178,7 @@ public:
 
 private:
 
-    pointer _M_ptr = nullptr;
+    pointer _M_ptr = {};
     [[no_unique_address]] deleter_type _M_deleter = {};
 };
 
@@ -196,151 +199,144 @@ public:
     {
     }
 
-    template <class _U,
-              class = enable_if_t<!is_pointer_v<deleter_type>
-                                  && is_default_constructible_v<deleter_type>
-                                  && (is_same_v<_U, pointer>
-                                      || is_same_v<_U, nullptr_t>
-                                      || (is_same_v<pointer, element_type*>
-                                          && is_pointer_v<_U>
-                                          && is_convertible_v<element_type(*)[], remove_pointer_t<_U>(*)[]>)), void>>
-    explicit unique_ptr(_U __p) noexcept
+    template <class _U>
+        requires std::is_default_constructible_v<_D>
+            && (std::is_same_v<_U, pointer>
+                || (std::is_same_v<pointer, element_type*>
+                    && std::is_pointer_v<_U>
+                    && std::is_convertible_v<std::remove_pointer_t<_U>(*)[], element_type(*)[]>))
+    constexpr explicit unique_ptr(_U __p) noexcept
         : _M_ptr(__p)
     {
     }
 
-    template <class _U,
-              class = enable_if_t<is_constructible_v<_D, const _D&>
-                                  && (is_same_v<_U, pointer>
-                                      || is_same_v<_U, nullptr_t>
-                                      || (is_same_v<pointer, element_type*>
-                                          && is_pointer_v<_U>
-                                          && is_convertible_v<element_type(*)[], remove_pointer_t<_U>(*)[]>)), void>>
-    unique_ptr(_U __p, const _D& __d) noexcept
+    template <class _U>
+        requires is_constructible_v<_D, const _D&>
+            && (std::is_same_v<_U, pointer>
+                || std::is_same_v<_U, std::nullptr_t>
+                || (std::is_same_v<pointer, element_type*>
+                    && std::is_pointer_v<_U>
+                    && std::is_convertible_v<std::remove_pointer_t<_U>(*)[], element_type(*)[]>))
+    constexpr unique_ptr(_U __p, const _D& __d) noexcept
         : _M_ptr(__p),
           _M_deleter(__d)
     {
     }
 
-    template <class _U, class _DD = remove_reference_t<_D>&&,
-              class = enable_if_t<is_constructible_v<_D, _DD>
-                                  && !is_reference_v<_D>
-                                  && (is_same_v<_U, pointer>
-                                      || is_same_v<_U, nullptr_t>
-                                      || (is_same_v<pointer, element_type*>
-                                          && is_pointer_v<_U>
-                                          && is_convertible_v<element_type(*)[], remove_pointer_t<_U>(*)[]>)), void>>
-    unique_ptr(_U __p, type_identity<_DD> __d) noexcept
+    template <class _U>
+        requires is_constructible_v<_D, std::remove_reference_t<_D>&&>
+            && (!std::is_reference_v<_D>)
+            && (std::is_same_v<_U, pointer>
+                || std::is_same_v<_U, std::nullptr_t>
+                || (std::is_same_v<pointer, element_type*>
+                    && std::is_pointer_v<_U>
+                    && std::is_convertible_v<std::remove_pointer_t<_U>(*)[], element_type(*)[]>))
+    constexpr unique_ptr(_U __p, std::remove_reference_t<_D>&& __d) noexcept
         : _M_ptr(__p),
-          _M_deleter(__XVI_STD_NS::forward<decltype(__d)>(__d))
+          _M_deleter(std::forward<decltype(__d)>(__d))
     {
     }
 
-    template <class _U, class = void, class _DD = remove_reference_t<_D>&&,
-              class = enable_if_t<is_constructible_v<_D, _DD>
-                                  && is_reference_v<_D>
-                                  && (is_same_v<_U, pointer>
-                                      || is_same_v<_U, nullptr_t>
-                                      || (is_same_v<pointer, element_type*>
-                                          && is_pointer_v<_U>
-                                          && is_convertible_v<element_type(*)[], remove_pointer_t<_U>(*)[]>)), void>>
-    unique_ptr(_U, type_identity<_DD>) = delete;
+    template <class _U>
+        requires std::is_reference_v<_D>
+    unique_ptr(_U, std::remove_reference_t<_D>&&) = delete;
 
-    unique_ptr(unique_ptr&& __u) noexcept
+    constexpr unique_ptr(unique_ptr&& __u) noexcept
+        requires std::is_move_constructible_v<_D>
         : _M_ptr(__u._M_ptr),
-          _M_deleter(__XVI_STD_NS::forward<_D>(__u._M_deleter))
+          _M_deleter(std::forward<_D>(__u._M_deleter))
     {
         __u._M_ptr = nullptr;
     }
 
-    template <class _U, class _E,
-              class = enable_if_t<is_array_v<_U>
-                                  && is_same_v<pointer, element_type*>
-                                  && is_same_v<typename unique_ptr<_U, _E>::pointer, typename unique_ptr<_U, _E>::element_type*>
-                                  && is_convertible_v<element_type(*)[], typename unique_ptr<_U, _E>::element_type(*)[]>
-                                  && ((is_reference_v<_D> && is_same_v<_D, _E>)
-                                      || (!is_reference_v<_D> && is_convertible_v<_D, _E>)), void>>
-    unique_ptr(unique_ptr<_U, _E>&& __u) noexcept
+    template <class _U, class _E>
+        requires std::is_array_v<_U>
+            && std::is_same_v<pointer, element_type*>
+            && std::is_same_v<typename unique_ptr<_U, _E>::pointer, typename unique_ptr<_U, _E>::element_type*>
+            && std::is_convertible_v<typename unique_ptr<_U, _E>::element_type(*)[], element_type(*)[]>
+            && ((std::is_reference_v<_D> && std::is_same_v<_D, _E>) || (!std::is_reference_v<_D> && std::is_convertible_v<_E, _D>))
+    constexpr unique_ptr(unique_ptr<_U, _E>&& __u) noexcept
         : _M_ptr(__u._M_ptr),
-          _M_deleter(__XVI_STD_NS::forward<_E>(__u._M_deleter))
+          _M_deleter(std::forward<_E>(__u._M_deleter))
     {
         __u._M_ptr = nullptr;
     }
 
-    ~unique_ptr()
+    constexpr ~unique_ptr()
     {
         if (_M_ptr != nullptr)
             get_deleter()(get());
     }
 
-    unique_ptr& operator=(unique_ptr&& __u) noexcept
+    constexpr unique_ptr& operator=(unique_ptr&& __u) noexcept
+        requires std::is_move_assignable_v<_D>
     {
         reset(__u.release());
-        get_deleter() = __XVI_STD_NS::forward<_D>(__u.get_deleter());
+        get_deleter() = std::forward<_D>(__u.get_deleter());
         return *this;
     }
 
-    template <class _U, class _E,
-              class = enable_if_t<is_array_v<_U>
-                                  && is_same_v<pointer, element_type*>
-                                  && is_same_v<typename unique_ptr<_U, _E>::pointer, typename unique_ptr<_U, _E>::element_type*>
-                                  && is_convertible_v<element_type(*)[], typename unique_ptr<_U, _E>::element_type(*)[]>
-                                  && is_assignable_v<_D&, _E&>, void>>
-    unique_ptr& operator=(unique_ptr<_U, _E>&& __u) noexcept
+    template <class _U, class _E>
+        requires std::is_array_v<_U>
+            && std::is_same_v<pointer, element_type*>
+            && std::is_same_v<typename unique_ptr<_U, _E>::pointer, typename unique_ptr<_U, _E>::element_type*>
+            && std::is_convertible_v<typename unique_ptr<_U, _E>::element_type(*)[], element_type(*)[]>
+            && std::is_assignable_v<_D&, _E&&>
+    constexpr unique_ptr& operator=(unique_ptr<_U, _E>&& __u) noexcept
     {
         reset(__u.release());
-        get_deleter() = __XVI_STD_NS::forward<_E>(__u.get_deleter());
+        get_deleter() = std::forward<_E>(__u.get_deleter());
         return *this;
     }
 
-    unique_ptr& operator=(nullptr_t) noexcept
+    constexpr unique_ptr& operator=(nullptr_t) noexcept
     {
         reset();
     }
 
-    _T& operator[](size_t __i) const
+    constexpr _T& operator[](size_t __i) const
     {
         return get()[__i];
     }
 
-    pointer get() const noexcept
+    constexpr pointer get() const noexcept
     {
         return _M_ptr;
     }
 
-    deleter_type& get_deleter() noexcept
+    constexpr deleter_type& get_deleter() noexcept
     {
         return _M_deleter;
     }
 
-    const deleter_type& get_deleter() const noexcept
+    constexpr const deleter_type& get_deleter() const noexcept
     {
         return _M_deleter;
     }
 
-    explicit operator bool() const noexcept
+    constexpr explicit operator bool() const noexcept
     {
         return get() != nullptr;
     }
 
-    pointer release() noexcept
+    constexpr pointer release() noexcept
     {
         pointer __p = _M_ptr;
         _M_ptr = nullptr;
         return __p;
     }
 
-    void reset(std::nullptr_t = nullptr) noexcept
+    constexpr void reset(std::nullptr_t = nullptr) noexcept
     {
         reset(pointer());
     }
 
-    template <class _U,
-              class = enable_if_t<is_same_v<pointer, _U>
-                                  || (is_same_v<pointer, element_type*>
-                                      && is_pointer_v<_U>
-                                      && is_convertible_v<element_type(*)[], remove_pointer_t<_U>(*)[]>), void>>
-    void reset(_U __p) noexcept
+    template <class _U>
+        requires std::is_same_v<_U, pointer>
+            || (std::is_same_v<pointer, element_type*>
+                && std::is_pointer_v<_U>
+                && std::is_convertible_v<std::remove_pointer_t<_U>(*)[], element_type(*)[]>)
+    constexpr void reset(_U __p) noexcept
     {
         pointer __old_p = _M_ptr;
         _M_ptr = __p;
@@ -349,9 +345,9 @@ public:
             get_deleter()(__old_p);
     }
 
-    void swap(unique_ptr& __u) noexcept
+    constexpr void swap(unique_ptr& __u) noexcept
     {
-        using __XVI_STD_NS::swap;
+        using std::swap;
         swap(_M_ptr, __u._M_ptr);
         swap(_M_deleter, __u._M_deleter);
     }
@@ -366,60 +362,56 @@ private:
 };
 
 
-template <class _T, class... _Args,
-          class = enable_if_t<!is_array_v<_T>, void>>
-unique_ptr<_T> make_unique(_Args&&... __args)
+template <class _T, class... _Args>
+    requires (!std::is_array_v<_T>)
+constexpr unique_ptr<_T> make_unique(_Args&&... __args)
 {
-    return unique_ptr<_T>(new _T(__XVI_STD_NS::forward<_Args>(__args)...));
+    return unique_ptr<_T>(new _T(std::forward<_Args>(__args)...));
 }
 
-template <class _T,
-          class = enable_if_t<is_array_v<_T> && extent_v<_T> == 0, void>>
-unique_ptr<_T> make_unique(size_t __n)
+template <class _T>
+    requires std::is_array_v<_T> && (std::extent_v<_T> == 0)
+constexpr unique_ptr<_T> make_unique(size_t __n)
 {
     return unique_ptr<_T>(new remove_extent_t<_T>[__n]());
 }
 
-template <class _T, class... _Args,
-          class = enable_if_t<is_array_v<_T> && extent_v<_T> != 0, void>>
+template <class _T, class... _Args>
+    requires std::is_array_v<_T> && (std::extent_v<_T> != 0)
 void make_unique(_Args&&...) = delete;
 
-template <class _T,
-          class = enable_if_t<!is_array_v<_T>, void>>
-unique_ptr<_T> make_unique_default_init()
+
+template <class _T>
+    requires (!std::is_array_v<_T>)
+constexpr unique_ptr<_T> make_unique_for_overwrite()
 {
     return unique_ptr<_T>(new _T);
 }
 
-template <class _T,
-          class = enable_if_t<is_array_v<_T> && extent_v<_T> == 0, void>>
-unique_ptr<_T> make_unique_default_init(size_t __n)
+template <class _T>
+    requires std::is_array_v<_T> && (std::extent_v<_T> == 0)
+constexpr unique_ptr<_T> make_unique_for_overwrite(std::size_t __n)
 {
-    return unique_ptr<_T>(new _T[__n]);
+    return unique_ptr<_T>(new std::remove_extent_t<_T>[__n]);
 }
 
-template <class _T, class... _Args,
-          class = enable_if_t<is_array_v<_T> && extent_v<_T> != 0, void>>
-void make_unique_default_init(_Args&&...) = delete;
+template <class _T, class... _Args>
+    requires std::is_array_v<_T> && (std::extent_v<_T> != 0)
+void make_unique_for_overwrite(_Args&&...) = delete;
 
 
 template <class _T, class _D>
-void swap(unique_ptr<_T, _D>& __lhs, unique_ptr<_T, _D>& __rhs) noexcept
+    requires std::is_swappable_v<_D>
+constexpr void swap(unique_ptr<_T, _D>& __lhs, unique_ptr<_T, _D>& __rhs) noexcept
 {
     __lhs.swap(__rhs);
 }
 
 
 template <class _T1, class _D1, class _T2, class _D2>
-bool operator==(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y) noexcept
+constexpr bool operator==(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y) noexcept
 {
     return __x.get() == __y.get();
-}
-
-template <class _T1, class _D1, class _T2, class _D2>
-bool operator!=(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y) noexcept
-{
-    return __x.get() != __y.get();
 }
 
 template <class _T1, class _D1, class _T2, class _D2>
@@ -448,76 +440,74 @@ bool operator>=(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y
     return !(__x < __y);
 }
 
+template <class _T1, class _D1, class _T2, class _D2>
+    requires std::three_way_comparable_with<typename unique_ptr<_T1, _D1>::pointer, typename unique_ptr<_T2, _D2>::pointer>
+std::compare_three_way_result_t<typename unique_ptr<_T1, _D1>::pointer, typename unique_ptr<_T2, _D2>::pointer>
+operator<=>(const unique_ptr<_T1, _D1>& __rhs, const unique_ptr<_T2, _D2>& __lhs) noexcept
+{
+    return compare_three_way()(__rhs.get(), __lhs.get());
+}
+
 template <class _T, class _D>
-bool operator==(const unique_ptr<_T, _D>& __x, nullptr_t) noexcept
+constexpr bool operator==(const unique_ptr<_T, _D>& __x, nullptr_t) noexcept
 {
     return !__x;
 }
 
 template <class _T, class _D>
-bool operator==(nullptr_t, class unique_ptr<_T, _D>& __x) noexcept
-{
-    return !__x;
-}
-
-template <class _T, class _D>
-bool operator!=(const unique_ptr<_T, _D>& __x, nullptr_t) noexcept
-{
-    return !!__x;
-}
-
-template <class _T, class _D>
-bool operator!=(nullptr_t, class unique_ptr<_T, _D>& __x) noexcept
-{
-    return !!__x;
-}
-
-template <class _T, class _D>
-bool operator<(const unique_ptr<_T, _D>& __x, nullptr_t) noexcept
+constexpr bool operator<(const unique_ptr<_T, _D>& __x, nullptr_t) noexcept
 {
     return less<typename unique_ptr<_T, _D>::pointer>()(__x.get(), nullptr);
 }
 
 template <class _T, class _D>
-bool operator<(nullptr_t, class unique_ptr<_T, _D>& __x) noexcept
+constexpr bool operator<(nullptr_t, class unique_ptr<_T, _D>& __x) noexcept
 {
     return less<typename unique_ptr<_T, _D>::pointer>()(nullptr, __x.get());
 }
 
 template <class _T, class _D>
-bool operator>(const unique_ptr<_T, _D>& __x, nullptr_t) noexcept
+constexpr bool operator>(const unique_ptr<_T, _D>& __x, nullptr_t) noexcept
 {
     return nullptr < __x;
 }
 
 template <class _T, class _D>
-bool operator>(nullptr_t, class unique_ptr<_T, _D>& __x) noexcept
+constexpr bool operator>(nullptr_t, class unique_ptr<_T, _D>& __x) noexcept
 {
     return __x < nullptr;
 }
 
 template <class _T, class _D>
-bool operator<=(const unique_ptr<_T, _D>& __x, nullptr_t) noexcept
+constexpr bool operator<=(const unique_ptr<_T, _D>& __x, nullptr_t) noexcept
 {
     return !(nullptr < __x);
 }
 
 template <class _T, class _D>
-bool operator<=(nullptr_t, class unique_ptr<_T, _D>& __x) noexcept
+constexpr bool operator<=(nullptr_t, class unique_ptr<_T, _D>& __x) noexcept
 {
     return !(__x < nullptr);
 }
 
 template <class _T, class _D>
-bool operator>=(const unique_ptr<_T, _D>& __x, nullptr_t) noexcept
+constexpr bool operator>=(const unique_ptr<_T, _D>& __x, nullptr_t) noexcept
 {
     return !(__x < nullptr);
 }
 
 template <class _T, class _D>
-bool operator>=(nullptr_t, class unique_ptr<_T, _D>& __x) noexcept
+constexpr bool operator>=(nullptr_t, class unique_ptr<_T, _D>& __x) noexcept
 {
     return !(nullptr < __x);
+}
+
+template <class _T, class _D>
+    requires std::three_way_comparable<typename unique_ptr<_T, _D>::pointer>
+constexpr std::compare_three_way_result_t<typename unique_ptr<_T, _D>::pointer>
+operator<=>(const unique_ptr<_T, _D>& __x, std::nullptr_t)
+{
+    return compare_three_way()(__x.get(), static_cast<typename unique_ptr<_T, _D>::pointer>(nullptr));
 }
 
 

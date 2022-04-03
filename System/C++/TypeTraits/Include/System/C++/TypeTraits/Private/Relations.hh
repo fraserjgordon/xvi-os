@@ -108,6 +108,12 @@ template <class _From, class _To> inline constexpr bool is_convertible_v = is_co
 template <class _From, class _To> struct is_nothrow_convertible : __detail::is_nothrow_convertible<_From, _To> {};
 template <class _From, class _To> inline constexpr bool is_nothrow_convertible_v = is_nothrow_convertible<_From, _To>::value;
 
+template <class _T, class _U> struct is_layout_compatible : __detail::is_layout_compatible<_T, _U> {};
+template <class _T, class _U> inline constexpr bool is_layout_compatible_v = is_layout_compatible<_T, _U>::value;
+
+template <class _Base, class _Derived> struct is_pointer_interconvertible_base_of : __detail::is_pointer_interconvertible_base_of<_Base, _Derived> {};
+template <class _Base, class _Derived> inline constexpr bool is_pointer_interconvertible_base_of_v = is_pointer_interconvertible_base_of<_Base, _Derived>::value;
+
 template <class _Fn, class... _Args> struct is_invocable : __detail::is_invocable<_Fn, _Args...> {};
 template <class _Fn, class... _Args> inline constexpr bool is_invocable_v = is_invocable<_Fn, _Args...>::value;
 
@@ -119,6 +125,11 @@ template <class _Fn, class... _Args> inline constexpr bool is_nothrow_invocable_
 
 template <class _R, class _Fn, class... _Args> struct is_nothrow_invocable_r : __detail::is_nothrow_invocable_r<_R, _Fn, _Args...> {};
 template <class _R, class _Fn, class... _Args> inline constexpr bool is_nothrow_invocable_r_v = is_nothrow_invocable_r<_R, _Fn, _Args...>::value;
+
+
+//! @todo: implement
+template <class _S, class _M> constexpr bool is_pointer_interconvertible_with_class(_M _S::*__m) noexcept;
+template <class _S1, class _S2, class _M1, class _M2> constexpr bool is_corresponding_member(_M1 _S1::*__m1, _M2 _S2::*__m2) noexcept;
 
 
 } // namespace __XVI_STD_TYPETRAITS_NS

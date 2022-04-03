@@ -6,8 +6,11 @@
 #include <System/C++/LanguageSupport/Limits.hh>
 #include <System/C++/TypeTraits/TypeTraits.hh>
 
-#include <System/C++/Utility/PointerTraits.hh>
+
 #include <System/C++/Utility/Private/Config.hh>
+#include <System/C++/Utility/Private/Concepts.hh>
+#include <System/C++/Utility/MemoryAlgorithms.hh>
+#include <System/C++/Utility/PointerTraits.hh>
 
 
 namespace __XVI_STD_UTILITY_NS
@@ -50,6 +53,8 @@ template <class _A, class _T> using __destroy_detector = decltype(declval<_A>().
 
 template <class _A> using __max_size_detector = decltype(declval<_A>().max_size());
 template <class _A> using __select_on_copy_construct_detector = decltype(declval<_A>().select_on_container_copy_construction());
+
+template <class _T> using __difference_type_detector = typename _T::difference_type;
 
 } // namespace __detail
 
@@ -102,9 +107,9 @@ struct allocator_traits
     static constexpr void construct(_Alloc& __a, _T* __p, _Args&&... __args)
     {
         if constexpr (__detail::is_detected_v<__detail::__construct_detector, _Alloc, _T, _Args...>)
-            __a.construct(__p, __XVI_STD_NS::forward<_Args>(__args)...);
+            __a.construct(__p, std::forward<_Args>(__args)...);
         else
-            new (static_cast<void*>(__p)) _T(__XVI_STD_NS::forward<_Args>(__args)...);
+            construct_at(__p, std::forward<_Args>(__args)...);
     }
 
     template <class _T>
@@ -113,7 +118,7 @@ struct allocator_traits
         if constexpr (__detail::is_detected_v<__detail::__destroy_detector, _Alloc, _T>)
             __a.destroy(__p);
         else
-            __p->~_T();
+            destroy_at(__p);
     }
 
     static constexpr size_type max_size(const _Alloc& __a) noexcept

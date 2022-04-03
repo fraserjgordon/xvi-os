@@ -5,9 +5,9 @@ config("c11")
 }
 
 # C++ standard.
-config("c++20")
+config("c++23")
 {
-    cflags_cc = ["-std=c++2a"]
+    cflags_cc = ["-std=c++2b"]
 }
 
 # Rust edition.

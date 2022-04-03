@@ -29,7 +29,6 @@ namespace __XVI_STD_UTILITY_NS
 {
 
 
-#if __cpp_concepts
 namespace ranges
 {
 
@@ -78,7 +77,7 @@ inline constexpr bool enable_view =
     : true;
 
 template <class _T>
-concept view = range<_T> && movable<_T> && default_constructible<_T> && enable_view<_T>;
+concept view = range<_T> && movable<_T> && enable_view<_T>;
 
 
 template <class _R, class _T>
@@ -505,7 +504,6 @@ using safe_subrange_t = conditional_t<borrowed_range<_R>, subrange<iterator_t<_R
 
 
 } // namespace ranges
-#endif // if __cpp_ranges
 
 
 } // namespace __XVI_STD_UTILITY_NS
@@ -519,7 +517,6 @@ namespace __XVI_STD_UTILITY_NS
 {
 
 
-#if __cpp_concepts
 namespace ranges
 {
 
@@ -564,8 +561,8 @@ inline constexpr empty_view<_T> empty {};
 namespace __detail
 {
 
-template <copy_constructible _T>
-    requires is_object_v<_T>
+template <class _T>
+    requires copy_constructible<_T> && is_object_v<_T>
 class __semiregular_box
     : public optional<_T>
 {
@@ -575,7 +572,7 @@ public:
 
     constexpr __semiregular_box()
         noexcept(is_nothrow_default_constructible_v<_T>)
-        requires default_constructible<_T>
+        requires default_initializable<_T>
         : __semiregular_box{in_place}
     {
     }
@@ -1049,7 +1046,7 @@ concept __stream_extractable = requires(basic_istream<_CharT, _Traits>& __is, _V
 } // namespace __detail
 
 template <movable _Val, class _CharT, class _Traits>
-    requires default_constructible<_Val>
+    requires default_initializable<_Val>
     //    && __detail::__stream_extractable<_Val, _CharT, _Traits>
 class basic_istream_view :
     public view_interface<basic_istream_view<_Val, _CharT, _Traits>>
@@ -3696,7 +3693,6 @@ inline constexpr __detail::__elements<_N> elements = {};
 
 
 } // namespace ranges
-#endif // if __cpp_concepts
 
 
 namespace views = ranges::views;

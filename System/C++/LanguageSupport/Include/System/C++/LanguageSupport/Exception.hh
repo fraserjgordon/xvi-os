@@ -3,6 +3,7 @@
 #define __SYSTEM_CXX_LANGUAGESUPPORT_EXCEPTION_H
 
 
+#include <System/C++/TypeTraits/Concepts.hh>
 #include <System/C++/TypeTraits/TypeTraits.hh>
 
 #include <System/C++/LanguageSupport/Private/Config.hh>
@@ -159,36 +160,12 @@ public:
         return _M_ptr != nullptr;
     }
 
-    friend constexpr bool operator==(const exception_ptr& __l, const exception_ptr& __r) noexcept
-    {
-        return __l._M_ptr == __r._M_ptr;
-    }
-
-    friend constexpr bool operator!=(const exception_ptr& __l, const exception_ptr& __r) noexcept
-    {
-        return __l._M_ptr != __r._M_ptr;
-    }
+    friend constexpr bool operator==(const exception_ptr& __l, const exception_ptr& __r) noexcept = default;
 
     friend constexpr bool operator==(const exception_ptr& __l, nullptr_t) noexcept
     {
         return !__l;
     }
-
-    friend constexpr bool operator==(nullptr_t, const exception_ptr& __r) noexcept
-    {
-        return !__r;
-    }
-
-    friend constexpr bool operator!=(const exception_ptr& __l, nullptr_t) noexcept
-    {
-        return !!__l;
-    }
-
-    friend constexpr bool operator!=(nullptr_t, const exception_ptr& __r) noexcept
-    {
-        return !!__r;
-    }
-
 
     void __ref() const noexcept;
     void __unref() const noexcept;
@@ -284,7 +261,7 @@ template <class _T> [[noreturn]] void throw_with_nested(_T&& __t)
 
 template <class _E> void rethrow_if_nested(const _E& __e)
 {
-    if constexpr (!is_class_v<_E> || !is_polymorphic_v<_E>)
+    if constexpr (!is_class_v<_E> || !is_polymorphic_v<_E> || !derived_from<_E, nested_exception>)
         return;
 
     if (auto __p = dynamic_cast<nested_exception*>(addressof(__e)))

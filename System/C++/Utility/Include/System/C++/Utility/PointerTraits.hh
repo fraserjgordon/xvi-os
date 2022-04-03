@@ -5,8 +5,9 @@
 
 #include <System/C++/LanguageSupport/StdDef.hh>
 
-#include <System/C++/Utility/Private/AddressOf.hh>
 #include <System/C++/Utility/Private/Config.hh>
+#include <System/C++/Utility/Private/AddressOf.hh>
+#include <System/C++/Utility/Private/Concepts.hh>
 
 
 namespace __XVI_STD_UTILITY_NS
@@ -20,25 +21,27 @@ template <class> struct pointer_traits;
 namespace __detail
 {
 
-template <class _T> using __element_type_detector = typename _T::element_type;
-template <class _T> using __difference_type_detector = typename _T::difference_type;
-template <class _T, class _U> using __rebind_detector = typename _T::template rebind<_U>;
+
+template <class _T, class _U>
+concept __valid_rebind = requires { typename _T::template rebind<_U>; };
 
 template <class _T> struct __pointer_traits_element_type_helper; // Not defined.
 template <template <class, class...> class _Ptr, class _T, class... _Args>
 struct __pointer_traits_element_type_helper<_Ptr<_T, _Args...>>
     { using type = _T; };
 
-template <class _T> struct __pointer_traits_element_type_detected
-    { using type = typename _T::element_type; };
-
 template <class _T> struct __pointer_traits_element_type
-    : conditional_t<is_detected_v<__element_type_detector, _T>,
+    : conditional_t<__has_member_element_type<_T>,
                     __pointer_traits_element_type_detected<_T>,
                     __pointer_traits_element_type_helper<_T>> {};
 
 template <class _T> struct __pointer_traits_difference_type
-    { using type = detected_or_t<ptrdiff_t, __difference_type_detector, _T>; };
+    { using type = std::ptrdiff_t; };
+
+template <class _T>
+    requires __has_member_difference_type<_T>
+struct __pointer_traits_difference_type<_T>
+    { using type = typename _T::difference_type; };
 
 template <class _T, class _U> struct __pointer_traits_rebind_helper; // Not defined.
 template <template <class, class...> class _Ptr, class _T, class... _Args, class _U>
@@ -49,7 +52,7 @@ template <class _T, class _U> struct __pointer_traits_rebind_detected
     { using type = typename _T::template rebind<_U>; };
 
 template <class _T, class _U> struct __pointer_traits_rebind
-    : conditional_t<is_detected_v<__rebind_detector, _T, _U>,
+    : conditional_t<__valid_rebind<_T, _U>,
                     __pointer_traits_rebind_detected<_T, _U>,
                     __pointer_traits_rebind_helper<_T, _U>> {};
 
@@ -68,18 +71,16 @@ struct pointer_traits
 
     template <class _U> using rebind = typename __detail::__pointer_traits_rebind<_Ptr, _U>::type;
 
-    using __element_ref_type = conditional_t<is_void_v<remove_cv_t<element_type>>,
-                                             __detail::nonesuch,
-                                             add_lvalue_reference_t<element_type>>;
-
-    template <class _U = remove_cv_t<element_type>, class = enable_if_t<!is_void_v<_U>, void>>
-    static pointer pointer_to(__element_ref_type __r) noexcept
+    template <class _U>
+        requires (!std::is_void_v<element_type> && std::convertible_to<_U&, element_type&>)
+    static pointer pointer_to(_U& __r) noexcept
     {
         return _Ptr::pointer_to(__r);
     }
 
-    template <class _U, class = enable_if_t<is_void_v<remove_cv_t<element_type>>, void>>
+    template <class _U>
     static pointer pointer_to(_U& __r) noexcept
+        requires (std::is_void_v<element_type>)
     {
         return _Ptr::pointer_to(__r);
     }
@@ -94,18 +95,16 @@ struct pointer_traits<_T*>
 
     template <class _U> using rebind = _U*;
 
-    using __element_ref_type = conditional_t<is_void_v<remove_cv_t<element_type>>,
-                                             __detail::nonesuch,
-                                             add_lvalue_reference_t<element_type>>;
-
-    template <class _U = remove_cv_t<element_type>, class = enable_if_t<!is_void_v<_U>, void>>
-    static constexpr pointer pointer_to(__element_ref_type __r) noexcept
+    template <class _U>
+        requires (!std::is_void_v<element_type> && std::convertible_to<_U&, element_type&>)
+    static constexpr pointer pointer_to(_U& __r) noexcept
     {
         return addressof(__r);
     }
 
-    template <class _U, class _V = element_type, class = enable_if_t<is_void_v<remove_cv_t<_V>>, void>>
+    template <class _U>
     static constexpr pointer pointer_to(_U& __r) noexcept
+        requires (std::is_void_v<element_type>)
     {
         return addressof(__r);
     }

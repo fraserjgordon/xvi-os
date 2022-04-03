@@ -67,10 +67,10 @@ public:
     {
     }
 
-    template <class _OuterA2,
-              class = enable_if_t<is_constructible_v<_OuterAlloc, _OuterA2>, void>>
+    template <class _OuterA2>
+        requires std::is_constructible_v<_OuterAlloc, _OuterA2>
     scoped_allocator_adaptor(_OuterA2&& __outer_alloc, const _InnerAllocs&... __inner_allocs) noexcept
-        : _OuterAlloc(__XVI_STD_NS::forward<_OuterA2>(__outer_alloc)),
+        : _OuterAlloc(std::forward<_OuterA2>(__outer_alloc)),
           _M_inner(__inner_allocs...)
     {
     }
@@ -82,23 +82,23 @@ public:
     }
 
     scoped_allocator_adaptor(scoped_allocator_adaptor&& __other) noexcept
-        : _OuterAlloc(__XVI_STD_NS::move(__other.outer_allocator())),
-          _M_inner(__XVI_STD_NS::move(__other.inner_allocator()))
+        : _OuterAlloc(std::move(__other.outer_allocator())),
+          _M_inner(std::move(__other.inner_allocator()))
     {
     }
 
-    template <class _OuterA2,
-              class = enable_if_t<is_constructible_v<_OuterAlloc, const _OuterA2&>, void>>
+    template <class _OuterA2>
+        requires std::is_constructible_v<_OuterAlloc, const _OuterA2&>
     scoped_allocator_adaptor(const scoped_allocator_adaptor<_OuterA2, _InnerAllocs...>& __other) noexcept
         : _OuterAlloc(__other.outer_allocator()),
           _M_inner(__other.inner_allocator())
     {
     }
 
-    template <class _OuterA2,
-              class = enable_if_t<is_constructible_v<_OuterAlloc, _OuterA2>, void>>
+    template <class _OuterA2>
+        requires std::is_constructible_v<_OuterAlloc, _OuterA2>
     scoped_allocator_adaptor(scoped_allocator_adaptor<_OuterA2, _InnerAllocs...>&& __other) noexcept
-        : _OuterAlloc(__XVI_STD_NS::move(__other.outer_allocator())),
+        : _OuterAlloc(std::move(__other.outer_allocator())),
           _M_inner(__other.inner_allocator())
     {
     }
@@ -168,7 +168,7 @@ public:
                     __XVI_STD_NS::forward<decltype(__newargs)>(__newargs)...
                 );
             },
-            uses_allocator_construction_args<_T>(inner_allocator(), __XVI_STD_NS::forward<_Args>(__args)...)
+            uses_allocator_construction_args<_T>(inner_allocator(), std::forward<_Args>(__args)...)
         );
     }
 
@@ -178,10 +178,14 @@ public:
         _OUTERMOST_ALLOC_TRAITS<_OuterAlloc>::destroy(_OUTERMOST(*this), __p);
     }
 
-    scoped_allocator_adaptor select_on_container_copy_construction() const;
+    scoped_allocator_adaptor select_on_container_copy_construction() const
+    {
+        return {_OuterTraits::select_on_container_copy_construction(outer_allocator()), _M_inner.select_on_container_copy_construction()};
+    }
 
 private:
 
+    //! @todo: this won't work when sizeof...(_InnerAllocs) == 0.
     scoped_allocator_adaptor<_InnerAllocs...> _M_inner;
 
     template <class _X>
@@ -195,6 +199,13 @@ private:
 
     template <class _X>
     using _OUTERMOST_ALLOC_TRAITS = allocator_traits<remove_reference_t<decltype(_OUTERMOST(declval<_X&>()))>>;
+
+
+    scoped_allocator_adaptor(_OuterAlloc __a, decltype(_M_inner) __inner) :
+        _OuterAlloc(std::move(__a)),
+        _M_inner(std::move(__inner))
+    {
+    }
 };
 
 template <class _OuterAlloc, class... _InnerAllocs>
@@ -209,12 +220,6 @@ bool operator==(const scoped_allocator_adaptor<_OuterA1, _InnerAllocs...>& __x, 
         return __x.outer_allocator() == __y.outer_allocator();
     else
         return __x.outer_allocator() == __y.outer_allocator() && __x.inner_allocator() == __y.inner_allocator();
-}
-
-template <class _OuterA1, class _OuterA2, class... _InnerAllocs>
-bool operator!=(const scoped_allocator_adaptor<_OuterA1, _InnerAllocs...>& __x, const scoped_allocator_adaptor<_OuterA2, _InnerAllocs...>& __y) noexcept
-{
-    return !(__x == __y);
 }
 
 

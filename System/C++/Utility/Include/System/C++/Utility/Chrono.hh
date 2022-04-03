@@ -82,7 +82,6 @@ struct duration_values
 };
 
 
-#if __cpp_concepts
 template <class _T>
 concept _Cpp17Clock =
     requires
@@ -94,17 +93,14 @@ concept _Cpp17Clock =
         { _T::is_steady };
         { _T::now() };
     };
-#endif // if __cpp_concepts
 
 template <class _T> struct is_clock
     : false_type {};
 
-#if __cpp_concepts
 template <class _T>
     requires _Cpp17Clock<_T>
 struct is_clock<_T>
     : true_type {};
-#endif // if __cpp_concepts
 
 template <class _T> inline constexpr bool is_clock_v = is_clock<_T>::value;
 
@@ -716,7 +712,6 @@ struct clock_time_conversion<_DestClock, utc_clock>
 };
 
 
-#if __cpp_concepts
 template <class _DC, class _SC, class _D>
 concept _ClockTimeConversionDirect =
     requires(const time_point<_SC, _D>& __t)
@@ -807,7 +802,6 @@ auto clock_cast(const time_point<_SourceClock, _Duration>& __t)
         (clock_time_conversion<system_clock, utc_clock>{}
             (clock_time_conversion<utc_clock, _SourceClock>{}(__t)));
 }
-#endif // __cpp_concepts
 
 
 struct last_spec

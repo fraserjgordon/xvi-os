@@ -17,8 +17,8 @@ struct default_delete
 {
     constexpr default_delete() noexcept = default;
 
-    template <class _U,
-              class = enable_if_t<is_convertible_v<_U*, _T*>, void>>
+    template <class _U>
+        requires convertible_to<_U*, _T*>
     default_delete(const default_delete<_U&>) noexcept
     {
     }
@@ -34,14 +34,14 @@ struct default_delete<_T[]>
 {
     constexpr default_delete() noexcept = default;
 
-    template <class _U,
-              class = enable_if_t<is_convertible_v<_U(*)[], _T(*)[]>, void>>
+    template <class _U>
+        requires convertible_to<_U(*)[], _T(*)[]>
     default_delete(const default_delete<_U[]>&) noexcept
     {
     }
 
-    template <class _U,
-              class = enable_if_t<is_convertible_v<_U(*)[], _T(*)[]>, void>>
+    template <class _U>
+        requires convertible_to<_U(*)[], _T(*)[]>
     void operator()(_U* __ptr) const
     {
         delete[] __ptr;

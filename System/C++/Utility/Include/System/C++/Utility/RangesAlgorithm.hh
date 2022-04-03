@@ -6,6 +6,7 @@
 #include <System/C++/Utility/Private/Config.hh>
 
 #include <System/C++/Utility/Ranges.hh>
+#include <System/C++/Utility/Swap.hh>
 
 
 //! @TODO: remove std::forward/std::move from range operator() methods.
@@ -14,7 +15,6 @@
 namespace __XVI_STD_UTILITY_NS
 {
 
-#if __cpp_concepts
 namespace ranges
 {
 
@@ -766,6 +766,15 @@ struct __swap_ranges
         return operator()(ranges::begin(std::forward<_R1>(__r1)), ranges::end(std::forward<_R1>(__r1)), ranges::begin(std::forward<_R2>(__r2)), ranges::end(std::forward<_R2>(__r2)));
     }
 };
+
+// This is messy but we can only finish defining ranges::swap here as it depends on ranges::swap_ranges.
+template <class _E1, class _E2>
+    requires __swap_alt2<_E1, _E2>
+constexpr void __swap::operator()(_E1&& __e1, _E2&& __e2) const noexcept(noexcept(declval<ranges::__detail::__swap>()(std::forward<_E1>(__e1), std::forward<_E2>(__e2))))
+{
+    ranges::__detail::__swap_ranges{}(std::forward<_E1>(__e1), std::forward<_E2>(__e2));
+}
+
 
 struct __transform
 {
@@ -2946,7 +2955,6 @@ constexpr typename split_view<_V, _Pattern>::template __outer_iterator<_Const>& 
 
 
 } // namespace ranges
-#endif
 
 } // namespace __XVI_STD_UTILITY_NS
 

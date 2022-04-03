@@ -13,6 +13,193 @@ namespace __XVI_STD_UTILITY_NS
 {
 
 
+struct allocator_arg_t { explicit allocator_arg_t() = default; };
+
+inline constexpr allocator_arg_t allocator_arg {};
+
+
+namespace __detail
+{
+
+template <class _T, class _Alloc, class = void_t<>>
+struct __uses_allocator : false_type {};
+
+template <class _T, class _Alloc>
+struct __uses_allocator<_T, _Alloc, void_t<typename _T::allocator_type>>
+    : is_convertible<_Alloc, typename _T::allocator_type> {};
+
+template <class _T>
+struct __is_pair_specialization : false_type {};
+
+template <class _T, class _U>
+struct __is_pair_specialization<pair<_T, _U>> : true_type {};
+
+template <class _T>
+inline constexpr bool __is_pair_specialization_v = __is_pair_specialization<_T>::value;
+
+
+template <class _A, class _B>
+void __uaca_test_fun(const pair<_A, _B>&);
+
+template <class _T>
+concept __uaca_test_fun_valid = __is_pair_specialization_v<_T> && requires (_T&& __t) { __uaca_test_fun(std::forward<_T>(__t)); };
+
+}
+
+
+template <class _T, class _Alloc>
+struct uses_allocator : __detail::__uses_allocator<_T, _Alloc> {};
+
+template <class _T, class _Alloc>
+inline constexpr bool uses_allocator_v = uses_allocator<_T, _Alloc>::value;
+
+
+template <class _T, class _Alloc, class... _Args>
+    requires (!__detail::__is_pair_specialization_v<_T>)
+constexpr auto uses_allocator_construction_args(const _Alloc& __alloc, _Args&&... __args)
+{
+    if constexpr (!uses_allocator_v<_T, _Alloc>
+                  && is_constructible_v<_T, _Args...>)
+    {
+        return forward_as_tuple(std::forward<_Args>(__args)...);
+    }
+    else if constexpr (uses_allocator_v<_T, _Alloc>
+                       && is_constructible_v<_T, allocator_arg_t, _Alloc, _Args...>)
+    {
+        return tuple<allocator_arg_t, const _Alloc&, _Args&&...>(allocator_arg, __alloc, std::forward<_Args>(__args)...);
+    }
+    else if constexpr (uses_allocator_v<_T, _Alloc>
+                       && is_constructible_v<_T, _Args..., _Alloc>)
+    {
+        return forward_as_tuple(std::forward<_Args>(__args)..., __alloc);
+    }
+    else
+    {
+        static_assert(!same_as<_T, _T>, "invalid types for uses_allocator_construction_args");
+    }
+}
+
+template <class _T, class _Alloc, class _Tuple1, class _Tuple2>
+    requires (__detail::__is_pair_specialization_v<_T>)
+constexpr auto uses_allocator_construction_args(const _Alloc& __alloc, piecewise_construct_t, _Tuple1&& __x, _Tuple2&& __y)
+{
+    using _T1 = typename _T::first_type;
+    using _T2 = typename _T::second_type;
+
+    return make_tuple
+    (
+        piecewise_construct,
+        apply([&__alloc](auto&&... __args1)
+            {
+                return uses_allocator_construction_args<_T1>(__alloc, std::forward<decltype(__args1)>(__args1)...);
+            }, std::forward<_Tuple1>(__x)),
+        apply([&__alloc](auto&&... __args2)
+            {
+                return uses_allocator_construction_args<_T2>(__alloc, std::forward<decltype(__args2)>(__args2)...);
+            }, std::forward<_Tuple2>(__y))
+    );
+}
+
+template <class _T, class _Alloc>
+    requires (__detail::__is_pair_specialization_v<_T>)
+constexpr auto uses_allocator_construction_args(const _Alloc& __alloc)
+{
+    return uses_allocator_construction_args<_T>(__alloc, piecewise_construct, tuple<>{}, tuple<>{});
+}
+
+template <class _T, class _Alloc, class _U, class _V>
+    requires (__detail::__is_pair_specialization_v<_T>)
+constexpr auto uses_allocator_construction_args(const _Alloc& __alloc, _U&& __u, _V&& __v)
+{
+    return uses_allocator_construction_args<_T>(__alloc, piecewise_construct, forward_as_tuple(std::forward<_U>(__u)), forward_as_tuple(std::forward<_V>(__v)));
+}
+
+template <class _T, class _Alloc, class _U, class _V>
+    requires (__detail::__is_pair_specialization_v<_T>)
+constexpr auto uses_allocator_construction_args(const _Alloc& __alloc, pair<_U, _V>& __pr)
+{
+    return uses_allocator_construction_args(__alloc, piecewise_construct, forward_as_tuple(__pr.first), forward_as_tuple(__pr.second));
+}
+
+template <class _T, class _Alloc, class _U, class _V>
+    requires (__detail::__is_pair_specialization_v<_T>)
+constexpr auto uses_allocator_construction_args(const _Alloc& __alloc, const pair<_U, _V>& __pr)
+{
+    return uses_allocator_construction_args(__alloc, piecewise_construct, forward_as_tuple(__pr.first), forward_as_tuple(__pr.second));
+}
+
+template <class _T, class _Alloc, class _U, class _V>
+    requires (__detail::__is_pair_specialization_v<_T>)
+constexpr auto uses_allocator_construction_args(const _Alloc& __alloc, pair<_U, _V>&& __pr)
+{
+    return uses_allocator_construction_args(__alloc, piecewise_construct, forward_as_tuple(std::move(__pr.first)), forward_as_tuple(std::move(__pr.second)));
+}
+
+template <class _T, class _Alloc, class _U, class _V>
+    requires (__detail::__is_pair_specialization_v<_T>)
+constexpr auto uses_allocator_construction_args(const _Alloc& __alloc, const pair<_U, _V>&& __pr)
+{
+    return uses_allocator_construction_args(__alloc, piecewise_construct, forward_as_tuple(std::move(__pr.first)), forward_as_tuple(std::move(__pr.second)));
+}
+
+
+template <class _T, class _Alloc, class... _Args>
+constexpr _T make_obj_using_allocator(const _Alloc& __alloc, _Args&&... __args)
+{
+    return make_from_tuple<_T>(uses_allocator_construction_args<_T>(__alloc, std::forward<_Args>(__args)...));
+}
+
+
+template <class _T, class _Alloc, class _U>
+    requires (__detail::__is_pair_specialization_v<_T> && !__detail::__uaca_test_fun_valid<_T>)
+constexpr auto uses_allocator_construction_args(const _Alloc& __alloc, _U&& __u) noexcept
+{
+    class __pair_constructor
+    {
+    private:
+
+        using __pair_type = std::remove_cv_t<_T>;
+
+        constexpr auto __do_construct(const __pair_type& __p) const
+        {
+            return make_obj_using_allocator<__pair_type>(_M_alloc, __p);
+        }
+
+        constexpr auto __do_construct(__pair_type&& __p) const
+        {
+            return make_obj_using_allocator<__pair_type>(_M_alloc, std::move(__p));
+        }
+
+        _Alloc _M_alloc;
+        _U& _M_u;
+
+    public:
+
+        constexpr operator __pair_type() const
+        {
+            return __do_construct(std::forward<_U>(_M_u));
+        }
+
+        constexpr __pair_constructor(const _Alloc& __alloc, _U& __u) :
+            _M_alloc{__alloc},
+            _M_u{__u}
+        {
+        }
+    };
+
+    return make_tuple(__pair_constructor{__alloc, __u});
+}
+
+template <class _T, class _Alloc, class... _Args>
+constexpr _T* uninitialized_construct_using_allocator(_T* __p, const _Alloc& __alloc, _Args&&... __args)
+{
+    return apply([&]<class... _U>(_U&&... __us)
+    {
+        return construct_at(__p, std::forward<_U>(__us)...);
+    }, uses_allocator_construction_args<_T>(__alloc, std::forward<_Args>(__args)...));
+}
+
+
 template <class _T>
 void* __voidify(_T& __ptr) noexcept
 {
@@ -347,7 +534,6 @@ using uninitialized_move_result = uninitialized_copy_result<_I, _O>;
 template <class _I, class _O>
 using uninitialized_move_n_result = uninitialized_move_result<_I, _O>;
 
-#if __cpp_concepts
 template <class _I>
 concept __nothrow_input_iterator = input_iterator<_I>
     && is_lvalue_reference_v<iter_reference_t<_I>>
@@ -374,7 +560,7 @@ concept __nothrow_forward_range = __nothrow_input_range<_R>
 struct __uninitialized_default_construct
 {
     template <__nothrow_forward_iterator _I, __nothrow_sentinel<_I> _S>
-        requires default_constructible<iter_value_t<_I>>
+        requires default_initializable<iter_value_t<_I>>
     _I operator()(_I __first, _S __last) const
     {
         using _V = remove_reference_t<iter_reference_t<_I>>;
@@ -404,7 +590,7 @@ struct __uninitialized_default_construct
     }
 
     template <__nothrow_forward_range _R>
-        requires default_constructible<iter_value_t<iterator_t<_R>>>
+        requires default_initializable<iter_value_t<iterator_t<_R>>>
     safe_iterator_t<_R> operator()(_R&& __r) const
     {
         return operator()(ranges::begin(__r), ranges::end(__r));
@@ -417,7 +603,7 @@ inline constexpr __uninitialized_default_construct uninitialized_default_constru
 struct __uninitialized_default_construct_n
 {
     template <__nothrow_forward_iterator _I>
-        requires default_constructible<iter_value_t<_I>>
+        requires default_initializable<iter_value_t<_I>>
     _I operator()(_I __first, iter_difference_t<_I> __n) const
     {
         return uninitialized_default_construct(counted_iterator(__first, __n), default_sentinel).base();
@@ -430,7 +616,7 @@ inline constexpr __uninitialized_default_construct_n uninitialized_default_const
 struct __uninitialized_value_construct
 {
     template <__nothrow_forward_iterator _I, __nothrow_sentinel<_I> _S>
-        requires default_constructible<iter_value_t<_I>>
+        requires default_initializable<iter_value_t<_I>>
     _I operator()(_I __first, _S __last) const
     {
         using _V = remove_reference_t<iter_reference_t<_I>>;
@@ -460,7 +646,7 @@ struct __uninitialized_value_construct
     }
 
     template <__nothrow_forward_range _R>
-        requires default_constructible<iter_value_t<iterator_t<_R>>>
+        requires default_initializable<iter_value_t<iterator_t<_R>>>
     safe_iterator_t<_R> operator()(_R&& __r) const
     {
         return operator()(ranges::begin(__r), ranges::end(__r));
@@ -473,7 +659,7 @@ inline constexpr __uninitialized_value_construct uninitialized_value_construct =
 struct __uninitialized_value_construct_n
 {
     template <__nothrow_forward_iterator _I>
-        requires default_constructible<iter_value_t<_I>>
+        requires default_initializable<iter_value_t<_I>>
     _I operator()(_I __first, iter_difference_t<_I> __n) const
     {
         return uninitialized_value_construct(counted_iterator(__first, __n), default_sentinel).base();
@@ -702,7 +888,6 @@ struct __destroy_n
 
 inline constexpr __destroy_n destroy_n = {};
 
-#endif // if __cpp_concepts
 
 } // namespace ranges
 
