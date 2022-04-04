@@ -2,6 +2,7 @@
 
 #include <System/C++/LanguageSupport/Utility.hh>
 #include <System/C++/TypeTraits/TypeTraits.hh>
+#include <System/C++/Utility/IntegerCompare.hh>
 #include <System/C++/Utility/IntegerSequence.hh>
 #include <System/C++/Utility/Pair.hh>
 #include <System/C++/Utility/Swap.hh>

@@ -257,8 +257,8 @@ concept __shared_ptr_valid_conversion =
         {
             delete[] __p; 
         }
-        && ((std::extent_v<_T> != 0 && std::convertible_to<_Y(*)[std::extent_v<_T>], _T*>)
-            || (std::extent_v<_T> == 0 && std::convertible_to<_Y(*)[], _T*>)))
+        && ((std::is_bounded_array_v<_T> && std::convertible_to<_Y(*)[std::extent_v<_T>], _T*>)
+            || (std::is_unbounded_array_v<_T> && std::convertible_to<_Y(*)[], _T*>)))
     || (!std::is_array_v<_T>
         && requires (_Y* __p)
         {
@@ -272,16 +272,14 @@ concept __shared_ptr_valid_deleter = requires (_T* __p, _D __d) { __d(__p); };
 template <class _T, class _Y, class _D>
 concept __shared_ptr_valid_conversion_d = __shared_ptr_valid_deleter<_Y, _D>
     && ((std::is_array_v<_T>
-        && ((std::extent_v<_T> != 0 && std::convertible_to<_Y(*)[std::extent_v<_T>], _T*>)
-            || (std::extent_v<_T> == 0 && std::convertible_to<_Y(*)[], _T*>)))
+        && ((std::is_bounded_array_v<_T> && std::convertible_to<_Y(*)[std::extent_v<_T>], _T*>)
+            || (std::is_unbounded_array_v<_T> && std::convertible_to<_Y(*)[], _T*>)))
         || (!std::is_array_v<_T> && std::convertible_to<_Y*, _T*>));
 
 template <class _T, class _Y>
 concept __shared_ptr_compatible_ptrs = std::convertible_to<_Y*, _T*>
-    || (std::is_array_v<_Y>
-        && std::extent_v<_Y> != 0
-        && std::is_array_v<_T>
-        && std::extent_v<_T> == 0
+    || (std::is_bounded_array_v<_Y>
+        && std::is_unbounded_array_v<_T>
         && std::is_same_v<std::remove_extent_t<_Y>, std::remove_cv_t<std::remove_extent_t<_T>>>);
 
 
@@ -610,7 +608,7 @@ public:
     }
 
     template <class _Y, class _D, class _A>
-        requires stD::is_move_constructible_v<_D> && __detail::__shared_ptr_valid_conversion_d<_T, _Y, _D>
+        requires std::is_move_constructible_v<_D> && __detail::__shared_ptr_valid_conversion_d<_T, _Y, _D>
     void reset(_Y* __p, _D __d, _A __a)
     {
         shared_ptr(__p, __d, __a).swap(*this);
@@ -748,7 +746,7 @@ shared_ptr<_T> allocate_shared(const _A& __a, _Args&&... __args)
 }
 
 template <class _T>
-    requires std::is_array_v<_T> && (std::extent_v<_T> == 0)
+    requires std::is_unbounded_array_v<_T>
 shared_ptr<_T> make_shared(size_t __n)
 {
     using _U = remove_extent_t<_T>;
@@ -774,7 +772,7 @@ shared_ptr<_T> make_shared(size_t __n)
 }
 
 template <class _T, class _A>
-    requires std::is_array_v<_T> && (std::extent_v<_T> == 0)
+    requires std::is_unbounded_array_v<_T>
 shared_ptr<_T> allocate_shared(const _A& __a, size_t __n)
 {
     using _U = remove_extent_t<_T>;
@@ -802,7 +800,7 @@ shared_ptr<_T> allocate_shared(const _A& __a, size_t __n)
 }
 
 template <class _T>
-    requires std::is_array_v<_T> && (std::extent_v<_T> != 0)
+    requires std::is_bounded_array_v<_T>
 shared_ptr<_T> make_shared()
 {
     using _U = remove_extent_t<_T>;
@@ -829,7 +827,7 @@ shared_ptr<_T> make_shared()
 }
 
 template <class _T, class _A>
-    requires std::is_array_v<_T> && (std::extent_v<_T> != 0)
+    requires std::is_bounded_array_v<_T>
 shared_ptr<_T> allocate_shared(const _A& __a)
 {
     using _U = remove_extent_t<_T>;
@@ -858,7 +856,7 @@ shared_ptr<_T> allocate_shared(const _A& __a)
 }
 
 template <class _T>
-    requires std::is_array_v<_T> && (std::extent_v<_T> == 0)
+    requires std::is_unbounded_array_v<_T>
 shared_ptr<_T> make_shared(size_t __n, const remove_extent_t<_T>& __u)
 {
     using _U = remove_extent_t<_T>;
@@ -884,7 +882,7 @@ shared_ptr<_T> make_shared(size_t __n, const remove_extent_t<_T>& __u)
 }
 
 template <class _T, class _A>
-    requires std::is_array_v<_T> && (std::extent_v<_T> == 0)
+    requires std::is_unbounded_array_v<_T>
 shared_ptr<_T> allocate_shared(const _A& __a, size_t __n, const remove_extent_t<_T>& __u)
 {
     using _U = remove_extent_t<_T>;
@@ -912,7 +910,7 @@ shared_ptr<_T> allocate_shared(const _A& __a, size_t __n, const remove_extent_t<
 }
 
 template <class _T>
-    requires std::is_array_v<_T> && (std::extent_v<_T> != 0)
+    requires std::is_bounded_array_v<_T>
 shared_ptr<_T> make_shared(const remove_extent_t<_T>& __u)
 {
     using _U = remove_extent_t<_T>;
@@ -939,7 +937,7 @@ shared_ptr<_T> make_shared(const remove_extent_t<_T>& __u)
 }
 
 template <class _T, class _A>
-    requires std::is_array_v<_T> && (std::extent_v<_T> != 0)
+    requires std::is_bounded_array_v<_T>
 shared_ptr<_T> allocate_shared(const _A& __a, const remove_extent_t<_T>& __u)
 {
     using _U = remove_extent_t<_T>;
@@ -969,7 +967,7 @@ shared_ptr<_T> allocate_shared(const _A& __a, const remove_extent_t<_T>& __u)
 }
 
 template <class _T>
-    requires (!(std::is_array_v<_T> && std::extent_v<_T> == 0))
+    requires (!std::is_unbounded_array_v<_T>)
 shared_ptr<_T> make_shared_for_overwrite()
 {
     using _U = remove_extent_t<_T>;
@@ -996,7 +994,7 @@ shared_ptr<_T> make_shared_for_overwrite()
 }
 
 template <class _T, class _A>
-    requires (!(std::is_array_v<_T> && std::extent_v<_T> == 0))
+    requires (!std::is_unbounded_array_v<_T>)
 shared_ptr<_T> allocate_shared_for_overwrite(const _A& __a)
 {
     using _U = remove_extent_t<_T>;
@@ -1025,7 +1023,7 @@ shared_ptr<_T> allocate_shared_for_overwrite(const _A& __a)
 }
 
 template <class _T>
-    requires std::is_array_v<_T> && (std::extent_v<_T> == 0)
+    requires std::is_unbounded_array_v<_T>
 shared_ptr<_T> make_shared_for_overwrite(size_t __n)
 {
     using _U = remove_extent_t<_T>;
@@ -1051,7 +1049,7 @@ shared_ptr<_T> make_shared_for_overwrite(size_t __n)
 }
 
 template <class _T, class _A>
-    requires std::is_array_v<_T> && (std::extent_v<_T> == 0)
+    requires std::is_unbounded_array_v<_T>
 shared_ptr<_T> allocate_shared_for_overwrite(const _A& __a, size_t __n)
 {
     using _U = remove_extent_t<_T>;

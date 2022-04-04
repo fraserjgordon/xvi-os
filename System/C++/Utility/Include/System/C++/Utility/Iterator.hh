@@ -2207,9 +2207,9 @@ public:
         else
         {
             if (__x._M_variant.index() == 0)
-                _M_variant.emplace<0>(get<0>(__x._M_variant));
+                _M_variant.template emplace<0>(get<0>(__x._M_variant));
             else
-                _M_variant.emplace<1>(get<1>(__x._M_variant));
+                _M_variant.template emplace<1>(get<1>(__x._M_variant));
         }
 
         return *this;

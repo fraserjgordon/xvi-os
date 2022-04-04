@@ -30,6 +30,25 @@ move_if_noexcept(_T& __x)
         return std::move(__x);
 }
 
+template <class _T>
+constexpr std::add_const_t<_T>& as_const(_T& __t) noexcept
+{
+    return __t;
+}
+
+template <class _T>
+constexpr std::underlying_type_t<_T> to_underlying(_T __value) noexcept
+{
+    return static_cast<std::underlying_type_t<_T>>(__value);
+}
+
+[[noreturn]] inline void unreachable()
+{
+#if __has_builtin(__builtin_unreachable)
+    __builtin_unreachable();
+#endif
+}
+
 
 } // namespace __XVI_STD_LANGSUPPORT_NS
 

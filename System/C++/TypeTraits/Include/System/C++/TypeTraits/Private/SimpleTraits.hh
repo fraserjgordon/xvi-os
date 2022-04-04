@@ -323,8 +323,8 @@ template <class _T>
 
 
 // Forward declarations
-template <class _T,
-          class = enable_if_t<__detail::is_move_constructible<_T>::value && __detail::is_move_assignable<_T>::value, void>>
+template <class _T>
+    requires __detail::is_move_constructible<_T>::value && __detail::is_move_assignable<_T>::value
 constexpr void swap(_T&, _T&)
     noexcept(__detail::is_nothrow_move_constructible<_T>::value && __detail::is_nothrow_move_assignable<_T>::value);
 

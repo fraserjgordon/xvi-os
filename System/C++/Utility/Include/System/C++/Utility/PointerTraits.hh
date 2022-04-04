@@ -18,6 +18,11 @@ namespace __XVI_STD_UTILITY_NS
 template <class> struct pointer_traits;
 
 
+struct allocator_arg_t { explicit allocator_arg_t() = default; };
+
+inline constexpr allocator_arg_t allocator_arg {};
+
+
 namespace __detail
 {
 

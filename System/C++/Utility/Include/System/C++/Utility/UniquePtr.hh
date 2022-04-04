@@ -370,14 +370,14 @@ constexpr unique_ptr<_T> make_unique(_Args&&... __args)
 }
 
 template <class _T>
-    requires std::is_array_v<_T> && (std::extent_v<_T> == 0)
+    requires std::is_unbounded_array_v<_T>
 constexpr unique_ptr<_T> make_unique(size_t __n)
 {
     return unique_ptr<_T>(new remove_extent_t<_T>[__n]());
 }
 
 template <class _T, class... _Args>
-    requires std::is_array_v<_T> && (std::extent_v<_T> != 0)
+    requires std::is_bounded_array_v<_T>
 void make_unique(_Args&&...) = delete;
 
 
@@ -389,14 +389,14 @@ constexpr unique_ptr<_T> make_unique_for_overwrite()
 }
 
 template <class _T>
-    requires std::is_array_v<_T> && (std::extent_v<_T> == 0)
+    requires std::is_unbounded_array_v<_T>
 constexpr unique_ptr<_T> make_unique_for_overwrite(std::size_t __n)
 {
     return unique_ptr<_T>(new std::remove_extent_t<_T>[__n]);
 }
 
 template <class _T, class... _Args>
-    requires std::is_array_v<_T> && (std::extent_v<_T> != 0)
+    requires std::is_bounded_array_v<_T>
 void make_unique_for_overwrite(_Args&&...) = delete;
 
 

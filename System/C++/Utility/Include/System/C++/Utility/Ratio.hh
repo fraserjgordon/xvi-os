@@ -34,6 +34,7 @@ template <class _R1, class _R2> struct ratio_equal
     : bool_constant<_R1::num == _R2::num && _R1::den == _R2::den> {};
 template <class _R1, class _R2> struct ratio_not_equal
     : bool_constant<!ratio_equal<_R1, _R2>::value> {};
+//! @todo implement this using a non-overflowing algorithm.
 template <class _R1, class _R2> struct ratio_less;
 template <class _R1, class _R2> struct ratio_less_equal
     : bool_constant<!ratio_less<_R2, _R1>::value> {};

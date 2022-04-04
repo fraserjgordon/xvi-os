@@ -68,14 +68,14 @@ template <class _T> struct has_virtual_destructor : bool_constant<__has_virtual_
 template <class _T, class _U> struct reference_constructs_from_temporary : bool_constant<__reference_constructs_from_temporary(_T, _U)> {};
 #else
 // Undefined!
-template <class _T, class _U> struct reference_constructs_from_temporary;
+template <class _T, class _U> struct reference_constructs_from_temporary : false_type {};
 #endif
 
 #if __has_builtin(__reference_converts_from_temporary)
 template <class _T, class _U> struct reference_converts_from_temporary : bool_constant<__reference_converts_from_temporary(_T, _U)> {};
 #else
 // Undefined!
-template <class _T, class _U> struct reference_converts_from_temporary;
+template <class _T, class _U> struct reference_converts_from_temporary : false_type {};
 #endif
 
 template <class _T> struct has_unique_object_representations

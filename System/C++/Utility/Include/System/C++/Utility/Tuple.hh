@@ -8,6 +8,7 @@
 
 #include <System/C++/Utility/IntegerSequence.hh>
 #include <System/C++/Utility/Pair.hh>
+#include <System/C++/Utility/PointerTraits.hh>
 #include <System/C++/Utility/ReferenceWrapper.hh>
 #include <System/C++/Utility/Private/Config.hh>
 #include <System/C++/Utility/Private/TupleTraits.hh>
@@ -19,6 +20,21 @@ namespace __XVI_STD_UTILITY_NS
 
 // Forward declarations.
 template <class...> class tuple;
+
+
+template <class... _TTypes, class... _UTypes, template <class> class _TQual, template <class> class _UQual>
+    requires requires { typename tuple<common_reference_t<_TQual<_TTypes>, _UQual<_UTypes>>...>; }
+struct basic_common_reference<tuple<_TTypes...>, tuple<_UTypes...>, _TQual, _UQual>
+{
+    using type = tuple<common_reference_t<_TQual<_TTypes>, _UQual<_UTypes>>...>;
+};
+
+template <class... _TTypes, class... _UTypes>
+    requires requires { typename tuple<common_type_t<_TTypes, _UTypes>...>; }
+struct common_type<tuple<_TTypes...>, tuple<_UTypes...>>
+{
+    using type = tuple<common_type_t<_TTypes, _UTypes>...>;
+};
 
 
 template <class> struct tuple_size;
@@ -100,6 +116,9 @@ template <class _T, class... _Rest> struct __first_type<_T, _Rest...> { using ty
 template <class...> struct __second_type { using type = __no_such_type; };
 template <class _T, class _U, class... _Rest> struct __second_type<_T, _U, _Rest...> { using type = _U; };
 
+template <class... _Types> using __first_type_t = typename __first_type<_Types...>::type;
+template <class... _Types> using __second_type_t = typename __second_type<_Types...>::type;
+
 
 struct __ignore_t
 { 
@@ -125,14 +144,31 @@ struct __tuple_storage<_I, _T, _Rest...> : __tuple_storage<_I, _T>, __tuple_stor
     constexpr __tuple_storage& operator=(__tuple_storage&&) 
         noexcept(is_nothrow_move_assignable_v<_T> && (is_nothrow_move_assignable_v<_Rest> && ...)) = default;
 
-    ~__tuple_storage() = default;
+    constexpr const __tuple_storage& operator=(const __tuple_storage& __t) const
+    {
+        __first_base::operator=(static_cast<const __first_base&>(__t));
+        __rest_base::operator=(static_cast<const __rest_base&>(__t));
+        return *this;
+    }
 
-    constexpr __tuple_storage(const _T& __t, const _Rest&&... __rest)
-        : __first_base(__t), __rest_base(__rest...) {}
+    constexpr const __tuple_storage& operator=(__tuple_storage&& __t) const
+    {
+        __first_base::operator=(static_cast<__first_base&&>(__t));
+        __rest_base::operator=(static_cast<__rest_base&&>(__t));
+        return *this;
+    }
+
+    ~__tuple_storage() = default;
 
     template <class _U, class... _URest>
     constexpr __tuple_storage(_U&& __u, _URest&&... __urest)
-        : __first_base(__XVI_STD_NS::forward<_U>(__u)), __rest_base(__XVI_STD_NS::forward<_URest>(__urest)...) {}
+        : __first_base(std::forward<_U>(__u)),
+          __rest_base(std::forward<_URest>(__urest)...) {}
+
+    template <size_t _J, class _U, class... _URest>
+    constexpr __tuple_storage(__tuple_storage<_J, _U, _URest...>& __u)
+        : __first_base(static_cast<__tuple_storage<_J, _U>&>(__u)),
+          __rest_base(static_cast<__tuple_storage<_J + 1, _URest...>&>(__u)) {}
 
     template <size_t _J, class _U, class... _URest>
     constexpr __tuple_storage(const __tuple_storage<_J, _U, _URest...>& __u)
@@ -144,6 +180,16 @@ struct __tuple_storage<_I, _T, _Rest...> : __tuple_storage<_I, _T>, __tuple_stor
         : __first_base(static_cast<__tuple_storage<_J, _U>&&>(__u)),
           __rest_base(static_cast<__tuple_storage<_J + 1, _URest...>&&>(__u)) {}
 
+    template <size_t _J, class _U, class... _URest>
+    constexpr __tuple_storage(const __tuple_storage<_J, _U, _URest...>&& __u)
+        : __first_base(static_cast<const __tuple_storage<_J, _U>&&>(__u)),
+          __rest_base(static_cast<const __tuple_storage<_J + 1, _URest...>&&>(__u)) {}
+
+    template <class _U1, class _U2>
+    constexpr __tuple_storage(pair<_U1, _U2>& __p)
+        : __first_base(__p.first),
+          __rest_base(__p.second) {}
+
     template <class _U1, class _U2>
     constexpr __tuple_storage(const pair<_U1, _U2>& __p)
         : __first_base(__p.first),
@@ -154,6 +200,71 @@ struct __tuple_storage<_I, _T, _Rest...> : __tuple_storage<_I, _T>, __tuple_stor
         : __first_base(static_cast<_U1&&>(__p.first)),
           __rest_base(static_cast<_U2&&>(__p.second)) {}
 
+    template <class _U1, class _U2>
+    constexpr __tuple_storage(const pair<_U1, _U2>&& __p)
+        : __first_base(static_cast<const _U1&&>(__p.first)),
+          __rest_base(static_cast<const _U2&&>(__p.second)) {}
+
+    template <class _Alloc>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc)
+        : __first_base(allocator_arg, __alloc),
+          __rest_base(allocator_arg, __alloc) {}
+
+    template <class _Alloc>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc, const __tuple_storage& __t)
+        : __first_base(allocator_arg, __alloc, static_cast<const __first_base&>(__t)),
+          __rest_base(allocator_arg, __alloc, static_cast<const __rest_base&>(__t)) {}
+
+    template <class _Alloc>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc, __tuple_storage&& __t)
+        : __first_base(allocator_arg, __alloc, static_cast<__first_base&&>(__t)),
+          __rest_base(allocator_arg, __alloc, static_cast<__rest_base&&>(__t)) {}
+
+    template <class _Alloc, class _U, class... _URest>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc, _U&& __u, _URest&&... __urest)
+        : __first_base(allocator_arg, __alloc, std::forward<_U>(__u)),
+          __rest_base(allocator_arg, __alloc, std::forward<_URest>(__urest)...) {}
+
+    template <class _Alloc, size_t _J, class _U, class... _URest>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc, __tuple_storage<_J, _U, _URest...>& __u)
+        : __first_base(allocator_arg, __alloc, static_cast<__tuple_storage<_J, _U>&>(__u)),
+          __rest_base(allocator_arg, __alloc, static_cast<__tuple_storage<_J + 1, _URest...>&>(__u)) {}
+
+    template <class _Alloc, size_t _J, class _U, class... _URest>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc, const __tuple_storage<_J, _U, _URest...>& __u)
+        : __first_base(allocator_arg, __alloc, static_cast<const __tuple_storage<_J, _U>&>(__u)),
+          __rest_base(allocator_arg, __alloc, static_cast<const __tuple_storage<_J + 1, _URest...>&>(__u)) {}
+
+    template <class _Alloc, size_t _J, class _U, class... _URest>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc, __tuple_storage<_J, _U, _URest...>&& __u)
+        : __first_base(allocator_arg, __alloc, static_cast<__tuple_storage<_J, _U>&&>(__u)),
+          __rest_base(allocator_arg, __alloc, static_cast<__tuple_storage<_J + 1, _URest...>&&>(__u)) {}
+
+    template <class _Alloc, size_t _J, class _U, class... _URest>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc, const __tuple_storage<_J, _U, _URest...>&& __u)
+        : __first_base(allocator_arg, __alloc, static_cast<const __tuple_storage<_J, _U>&&>(__u)),
+          __rest_base(allocator_arg, __alloc, static_cast<const __tuple_storage<_J + 1, _URest...>&&>(__u)) {}
+
+    template <class _Alloc, class _U1, class _U2>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc, pair<_U1, _U2>& __p)
+        : __first_base(allocator_arg, __alloc, __p.first),
+          __rest_base(allocator_arg, __alloc, __p.second) {}
+
+    template <class _Alloc, class _U1, class _U2>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc, const pair<_U1, _U2>& __p)
+        : __first_base(allocator_arg, __alloc, __p.first),
+          __rest_base(allocator_arg, __alloc, __p.second) {}
+
+    template <class _Alloc, class _U1, class _U2>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc, pair<_U1, _U2>&& __p)
+        : __first_base(allocator_arg, __alloc, static_cast<_U1&&>(__p.first)),
+          __rest_base(allocator_arg, __alloc, static_cast<_U2&&>(__p.second)) {}
+
+    template <class _Alloc, class _U1, class _U2>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc, const pair<_U1, _U2>&& __p)
+        : __first_base(allocator_arg, __alloc, static_cast<const _U1&&>(__p.first)),
+          __rest_base(allocator_arg, __alloc, static_cast<const _U2&&>(__p.second)) {}
+
     template <size_t _J, class _U, class... _URest>
     constexpr __tuple_storage& operator=(const __tuple_storage<_J, _U, _URest...>& __u)
     {
@@ -163,7 +274,23 @@ struct __tuple_storage<_I, _T, _Rest...> : __tuple_storage<_I, _T>, __tuple_stor
     }
 
     template <size_t _J, class _U, class... _URest>
+    constexpr const __tuple_storage& operator=(const __tuple_storage<_J, _U, _URest...>& __u) const
+    {
+        __first_base::operator=(static_cast<const __tuple_storage<_J, _U>&>(__u));
+        __rest_base::operator=(static_cast<const __tuple_storage<_J + 1, _URest...>&>(__u));
+        return *this;
+    }
+
+    template <size_t _J, class _U, class... _URest>
     constexpr __tuple_storage& operator=(__tuple_storage<_J, _U, _URest...>&& __u)
+    {
+        __first_base::operator=(static_cast<__tuple_storage<_J, _U>&&>(__u));
+        __rest_base::operator=(static_cast<__tuple_storage<_J + 1, _URest...>&&>(__u));
+        return *this;
+    }
+
+    template <size_t _J, class _U, class... _URest>
+    constexpr const __tuple_storage& operator=(__tuple_storage<_J, _U, _URest...>&& __u) const
     {
         __first_base::operator=(static_cast<__tuple_storage<_J, _U>&&>(__u));
         __rest_base::operator=(static_cast<__tuple_storage<_J + 1, _URest...>&&>(__u));
@@ -179,6 +306,14 @@ struct __tuple_storage<_I, _T, _Rest...> : __tuple_storage<_I, _T>, __tuple_stor
     }
 
     template <class _U1, class _U2>
+    constexpr const __tuple_storage& operator=(const pair<_U1, _U2>& __p) const
+    {
+        __first_base::operator=(__p.first);
+        __rest_base::operator=(__p.second);
+        return *this;
+    }
+
+    template <class _U1, class _U2>
     constexpr __tuple_storage& operator=(pair<_U1, _U2>&& __p)
     {
         __first_base::operator=(static_cast<_U1&&>(__p.first));
@@ -186,8 +321,23 @@ struct __tuple_storage<_I, _T, _Rest...> : __tuple_storage<_I, _T>, __tuple_stor
         return *this;
     }
 
+    template <class _U1, class _U2>
+    constexpr const __tuple_storage& operator=(pair<_U1, _U2>&& __p) const
+    {
+        __first_base::operator=(static_cast<const _U1&&>(__p.first));
+        __rest_base::operator=(static_cast<const _U2&&>(__p.second));
+        return *this;
+    }
+
     constexpr void swap(__tuple_storage& __x)
         noexcept(is_nothrow_swappable_v<_T> && (is_nothrow_swappable_v<_Rest> && ...))
+    {
+        __first_base::swap(__x);
+        __rest_base::swap(__x);
+    }
+
+    constexpr void swap(const __tuple_storage& __x) const
+        noexcept(is_nothrow_swappable_v<const _T> && (is_nothrow_swappable_v<const _Rest> && ...))
     {
         __first_base::swap(__x);
         __rest_base::swap(__x);
@@ -270,14 +420,27 @@ struct __tuple_storage<_I, _T>
     constexpr __tuple_storage& operator=(const __tuple_storage&) = default;
     constexpr __tuple_storage& operator=(__tuple_storage&&) noexcept(is_nothrow_move_assignable_v<_T>) = default;
 
-    ~__tuple_storage() = default;
+    constexpr const __tuple_storage& operator=(const __tuple_storage& __t) const
+    {
+        _M_elem = __t._M_elem;
+        return *this;
+    }
 
-    constexpr __tuple_storage(const _T& __t)
-        : _M_elem(__t) {}
+    constexpr const __tuple_storage& operator=(__tuple_storage&& __t) const
+    {
+        _M_elem = std::move(__t._M_elem);
+        return this;
+    }
+
+    ~__tuple_storage() = default;
 
     template <class _U>
     constexpr __tuple_storage(_U&& __u)
-        : _M_elem(__XVI_STD_NS::forward<_U>(__u)) {}
+        : _M_elem(std::forward<_U>(__u)) {}
+
+    template <size_t _J, class _U>
+    constexpr __tuple_storage(__tuple_storage<_J, _U>& __u)
+        : _M_elem(__u._M_elem) {}
 
     template <size_t _J, class _U>
     constexpr __tuple_storage(const __tuple_storage<_J, _U>& __u)
@@ -285,7 +448,43 @@ struct __tuple_storage<_I, _T>
 
     template <size_t _J, class _U>
     constexpr __tuple_storage(__tuple_storage<_J, _U>&& __u)
-        : _M_elem(__XVI_STD_NS::forward<_U>(__u._M_elem)) {}
+        : _M_elem(std::move(__u._M_elem)) {}
+
+    template <size_t _J, class _U>
+    constexpr __tuple_storage(const __tuple_storage<_J, _U>&& __u)
+        : _M_elem(static_cast<const _U&&>(__u._M_elem)) {}
+
+    template <class _Alloc>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc)
+        : _M_elem(make_obj_using_allocator<_T>(__alloc)) {}
+
+    template <class _Alloc>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc, const __tuple_storage& __t)
+        : _M_elem(make_obj_using_allocator<_T>(__alloc, __t._M_elem)) {}
+
+    template <class _Alloc>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc, __tuple_storage&& __t)
+        : _M_elem(make_obj_using_allocator<_T>(__alloc, std::move(__t._M_elem))) {}
+
+    template <class _Alloc, class _U>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc, _U&& __u)
+        : _M_elem(make_obj_using_allocator<_T>(__alloc, std::forward<_U>(__u))) {}
+
+    template <class _Alloc, size_t _J, class _U>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc, __tuple_storage<_J, _U>& __u)
+        : _M_elem(make_obj_using_allocator<_T>(__alloc, __u._M_elem)) {}
+
+    template <class _Alloc, size_t _J, class _U>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc, const __tuple_storage<_J, _U>& __u)
+        : _M_elem(make_obj_using_allocator<_T>(__alloc, __u._M_elem)) {}
+
+    template <class _Alloc, size_t _J, class _U>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc, __tuple_storage<_J, _U>&& __u)
+        : _M_elem(make_obj_using_allocator<_T>(__alloc, std::move(__u._M_elem))) {}
+
+    template <class _Alloc, size_t _J, class _U>
+    constexpr __tuple_storage(allocator_arg_t, const _Alloc& __alloc, const __tuple_storage<_J, _U>&& __u)
+        : _M_elem(make_obj_using_allocator<_T>(__alloc, static_cast<const _U&&>(__u._M_elem))) {}
 
     template <size_t _J, class _U>
     constexpr __tuple_storage& operator=(const __tuple_storage<_J, _U>& __u)
@@ -295,13 +494,32 @@ struct __tuple_storage<_I, _T>
     }
 
     template <size_t _J, class _U>
+    constexpr const __tuple_storage& operator=(const __tuple_storage<_J, _U>& __u) const
+    {
+        _M_elem = __u._M_elem;
+        return *this;
+    }
+
+    template <size_t _J, class _U>
     constexpr __tuple_storage& operator=(__tuple_storage<_J, _U>&& __u)
     {
-        _M_elem = __XVI_STD_NS::forward<_U>(__u._M_elem);
+        _M_elem = std::move(__u._M_elem);
+        return *this;
+    }
+
+    template <size_t _J, class _U>
+    constexpr const __tuple_storage& operator=(__tuple_storage<_J, _U>&& __u) const
+    {
+        _M_elem = std::move(__u._M_elem);
         return *this;
     }
 
     constexpr void swap(__tuple_storage& __x) noexcept(is_nothrow_swappable_v<_T>)
+    {
+        swap(_M_elem, __x._M_elem);
+    }
+
+    constexpr void swap(const __tuple_storage& __x) const noexcept(is_nothrow_swappable_v<const _T>)
     {
         swap(_M_elem, __x._M_elem);
     }
@@ -440,6 +658,87 @@ constexpr bool __tuple_lt(const tuple<_TTypes...>& __x, const tuple<_UTypes...>&
 }
 
 
+template <class...> struct __tuple_ctor_disambiguation_constraint : false_type {};
+
+template <class _Type, class _UType>
+struct __tuple_ctor_disambiguation_constraint<tuple<_Type>, _UType> :
+    negation<is_same<remove_cvref_t<_UType>, tuple<_Type>>> {};
+
+
+template <class _T0, class _T1, class _U0, class _U1>
+struct __tuple_ctor_disambiguation_constraint<tuple<_T0, _T1>, _U0, _U1> :
+    bool_constant<!is_same_v<remove_cvref_t<_U0>, allocator_arg_t> || is_same_v<remove_cvref_t<_T0>, allocator_arg_t>> {};
+
+template <class _T0, class _T1, class _T2, class _U0, class _U1, class _U2>
+struct __tuple_ctor_disambiguation_constraint<tuple<_T0, _T1, _T2>, _U0, _U1, _U2> :
+    __tuple_ctor_disambiguation_constraint<tuple<_T0, _T1>, _U0, _U1> {};
+
+
+template <class _UTuple, class... _Types, std::size_t... _I>
+consteval bool __tuple_constructible_from(std::index_sequence<_I...>)
+{
+    return (std::is_constructible_v<_Types, decltype(get<_I>(declval<_UTuple>()))> && ...);
+}
+
+template <class _UTuple, class... _Types, std::size_t... _I>
+consteval bool __tuple_convertible_from(std::index_sequence<_I...>)
+{
+    return (std::is_convertible_v<decltype(get<_I>(declval<_UTuple>())), _Types> && ...);
+}
+
+template <class _UTuple, class... _Types, std::size_t... _I>
+consteval bool __tuple_ref_constructs_from_temporary(std::index_sequence<_I...>)
+{
+    return (std::reference_constructs_from_temporary_v<_Types, decltype(get<_I>(declval<_UTuple>()))> || ...);
+}
+
+template <class _UTuple, class... _Types>
+inline constexpr bool __tuple_constructible_from_v = __tuple_constructible_from<_UTuple, _Types...>(std::make_index_sequence<sizeof...(_Types)>());
+
+template <class _UTuple, class... _Types>
+inline constexpr bool __tuple_convertible_from_v = __tuple_convertible_from<_UTuple, _Types...>(std::make_index_sequence<sizeof...(_Types)>());
+
+template <class _UTuple, class... _Types>
+inline constexpr bool __tuple_ref_constructs_from_temporary_v = __tuple_ref_constructs_from_temporary<_UTuple, _Types...>(std::make_index_sequence<sizeof...(_Types)>());
+
+template <class, class...> struct __tuple_size_matches_impl : false_type {};
+
+template <class... _UTypes, class... _Types>
+struct __tuple_size_matches_impl<tuple<_UTypes...>, _Types...> : true_type {};
+
+template <class _UTuple, class... _Types>
+struct __tuple_size_matches : __tuple_size_matches_impl<std::remove_cvref_t<_UTuple>, _Types...> {};
+
+template <class, class _UTuple> struct __tuple_constructible_from_tuple_impl;
+
+template <class... _Types, class _UTuple>
+struct __tuple_constructible_from_tuple_impl<tuple<_Types...>, _UTuple>
+    : bool_constant<(!__tuple_ref_constructs_from_temporary_v<_UTuple, _Types...>)
+            && __tuple_size_matches<_UTuple, _Types...>::value
+            && __tuple_constructible_from_v<_UTuple, _Types...>
+            && (sizeof...(_Types) != 1
+                || (!std::is_convertible_v<_UTuple, __first_type_t<_Types...>>
+                    && !std::is_constructible_v<__first_type_t<_Types...>, _UTuple>
+                    && !std::is_same_v<__first_type_t<_Types...>, tuple_element_t<0, _UTuple>>))> {};
+
+template <class _Tuple, class _UTuple>
+concept __tuple_constructible_from_tuple = __tuple_constructible_from_tuple_impl<_Tuple, _UTuple>::value;
+
+template <class _Pair, class... _Types>
+concept __tuple_ref_constructs_from_temporary_pair = std::reference_constructs_from_temporary_v<__first_type_t<_Types...>, decltype(get<0>(declval<_Pair>()))>
+    || std::reference_constructs_from_temporary_v<__second_type_t<_Types...>, decltype(get<1>(declval<_Pair>()))>;
+
+template <class _Pair, class... _Types>
+concept __tuple_constructs_from_pair = (sizeof...(_Types) == 2)
+    && std::is_convertible_v<__first_type_t<_Types...>, decltype(get<0>(declval<_Pair>()))>
+    && std::is_convertible_v<__second_type_t<_Types...>, decltype(get<1>(declval<_Pair>()))>
+    && (!__tuple_ref_constructs_from_temporary_pair<_Pair, _Types...>);
+
+template <class _Pair, class... _Types>
+inline constexpr bool __tuple_converts_from_pair_v = !std::is_convertible_v<decltype(get<0>(declval<_Pair>())), __first_type_t<_Types...>>
+    && !std::is_convertible_v<decltype(get<1>(declval<_Pair>())), __second_type_t<_Types...>>;
+
+
 } // namespace __detail
 
 
@@ -448,116 +747,349 @@ template <class... _Types> class tuple
 public:
 
     constexpr explicit(!(__detail::__is_implicit_default_constructible_v<_Types> && ...)) 
-    tuple() = default;
+    tuple()
+        requires std::conjunction_v<std::is_default_constructible_v<_Types>...>
+    = default;
 
-    template <size_t _N = sizeof...(_Types),
-              class = enable_if_t<_N >= 1 && (is_copy_constructible_v<_Types> && ...), void>>
     constexpr explicit(!conjunction_v<is_convertible<const _Types&, _Types>...>)
     tuple(const _Types&... __t)
+        requires (sizeof...(_Types) >= 1) && std::conjunction_v<std::is_copy_constructible_v<_Types>...>
         : _M_elems(__t...) {}
     
-    template <class... _UTypes,
-              class = enable_if_t<sizeof...(_Types) == sizeof...(_UTypes)
-                                  && (is_constructible_v<_Types, _UTypes> && ...), void>>
+    template <class... _UTypes>
+        requires (sizeof...(_Types) == sizeof...(_UTypes))
+            && (sizeof...(_Types) >= 1)
+            && std::conjunction_v<__detail::__tuple_ctor_disambiguation_constraint<tuple, _UTypes...>, std::is_constructible<_Types, _UTypes>...>
+            && (!(std::reference_constructs_from_temporary_v<_Types, _UTypes&&> || ...))
     constexpr explicit(!conjunction_v<is_convertible<_UTypes, _Types>...>)
     tuple(_UTypes&&... __u)
-        : _M_elems(__XVI_STD_NS::forward<_UTypes>(__u)...) {}
+        : _M_elems(std::forward<_UTypes>(__u)...) {}
+
+    template <class... _UTypes>
+        requires (std::reference_constructs_from_temporary_v<_Types, _UTypes&&> || ...)
+    constexpr explicit(!conjunction_v<is_convertible<_UTypes, _Types>...>)
+    tuple(_UTypes&&... __u) = delete;
 
     tuple(const tuple&) = default;
-    tuple(tuple&&) = default;
+    
+    tuple(tuple&&)
+        requires std::conjunction_v<std::is_move_constructible<_Types>...>
+    = default;
 
-    template <class... _UTypes,
-              class = enable_if_t<sizeof...(_Types) == sizeof...(_UTypes)
-                                  && (is_constructible_v<_Types, const _UTypes&> && ...)
-                                  && (sizeof...(_Types) != 1
-                                      || (!is_convertible_v<const tuple<_UTypes...>&, typename __detail::__first_type<_Types...>::type>
-                                          && !is_constructible_v<typename __detail::__first_type<_Types...>::type, const tuple<_UTypes...>&>
-                                          && !is_same_v<typename __detail::__first_type<_Types...>::type, typename __detail::__first_type<_UTypes...>::type>)),
-                                  void>>
-    constexpr explicit(!conjunction_v<is_convertible<const _UTypes&, _Types>...>)
+    template <class... _UTypes>
+        requires __detail::__tuple_constructible_from_tuple<tuple, tuple<_UTypes...>&>
+    constexpr explicit(!__detail::__tuple_convertible_from_v<tuple<_UTypes...>&, _Types...>)
+    tuple(tuple<_UTypes...>& __u)
+        : _M_elems(__u._M_elems) {}
+
+    template <class... _UTypes>
+        requires __detail::__tuple_ref_constructs_from_temporary_v<tuple<_UTypes...>&, _Types...>
+    constexpr explicit(!__detail::__tuple_convertible_from_v<tuple<_UTypes...>&, _Types...>)
+    tuple(tuple<_UTypes...>&) = delete;
+
+    template <class... _UTypes>
+        requires __detail::__tuple_constructible_from_tuple<tuple, const tuple<_UTypes...>&>
+    constexpr explicit(!__detail::__tuple_convertible_from_v<const tuple<_UTypes...>&, _Types...>)
     tuple(const tuple<_UTypes...>& __u)
         : _M_elems(__u._M_elems) {}
-    
-    template <class... _UTypes,
-              class = enable_if_t<sizeof...(_Types) == sizeof...(_UTypes)
-                                  && (is_constructible_v<_Types, _UTypes&&> && ...)
-                                  && (sizeof...(_Types) != 1
-                                      || (!is_convertible_v<tuple<_UTypes...>, typename __detail::__first_type<_Types...>::type>
-                                          && !is_constructible_v<typename __detail::__first_type<_Types...>::type, tuple<_UTypes...>>
-                                          && !is_same_v<typename __detail::__first_type<_Types...>::type, typename __detail::__first_type<_UTypes...>::type>)),
-                                  void>>
-    constexpr explicit(!conjunction_v<is_convertible<_UTypes, _Types>...>)
-    tuple(tuple<_UTypes...>&& __u)
-        : _M_elems(__XVI_STD_NS::move(__u._M_elems)) {}
 
-    template <class _U1, class _U2,
-              class = enable_if_t<sizeof...(_Types) == 2
-                                  && is_constructible_v<typename __detail::__first_type<_Types...>::type, const _U1&>
-                                  && is_constructible_v<typename __detail::__second_type<_Types...>::type, const _U2&>,
-                                  void>>
-    constexpr explicit(!is_convertible_v<const _U1&, typename __detail::__first_type<_Types...>::type>
-                       || !is_convertible_v<const _U2&, typename __detail::__second_type<_Types...>::type>)
+    template <class... _UTypes>
+        requires __detail::__tuple_ref_constructs_from_temporary_v<const tuple<_UTypes...>&, _Types...>
+    constexpr explicit(!__detail::__tuple_convertible_from_v<const tuple<_UTypes...>&, _Types...>)
+    tuple(const tuple<_UTypes...>&) = delete;
+
+    template <class... _UTypes>
+        requires __detail::__tuple_constructible_from_tuple<tuple, tuple<_UTypes...>&&>
+    constexpr explicit(!__detail::__tuple_convertible_from_v<tuple<_UTypes...>&&, _Types...>)
+    tuple(tuple<_UTypes...>&& __u)
+        : _M_elems(std::move(__u._M_elems)) {}
+
+    template <class... _UTypes>
+        requires __detail::__tuple_ref_constructs_from_temporary_v<tuple<_UTypes...>&&, _Types...>
+    constexpr explicit(!__detail::__tuple_convertible_from_v<tuple<_UTypes...>&&, _Types...>)
+    tuple(tuple<_UTypes...>&&) = delete;
+  
+    template <class... _UTypes>
+        requires __detail::__tuple_constructible_from_tuple<tuple, const tuple<_UTypes...>&&>
+    constexpr explicit(!__detail::__tuple_convertible_from_v<const tuple<_UTypes...>&&, _Types...>)
+    tuple(const tuple<_UTypes...>&& __u)
+        : _M_elems(static_cast<decltype(__u._M_elems)>(__u._M_elems)) {}
+
+    template <class... _UTypes>
+        requires __detail::__tuple_ref_constructs_from_temporary_v<const tuple<_UTypes...>&&, _Types...>
+    constexpr explicit(!__detail::__tuple_convertible_from_v<const tuple<_UTypes...>&&, _Types...>)
+    tuple(const tuple<_UTypes...>&&) = delete;
+
+    template <class _U1, class _U2>
+        requires __detail::__tuple_constructs_from_pair<pair<_U1, _U2>&, _Types...>
+    constexpr explicit(!__detail::__tuple_converts_from_pair_v<pair<_U1, _U2>&, _Types...>)
+    tuple(pair<_U1, _U2>& __p)
+        : _M_elems(__p) {}
+
+    template <class _U1, class _U2>
+        requires __detail::__tuple_ref_constructs_from_temporary_pair<pair<_U1, _U2>&, _Types...>
+    constexpr explicit(!__detail::__tuple_converts_from_pair_v<pair<_U1, _U2>&, _Types...>)
+    tuple (pair<_U1, _U2>&) = delete;
+
+    template <class _U1, class _U2>
+        requires __detail::__tuple_constructs_from_pair<const pair<_U1, _U2>&, _Types...>
+    constexpr explicit(!__detail::__tuple_converts_from_pair_v<const pair<_U1, _U2>&, _Types...>)
     tuple(const pair<_U1, _U2>& __p)
         : _M_elems(__p) {}
 
-    template <class _U1, class _U2,
-              class = enable_if_t<sizeof...(_Types) == 2
-                                  && is_constructible_v<typename __detail::__first_type<_Types...>::type, _U1&&>
-                                  && is_constructible_v<typename __detail::__second_type<_Types...>::type, _U2&&>,
-                                  void>>
-    constexpr explicit(!is_convertible_v<_U1, typename __detail::__first_type<_Types...>::type>
-                       || !is_convertible_v<_U2, typename __detail::__second_type<_Types...>::type>)
-    tuple(pair<_U1, _U2>&& __p)
-        : _M_elems(__XVI_STD_NS::move(__p)) {}
+    template <class _U1, class _U2>
+        requires __detail::__tuple_ref_constructs_from_temporary_pair<const pair<_U1, _U2>&, _Types...>
+    constexpr explicit(!__detail::__tuple_converts_from_pair_v<const pair<_U1, _U2>&, _Types...>)
+    tuple (const pair<_U1, _U2>&) = delete;
 
-    //! @TODO: uses-allocator constructors.
+    template <class _U1, class _U2>
+        requires __detail::__tuple_constructs_from_pair<pair<_U1, _U2>&&, _Types...>
+    constexpr explicit(!__detail::__tuple_converts_from_pair_v<pair<_U1, _U2>&&, _Types...>)
+    tuple(pair<_U1, _U2>&& __p)
+        : _M_elems(std::move(__p)) {}
+
+    template <class _U1, class _U2>
+        requires __detail::__tuple_ref_constructs_from_temporary_pair<pair<_U1, _U2>&&, _Types...>
+    constexpr explicit(!__detail::__tuple_converts_from_pair_v<pair<_U1, _U2>&&, _Types...>)
+    tuple (pair<_U1, _U2>&&) = delete;
+
+    template <class _U1, class _U2>
+        requires __detail::__tuple_constructs_from_pair<const pair<_U1, _U2>&&, _Types...>
+    constexpr explicit(!__detail::__tuple_converts_from_pair_v<const pair<_U1, _U2>&&, _Types...>)
+    tuple(const pair<_U1, _U2>&& __p)
+        : _M_elems(static_cast<decltype(__p)>(__p)) {}
+
+    template <class _U1, class _U2>
+        requires __detail::__tuple_ref_constructs_from_temporary_pair<const pair<_U1, _U2>&&, _Types...>
+    constexpr explicit(!__detail::__tuple_converts_from_pair_v<pair<_U1, _U2>&&, _Types...>)
+    tuple (const pair<_U1, _U2>&&) = delete;
+
+
+    template <class _Alloc>
+    constexpr explicit(!(__detail::__is_implicit_default_constructible_v<_Types> && ...)) 
+    tuple(allocator_arg_t, const _Alloc& __alloc)
+        requires std::conjunction_v<std::is_default_constructible_v<_Types>...>
+        : _M_elems(allocator_arg, __alloc)
+    {
+    }
+
+    template <class _Alloc>
+    constexpr explicit(!conjunction_v<is_convertible<const _Types&, _Types>...>)
+    tuple(allocator_arg_t, const _Alloc& __alloc, const _Types&... __t)
+        requires (sizeof...(_Types) >= 1) && std::conjunction_v<std::is_copy_constructible_v<_Types>...>
+        : _M_elems(allocator_arg, __alloc, __t...) {}
+    
+    template <class _Alloc, class... _UTypes>
+        requires (sizeof...(_Types) == sizeof...(_UTypes))
+            && (sizeof...(_Types) >= 1)
+            && std::conjunction_v<__detail::__tuple_ctor_disambiguation_constraint<tuple, _UTypes...>, std::is_constructible<_Types, _UTypes>...>
+            && (!(std::reference_constructs_from_temporary_v<_Types, _UTypes&&> || ...))
+    constexpr explicit(!conjunction_v<is_convertible<_UTypes, _Types>...>)
+    tuple(allocator_arg_t, const _Alloc& __alloc, _UTypes&&... __u)
+        : _M_elems(allocator_arg, __alloc, std::forward<_UTypes>(__u)...) {}
+
+    template <class _Alloc, class... _UTypes>
+        requires (std::reference_constructs_from_temporary_v<_Types, _UTypes&&> || ...)
+    constexpr explicit(!conjunction_v<is_convertible<_UTypes, _Types>...>)
+    tuple(allocator_arg_t, const _Alloc& __alloc, _UTypes&&... __u) = delete;
+
+    template <class _Alloc>
+    tuple(allocator_arg_t, const _Alloc& __alloc, const tuple& __t)
+        : _M_elems(allocator_arg, __alloc, __t._M_elems) {}
+    
+    template <class _Alloc>
+    tuple(allocator_arg_t, const _Alloc& __alloc, tuple&& __t)
+        requires std::conjunction_v<std::is_move_constructible<_Types>...>
+        : _M_elems(allocator_arg, __alloc, std::move(__t._M_elems)) {}
+
+    template <class _Alloc, class... _UTypes>
+        requires __detail::__tuple_constructible_from_tuple<tuple, tuple<_UTypes...>&>
+    constexpr explicit(!__detail::__tuple_convertible_from_v<tuple<_UTypes...>&, _Types...>)
+    tuple(allocator_arg_t, const _Alloc& __alloc, tuple<_UTypes...>& __u)
+        : _M_elems(allocator_arg, __alloc, __u._M_elems) {}
+
+    template <class _Alloc, class... _UTypes>
+        requires __detail::__tuple_ref_constructs_from_temporary_v<tuple<_UTypes...>&, _Types...>
+    constexpr explicit(!__detail::__tuple_convertible_from_v<tuple<_UTypes...>&, _Types...>)
+    tuple(allocator_arg_t, const _Alloc& __alloc, tuple<_UTypes...>&) = delete;
+
+    template <class _Alloc, class... _UTypes>
+        requires __detail::__tuple_constructible_from_tuple<tuple, const tuple<_UTypes...>&>
+    constexpr explicit(!__detail::__tuple_convertible_from_v<const tuple<_UTypes...>&, _Types...>)
+    tuple(allocator_arg_t, const _Alloc& __alloc, const tuple<_UTypes...>& __u)
+        : _M_elems(allocator_arg, __alloc, __u._M_elems) {}
+
+    template <class _Alloc, class... _UTypes>
+        requires __detail::__tuple_ref_constructs_from_temporary_v<const tuple<_UTypes...>&, _Types...>
+    constexpr explicit(!__detail::__tuple_convertible_from_v<const tuple<_UTypes...>&, _Types...>)
+    tuple(allocator_arg_t, const _Alloc& __alloc, const tuple<_UTypes...>&) = delete;
+
+    template <class _Alloc, class... _UTypes>
+        requires __detail::__tuple_constructible_from_tuple<tuple, tuple<_UTypes...>&&>
+    constexpr explicit(!__detail::__tuple_convertible_from_v<tuple<_UTypes...>&&, _Types...>)
+    tuple(allocator_arg_t, const _Alloc& __alloc, tuple<_UTypes...>&& __u)
+        : _M_elems(allocator_arg, __alloc, std::move(__u._M_elems)) {}
+
+    template <class _Alloc, class... _UTypes>
+        requires __detail::__tuple_ref_constructs_from_temporary_v<tuple<_UTypes...>&&, _Types...>
+    constexpr explicit(!__detail::__tuple_convertible_from_v<tuple<_UTypes...>&&, _Types...>)
+    tuple(allocator_arg_t, const _Alloc& __alloc, tuple<_UTypes...>&&) = delete;
+  
+    template <class _Alloc, class... _UTypes>
+        requires __detail::__tuple_constructible_from_tuple<tuple, const tuple<_UTypes...>&&>
+    constexpr explicit(!__detail::__tuple_convertible_from_v<const tuple<_UTypes...>&&, _Types...>)
+    tuple(allocator_arg_t, const _Alloc& __alloc, const tuple<_UTypes...>&& __u)
+        : _M_elems(allocator_arg, __alloc, static_cast<decltype(__u._M_elems)>(__u._M_elems)) {}
+
+    template <class _Alloc, class... _UTypes>
+        requires __detail::__tuple_ref_constructs_from_temporary_v<const tuple<_UTypes...>&&, _Types...>
+    constexpr explicit(!__detail::__tuple_convertible_from_v<const tuple<_UTypes...>&&, _Types...>)
+    tuple(allocator_arg_t, const _Alloc& __alloc, const tuple<_UTypes...>&&) = delete;
+
+    template <class _Alloc, class _U1, class _U2>
+        requires __detail::__tuple_constructs_from_pair<pair<_U1, _U2>&, _Types...>
+    constexpr explicit(!__detail::__tuple_converts_from_pair_v<pair<_U1, _U2>&, _Types...>)
+    tuple(allocator_arg_t, const _Alloc& __alloc, pair<_U1, _U2>& __p)
+        : _M_elems(allocator_arg, __alloc, __p) {}
+
+    template <class _Alloc, class _U1, class _U2>
+        requires __detail::__tuple_ref_constructs_from_temporary_pair<pair<_U1, _U2>&, _Types...>
+    constexpr explicit(!__detail::__tuple_converts_from_pair_v<pair<_U1, _U2>&, _Types...>)
+    tuple (allocator_arg_t, const _Alloc& __alloc, pair<_U1, _U2>&) = delete;
+
+    template <class _Alloc, class _U1, class _U2>
+        requires __detail::__tuple_constructs_from_pair<const pair<_U1, _U2>&, _Types...>
+    constexpr explicit(!__detail::__tuple_converts_from_pair_v<const pair<_U1, _U2>&, _Types...>)
+    tuple(allocator_arg_t, const _Alloc& __alloc, const pair<_U1, _U2>& __p)
+        : _M_elems(allocator_arg, __alloc, __p) {}
+
+    template <class _Alloc, class _U1, class _U2>
+        requires __detail::__tuple_ref_constructs_from_temporary_pair<const pair<_U1, _U2>&, _Types...>
+    constexpr explicit(!__detail::__tuple_converts_from_pair_v<const pair<_U1, _U2>&, _Types...>)
+    tuple (allocator_arg_t, const _Alloc& __alloc, const pair<_U1, _U2>&) = delete;
+
+    template <class _Alloc, class _U1, class _U2>
+        requires __detail::__tuple_constructs_from_pair<pair<_U1, _U2>&&, _Types...>
+    constexpr explicit(!__detail::__tuple_converts_from_pair_v<pair<_U1, _U2>&&, _Types...>)
+    tuple(allocator_arg_t, const _Alloc& __alloc, pair<_U1, _U2>&& __p)
+        : _M_elems(allocator_arg, __alloc, std::move(__p)) {}
+
+    template <class _Alloc, class _U1, class _U2>
+        requires __detail::__tuple_ref_constructs_from_temporary_pair<pair<_U1, _U2>&&, _Types...>
+    constexpr explicit(!__detail::__tuple_converts_from_pair_v<pair<_U1, _U2>&&, _Types...>)
+    tuple (allocator_arg_t, const _Alloc& __alloc, pair<_U1, _U2>&&) = delete;
+
+    template <class _Alloc, class _U1, class _U2>
+        requires __detail::__tuple_constructs_from_pair<const pair<_U1, _U2>&&, _Types...>
+    constexpr explicit(!__detail::__tuple_converts_from_pair_v<const pair<_U1, _U2>&&, _Types...>)
+    tuple(allocator_arg_t, const _Alloc& __alloc, const pair<_U1, _U2>&& __p)
+        : _M_elems(allocator_arg, __alloc, static_cast<decltype(__p)>(__p)) {}
+
+    template <class _Alloc, class _U1, class _U2>
+        requires __detail::__tuple_ref_constructs_from_temporary_pair<const pair<_U1, _U2>&&, _Types...>
+    constexpr explicit(!__detail::__tuple_converts_from_pair_v<pair<_U1, _U2>&&, _Types...>)
+    tuple (allocator_arg_t, const _Alloc& __alloc, const pair<_U1, _U2>&&) = delete;
+
 
     constexpr tuple& operator=(const tuple&) = default;
     constexpr tuple& operator=(tuple&&) noexcept((is_nothrow_move_assignable_v<_Types> && ...)) = default;
 
-    template <class... _UTypes,
-              class = enable_if_t<sizeof...(_Types) == sizeof...(_UTypes)
-                                  && (is_assignable_v<_Types&, const _UTypes&> && ...),
-                                  void>>
+    constexpr const tuple& operator=(const tuple& __t) const
+        requires (std::is_copy_assignable_v<const _Types> && ...)
+    {
+        _M_elems.operator=(__t._M_elems);
+        return *this;
+    }
+
+    constexpr const tuple& operator=(tuple&& __t) const
+        requires (std::is_assignable_v<const _Types&, _Types> && ...)
+    {
+        _M_elems.operator=(std::move(__t._M_elems));
+        return *this;
+    }
+
+    template <class... _UTypes>
+        requires (sizeof...(_Types) == sizeof...(_UTypes))
+            && (std::is_assignable_v<_Types&, const _UTypes&> && ...)
     constexpr tuple& operator=(const tuple<_UTypes...>& __u)
     {
         _M_elems.operator=(__u._M_elems);
         return *this;
     }
 
-    template <class... _UTypes,
-              class = enable_if_t<sizeof...(_Types) == sizeof...(_UTypes)
-                                  && (is_assignable_v<_Types&, _UTypes&&> && ...),
-                                  void>>
-    constexpr tuple& operator=(tuple<_UTypes...>&& __u)
+    template <class... _UTypes>
+        requires (sizeof...(_Types) == sizeof...(_UTypes))
+            && (std::is_assignable_v<const _Types&, const _UTypes&> && ...)
+    constexpr const tuple& operator=(const tuple<_UTypes...>& __u) const
     {
-        _M_elems.operator=(__XVI_STD_NS::move(__u._M_elems));
+        _M_elems.operator=(__u._M_elems);
         return *this;
     }
 
-    template <class _U1, class _U2,
-              class = enable_if_t<sizeof...(_Types) == 2
-                                  && is_assignable_v<typename __detail::__first_type<_Types...>::type&, const _U1&>
-                                  && is_assignable_v<typename __detail::__second_type<_Types...>::type&, const _U2&>,
-                                  void>>
+    template <class... _UTypes>
+        requires (sizeof...(_Types) == sizeof...(_UTypes))
+            && (std::is_assignable_v<_Types&, _UTypes> && ...)
+    constexpr tuple& operator=(tuple<_UTypes...>&& __u)
+    {
+        _M_elems.operator=(std::move(__u._M_elems));
+        return *this;
+    }
+
+    template <class _UTypes>
+        requires (sizeof...(_Types) == sizeof...(_UTypes))
+            && (std::is_assignable_v<const _Types&, _UTypes> && ...)
+    constexpr const tuple& operator=(tuple<_UTypes...>&& __u)
+    {
+        _M_elems.operator=(std::move(__u._M_elems));
+        return *this;
+    }
+
+    template <class _U1, class _U2>
+        requires (sizeof...(_Types) == 2)
+            && std::is_assignable_v<__detail::__first_type_t<_Types...>&, const _U1&>
+            && std::is_assignable_v<__detail::__second_type_t<_Types...>&, const _U2&>
     constexpr tuple& operator=(const pair<_U1, _U2>& __p)
     {
         _M_elems.operator=(__p);
         return *this;
     }
 
-    template <class _U1, class _U2,
-              class = enable_if_t<sizeof...(_Types) == 2
-                                  && is_assignable_v<typename __detail::__first_type<_Types...>::type&, _U1&&>
-                                  && is_assignable_v<typename __detail::__second_type<_Types...>::type&, _U2&&>,
-                                  void>>
+    template <class _U1, class _U2>
+        requires (sizeof...(_Types) == 2)
+            && std::is_assignable_v<const __detail::__first_type_t<_Types...>&, const _U1&>
+            && std::is_assignable_v<const __detail::__second_type_t<_Types...>&, const _U2&>
+    constexpr const tuple& operator=(const pair<_U1, _U2>& __p) const
+    {
+        _M_elems.operator=(__p);
+        return *this;
+    }
+
+    template <class _U1, class _U2>
+        requires (sizeof...(_Types) == 2)
+            && std::is_assignable_v<__detail::__first_type_t<_Types...>&, _U1>
+            && std::is_assignable_v<__detail::__second_type_t<_Types...>&, _U2>
     constexpr tuple& operator=(pair<_U1, _U2>&& __p)
     {
         _M_elems.operator=(__XVI_STD_NS::move(__p));
         return *this;
     }
 
+    template <class _U1, class _U2>
+        requires (sizeof...(_Types) == 2)
+            && std::is_assignable_v<const __detail::__first_type_t<_Types...>&, _U1>
+            && std::is_assignable_v<const __detail::__second_type_t<_Types...>&, _U2>
+    constexpr const tuple& operator=(pair<_U1, _U2>&& __p) const
+    {
+        _M_elems.operator=(__XVI_STD_NS::move(__p));
+        return *this;
+    }
+
     constexpr void swap(tuple& __rhs) noexcept((is_nothrow_swappable_v<_Types> && ...))
+    {
+        _M_elems.swap(__rhs._M_elems);
+    }
+
+    constexpr void swap(const tuple& __rhs) const noexcept((is_nothrow_swappable_v<const _Types> && ...))
     {
         _M_elems.swap(__rhs._M_elems);
     }
@@ -612,6 +1144,9 @@ private:
 
     using __storage_t = __detail::__tuple_storage<0, _Types...>;
     __storage_t _M_elems;
+
+
+    // Utility method that returns the 
 };
 
 
@@ -676,36 +1211,6 @@ constexpr bool operator==(const tuple<_TTypes...>& __x, const tuple<_UTypes...>&
     return __detail::__tuple_equality(__x, __y);
 }
 
-template <class... _TTypes, class... _UTypes>
-constexpr bool operator!=(const tuple<_TTypes...>& __x, const tuple<_UTypes...>& __y)
-{
-    return !(__x == __y);
-}
-
-template <class... _TTypes, class... _UTypes>
-constexpr bool operator<(const tuple<_TTypes...>& __x, const tuple<_UTypes...>& __y)
-{
-    return __detail::__tuple_lt(__x, __y);
-}
-
-template <class... _TTypes, class... _UTypes>
-constexpr bool operator>(const tuple<_TTypes...>& __x, const tuple<_UTypes...>& __y)
-{
-    return (__y < __x);
-}
-
-template <class... _TTypes, class... _UTypes>
-constexpr bool operator<=(const tuple<_TTypes...>& __x, const tuple<_UTypes...>& __y)
-{
-    return !(__y < __x);
-}
-
-template <class... _TTypes, class... _UTypes>
-constexpr bool operator>=(const tuple<_TTypes...>& __x, const tuple<_UTypes...>& __y)
-{
-    return !(__x < __y);
-}
-
 
 template <class, class> struct uses_allocator;
 
@@ -715,6 +1220,12 @@ struct uses_allocator<tuple<_Types...>, _Alloc> : true_type {};
 
 template <class... _Types>
 constexpr void swap(tuple<_Types...>& __x, tuple<_Types...>& __y) noexcept(noexcept(__x.swap(__y)))
+{
+    __x.swap(__y);
+}
+
+template <class... _Types>
+constexpr void swap(const tuple<_Types...>& __x, const tuple<_Types...>& __y) noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }

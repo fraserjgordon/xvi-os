@@ -3,6 +3,7 @@
 #define __SYSTEM_CXX_UTILITY_PAIR_H
 
 
+#include <System/C++/LanguageSupport/Compare.hh>
 #include <System/C++/LanguageSupport/Utility.hh>
 #include <System/C++/TypeTraits/TypeTraits.hh>
 
@@ -30,17 +31,11 @@ template <class _T> using __implicit_default_construct_detect = decltype(__impli
 template <class _T> struct __is_implicit_default_constructible : bool_constant<is_detected_v<__implicit_default_construct_detect, _T>> {};
 template <class _T> inline constexpr bool __is_implicit_default_constructible_v = __is_implicit_default_constructible<_T>::value;
 
-template <class _T1, class _T2, bool _DeleteCopyAssign = !is_copy_assignable_v<_T1> || !is_copy_assignable_v<_T2>>
-    struct __pair_base {};
-template <class _T1, class _T2> struct __pair_base<_T1, _T2, true>
-    { constexpr __pair_base& operator=(const __pair_base&) = delete; };
-
-}
+} // namespace __detail
 
 
 template <class _T1, class _T2>
 struct pair
-    : public __detail::__pair_base<_T1, _T2>
 {
     using first_type = _T1;
     using second_type = _T2;
@@ -48,43 +43,98 @@ struct pair
     _T1 first;
     _T2 second;
 
+    constexpr 
+    explicit(!__detail::__is_implicit_default_constructible_v<first_type> || !__detail::__is_implicit_default_constructible_v<second_type>)
+    pair()
+        requires std::is_default_constructible_v<first_type> && std::is_default_constructible_v<second_type>
+        : first{}, second{}
+    {
+    }
+
     pair(const pair&) = default;
     pair(pair&&) = default;
 
-    template <class = enable_if_t<is_default_constructible_v<first_type> && is_default_constructible_v<second_type>, void>>
-    constexpr
-    explicit(!__detail::__is_implicit_default_constructible_v<first_type> || !__detail::__is_implicit_default_constructible_v<second_type>)
-    pair()
-        : first(), second() {}
-
-    template <class = enable_if_t<is_copy_constructible_v<first_type> && is_copy_constructible_v<second_type>, void>>
     constexpr 
     explicit(!is_convertible_v<const first_type&, first_type> || !is_convertible_v<const second_type&, second_type>)
     pair(const _T1& __t1, const _T2& __t2)
+        requires std::is_copy_constructible_v<first_type> && std::is_copy_constructible_v<second_type>
         : first(__t1), second(__t2) {}
 
-    template <class _U1, class _U2, 
-              class = enable_if_t<is_constructible_v<first_type, _U1&&> && is_constructible_v<second_type, _U2&&>, void>>
+    template <class _U1, class _U2>
+        requires std::is_constructible_v<first_type, _U1> && std::is_constructible_v<second_type, _U2>
+        && (!(std::reference_constructs_from_temporary_v<first_type, _U1> || std::reference_constructs_from_temporary_v<second_type, _U2>))
     constexpr
     explicit(!is_convertible_v<_U1, first_type> || !is_convertible_v<_U2, second_type>)
     pair(_U1&& __u1, _U2&& __u2)
-        : first(__XVI_STD_NS::forward<_U1>(__u1)), second(__XVI_STD_NS::forward<_U2>(__u2)) {}
+        : first(std::forward<_U1>(__u1)), second(std::forward<_U2>(__u2)) {}
 
-    template <class _U1, class _U2,
-              class = enable_if_t<is_constructible_v<first_type, const _U1&> && is_constructible_v<second_type, const _U2&>, void>>
+    template <class _U1, class _U2>
+        requires std::reference_constructs_from_temporary_v<first_type, _U1> || std::reference_constructs_from_temporary_v<second_type, _U2>
+    explicit(!is_convertible_v<_U1, first_type> || !is_convertible_v<_U2, second_type>)
+    pair(_U1&&, _U2&&) = delete;
+
+    template <class _U1, class _U2>
+    constexpr
+    explicit(!is_convertible_v<const _U1&, first_type> || !is_convertible_v<const _U2&, second_type>)
+    pair(pair<_U1, _U2>& __p)
+        requires std::is_constructible_v<first_type, decltype(get<0>(static_cast<decltype(__p)>(__p)))>
+            && std::is_constructible_v<second_type, decltype(get<1>(static_cast<decltype(__p)>(__p)))>
+            && (!(std::reference_constructs_from_temporary_v<first_type, _U1> || std::reference_constructs_from_temporary_v<second_type, _U2>))
+        : first(__p.first), second(__p.second) {}
+
+    template <class _U1, class _U2>
+        requires std::reference_constructs_from_temporary_v<first_type, _U1> || std::reference_constructs_from_temporary_v<second_type, _U2>
+    constexpr
+    explicit(!is_convertible_v<const _U1&, first_type> || !is_convertible_v<const _U2&, second_type>)
+    pair(pair<_U1, _U2>& __p) = delete;
+
+    template <class _U1, class _U2>
     constexpr
     explicit(!is_convertible_v<const _U1&, first_type> || !is_convertible_v<const _U2&, second_type>)
     pair(const pair<_U1, _U2>& __p)
+        requires std::is_constructible_v<first_type, decltype(get<0>(static_cast<decltype(__p)>(__p)))>
+            && std::is_constructible_v<second_type, decltype(get<1>(static_cast<decltype(__p)>(__p)))>
+            && (!(std::reference_constructs_from_temporary_v<first_type, _U1> || std::reference_constructs_from_temporary_v<second_type, _U2>))
         : first(__p.first), second(__p.second) {}
 
-    template <class _U1, class _U2,
-              class = enable_if_t<is_constructible_v<first_type, _U1&&> && is_constructible_v<second_type, _U2&&>, void>>
+    template <class _U1, class _U2>
+        requires std::reference_constructs_from_temporary_v<first_type, _U1> || std::reference_constructs_from_temporary_v<second_type, _U2>
+    constexpr
+    explicit(!is_convertible_v<const _U1&, first_type> || !is_convertible_v<const _U2&, second_type>)
+    pair(const pair<_U1, _U2>& __p) = delete;
+
+    template <class _U1, class _U2>
     constexpr
     explicit(!is_convertible_v<_U1&&, first_type> || !is_convertible_v<_U2&&, second_type>)
     pair(pair<_U1, _U2>&& __p)
+        requires std::is_constructible_v<first_type, decltype(get<0>(static_cast<decltype(__p)>(__p)))>
+            && std::is_constructible_v<second_type, decltype(get<1>(static_cast<decltype(__p)>(__p)))>
+            && (!(std::reference_constructs_from_temporary_v<first_type, _U1> || std::reference_constructs_from_temporary_v<second_type, _U2>))
         : first(__XVI_STD_NS::forward<_U1>(__p.first)), second(__XVI_STD_NS::forward<_U2>(__p.second)) {}
 
+    template <class _U1, class _U2>
+        requires std::reference_constructs_from_temporary_v<first_type, _U1> || std::reference_constructs_from_temporary_v<second_type, _U2>
+    constexpr
+    explicit(!is_convertible_v<_U1&&, first_type> || !is_convertible_v<_U2&&, second_type>)
+    pair(pair<_U1, _U2>&& __p) = delete;
+
+    template <class _U1, class _U2>
+    constexpr
+    explicit(!is_convertible_v<_U1&&, first_type> || !is_convertible_v<_U2&&, second_type>)
+    pair(const pair<_U1, _U2>&& __p)
+        requires std::is_constructible_v<first_type, decltype(get<0>(static_cast<decltype(__p)>(__p)))>
+            && std::is_constructible_v<second_type, decltype(get<1>(static_cast<decltype(__p)>(__p)))>
+            && (!(std::reference_constructs_from_temporary_v<first_type, _U1> || std::reference_constructs_from_temporary_v<second_type, _U2>))
+        : first(__XVI_STD_NS::forward<_U1>(__p.first)), second(__XVI_STD_NS::forward<_U2>(__p.second)) {}
+
+    template <class _U1, class _U2>
+        requires std::reference_constructs_from_temporary_v<first_type, _U1> || std::reference_constructs_from_temporary_v<second_type, _U2>
+    constexpr
+    explicit(!is_convertible_v<_U1&&, first_type> || !is_convertible_v<_U2&&, second_type>)
+    pair(const pair<_U1, _U2>&& __p) = delete;
+
     template <class... _Args1, class... _Args2>
+        requires std::is_constructible_v<first_type, _Args1...> && std::is_constructible_v<second_type, _Args2...>
     constexpr pair(piecewise_construct_t, tuple<_Args1...> __first_args, tuple<_Args2...> __second_args)
         : pair(piecewise_construct,
                std::move(__first_args), make_index_sequence<sizeof...(_Args1)>(),
@@ -95,15 +145,33 @@ struct pair
     constexpr pair(piecewise_construct_t, 
                    tuple<_Args1...> __first_args, index_sequence<_Idx1...>,
                    tuple<_Args2...> __second_args, index_sequence<_Idx2...>)
-        : first(__XVI_STD_NS::forward<_Args1>(get<_Idx1>(__first_args))...),
-          second(__XVI_STD_NS::forward<_Args2>(get<_Idx2>(__second_args))...) {}
+        : first(std::forward<_Args1>(get<_Idx1>(__first_args))...),
+          second(std::forward<_Args2>(get<_Idx2>(__second_args))...) {}
 
-    // Will be implicitly deleted (via __pair_base) if requirements not met.
-    constexpr pair& operator=(const pair&) = default;
+    constexpr pair& operator=(const pair& __p)
+        requires std::is_copy_assignable_v<first_type> && std::is_copy_assignable_v<second_type>
+    {
+        first = __p.first;
+        second = __p.second;
+        return *this;
+    }
 
-    template <class _U1, class _U2,
-              class = enable_if_t<is_assignable_v<first_type, const _U1&> && is_assignable_v<second_type, const _U2&>, void>>
+    constexpr pair& operator=(const pair& __p)
+        requires (!(std::is_copy_assignable_v<first_type> && std::is_copy_assignable_v<second_type>))
+    = delete;
+
+    template <class _U1, class _U2>
+        requires std::is_assignable_v<first_type&, const _U1&> && std::is_assignable_v<second_type&, const _U2&>
     constexpr pair& operator=(const pair<_U1, _U2>& __p)
+    {
+        first = __p.first;
+        second = __p.second;
+        return *this;
+    }
+
+    template <class _U1, class _U2>
+        requires std::is_assignable_v<const first_type&, const _U1&> && std::is_assignable_v<const second_type&, const _U2&>
+    constexpr const pair& operator=(const pair<_U1, _U2>& __p) const
     {
         first = __p.first;
         second = __p.second;
@@ -112,19 +180,36 @@ struct pair
 
     constexpr pair& operator&=(pair&& __p)
         noexcept(is_nothrow_move_assignable_v<first_type> && is_nothrow_move_assignable_v<second_type>)
-        requires (is_move_assignable_v<first_type> && is_move_assignable_v<second_type>)
+        requires std::is_move_assignable_v<first_type> && std::is_move_assignable_v<second_type>
     {
-        first = __XVI_STD_NS::forward<first_type>(__p.first);
-        second = __XVI_STD_NS::forward<second_type>(__p.second);
+        first = std::forward<first_type>(__p.first);
+        second = std::forward<second_type>(__p.second);
         return *this;
     }
 
-    template <class _U1, class _U2,
-              class = enable_if_t<is_assignable_v<first_type, _U1&&> && is_assignable_v<second_type, _U2&&>, void>>
+    constexpr const pair& operator&=(pair&& __p) const
+        requires std::is_assignable_v<const first_type&, first_type> && is_assignable_v<const second_type&, second_type>
+    {
+        first = std::forward<first_type>(__p.first);
+        second = std::forward<second_type>(__p.second);
+        return *this;
+    }
+
+    template <class _U1, class _U2>
+        requires std::is_assignable_v<first_type&, _U1> && std::is_assignable_v<second_type&, _U2>
     constexpr pair& operator=(pair<_U1, _U2>&& __p)
     {
-        first = __XVI_STD_NS::forward<_U1>(__p.first);
-        second = __XVI_STD_NS::forward<_U2>(__p.second);
+        first = std::forward<_U1>(__p.first);
+        second = std::forward<_U2>(__p.second);
+        return *this;
+    }
+
+    template <class _U1, class _U2>
+        requires std::is_assignable_v<const first_type&, _U1> && std::is_assignable_v<const second_type&, _U2>
+    constexpr const pair& operator=(pair<_U1, _U2>&& __p) const
+    {
+        first = std::forward<_U1>(__p.first);
+        second = std::forward<_U2>(__p.second);
         return *this;
     }
 
@@ -135,7 +220,18 @@ struct pair
         swap(first, __p.first);
         swap(second, __p.second);
     }
+
+    constexpr void swap(const pair& __p) const
+        noexcept(is_nothrow_swappable_v<const first_type> && is_nothrow_swappable_v<const second_type>)
+    {
+        using std::swap;
+        swap(first, __p.first);
+        swap(second, __p.second);
+    }
 };
+
+template <class _T1, class _T2>
+pair(_T1, _T2) -> pair<_T1, _T2>;
 
 
 template <class _T1, class _T2>
@@ -145,37 +241,26 @@ constexpr bool operator==(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 }
 
 template <class _T1, class _T2>
-constexpr bool operator!=(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
+constexpr std::common_comparison_category_t<__detail::__synth_three_way_result<_T1>, __detail::__synth_three_way_result<_T2>>
+operator<=>(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 {
-    return !(__x == __y);
+    if (auto __c = __detail::__synth_three_way(__x.first, __y.first); __c != 0)
+        return __c;
+    return __detail::__synth_three_way(__x.second, __y.second);
 }
 
 template <class _T1, class _T2>
-constexpr bool operator<(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
-{
-    return __x.first < __y.first || (!(__y.first < __x.first) && __x.second < __y.second);
-}
-
-template <class _T1, class _T2>
-constexpr bool operator>(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
-{
-    return __y < __x;
-}
-
-template <class _T1, class _T2>
-constexpr bool operator<=(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
-{
-    return !(__y < __x);
-}
-
-template <class _T1, class _T2>
-constexpr bool operator>=(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
-{
-    return !(__x > __y);
-}
-
-template <class _T1, class _T2, class = enable_if_t<is_swappable_v<_T1> && is_swappable_v<_T2>, void>>
+    requires std::is_swappable_v<_T1> && std::is_swappable_v<_T2>
 constexpr void swap(pair<_T1, _T2>& __x, pair<_T1, _T2>& __y)
+    noexcept(noexcept(__x.swap(__y)))
+{
+    __x.swap(__y);
+}
+
+template <class _T1, class _T2>
+    requires std::is_swappable_v<const _T1> && std::is_swappable_v<const _T2>
+constexpr void swap(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }
@@ -186,7 +271,7 @@ constexpr pair<unwrap_ref_decay_t<_T1>, unwrap_ref_decay_t<_T2>> make_pair(_T1&&
 {
     using _U1 = unwrap_ref_decay_t<_T1>;
     using _U2 = unwrap_ref_decay_t<_T2>;
-    return pair<_U1, _U2>(__XVI_STD_NS::forward<_T1>(__x), __XVI_STD_NS::forward<_T2>(__y));
+    return pair<_U1, _U2>(std::forward<_T1>(__x), std::forward<_T2>(__y));
 }
 
 

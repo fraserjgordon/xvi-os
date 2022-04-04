@@ -3,19 +3,15 @@
 #define __SYSTEM_CXX_UTILITY_MEMORYALGORITHMS_H
 
 
+#include <System/C++/Utility/Private/Config.hh>
+#include <System/C++/Utility/AllocatorTraits.hh>
 #include <System/C++/Utility/Pair.hh>
 #include <System/C++/Utility/Ranges.hh>
 #include <System/C++/Utility/Private/AddressOf.hh>
-#include <System/C++/Utility/Private/Config.hh>
 
 
 namespace __XVI_STD_UTILITY_NS
 {
-
-
-struct allocator_arg_t { explicit allocator_arg_t() = default; };
-
-inline constexpr allocator_arg_t allocator_arg {};
 
 
 namespace __detail

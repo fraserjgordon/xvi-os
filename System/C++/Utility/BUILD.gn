@@ -34,6 +34,7 @@ library("Utility")
         "ExecutionPolicy.hh",
         "Function.hh",
         "FunctionalUtils.hh",
+        "IntegerCompare.hh",
         "IntegerSequence.hh",
         "Invoke.hh",
         "IosFwd.hh",

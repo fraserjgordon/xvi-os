@@ -767,14 +767,6 @@ struct __swap_ranges
     }
 };
 
-// This is messy but we can only finish defining ranges::swap here as it depends on ranges::swap_ranges.
-template <class _E1, class _E2>
-    requires __swap_alt2<_E1, _E2>
-constexpr void __swap::operator()(_E1&& __e1, _E2&& __e2) const noexcept(noexcept(declval<ranges::__detail::__swap>()(std::forward<_E1>(__e1), std::forward<_E2>(__e2))))
-{
-    ranges::__detail::__swap_ranges{}(std::forward<_E1>(__e1), std::forward<_E2>(__e2));
-}
-
 
 struct __transform
 {

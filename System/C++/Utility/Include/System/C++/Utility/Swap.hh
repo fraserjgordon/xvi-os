@@ -12,20 +12,21 @@ namespace __XVI_STD_UTILITY_NS
 {
 
 
-// Note the extra class - comes from an enable_if in the TypeTraits lib. Noexcept conditions are specified there too.
-template <class _T, class>
+template <class _T>
+    requires __detail::is_move_constructible<_T>::value && __detail::is_move_assignable<_T>::value
 constexpr void swap(_T& __a, _T& __b)
     noexcept(__detail::is_nothrow_move_constructible<_T>::value && __detail::is_nothrow_move_assignable<_T>::value)
 {
-    _T __tmp = __XVI_STD_NS::move(__a);
-    __a = __XVI_STD_NS::move(__b);
-    __b = __XVI_STD_NS::move(__tmp);
+    _T __tmp = std::move(__a);
+    __a = std::move(__b);
+    __b = std::move(__tmp);
 }
+
 
 template <class _T, class _U = _T>
 constexpr _T exchange(_T& __obj, _U&& __new_val)
 {
-    _T __old_val = __XVI_STD_NS::move(__obj);
+    _T __old_val = std::move(__obj);
     __obj = std::forward<_U>(__new_val);
     return __old_val;
 }
@@ -42,6 +43,12 @@ namespace __detail
 // Forward declarations.
 struct __swap;
 struct __swap_ranges;
+
+
+// We use an extraneous template that depends on _T here to delay the evaluation of the type until swap_ranges is
+// actually available.
+template <class _T>
+using __delayed_swap_ranges = ranges::__detail::__swap_ranges;
 
 
 template <class _T> void swap(_T&, _T&) = delete;
@@ -80,10 +87,12 @@ struct __swap
         (void)swap(std::forward<_E1>(__e1), std::forward<_E2>(__e2));
     }
 
-    // Defined in RangesAlgorithm.hh after a definition of __swap_ranges is available.
     template <class _E1, class _E2>
         requires __swap_alt2<_E1, _E2>
-    constexpr void operator()(_E1&& __e1, _E2&& __e2) const noexcept(noexcept(declval<ranges::__detail::__swap>()(std::forward<_E1>(__e1), std::forward<_E2>(__e2))));
+    constexpr void operator()(_E1&& __e1, _E2&& __e2) const noexcept(noexcept(declval<ranges::__detail::__swap>()(std::forward<_E1>(__e1), std::forward<_E2>(__e2))))
+    {
+        __delayed_swap_ranges<_E1>{}(std::forward<_E1>(__e1), std::forward<_E2>(__e2));
+    }
 
     template <class _E1, class _E2>
         requires __swap_alt3<_E1, _E2>
@@ -112,7 +121,13 @@ inline constexpr __detail::__swap swap = {};
 } // namespace ranges
 
 
-static_assert(swappable<int>);
+template <class _T, size_t _N>
+    requires std::is_swappable_v<_T>
+constexpr void swap(_T (&__a)[_N], _T (&__b)[_N])
+    noexcept(std::is_nothrow_swappable_v<_T>)
+{
+    ranges::__detail::__delayed_swap_ranges<_T>{}(__a, __b);   
+}
 
 
 } // namespace __XVI_STD_UTILITY_NS

@@ -154,7 +154,7 @@ public:
                 }, std::move(_M_args));
             }
         }
-        else if constexpr (__detail::__out_ptr_reset_valid<_Smart, _Pointer, _Args>)
+        else if constexpr (__detail::__out_ptr_reset_valid<_Smart, _Pointer, _Args...>)
         {
             if (_M_p)
             {
@@ -165,7 +165,7 @@ public:
                 }, std::move(_M_args));
             }
         }
-        else if constexpr (std::is_constructible_v<_Smart, _SP, _Args>)
+        else if constexpr (std::is_constructible_v<_Smart, _SP, _Args...>)
         {
             if (_M_p)
             {

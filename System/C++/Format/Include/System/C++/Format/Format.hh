@@ -6,6 +6,7 @@
 #include <System/C++/Utility/Algorithm.hh>
 #include <System/C++/Utility/Array.hh>
 #include <System/C++/Utility/CharTraits.hh>
+#include <System/C++/Utility/IntegerCompare.hh>
 #include <System/C++/Utility/StdExcept.hh>
 #include <System/C++/Utility/String.hh>
 #include <System/C++/Utility/StringView.hh>
@@ -1756,7 +1757,7 @@ struct __integer_formatter : __stdfmt_formatter_base<_CharT>
         switch (__stdfmt_formatter_base<_CharT>::_M_spec.__type)
         {
             case __stdfmt_presentation_type::__c:
-                if (static_cast<_T>(static_cast<_CharT>(__t)) != __t)
+                if (!std::in_range<_CharT>(__t))
                     throw format_error("numeric value outside range of valid character values");
                 return this->__format_char(__fc.out(), static_cast<_CharT>(__t));
 
