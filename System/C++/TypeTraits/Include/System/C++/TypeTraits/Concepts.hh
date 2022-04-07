@@ -17,7 +17,7 @@ namespace __XVI_STD_TYPETRAITS_NS
 namespace ranges::__detail
 {
 
-class __swap;
+struct __swap;
 
 } // namespace ranges
 

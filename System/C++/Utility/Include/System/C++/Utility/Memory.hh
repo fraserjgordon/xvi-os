@@ -67,7 +67,7 @@ inline void* align(size_t __alignment, size_t __size, void*& __ptr, size_t& __sp
 template <size_t _N, class _T>
 [[nodiscard, gnu::assume_aligned(_N)]] constexpr _T* assume_aligned(_T* __ptr)
 {
-    static_assert((_N & (_N - 1) == 0), "N must be a power of two");    
+    static_assert(((_N & (_N - 1)) == 0), "N must be a power of two");    
 
     return __ptr;
 }

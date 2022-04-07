@@ -188,13 +188,13 @@ constexpr decltype(auto) _INVOKE(_F&& __f, _T1&& __t1, _Tn&&... __tn) noexcept(_
         using _C = typename __mem_fn_ptr_class<typename __strip_memfn_qualifiers<_F>::type>::type;
 
         if constexpr (is_base_of<_C, typename remove_reference<_T1>::type>::value)
-            return (forward<_T1>(__t1).*__f)(forward<_Tn>(__tn)...);
+            return (std::forward<_T1>(__t1).*__f)(std::forward<_Tn>(__tn)...);
 
         else if constexpr (__is_reference_wrapper_specialization<typename remove_cvref<_T1>::type>::value)
-            return (forward<_T1>(__t1).get().*__f)(forward<_Tn>(__tn)...);
+            return (std::forward<_T1>(__t1).get().*__f)(std::forward<_Tn>(__tn)...);
 
         else
-            return ((*forward<_T1>(__t1)).*__f)(forward<_Tn>(__tn)...);
+            return ((*std::forward<_T1>(__t1)).*__f)(std::forward<_Tn>(__tn)...);
     }
 
     else if constexpr (is_member_object_pointer<_F>::value && sizeof...(_Tn) == 0)
@@ -202,23 +202,23 @@ constexpr decltype(auto) _INVOKE(_F&& __f, _T1&& __t1, _Tn&&... __tn) noexcept(_
         using _C = typename __mem_obj_ptr_class<_F>::type;
 
         if constexpr (is_base_of<_C, typename remove_reference<_T1>::type>::value)
-            return forward<_T1>(__t1).*__f;
+            return std::forward<_T1>(__t1).*__f;
 
         else if constexpr (__is_reference_wrapper_specialization<typename remove_cvref<_T1>::type>::value)
-            return forward<_T1>(__t1).get().*__f;
+            return std::forward<_T1>(__t1).get().*__f;
 
         else
-            return (*forward<_T1>(__t1)).*__f;
+            return (*std::forward<_T1>(__t1)).*__f;
     }
 
     else
-        return forward<_F>(__f)(forward<_T1>(__t1), forward<_Tn>(__tn)...);
+        return std::forward<_F>(__f)(std::forward<_T1>(__t1), std::forward<_Tn>(__tn)...);
 }
 
 template <class _F>
 constexpr auto _INVOKE(_F&& __f) noexcept(noexcept(declval<_F>()()))
 {
-    return forward<_F>(__f)();
+    return std::forward<_F>(__f)();
 }
 
 template <bool, class _R, class... _Args>
@@ -227,7 +227,7 @@ struct __invoke_r_helper
     constexpr _R operator()(_Args&&... __args)
         noexcept(noexcept(_INVOKE(declval<_Args>()...)) && is_nothrow_convertible<decltype(_INVOKE(declval<_Args>()...)), _R>::value)
     {
-        return _INVOKE(forward<_Args>(__args)...);
+        return _INVOKE(std::forward<_Args>(__args)...);
     }
 };
 
@@ -237,7 +237,7 @@ struct __invoke_r_helper<true, _R, _Args...>
     constexpr void operator()(_Args&&... __args)
         noexcept(noexcept(static_cast<void>(_INVOKE(declval<_Args>()...))))
     {
-        static_cast<void>(_INVOKE(forward<_Args>(__args)...));
+        static_cast<void>(_INVOKE(std::forward<_Args>(__args)...));
     }
 };
 
@@ -248,7 +248,7 @@ template <class _R, class... _Args>
 constexpr auto _INVOKE_R(_Args&&... __args)
     noexcept(noexcept(__invoke_r_t<_R, _Args...>()(declval<_Args>()...)))
 {
-    return __invoke_r_t<_R, _Args...>()(forward<_Args>(__args)...);
+    return __invoke_r_t<_R, _Args...>()(std::forward<_Args>(__args)...);
 }
 
 

@@ -27,6 +27,9 @@ template <size_t _I, class _T, class... _Types> struct __nth_type<_I, _T, _Types
 template <class _T, class... _Types> struct __nth_type<0, _T, _Types...>
     { using type = _T; };
 
+template <std::size_t _I, class... _Types>
+using __nth_type_t = typename __nth_type<_I, _Types...>::type;
+
 template <class _T, bool _Seen, class... _Types> struct __type_unique_in_pack_helper;
 template <class _T, class... _Types> struct __type_unique_in_pack_helper<_T, true, _T, _Types...>
     : false_type {};

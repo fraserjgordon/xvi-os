@@ -633,28 +633,28 @@ constexpr bool __tuple_equality(const tuple<_TTypes...>& __x, const tuple<_UType
 }
 
 template <size_t _Offset, class... _TTypes, class... _UTypes>
-constexpr bool __tuple_lt_helper(const tuple<_TTypes...>& __x, const tuple<_UTypes...>& __y)
+constexpr auto __tuple_compare_helper(const tuple<_TTypes...>& __x, const tuple<_UTypes...>& __y)
+    -> std::common_comparison_category_t<__synth_three_way_result<_TTypes, _UTypes>...>
 {
-    if constexpr (_Offset >= sizeof...(_TTypes))
-        return false;
+    auto __c = __synth_three_way(get<_Offset>(__x), get<_Offset>(__y));
+    
+    if constexpr (_Offset == (sizeof...(_TTypes) - 1))
+    {
+        return __c;
+    }
     else
     {
-        if (bool(get<_Offset>(__x) < get<_Offset>(__y)))
-            // x < y
-            return true;
-        else if (bool(get<_Offset>(__y) < get<_Offset>(__x)))
-            // y > x
-            return false;
-        else
-            // !(y < x) && !(x < y) (therefore, x == y) so we need to compare the remaining elements
-            return __tuple_lt_helper<_Offset + 1>(__x, __y);
+        if (__c != 0)
+            return __c;
+
+        return __tuple_compare_helper<_Offset + 1>(__x, __y);
     }
 }
 
 template <class... _TTypes, class... _UTypes>
-constexpr bool __tuple_lt(const tuple<_TTypes...>& __x, const tuple<_UTypes...>& __y)
+constexpr auto __tuple_compare(const tuple<_TTypes...>& __x, const tuple<_UTypes...>& __y)
 {
-    return __tuple_lt_helper<0>(__x, __y);
+    return __tuple_compare_helper<0>(__x, __y);
 }
 
 
@@ -748,12 +748,12 @@ public:
 
     constexpr explicit(!(__detail::__is_implicit_default_constructible_v<_Types> && ...)) 
     tuple()
-        requires std::conjunction_v<std::is_default_constructible_v<_Types>...>
+        requires std::conjunction_v<std::is_default_constructible<_Types>...>
     = default;
 
     constexpr explicit(!conjunction_v<is_convertible<const _Types&, _Types>...>)
     tuple(const _Types&... __t)
-        requires (sizeof...(_Types) >= 1) && std::conjunction_v<std::is_copy_constructible_v<_Types>...>
+        requires (sizeof...(_Types) >= 1) && std::conjunction_v<std::is_copy_constructible<_Types>...>
         : _M_elems(__t...) {}
     
     template <class... _UTypes>
@@ -868,7 +868,7 @@ public:
     template <class _Alloc>
     constexpr explicit(!(__detail::__is_implicit_default_constructible_v<_Types> && ...)) 
     tuple(allocator_arg_t, const _Alloc& __alloc)
-        requires std::conjunction_v<std::is_default_constructible_v<_Types>...>
+        requires std::conjunction_v<std::is_default_constructible<_Types>...>
         : _M_elems(allocator_arg, __alloc)
     {
     }
@@ -876,7 +876,7 @@ public:
     template <class _Alloc>
     constexpr explicit(!conjunction_v<is_convertible<const _Types&, _Types>...>)
     tuple(allocator_arg_t, const _Alloc& __alloc, const _Types&... __t)
-        requires (sizeof...(_Types) >= 1) && std::conjunction_v<std::is_copy_constructible_v<_Types>...>
+        requires (sizeof...(_Types) >= 1) && std::conjunction_v<std::is_copy_constructible<_Types>...>
         : _M_elems(allocator_arg, __alloc, __t...) {}
     
     template <class _Alloc, class... _UTypes>
@@ -1035,7 +1035,7 @@ public:
         return *this;
     }
 
-    template <class _UTypes>
+    template <class... _UTypes>
         requires (sizeof...(_Types) == sizeof...(_UTypes))
             && (std::is_assignable_v<const _Types&, _UTypes> && ...)
     constexpr const tuple& operator=(tuple<_UTypes...>&& __u)
@@ -1149,6 +1149,21 @@ private:
     // Utility method that returns the 
 };
 
+template <class... _UTypes>
+tuple(_UTypes...) -> tuple<_UTypes...>;
+
+template<class _T1, class _T2>
+tuple(pair<_T1, _T2>) -> tuple<_T1, _T2>;
+
+template <class _Alloc, class... _UTypes>
+tuple(allocator_arg_t, _Alloc, _UTypes...) -> tuple<_UTypes...>;
+
+template <class _Alloc, class _T1, class _T2>
+tuple(allocator_arg_t, _Alloc, pair<_T1, _T2>) -> tuple<_T1, _T2>;
+
+template <class _Alloc, class... _UTypes>
+tuple(allocator_arg_t, _Alloc, tuple<_UTypes...>) -> tuple<_UTypes...>;
+
 
 inline constexpr __detail::__ignore_t ignore {};
 
@@ -1156,13 +1171,13 @@ inline constexpr __detail::__ignore_t ignore {};
 template <class... _Types>
 constexpr tuple<unwrap_ref_decay_t<_Types>...> make_tuple(_Types&&... __t)
 {
-    return tuple<unwrap_ref_decay_t<_Types>...>(__XVI_STD_NS::forward<_Types>(__t)...);
+    return tuple<unwrap_ref_decay_t<_Types>...>(std::forward<_Types>(__t)...);
 }
 
 template <class... _Types>
 constexpr tuple<_Types&&...> forward_as_tuple(_Types&&... __t) noexcept
 {
-    return tuple<_Types&&...>(__XVI_STD_NS::forward<_Types>(__t)...);
+    return tuple<_Types&&...>(std::forward<_Types>(__t)...);
 }
 
 template <class... _Types>
@@ -1174,7 +1189,7 @@ constexpr tuple<_Types&...> tie(_Types&... __t) noexcept
 template <class... _Tuples>
 constexpr auto tuple_cat(_Tuples&&... __tpls)
 {
-    auto __meta_tuple = forward_as_tuple(__XVI_STD_NS::forward<_Tuples>(__tpls)...);
+    auto __meta_tuple = forward_as_tuple(std::forward<_Tuples>(__tpls)...);
     
     // Generate a concatenated list of indices within each tuple. For example, if there are three input tuples with
     // lengths X, Y and Z, this will generate an index list containing {1..X, 1..Y, 1..Z}.
@@ -1192,15 +1207,18 @@ constexpr auto tuple_cat(_Tuples&&... __tpls)
 template <class _F, class _Tuple>
 constexpr decltype(auto) apply(_F&& __f, _Tuple&& __t)
 {
-    return __detail::__apply_helper(__XVI_STD_NS::forward<_F>(__f), 
-                                    __XVI_STD_NS::forward<_Tuple>(__t),
+    return __detail::__apply_helper(std::forward<_F>(__f), 
+                                    std::forward<_Tuple>(__t),
                                     make_index_sequence<tuple_size<remove_reference_t<_Tuple>>::value>{});
 }
 
 template <class _T, class _Tuple>
 constexpr _T make_from_tuple(_Tuple&& __t)
 {
-    return __detail::__make_from_tuple_helper<_T>(__XVI_STD_NS::forward<_Tuple>(__t),
+    static_assert(tuple_size_v<std::remove_reference_t<_Tuple>> != 1
+        || !std::reference_constructs_from_temporary_v<_T, decltype(get<0>(declval<_Tuple>()))>);
+
+    return __detail::__make_from_tuple_helper<_T>(std::forward<_Tuple>(__t),
                                                   make_index_sequence<tuple_size<remove_reference_t<_Tuple>>::value>{});
 }
 
@@ -1209,6 +1227,16 @@ template <class... _TTypes, class... _UTypes>
 constexpr bool operator==(const tuple<_TTypes...>& __x, const tuple<_UTypes...>& __y)
 {
     return __detail::__tuple_equality(__x, __y);
+}
+
+template <class... _TTypes, class... _UTypes>
+constexpr std::common_comparison_category_t<__detail::__synth_three_way_result<_TTypes, _UTypes>...>
+operator<=>(const tuple<_TTypes...>& __t, const tuple<_UTypes...>& __u)
+{
+    if constexpr (sizeof...(_TTypes) == 0 && sizeof...(_UTypes) == 0)
+        return std::strong_ordering::equal;
+    else
+        return __detail::__tuple_compare(__t, __u);
 }
 
 
