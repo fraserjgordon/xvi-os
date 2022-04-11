@@ -58,8 +58,6 @@ public:
     virtual void __copy_construct_to(__any_storage_t&, const __any_storage_t&) const = 0;
     virtual void __move_construct_to(__any_storage_t&, __any_storage_t&) const = 0;
     virtual void __destroy(__any_storage_t&) const = 0;
-    virtual void __copy_assign_to(__any_storage_t&, const __any_storage_t&) const = 0;
-    virtual void __move_assign_to(__any_storage_t&, __any_storage_t&) const = 0;
     virtual const type_info& __get_type() const = 0;
     virtual void* __ptr(__any_storage_t&) const = 0;
     virtual const void* __ptr(const __any_storage_t&) const = 0;
@@ -73,7 +71,7 @@ public:
         auto __this = static_cast<const __any_utils<_T>*>(this);
         
         __this->__prepare(__s);
-        new (__this->__ptr(__s)) _T(__XVI_STD_NS::forward<_Args>(__args)...);
+        new (__this->__ptr(__s)) _T(std::forward<_Args>(__args)...);
     }
 
 protected:
@@ -85,7 +83,7 @@ protected:
 template <class _T, 
           bool _StoreExternally = (sizeof(_T) > __any_inline_size)
                                   || (alignof(_T) > alignof(void*))
-                                  || !is_nothrow_move_constructible_v<_T>>
+                                  || !std::is_nothrow_move_constructible_v<_T>>
 class __any_utils_ptr : public __any_utils_base
 {
 public:
@@ -164,7 +162,7 @@ public:
     void __move_construct_to(__any_storage_t& __to, __any_storage_t& __from) const final
     {
         __prepare(__to);
-        new (__ptr(__to)) _T(__XVI_STD_NS::move(*reinterpret_cast<_T*>(__ptr(__from))));
+        new (__ptr(__to)) _T(std::move(*reinterpret_cast<_T*>(__ptr(__from))));
     }
 
     void __destroy(__any_storage_t& __s) const final
@@ -173,19 +171,9 @@ public:
         __cleanup(__s);
     }
 
-    void __copy_assign_to(__any_storage_t& __to, const __any_storage_t& __from) const final
-    {
-        *reinterpret_cast<_T*>(__ptr(__to)) = *reinterpret_cast<const _T*>(__ptr(__from));
-    }
-
-    void __move_assign_to(__any_storage_t& __to, __any_storage_t& __from) const final
-    {
-        *reinterpret_cast<_T*>(__ptr(__to)) = __XVI_STD_NS::move(*reinterpret_cast<_T*>(__ptr(__from)));
-    }
-
     const type_info& __get_type() const final
     {
-        if constexpr (is_same_v<_T, __empty_any>)
+        if constexpr (std::is_same_v<_T, __empty_any>)
             return typeid(void);
         else
             return typeid(_T);
@@ -233,40 +221,37 @@ public:
         __rhs.__get_utils()->__duplicate_utils_to(&_M_utils_storage);
     }
 
-    template <class _T,
-              class _VT = decay_t<_T>,
-              class = enable_if_t<!is_same_v<_VT, any>
-                                  && !__detail::__is_in_place_type_specialization_v<_VT>
-                                  && is_copy_constructible_v<_VT>, void>>
+    template <class _T>
+        requires (!std::is_same_t<std::decay_t<_T>, any>)
+            && (!__detail::__is_in_place_type_specialization_v<std::decay<_T>>)
+            && std::is_copy_constructible_v<std::decay_t<_T>>
     any(_T&& __t)
         : any()
     {
         __detail::__any_utils<_VT> __utils;
-        __utils.template __emplace<_VT>(_M_data_storage, __XVI_STD_NS::forward<_T>(__t));
+        __utils.template __emplace<_VT>(_M_data_storage, std::forward<_T>(__t));
         __construct_utils<_VT>();
     }
 
-    template <class _T, class... _Args,
-              class _VT = decay_t<_T>,
-              class = enable_if_t<is_copy_constructible_v<_VT>
-                                  && is_constructible_v<_VT, _Args...>, void>>
+    template <class _T, class... _Args>
+        requires std::is_copy_constructible_v<std::decay_t<_T>>
+            && std::is_constructible_v<std::decay_t<_T>, _Args...>
     explicit any(in_place_type_t<_T>, _Args&&... __args)
         : any()
     {
         __detail::__any_utils<_VT> __utils;
-        __utils.template __emplace<_VT>(_M_data_storage, __XVI_STD_NS::forward<_Args>(__args)...);
+        __utils.template __emplace<_VT>(_M_data_storage, std::forward<_Args>(__args)...);
         __construct_utils<_VT>();
     }
 
-    template <class _T, class _U, class... _Args,
-              class _VT = decay_t<_T>,
-              class = enable_if_t<is_copy_constructible_v<_VT>
-                                 && is_constructible_v<_VT, initializer_list<_U>&, _Args...>, void>>
+    template <class _T, class _U, class... _Args>
+        requires std::is_copy_constructible_v<std::decay_t<_T>>
+            && std::is_constructible_v<std::decay_t<_T>, std::initializer_list<_U>&, _Args...>
     explicit any(in_place_type_t<_T>, initializer_list<_U> __il, _Args&&... __args)
         : any()
     {
         __detail::__any_utils<_T> __utils;
-        __utils.template __emplace<_VT>(_M_data_storage, __il, __XVI_STD_NS::forward<_Args>(__args)...);
+        __utils.template __emplace<_VT>(_M_data_storage, __il, std::forward<_Args>(__args)...);
         __construct_utils<_VT>();
     }
 
@@ -297,37 +282,34 @@ public:
         return *this;
     }
 
-    template <class _T,
-              class _VT = decay_t<_T>,
-              class = enable_if_t<!is_same_v<_VT, any>
-                                  && is_copy_constructible_v<_VT>, void>>
+    template <class _T>
+        requires std::is_same_v<std::decay_t<_T>, any>
+            && std::is_copy_constructible_v<std::decay_t<_T>>
     any& operator=(_T&& __t)
     {
-        return operator=(any(in_place_type<_VT>, __XVI_STD_NS::forward<_T>(__t)));
+        return operator=(any(in_place_type<_VT>, std::forward<_T>(__t)));
     }
 
-    template <class _T, class... _Args,
-              class _VT = decay_t<_T>,
-              class = enable_if_t<is_copy_constructible_v<_VT>
-                                  && is_constructible_v<_T, _Args...>, void>>
-    _VT& emplace(_Args&&... __args)
+    template <class _T, class... _Args>
+        requires std::is_copy_constructible_v<std::decay_t<_T>>
+            && std::is_constructible_v<std::decay_t<_T>, _Args...>
+    std::decay_t<_T>& emplace(_Args&&... __args)
     {
         reset();
         __detail::__any_utils<_VT> __utils;
-        __utils.template __emplace<_VT>(_M_data_storage, __XVI_STD_NS::forward<_Args>(__args)...);
+        __utils.template __emplace<_VT>(_M_data_storage, std::forward<_Args>(__args)...);
         __set_utils<_VT>(_M_utils_storage);
         return *reinterpret_cast<_VT*>(__get_utils()->__ptr(_M_data_storage));
     }
 
-    template <class _T, class _U, class... _Args,
-              class _VT = decay_t<_T>,
-              class = enable_if_t<is_copy_constructible_v<_VT>
-                                  && is_constructible_v<_T, initializer_list<_U>&, _Args...>, void>>
+    template <class _T, class _U, class... _Args>
+        requires std::is_copy_construtible_v<std::decay_t<_T>>
+            && std::is_constructible_v<std::decay<_T>, std::initializer_list<_U>&, _Args...>
     decay_t<_T>& emplace(initializer_list<_U> __il, _Args&&... __args)
     {
         reset();
         __detail::__any_utils<_VT> __utils;
-        __utils.template __emplace<_VT>(_M_data_storage, __il, __XVI_STD_NS::forward<_Args>(__args)...);
+        __utils.template __emplace<_VT>(_M_data_storage, __il, std::forward<_Args>(__args)...);
         __set_utils<_VT>(_M_utils_storage);
         return *reinterpret_cast<_VT*>(__get_utils()->__ptr(_M_data_storage));
     }
@@ -340,9 +322,9 @@ public:
 
     void swap(any& __rhs) noexcept
     {
-        any __temp(__XVI_STD_NS::move(__rhs));
-        __rhs = __XVI_STD_NS::move(*this);
-        *this = __XVI_STD_NS::move(__temp);
+        any __temp(std::move(__rhs));
+        __rhs = std::move(*this);
+        *this = std::move(__temp);
     }
 
     bool has_value() const noexcept
@@ -407,21 +389,21 @@ void swap(any& __l, any& __r) noexcept
 template <class _T, class... _Args>
 any make_any(_Args&&... __args)
 {
-    return any(in_place_type<_T>, __XVI_STD_NS::forward<_Args>(__args)...);
+    return any(in_place_type<_T>, std::forward<_Args>(__args)...);
 }
 
 template <class _T, class _U, class... _Args>
 any make_any(initializer_list<_U> __il, _Args&&... __args)
 {
-    return any(in_place_type<_T>, __il, __XVI_STD_NS::forward<_Args>(__args)...);
+    return any(in_place_type<_T>, __il, std::forward<_Args>(__args)...);
 }
 
 
 template <class _T>
 _T any_cast(const any& __a)
 {
-    using _U = remove_cvref_t<_T>;
-    if (__a.type() != typeid(remove_reference_t<_T>))
+    using _U = std::remove_cvref_t<_T>;
+    if (__a.type() != typeid(std::remove_reference_t<_T>))
         __detail::__invalid_any_cast();
 
     return static_cast<_T>(*any_cast<_U>(&__a));
@@ -430,8 +412,8 @@ _T any_cast(const any& __a)
 template <class _T>
 _T any_cast(any& __a)
 {
-    using _U = remove_cvref_t<_T>;
-    if (__a.type() != typeid(remove_reference_t<_T>))
+    using _U = std::remove_cvref_t<_T>;
+    if (__a.type() != typeid(std::remove_reference_t<_T>))
         __detail::__invalid_any_cast();
 
     return static_cast<_T>(*any_cast<_U>(&__a));
@@ -440,11 +422,11 @@ _T any_cast(any& __a)
 template <class _T>
 _T any_cast(any&& __a)
 {
-    using _U = remove_cvref_t<_T>;
-    if (__a.type() != typeid(remove_reference_t<_T>))
+    using _U = std::remove_cvref_t<_T>;
+    if (__a.type() != typeid(std::remove_reference_t<_T>))
         __detail::__invalid_any_cast();
 
-    return static_cast<_T>(__XVI_STD_NS::move(*any_cast<_U>(&__a)));
+    return static_cast<_T>(std::move(*any_cast<_U>(&__a)));
 }
 
 

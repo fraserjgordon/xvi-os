@@ -32,6 +32,7 @@ library("Utility")
         "DefaultDelete.hh",
         "ErrorCodes.hh",
         "ExecutionPolicy.hh",
+        "Expected.hh",
         "Function.hh",
         "FunctionalUtils.hh",
         "IntegerCompare.hh",
