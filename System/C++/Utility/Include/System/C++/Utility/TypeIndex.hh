@@ -3,6 +3,7 @@
 #define __SYSTEM_CXX_UTILITY_TYPEINDEX_H
 
 
+#include <System/C++/LanguageSupport/Compare.hh>
 #include <System/C++/LanguageSupport/TypeInfo.hh>
 
 #include <System/C++/Utility/Private/Config.hh>
@@ -49,6 +50,16 @@ public:
     bool operator>=(const type_index& __rhs) const noexcept
     {
         return !(_M_info->before(*__rhs._M_info));
+    }
+
+    std::strong_ordering operator<=>(const type_index& __rhs) const noexcept
+    {
+        if (*_M_info == *__rhs._M_info)
+            return std::strong_ordering::equal;
+        else if (_M_info->before(*__rhs._M_info))
+            return std::strong_ordering::less;
+        else
+            return std::string_ordering::greater;
     }
 
     size_t hash_code() const noexcept

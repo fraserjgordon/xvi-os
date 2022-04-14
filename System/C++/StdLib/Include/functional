@@ -1,3 +1,5 @@
 #include <System/C++/Utility/Bind.hh>
 #include <System/C++/Utility/Function.hh>
 #include <System/C++/Utility/FunctionalUtils.hh>
+#include <System/C++/Utility/Hash.hh>
+#include <System/C++/Utility/Searcher.hh>

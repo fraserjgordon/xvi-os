@@ -3,6 +3,7 @@
 #define __SYSTEM_CXX_UTILITY_DEFAULTDELETE_H
 
 
+#include <System/C++/TypeTraits/Concepts.hh>
 #include <System/C++/TypeTraits/TypeTraits.hh>
 
 #include <System/C++/Utility/Private/Config.hh>
@@ -18,7 +19,7 @@ struct default_delete
     constexpr default_delete() noexcept = default;
 
     template <class _U>
-        requires convertible_to<_U*, _T*>
+        requires std::convertible_to<_U*, _T*>
     default_delete(const default_delete<_U&>) noexcept
     {
     }
@@ -35,13 +36,13 @@ struct default_delete<_T[]>
     constexpr default_delete() noexcept = default;
 
     template <class _U>
-        requires convertible_to<_U(*)[], _T(*)[]>
+        requires std::convertible_to<_U(*)[], _T(*)[]>
     default_delete(const default_delete<_U[]>&) noexcept
     {
     }
 
     template <class _U>
-        requires convertible_to<_U(*)[], _T(*)[]>
+        requires std::convertible_to<_U(*)[], _T(*)[]>
     void operator()(_U* __ptr) const
     {
         delete[] __ptr;
@@ -53,7 +54,7 @@ namespace __detail
 {
 
 template <class _T> using __default_delete_for
-    = conditional_t<is_array_v<_T>, default_delete<remove_extent_t<_T>[]>, default_delete<_T>>; 
+    = std::conditional_t<std::is_array_v<_T>, default_delete<std::remove_extent_t<_T>[]>, default_delete<_T>>; 
 
 } // namespace __detail
 

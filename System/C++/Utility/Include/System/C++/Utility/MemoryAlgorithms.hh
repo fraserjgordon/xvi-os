@@ -488,6 +488,14 @@ void uninitialized_fill_n(_ForwardIterator __first, _Size __n, const _T& __x)
 }
 
 
+template <class _T, class... _Args>
+    requires requires { ::new (declval<void*>()) _T(declval<_Args>()...); }
+constexpr _T* construct_at(_T* __location, _Args&&... __args)
+{
+    return ::new(__voidify(*__location)) _T(std::forward<_Args>(__args)...);
+}
+
+
 template <class _ForwardIterator> void destroy(_ForwardIterator, _ForwardIterator);
 
 template <class _T>
@@ -833,6 +841,17 @@ struct __uninitialized_fill_n
 
 inline constexpr __uninitialized_fill_n uninitialized_fill_n = {};
 
+struct __construct_at
+{
+    template <class _T, class... _Args>
+        requires requires { ::new (declval<void*>()) _T(declval<_Args>()...); }
+    constexpr _T* operator()(_T* __location, _Args&&... __args)
+    {
+        return ::new (__voidify(*__location)) _T(std::forward<_Args>(__args)...);
+    }
+};
+
+inline constexpr __construct_at construct_at = {};
 
 struct __destroy_at
 {

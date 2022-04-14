@@ -22,6 +22,7 @@ library("Format")
 
     public_headers =
     [
+        "CharConv.hh",
         "Format.hh",
 
         "Private/Config.hh",

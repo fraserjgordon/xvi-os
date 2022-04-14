@@ -3,6 +3,7 @@
 #define __SYSTEM_CXX_TYPETRAITS_PRIVATE_INVOKE_H
 
 
+#include <System/C++/TypeTraits/Private/CompilerBuiltins.hh>
 #include <System/C++/TypeTraits/Private/Conditional.hh>
 #include <System/C++/TypeTraits/Private/Namespace.hh>
 
@@ -227,6 +228,7 @@ struct __invoke_r_helper
     constexpr _R operator()(_Args&&... __args)
         noexcept(noexcept(_INVOKE(declval<_Args>()...)) && is_nothrow_convertible<decltype(_INVOKE(declval<_Args>()...)), _R>::value)
     {
+        static_assert(!reference_converts_from_temporary<_R, decltype(_INVOKE(declval<_Args>()...))>::value);
         return _INVOKE(std::forward<_Args>(__args)...);
     }
 };
@@ -237,6 +239,7 @@ struct __invoke_r_helper<true, _R, _Args...>
     constexpr void operator()(_Args&&... __args)
         noexcept(noexcept(static_cast<void>(_INVOKE(declval<_Args>()...))))
     {
+        static_assert(!reference_converts_from_temporary<_R, decltype(_INVOKE(declval<_Args>()...))>::value);
         static_cast<void>(_INVOKE(std::forward<_Args>(__args)...));
     }
 };

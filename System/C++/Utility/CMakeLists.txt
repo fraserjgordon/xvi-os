@@ -42,6 +42,7 @@ set(HEADERS
     Ratio.hh
     ReferenceWrapper.hh
     ScopedAllocator.hh
+    Searcher.hh
     StdLib.hh
     SharedPtr.hh
     Span.hh

@@ -3,6 +3,7 @@
 #define __SYSTEM_CXX_UTILITY_UNIQUEPTR_H
 
 
+#include <System/C++/LanguageSupport/Compare.hh>
 #include <System/C++/TypeTraits/TypeTraits.hh>
 
 #include <System/C++/Utility/DefaultDelete.hh>

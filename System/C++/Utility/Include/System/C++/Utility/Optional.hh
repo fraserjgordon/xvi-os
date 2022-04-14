@@ -3,6 +3,7 @@
 #define __SYSTEM_CXX_UTILITY_OPTIONAL_H
 
 
+#include <System/C++/LanguageSupport/Compare.hh>
 #include <System/C++/LanguageSupport/Exception.hh>
 #include <System/C++/LanguageSupport/InitializerList.hh>
 #include <System/C++/LanguageSupport/New.hh>
@@ -12,6 +13,7 @@
 #include <System/C++/Utility/Private/Config.hh>
 #include <System/C++/Utility/Private/AddressOf.hh>
 #include <System/C++/Utility/Private/InPlace.hh>
+#include <System/C++/Utility/FunctionalUtils.hh>
 #include <System/C++/Utility/Swap.hh>
 
 
@@ -323,7 +325,7 @@ public:
             && (!std::is_convertible_v<optional<_U>&&, _T>)
             && (!std::is_convertible_v<const optional<_U>&, _T>)
             && (!std::is_convertible_v<const optional<_U>&&, _T>)
-    explicit(!is_convertible_v<const _U&, _T>) optional(const optional<_U>& __u)
+    explicit(!is_convertible_v<const _U&, _T>) constexpr optional(const optional<_U>& __u)
         : optional()
     {
         // Will perform a copy-construct despite looking like assignment.
@@ -341,7 +343,7 @@ public:
             && (!std::is_convertible_v<optional<_U>&&, _T>)
             && (!std::is_convertible_v<const optional<_U>&, _T>)
             && (!std::is_convertible_v<const optional<_U>&&, _T>)
-    explicit(!is_convertible_v<_U&&, _T>) optional(optional<_U>&& __u)
+    explicit(!is_convertible_v<_U&&, _T>) constexpr optional(optional<_U>&& __u)
         : optional()
     {
         // Will perform a move-construct despite looking like assignment.
@@ -351,7 +353,7 @@ public:
 
     constexpr ~optional() = default;
 
-    optional<_T>& operator=(nullopt_t) noexcept
+    constexpr optional& operator=(nullopt_t) noexcept
     {
         reset();
         return *this;
@@ -370,7 +372,7 @@ public:
         requires (!std::is_same_v<std::remove_cvref_t<_U>, optional>)
             && (!std::conjunction_v<std::is_scalar<_T>, std::is_same<_T, std::decay_t<_U>>>)
             && std::is_assignable_v<_T&, _U>
-    optional<_T>& operator=(_U&& __v)
+    constexpr optional& operator=(_U&& __v)
     {
         _M_storage = std::forward<_U>(__v);
 
@@ -391,7 +393,7 @@ public:
             && (!std::is_assignable_v<_T&, optional<_U>&&>)
             && (!std::is_assignable_v<_T&, const optional<_U>&>)
             && (!std::is_assignable_v<_T&, const optional<_U>&&>)
-    optional<_T>& operator=(const optional<_U>& __rhs)
+    constexpr optional& operator=(const optional<_U>& __rhs)
     {
         if (__rhs._M_armed)
             _M_storage = __rhs._M_storage.__val;
@@ -411,7 +413,7 @@ public:
             && (!std::is_convertible_v<optional<_U>&&, _T>)
             && (!std::is_convertible_v<const optional<_U>&, _T>)
             && (!std::is_convertible_v<const optional<_U>&&, _T>)
-    optional<_T>& operator=(optional<_U>&& __rhs)
+    constexpr optional& operator=(optional<_U>&& __rhs)
     {
         if (__rhs._M_armed)
             _M_storage = std::move(__rhs._M_storage.__val);
@@ -423,7 +425,7 @@ public:
 
 
     template <class... _Args>
-    _T& emplace(_Args&&... __args)
+    constexpr _T& emplace(_Args&&... __args)
     {
         _M_storage.emplace(std::forward<_Args>(__args)...);
 
@@ -432,7 +434,7 @@ public:
 
     template <class _U, class... _Args>
         requires std::is_constructible_v<_T, std::initializer_list<_U>&, _Args...>
-    _T& emplace(initializer_list<_U> __il, _Args&&... __args)
+    constexpr _T& emplace(initializer_list<_U> __il, _Args&&... __args)
     {
         _M_storage.emplace(__il, std::forward<_Args>(__args)...);
 
@@ -440,7 +442,7 @@ public:
     }
 
 
-    void swap(optional& __rhs) noexcept(is_nothrow_move_constructible_v<_T> && is_nothrow_swappable_v<_T>)
+    constexpr void swap(optional& __rhs) noexcept(is_nothrow_move_constructible_v<_T> && is_nothrow_swappable_v<_T>)
     {
         _M_storage.swap(__rhs._M_storage);
     }
@@ -526,7 +528,7 @@ public:
         return has_value() ? std::move(**this) : static_cast<_T>(std::forward<_U>(__v));
     }
 
-    void reset() noexcept
+    constexpr void reset() noexcept
     {
         _M_storage.reset();
     }
