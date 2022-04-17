@@ -22,14 +22,18 @@ enum class chars_format
 
 struct to_chars_result
 {
-    char* ptr;
-    errc  ec;
+    char*       ptr;
+    std::errc   ec;
+
+    friend bool operator==(const to_chars_result&, const to_chars_result&) = default;
 };
 
 struct from_chars_result
 {
     const char* ptr;
-    errc        ec;
+    std::errc   ec;
+
+    friend bool operator==(const from_chars_result&, const from_chars_result&) = default;
 };
 
 
@@ -60,10 +64,10 @@ to_chars_result __to_chars(char* __first, char* __last, _I __value, int __base)
     if (__value < 0)
     {
         if (!__push('-'))
-            return {__first, errc::value_too_large};
+            return {__first, std::errc::value_too_large};
 
         // Recurse to the unsigned variant as the absolute value may not be representable otherwise.
-        return __to_chars(__first, __last, static_cast<make_unsigned_t<_I>>(-__value), __base);
+        return __to_chars(__first, __last, static_cast<std::make_unsigned_t<_I>>(-__value), __base);
     }
 
     if (__value == 0)
@@ -71,13 +75,13 @@ to_chars_result __to_chars(char* __first, char* __last, _I __value, int __base)
         if (__push('0'))
             return {__first, {}};
         else
-            return {__first, errc::value_too_large};
+            return {__first, std::errc::value_too_large};
     }
 
     while (__value > 0)
     {
         if (!__push(_C[__value % static_cast<_I>(__base)]))
-            return {__first, errc::value_too_large};
+            return {__first, std::errc::value_too_large};
 
         __value /= static_cast<_I>(__base);
     }
@@ -143,17 +147,17 @@ constexpr __from_chars_table __make_from_chars_table()
 template <class _I>
 from_chars_result __from_chars(const char* __first, const char* __last, _I& __value, int __base)
 {
-    if (__first < __last && is_signed_v<_I> && *__first == '-')
+    if (__first < __last && std::is_signed_v<_I> && *__first == '-')
     {
         // Attempt to decode the corresponding unsigned value.
-        using _U = make_unsigned_t<_I>;
+        using _U = std::make_unsigned_t<_I>;
         _U __uvalue;
         auto __result = __from_chars(__first + 1, __last, __uvalue, __base);
 
         if (__result.ec != errc{})
         {
             // Failures due to no valid input require the returned ptr to equal first.
-            if (__result.ec == errc::invalid_argument)
+            if (__result.ec == std::errc::invalid_argument)
                 __result.ptr = __first;
 
             return __result;
@@ -161,7 +165,7 @@ from_chars_result __from_chars(const char* __first, const char* __last, _I& __va
 
         // Check that the resulting value is representable.
         if (_I(-__uvalue) > 0)
-            return {__result.ptr, errc::result_out_of_range};
+            return {__result.ptr, std::errc::result_out_of_range};
 
         __value = _I(-__uvalue);
         return {__result.ptr, {}};
@@ -189,16 +193,16 @@ from_chars_result __from_chars(const char* __first, const char* __last, _I& __va
     while (__read_next(__i))
     {
         // Check for overflow.
-        constexpr _I __max = numeric_limits<_I>::max();
+        constexpr _I __max = std::numeric_limits<_I>::max();
         if ((__max - __i) / static_cast<_I>(__base) < __v)
-            return {__first, errc::result_out_of_range};
+            return {__first, std::errc::result_out_of_range};
 
         __v = (__v * static_cast<_I>(__base)) + __i;
     }
 
     // Check that we decoded anything.
     if (__first == __original_first)
-        return {__first, errc::invalid_argument};
+        return {__first, std::errc::invalid_argument};
 
     __value = __v;
     return {__first, {}};
@@ -261,6 +265,8 @@ inline to_chars_result to_chars(char* __first, char* __last, unsigned long long 
 {
     return __detail::__to_chars(__first, __last, __value, __base);
 }
+
+inline to_chars_result to_chars(char* __first, char* __last, bool __value, int __base = 10) = delete;
 
 inline to_chars_result to_chars(char* __first, char* __last, float __value, chars_format __fmt);
 
@@ -329,6 +335,12 @@ inline from_chars_result from_chars(const char* __first, const char* __last, uns
 {
     return __detail::__from_chars(__first, __last, __value, __base);
 }
+
+inline from_chars_result from_chars(const char* __first, const char* __last, float& __value, chars_format = chars_format::general);
+
+inline from_chars_result from_chars(const char* __first, const char* __last, double& __value, chars_format = chars_format::general);
+
+inline from_chars_result from_chars(const char* __first, const char* __last, long double& __value, chars_format = chars_format::general);
 
 
 } // namespace __XVI_STD_FORMAT_NS

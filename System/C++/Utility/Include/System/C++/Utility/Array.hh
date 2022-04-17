@@ -16,24 +16,36 @@ namespace __XVI_STD_UTILITY_NS
 {
 
 
+namespace __detail
+{
+
+
+struct __empty_array_element {};
+
+
+} // namespace __detail
+
+
 template <class _T, size_t _N>
 struct array
 {
+    using __element_type            = std::conditional_t<_N == 0, __detail::__empty_array_element, _T>;
+
     using value_type                = _T;
     using pointer                   = _T*;
     using const_pointer             = const _T*;
     using reference                 = _T&;
     using const_reference           = const _T&;
-    using size_type                 = size_t;
-    using difference_type           = ptrdiff_t;
-    using iterator                  = pointer;
-    using const_iterator            = const_pointer;
-    using reverse_iterator          = __XVI_STD_NS::reverse_iterator<iterator>;
-    using const_reverse_iterator    = __XVI_STD_NS::reverse_iterator<const_iterator>;
+    using size_type                 = std::size_t;
+    using difference_type           = std::ptrdiff_t;
+    using iterator                  = __element_type*;
+    using const_iterator            = const __element_type*;
+    using reverse_iterator          = __XVI_STD_UTILITY_NS::reverse_iterator<iterator>;
+    using const_reverse_iterator    = __XVI_STD_UTILITY_NS::reverse_iterator<const_iterator>;
 
 
     // Note: need to support the degenerate _N == 0 case.
-    _T _M_arr[_N];
+    __element_type _M_arr[_N == 0 ? 1 : _N];
 
 
     constexpr void fill(const _T& __u)
@@ -42,10 +54,9 @@ struct array
     }
 
     constexpr void swap(array& __y)
-        noexcept(_N == 0 || is_nothrow_swappable_v<_T>)
+        noexcept(std::is_nothrow_swappable_v<__element_type>)
     {
-        if constexpr (_N > 0)
-            swap_ranges(begin(), end(), __y.begin());
+        swap_ranges(begin(), end(), __y.begin());
     }
 
     constexpr iterator begin() noexcept
@@ -182,7 +193,7 @@ struct array
 
 template <class _T, class... _U>
     requires (is_same_v<_T, _U> && ...)
-    array(_T, _U...) -> array<_T, 1 + sizeof...(_U)>;
+array(_T, _U...) -> array<_T, 1 + sizeof...(_U)>;
 
 
 template <class _T, size_t _N>
@@ -209,13 +220,13 @@ namespace __detail
 {
 
 template <class _T, size_t _N, size_t... _Idx>
-constexpr array<remove_cv_t<_T>, _N> __make_array(index_sequence<_Idx...>, _T (&__a)[_N])
+constexpr array<remove_cv_t<_T>, _N> __make_array(std::index_sequence<_Idx...>, _T (&__a)[_N])
 {
     return {{__a[_Idx]...}};
 }
 
 template <class _T, size_t _N, size_t... _Idx>
-constexpr array<remove_cv_t<_T>, _N> __make_array(index_sequence<_Idx...>, _T (&&__a)[_N])
+constexpr array<remove_cv_t<_T>, _N> __make_array(std::index_sequence<_Idx...>, _T (&&__a)[_N])
 {
     return {{std::move(__a[_Idx])...}};
 }
@@ -224,16 +235,16 @@ constexpr array<remove_cv_t<_T>, _N> __make_array(index_sequence<_Idx...>, _T (&
 
 
 template <class _T, size_t _N>
-    requires (!is_array_v<_T> && is_constructible_v<_T, _T&>)
-constexpr array<remove_cv_t<_T>, _N> to_array(_T (&__a)[_N])
+    requires (!std::is_array_v<_T> && std::is_constructible_v<_T, _T&>)
+constexpr array<std::remove_cv_t<_T>, _N> to_array(_T (&__a)[_N])
 {
-    return __detail::__make_array(make_index_sequence<_N>(), __a);
+    return __detail::__make_array(std::make_index_sequence<_N>(), __a);
 }
 
 template <class _T, size_t _N>
-constexpr array<remove_cv_t<_T>, _N> to_array(_T (&&__a)[_N])
+constexpr array<std::remove_cv_t<_T>, _N> to_array(_T (&&__a)[_N])
 {
-    return __detail::__make_array(make_index_sequence<_N>(), std::move(__a));
+    return __detail::__make_array(std::make_index_sequence<_N>(), std::move(__a));
 }
 
 
@@ -242,41 +253,46 @@ template <size_t, class> struct tuple_element;
 
 template <class _T, size_t _N>
 struct tuple_size<array<_T, _N>>
-    : integral_constant<size_t, _N> {};
+    : std::integral_constant<size_t, _N> {};
 
 template <size_t _I, class _T, size_t _N>
-    requires (_I < _N)
 struct tuple_element<_I, array<_T, _N>>
 {
+    static_assert(_I < _N);
+
     using type = _T;
 };
 
 template <size_t _I, class _T, size_t _N>
-    requires (_I < _N)
 constexpr _T& get(array<_T, _N>& __a) noexcept
 {
+    static_assert(_I < _N);
+
     return __a[_I];
 }
 
 template <size_t _I, class _T, size_t _N>
-    requires (_I < _N)
 constexpr const _T& get(const array<_T, _N>& __a) noexcept
 {
+    static_assert(_I < _N);
+
     return __a[_I];
 }
 
 template <size_t _I, class _T, size_t _N>
-    requires (_I < _N)
 constexpr _T&& get(array<_T, _N>&& __a) noexcept
 {
-    return __XVI_STD_NS::move(__a[_I]);
+    static_assert(_I < _N);
+
+    return std::move(__a[_I]);
 }
 
 template <size_t _I, class _T, size_t _N>
-    requires (_I < _N)
 constexpr const _T&& get(const array<_T, _N>&& __a) noexcept
 {
-    return __XVI_STD_NS::move(__a[_I]);
+    static_assert(_I < _N);
+
+    return std::move(__a[_I]);
 }
 
 

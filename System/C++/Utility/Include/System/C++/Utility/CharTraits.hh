@@ -3,6 +3,7 @@
 #define __SYSTEM_CXX_UTILITY_CHARTRAITS_H
 
 
+#include <System/C++/LanguageSupport/Compare.hh>
 #include <System/C++/LanguageSupport/StdDef.hh>
 
 #include <System/C++/Utility/IosFwd.hh>
@@ -55,7 +56,7 @@ template <class _T>
 constexpr _T* __char_traits_move(_T* __dest, const _T* __src, size_t __n)
 {
     // True iff the beginning of dest overlaps the end of src.
-    if (!is_constant_evaluated() && __dest >= __src && __dest < (__src + __n)) 
+    if (!std::is_constant_evaluated() && __dest >= __src && __dest < (__src + __n)) 
     {
         for (size_t __i = 0; __i < __n; ++__i)
             __dest[__n - 1 - __i] = __src[__n - 1 - __i];
@@ -93,6 +94,7 @@ template <> struct char_traits<char>
     using off_type          = streamoff;
     using pos_type          = streampos;
     using state_type        = mbstate_t;
+    using comparison_cateogory = std::strong_ordering;
 
     static constexpr void assign(char_type& __c1, const char_type& __c2) noexcept
     {
@@ -179,6 +181,7 @@ template <> struct char_traits<char8_t>
     using off_type          = streamoff;
     using pos_type          = u8streampos;
     using state_type        = mbstate_t;
+    using comparison_category = std::strong_ordering;
 
     static constexpr void assign(char_type& __c1, const char_type& __c2) noexcept
     {
@@ -258,6 +261,7 @@ template <> struct char_traits<char16_t>
     using off_type          = streamoff;
     using pos_type          = u16streampos;
     using state_type        = mbstate_t;
+    using comparison_category = std::strong_ordering;
 
     static constexpr void assign(char_type& __c1, const char_type& __c2) noexcept
     {
@@ -337,6 +341,7 @@ template <> struct char_traits<char32_t>
     using off_type          = streamoff;
     using pos_type          = u32streampos;
     using state_type        = mbstate_t;
+    using comparison_category = std::strong_ordering;
 
     static constexpr void assign(char_type& __c1, const char_type& __c2) noexcept
     {
@@ -416,6 +421,7 @@ template <> struct char_traits<wchar_t>
     using off_type          = streamoff;
     using pos_type          = wstreampos;
     using state_type        = mbstate_t;
+    using comparison_category = std::strong_ordering;
 
     static constexpr void assign(char_type& __c1, const char_type& __c2) noexcept
     {

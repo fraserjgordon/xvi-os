@@ -55,8 +55,32 @@ public:
     {
     }
 
+    basic_string_view(std::nullptr_t) = delete;
+
     constexpr basic_string_view(const _CharT* __str, size_t __len)
         : _M_ptr(__str), _M_len(__len)
+    {
+    }
+
+    template <contiguous_iterator _It, sized_sentinel_for<_It> _End>
+        requires std::is_same_v<iter_value_t<_It>, _CharT>
+            && (!std::is_convertible_v<_End, size_type>)
+    constexpr basic_string_view(_It __begin, _End __end)
+        : _M_ptr(to_address(__begin)), _M_len(__end - __begin)
+    {
+    }
+
+    template <class _R>
+        requires (!std::is_same_v<std::remove_cvref_t<_R>, basic_string_view>)
+            && ranges::contiguous_range<_R>
+            && ranges::sized_range<_R>
+            && std::is_same_v<ranges::range_value_t<_R>, _CharT>
+            && (!std::is_convertible_v<_R, const _CharT*>)
+            && (!(requires (std::remove_cvref_t<_R> __d) { __d.operator ::__XVI_STD_UTILITY_NS::basic_string_view<_CharT, _Traits>(); }))
+            && (!(requires { typename std::remove_reference_t<_R>::traits_type; })
+                || std::is_same_v<_Traits, std::remove_reference_t<_R>::traits_type>)
+    constexpr basic_string_view(_R&& __r) :
+        _M_ptr(ranges::data(__r)), _M_len(ranges::size(__r))
     {
     }
 
@@ -171,7 +195,7 @@ public:
 
     constexpr void swap(basic_string_view& __sv) noexcept
     {
-        using __XVI_STD_UTILITY_NS::swap;
+        using std::swap;
         swap(_M_ptr, __sv._M_ptr);
         swap(_M_len, __sv._M_len);
     }
@@ -524,6 +548,22 @@ public:
         return find_last_not_of(basic_string_view(__s), __pos);
     }
 
+    constexpr bool contains(basic_string_view __s) const noexcept
+    {
+        return find(__s) != npos;
+    }
+
+    constexpr bool contains(_CharT __x) const noexcept
+    {
+        return find(__x) != npos;
+    }
+
+    constexpr bool contains(const _CharT* __s) const
+    {
+        return find(__s) != npos;
+    }
+
+
 private:
 
     const _CharT* _M_ptr = nullptr;
@@ -569,6 +609,12 @@ private:
             __tab[__hash(__needle[__i])] = __needle.length() - 1 - __i;
     }
 };
+
+template <contiguous_iterator _It, sized_sentinel_for<_It> _End>
+basic_string_view(_It, _End) -> basic_string_view<iter_value_t<_It>>;
+
+template <ranges::contiguous_range _R>
+basic_string_view(_R&&) -> basic_string_view<ranges::range_value_t<_R>>;
 
 
 template <class _CharT, class _Traits>

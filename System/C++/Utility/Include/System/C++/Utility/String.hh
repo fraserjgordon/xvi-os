@@ -11,7 +11,9 @@
 #include <System/C++/Utility/Allocator.hh>
 #include <System/C++/Utility/AllocatorTraits.hh>
 #include <System/C++/Utility/CharTraits.hh>
+#include <System/C++/Utility/ContainerUtils.hh>
 #include <System/C++/Utility/Iterator.hh>
+#include <System/C++/Utility/RangesUtils.hh>
 #include <System/C++/Utility/StringFwd.hh>
 #include <System/C++/Utility/StringView.hh>
 #include <System/C++/Utility/Private/Config.hh>
@@ -44,17 +46,17 @@ protected:
     template <size_t _Padding>
     struct __padded_flags_t
     {
-        _CharT                  __padding[_Padding] = {};
-        make_unsigned_t<_CharT> __value = 0;
+        _CharT                          __padding[_Padding] = {};
+        std::make_unsigned_t<_CharT>    __value = 0;
     };
 
     struct __unpadded_flags_t
     {
-        make_unsigned_t<_CharT> __value = 0;
+        std::make_unsigned_t<_CharT>    __value = 0;
     };
 
     template <size_t _Padding = (sizeof(void*) - sizeof(_CharT)) / sizeof(_CharT)>
-    using __flags_t = conditional_t<_Padding == 0, __unpadded_flags_t, __padded_flags_t<_Padding>>;
+    using __flags_t = std::conditional_t<_Padding == 0, __unpadded_flags_t, __padded_flags_t<_Padding>>;
 
     constexpr __basic_string_storage() {};
     constexpr ~__basic_string_storage() {};
@@ -105,8 +107,8 @@ public:
 
     using iterator                  = pointer;
     using const_iterator            = const_pointer;
-    using reverse_iterator          = __XVI_STD_NS::reverse_iterator<iterator>;
-    using const_reverse_iterator    = __XVI_STD_NS::reverse_iterator<const_iterator>;
+    using reverse_iterator          = std::reverse_iterator<iterator>;
+    using const_reverse_iterator    = std::reverse_iterator<const_iterator>;
 
     using _Storage = __detail::__basic_string_storage<_CharT, size_type>;
 
@@ -131,7 +133,7 @@ public:
     }
 
     constexpr basic_string(basic_string&& __s) noexcept
-        : _M_allocator(__XVI_STD_NS::move(__s._M_allocator))
+        : _M_allocator(std::move(__s._M_allocator))
     {
         __constexpr_setup();
 
@@ -159,8 +161,8 @@ public:
     {
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
     constexpr basic_string(const _T& __t, size_type __pos, size_type __n, const _Allocator& __a = _Allocator())
         : basic_string(__a)
     {
@@ -168,9 +170,9 @@ public:
         operator=(basic_string(__sv.substr(__pos, __n), __a));
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr basic_string(const _T& __t, const _Allocator& __a = _Allocator())
         : basic_string(__a)
     {
@@ -184,23 +186,36 @@ public:
         append(__s, __n);
     }
 
-    //! @TODO: constraints.
+    basic_string(std::nullptr_t) = delete;
+
     constexpr basic_string(const _CharT* __s, const _Allocator& __a = _Allocator())
+        requires __detail::__maybe_allocator<_Allocator>
         : basic_string(__s, _Traits::length(__s), __a)
     {
     }
 
-    //! @TODO: constraints.
     basic_string(size_type __n, _CharT __c, const _Allocator& __a = _Allocator())
+        requires __detail::__maybe_allocator<_Allocator>
         : basic_string(__a)
     {
         reserve(__n);
         append(__n, __c);
     }
 
-    //! @TODO: implement (constraints).
     template <class _InputIterator>
-    constexpr basic_string(_InputIterator __begin, _InputIterator __end, const _Allocator& __a = _Allocator());
+        requires __detail::__maybe_iterator<_InputIterator>
+    constexpr basic_string(_InputIterator __begin, _InputIterator __end, const _Allocator& __a = _Allocator())
+        : basic_string(__a)
+    {
+        assign(__begin, __end);
+    }
+
+    template <__detail::__container_compatible_range<_CharT> _R>
+    constexpr basic_string(from_range_t, _R&& __rg, const _Allocator& __a = _Allocator())
+        : basic_string(__a)
+    {
+        assign(from_range, std::forward<_R>(__rg));
+    }
 
     constexpr basic_string(initializer_list<_CharT> __il, const _Allocator& __a = _Allocator())
         : basic_string(__il.begin(), __il.end(), __a)
@@ -254,7 +269,7 @@ public:
         __deallocate();
 
         if constexpr (allocator_traits<_Allocator>::propagate_on_container_move_assignment::value)
-            _M_allocator = __XVI_STD_NS::move(__s._M_allocator);
+            _M_allocator = std::move(__s._M_allocator);
 
         if (__s.__is_inline())
         {
@@ -272,9 +287,9 @@ public:
         return *this;
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr basic_string& operator=(const _T& __t)
     {
         basic_string_view<_CharT, _Traits> __sv = __t;
@@ -285,6 +300,8 @@ public:
     {
         return *this = basic_string_view<_CharT, _Traits>(__s);
     }
+
+    basic_string& operator=(std::nullptr_t) = delete;
 
     constexpr basic_string& operator=(_CharT __c)
     {
@@ -385,6 +402,20 @@ public:
         resize(__n, _CharT());
     }
 
+    template <class _Operation>
+    constexpr void resize_and_overwrite(size_type __n, _Operation __op)
+    {
+        auto __o = size();
+        auto __k = min<size_type>(__o, __n);
+        auto __g = (__n > __o) ? __n - __o : 0;
+
+        __reallocate(__n, __k, __g);
+
+        auto __r = std::move(__op)(data(), __n);
+
+        __truncate_in_place(__r);
+    }
+
     constexpr size_type capacity() const noexcept
     {
         return __is_inline() ? _MaxInline : _M_capacity;
@@ -393,10 +424,10 @@ public:
     constexpr void reserve(size_type __n)
     {
         if (__n > max_size())
-            __XVI_CXX_UTILITY_THROW(length_error("__XVI_STD_NS::basic_string::reserve(n) with n > max_size()"));
+            __XVI_CXX_UTILITY_THROW(length_error("std::basic_string::reserve(n) with n > max_size()"));
 
         if (capacity() < __n)
-            __ensure_space(__n);
+            (__n);
     }
 
     constexpr void shrink_to_fit()
@@ -437,7 +468,7 @@ public:
     constexpr const_reference at(size_type __pos) const
     {
         if (__pos >= size())
-            __XVI_CXX_UTILITY_THROW(out_of_range("invalid index for __XVI_STD_NS::basic_string::at"));
+            __XVI_CXX_UTILITY_THROW(out_of_range("invalid index for std::basic_string::at"));
 
         return operator[](__pos);
     }
@@ -445,7 +476,7 @@ public:
     constexpr reference at(size_type __pos)
     {
         if (__pos >= size())
-            __XVI_CXX_UTILITY_THROW(out_of_range("invalid index for __XVI_STD_NS::basic_string::at"));
+            __XVI_CXX_UTILITY_THROW(out_of_range("invalid index for std::basic_string::at"));
 
         return operator[](__pos);
     }
@@ -475,9 +506,9 @@ public:
         return append(__s);
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr basic_string& operator+=(const _T& __t)
     {
         basic_string_view<_CharT, _Traits> __sv = __t;
@@ -509,18 +540,18 @@ public:
         return append(basic_string_view<_CharT, _Traits>(__str).substr(__pos, __n));
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr basic_string& append(const _T& __t)
     {
         basic_string_view<_CharT, _Traits> __sv = __t;
         return append(__sv.data(), __sv.size());
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr basic_string& append(const _T& __t, size_type __pos, size_type __n = npos)
     {
         basic_string_view<_CharT, _Traits> __sv = __t;
@@ -572,9 +603,32 @@ public:
         return *this;
     }
 
-    //! @TODO: implement.
     template <class _InputIterator>
-    constexpr basic_string& append(_InputIterator __first, _InputIterator __last);
+        requires __detail::__maybe_iterator<_InputIterator>
+    constexpr basic_string& append(_InputIterator __first, _InputIterator __last)
+    {
+        if constexpr (std::is_base_of_v<forward_iterator_tag, typename iterator_traits<_InputIterator>::iterator_category>)
+        {
+            auto __dist = distance(__first, __last);
+            reserve(size() + __dist);
+        }
+
+        for (; __first != __last; ++__first)
+            append(static_cast<_CharT>(*__first));
+    }
+
+    template <__detail::__container_compatible_range<_CharT> _R>
+    constexpr basic_string& append_range(_R&& __r)
+    {
+        if constexpr (ranges::sized_range<_R>)
+        {
+            auto __len = ranges::distance(__r);
+            reserve(size() + __len);
+        }
+
+        for (auto __first = ranges::begin(__r), __last = ranges::end(__r); __first != __last; ++__first)
+            append(static_cast<_CharT>(*__first));
+    }
 
     constexpr basic_string& append(initializer_list<_CharT> __il)
     {
@@ -595,7 +649,7 @@ public:
         noexcept(allocator_traits<_Allocator>::propagate_on_container_move_assignment::value
                  || allocator_traits<_Allocator>::is_always_equal::value)
     {
-        return *this = __XVI_STD_NS::move(__s);
+        return *this = std::move(__s);
     }
 
     constexpr basic_string& assign(const basic_string& __s, size_type __pos, size_type __n = npos)
@@ -603,18 +657,18 @@ public:
         return assign(basic_string_view<_CharT, _Traits>(__s).substr(__pos, __n));
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr basic_string& assign(const _T& __t)
     {
         basic_string_view<_CharT, _Traits> __sv = __t;
         return assign(__sv.data(), __sv.size());
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr basic_string& assign(const _T& __t, size_type __pos, size_type __n = npos)
     {
         basic_string_view<_CharT, _Traits> __sv = __t;
@@ -640,9 +694,20 @@ public:
         return append(__n, __c);
     }
 
-    //! @TODO: implement.
     template <class _InputIterator>
-    constexpr basic_string& assign(_InputIterator __first, _InputIterator __last);
+        requires __detail::__maybe_iterator<_InputIterator>
+    constexpr basic_string& assign(_InputIterator __first, _InputIterator __last)
+    {
+        clear();
+        append(__first, __last);
+    }
+
+    template <__detail::__container_compatible_range<_CharT> _R>
+    constexpr basic_string& assign_range(_R&& __r)
+    {
+        clear();
+        append_range(std::forward<_R>(__r));
+    }
 
     constexpr basic_string& assign(initializer_list<_CharT> __il)
     {
@@ -659,18 +724,18 @@ public:
         return insert(__pos, basic_string_view<_CharT, _Traits>(__str), __pos2, __n);
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr basic_string& insert(size_type __pos, const _T& __t)
     {
         basic_string_view<_CharT, _Traits> __sv = __t;
         return insert(__pos, __sv.data(), __sv.size());
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr basic_string& insert(size_type __pos, const _T& __t, size_type __pos2, size_type __n = npos)
     {
         basic_string_view<_CharT, _Traits> __sv = __t;
@@ -680,10 +745,10 @@ public:
     constexpr basic_string& insert(size_type __pos, const _CharT* __s, size_type __n)
     {
         if (__pos > size())
-            __XVI_CXX_UTILITY_THROW(out_of_range("invalid offset for __XVI_STD_NS::basic_string::insert"));
+            __XVI_CXX_UTILITY_THROW(out_of_range("invalid offset for std::basic_string::insert"));
 
         if (__n > max_size() - size())
-            __XVI_CXX_UTILITY_THROW(length_error("length > max_size() in __XVI_STD_NS::basic_string::insert"));
+            __XVI_CXX_UTILITY_THROW(length_error("length > max_size() in std::basic_string::insert"));
 
         __ensure_space_and_create_gap(size() + __n, __pos, __n);
 
@@ -700,10 +765,10 @@ public:
     constexpr basic_string& insert(size_type __pos, size_type __n, _CharT __c)
     {
         if (__pos > size())
-            __XVI_CXX_UTILITY_THROW(out_of_range("invalid offset for __XVI_STD_NS::basic_string::insert"));
+            __XVI_CXX_UTILITY_THROW(out_of_range("invalid offset for std::basic_string::insert"));
 
         if (__n > max_size() - size())
-            __XVI_CXX_UTILITY_THROW(length_error("length > max_size() in __XVI_STD_NS::basic_string::insert"));
+            __XVI_CXX_UTILITY_THROW(length_error("length > max_size() in std::basic_string::insert"));
 
         __ensure_space_and_create_gap(size() + __n, __pos, __n);
 
@@ -729,9 +794,65 @@ public:
         return begin() + __offset;
     }
 
-    //! @TODO: implement
     template <class _InputIterator>
-    constexpr iterator insert(const_iterator __p, _InputIterator __first, _InputIterator __last);
+        requires __detail::__maybe_iterator<_InputIterator>
+    constexpr iterator insert(const_iterator __p, _InputIterator __first, _InputIterator __last)
+    {
+        if (__p == cend())
+            return append(__first, __last);
+
+        if constexpr (std::is_base_of_v<forward_iterator_tag, typename iterator_traits<_InputIterator>::iterator_category>)
+        {
+            auto __dist = distance(__first, __last);
+            auto __orig_offset = __p - cbegin();
+
+            if (__dist > max_size() - size())
+                __XVI_CXX_UTILITY_THROW(length_error("length > max_size() in std::basic_string::insert"));
+
+            __ensure_space_and_create_gap(size() + __dist, __p, __dist);
+
+            for (auto __offset = __orig_offset; __first != __last; ++__first, ++__offset)
+                _Traits::assign(data() + __offset, static_cast<_CharT>(*__first));
+
+            return begin() + __orig_offset;
+        }
+        else
+        {
+            auto __orig_offset = __p - cbegin();
+
+            for (auto __offset = __orig_offset; __first != __last; ++__first, ++__offset)
+                insert(cbegin() + __offset, static_cast<_CharT>(*__first));
+
+            return begin() + __orig_offset;
+        }
+    }
+
+    template <__detail::__container_compatible_range<_CharT> _R>
+    constexpr iterator insert_range(const_iterator __p, _R&& __r)
+    {
+        if (__p == cend())
+            return append_range(std::forward<_R>(__r));
+
+        if constexpr (ranges::sized_range<_R>)
+        {
+            auto __dist = ranges::distance(__r);
+            auto __offset = __p - cbegin();
+
+            if (__dist > max_size() - size())
+                __XVI_CXX_UTILITY_THROW(length_error("length > max_size() in std::basic_string::insert_range"));
+
+            __ensure_space_and_create_gap(size() + __dist, __p, __dist);
+
+            for (auto __first = ranges::begin(__r), __last = ranges::end(__r); __first != __last; ++__first, ++__offset)
+                _Traits::assign(data() + __offset, static_cast<_CharT>(*__first));
+        }
+        else
+        {
+            auto __offset = __p - cbegin();
+            for (auto __first = ranges::begin(__r), __last = ranges::end(__r); __first != __last; ++__first, ++__offset)
+                insert(cbegin() + __offset, static_cast<_CharT>(*__first));
+        }
+    }
 
     constexpr iterator insert(const_iterator __p, initializer_list<_CharT> __il)
     {
@@ -741,7 +862,7 @@ public:
     constexpr basic_string& erase(size_type __pos = 0, size_type __n = npos)
     {
         if (__pos > size())
-            __XVI_CXX_UTILITY_THROW(out_of_range("invalid offset for __XVI_STD_NS::basic_string::erase"));
+            __XVI_CXX_UTILITY_THROW(out_of_range("invalid offset for std::basic_string::erase"));
 
         auto __xlen = min(__n, size() - __pos);
         _Traits::move(data() + __pos, data() + __pos + __xlen, __xlen);
@@ -790,18 +911,18 @@ public:
         return replace(__pos1, __n1, basic_string_view<_CharT, _Traits>(__str).substr(__pos2, __n2));
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr basic_string& replace(size_type __pos1, size_type __n1, const _T& __t)
     {
         basic_string_view<_CharT, _Traits> __sv = __t;
         return replace(__pos1, __n1, __sv.data(), __sv.size());
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr basic_string& replace(size_type __pos1, size_type __n1, const _T& __t, size_type __pos2, size_type __n2 = npos)
     {
         basic_string_view<_CharT, _Traits> __sv = __t;
@@ -811,11 +932,11 @@ public:
     constexpr basic_string& replace(size_type __pos, size_type __n1, const _CharT* __s, size_type __n2)
     {
         if (__pos > size())
-            __XVI_CXX_UTILITY_THROW(out_of_range("invalid offset for __XVI_STD_NS::basic_string::replace"));
+            __XVI_CXX_UTILITY_THROW(out_of_range("invalid offset for std::basic_string::replace"));
         
         auto __xlen = min(__n1, size() - __pos);
         if (size() - __xlen >= max_size() - __n2)
-            __XVI_CXX_UTILITY_THROW(length_error("length > max_size() in __XVI_STD_NS::basic_string::replace"));
+            __XVI_CXX_UTILITY_THROW(length_error("length > max_size() in std::basic_string::replace"));
 
         size_type __req_size = size() - __xlen + __n2;
 
@@ -847,11 +968,11 @@ public:
     constexpr basic_string& replace(size_type __pos, size_type __n1, size_type __n2, _CharT __c)
     {
         if (__pos > size())
-            __XVI_CXX_UTILITY_THROW(out_of_range("invalid offset for __XVI_STD_NS::basic_string::replace"));
+            __XVI_CXX_UTILITY_THROW(out_of_range("invalid offset for std::basic_string::replace"));
         
         auto __xlen = min(__n1, size() - __pos);
         if (size() - __xlen >= max_size() - __n2)
-            __XVI_CXX_UTILITY_THROW(length_error("length > max_size() in __XVI_STD_NS::basic_string::replace"));
+            __XVI_CXX_UTILITY_THROW(length_error("length > max_size() in std::basic_string::replace"));
 
         size_type __req_size = size() - __xlen + __n2;
 
@@ -880,9 +1001,9 @@ public:
         return replace(__i1, __i2, basic_string_view<_CharT, _Traits>(__str));
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr basic_string& replace(const_iterator __i1, const_iterator __i2, const _T& __t)
     {
         basic_string_view <_CharT, _Traits> __sv = __t;
@@ -904,13 +1025,100 @@ public:
         return replace(__i1 - begin(), __i2 - __i1, __n, __c);
     }
 
-    //! @TODO: implement.
     template <class _InputIterator>
-    constexpr basic_string& replace(const_iterator __i1, const_iterator __i2, _InputIterator __j1, _InputIterator __j2);
+        requires __detail::__maybe_iterator<_InputIterator>
+    constexpr basic_string& replace(const_iterator __i1, const_iterator __i2, _InputIterator __j1, _InputIterator __j2)
+    {
+        if constexpr (std::is_base_of_v<forward_iterator_tag, typename iterator_traits<_InputIterator>::iterator_category>)
+        {
+            auto __dist = distance(__j1, __j2);
+            auto __replaced_dist = __i2 - __i1;
+
+            // Will this fit in the current allocation?
+            if (capacity() <= (size() - __replaced_dist + __dist))
+            {
+                // Make a hole for the replacement data.
+                auto __hole_source_offset = __i2 - cbegin();
+                auto __hole_start_offset = __i1 - cbegin();
+                auto __hole_end_offset = __hole_start_offset + __dist;
+                _Traits::move(data() + __hole_end_offset, data() + __hole_source_offset, size() - __hole_source_offset);
+
+                for (auto __offset = __hole_start_offset; __j1 != __j2; ++__j1, ++__offset)
+                    _Traits::assign(data() + __offset, static_cast<_CharT>(*__j1));
+            }
+            else
+            {
+                // Allocation will be required; construct via a temporary.
+                basic_string __temp;
+                __temp.reserve(size() + __dist - __replaced_dist);
+                __temp.append(cbegin(), __i1);
+                __temp.append(__j1, __j2);
+                __temp.append(__i2, cend());
+                swap(__temp);
+            }
+        }
+        else
+        {
+            // Unknown length. Construct via a temporary copy.
+            basic_string __copy;
+            __copy.append(cbegin(), __i1);
+            __copy.append(__j1, __j2);
+            __copy.append(__i2, cend());
+            swap(__copy);
+        }
+
+        return *this;
+    }
+
+    template <__detail::__container_compatible_range<_CharT> _R>
+    constexpr basic_string& replace_with_range(const_iterator __i1, const_iterator __i2, _R&& __rg)
+    {
+        if constexpr (ranges::sized_range<_R>)
+        {
+            auto __dist = ranges::distance(std::forward<_R>(__rg));
+            auto __replaced_dist = __i2 - __i1;
+
+            // Will this fit in the current allocation?
+            if (capacity() <= (size() - __replaced_dist + __dist))
+            {
+                // Make a hole for the replacement data.
+                auto __hole_source_offset = __i2 - cbegin();
+                auto __hole_start_offset = __i1 - cbegin();
+                auto __hole_end_offset = __hole_start_offset + __dist;
+                _Traits::move(data() + __hole_end_offset, data() + __hole_source_offset, size() - __hole_source_offset);
+
+                auto __j1 = ranges::begin(std::forward<_R>(__rg));
+                auto __j2 = ranges::end(std::forward<_R>(__rg));
+                for (auto __offset = __hole_start_offset; __j1 != __j2; ++__j1, ++__offset)
+                    _Traits::assign(data() + __offset, static_cast<_CharT>(*__j1));
+            }
+            else
+            {
+                // Allocation will be required; construct via a temporary.
+                basic_string __temp;
+                __temp.reserve(size() + __dist - __replaced_dist);
+                __temp.append(cbegin(), __i1);
+                __temp.append_range(std::forward<_R>(__rg));
+                __temp.append(__i2, cend());
+                swap(__temp);
+            }
+        }
+        else
+        {
+            // Unknown length. Construct via a temporary copy.
+            basic_string __copy;
+            __copy.append(cbegin(), __i1);
+            __copy.append_range(std::forward<_R>(__rg));
+            __copy.append(__i2, cend());
+            swap(__copy);
+        }
+
+        return *this;
+    }
 
     constexpr basic_string& replace(const_iterator __i1, const_iterator __i2, initializer_list<_CharT> __il)
     {
-        return replace(__i1, __i2, __il.begin(), __il.size());
+        return replace(__i1, __i2, __il.begin(), __il.end());
     }
 
     constexpr size_type copy(_CharT* __s, size_type __n, size_type __pos = 0) const
@@ -922,9 +1130,9 @@ public:
         noexcept(allocator_traits<_Allocator>::propagate_on_container_swap::value
                  || allocator_traits<_Allocator>::is_always_equal::value)
     {
-        basic_string __temp = __XVI_STD_NS::move(__str);
-        __str = __XVI_STD_NS::move(*this);
-        *this = __XVI_STD_NS::move(__temp);
+        basic_string __temp = std::move(__str);
+        __str = std::move(*this);
+        *this = std::move(__temp);
     }
 
     constexpr const _CharT* c_str() const noexcept
@@ -952,9 +1160,9 @@ public:
         return _M_allocator;
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr size_type find(const _T& __t, size_type __pos = 0) const
         noexcept(is_nothrow_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>)
     {
@@ -982,9 +1190,9 @@ public:
         return __sv().find(__c, __pos);
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr size_type rfind(const _T& __t, size_type __pos = 0) const
         noexcept(is_nothrow_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>)
     {
@@ -1012,9 +1220,9 @@ public:
         return __sv().rfind(__c, __pos);
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr size_type find_first_of(const _T& __t, size_type __pos = 0) const
         noexcept(is_nothrow_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>)
     {
@@ -1042,9 +1250,9 @@ public:
         return __sv().find_first_of(__c, __pos);
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr size_type find_last_of(const _T& __t, size_type __pos = 0) const
         noexcept(is_nothrow_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>)
     {
@@ -1072,9 +1280,9 @@ public:
         return __sv().find_last_of(__c, __pos);
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr size_type find_first_not_of(const _T& __t, size_type __pos = 0) const
         noexcept(is_nothrow_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>)
     {
@@ -1102,9 +1310,9 @@ public:
         return __sv().find_first_not_of(__c, __pos);
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr size_type find_last_not_of(const _T& __t, size_type __pos = 0) const
         noexcept(is_nothrow_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>)
     {
@@ -1135,33 +1343,33 @@ public:
     constexpr basic_string substr(size_type __pos = 0, size_type __n = npos) const
     {
         if (__pos > size())
-            __XVI_CXX_UTILITY_THROW(out_of_range("invalid offset for __XVI_STD_NS::basic_string::substr"));
+            __XVI_CXX_UTILITY_THROW(out_of_range("invalid offset for std::basic_string::substr"));
 
         auto __rlen = min(__n, size() - __pos);
         
         return basic_string(data() + __pos, __rlen);
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr int compare(const _T& __t) const
         noexcept(is_nothrow_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>)
     {
         return __sv().compare(__t);
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr int compare(size_type __pos1, size_type __n1, const _T& __t) const
     {
         return __sv().substr(__pos1, __n1).compare(__t);
     }
 
-    template <class _T,
-              class = enable_if_t<is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
-                                  && !is_convertible_v<const _T&, const _CharT*>, void>>
+    template <class _T>
+        requires std::is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
+            && (!std::is_convertible_v<const _T&, const _CharT*>)
     constexpr int compare(size_type __pos1, size_type __n1, const _T& __t, size_type __pos2, size_type __n2 = npos) const
     {
         basic_string_view<_CharT, _Traits> __st = __t;
@@ -1226,6 +1434,21 @@ public:
     constexpr bool ends_with(const _CharT* __s) const
     {
         return __sv().ends_with(__s);
+    }
+
+    constexpr bool contains(basic_string_view<_CharT, _Traits> __x) const noexcept
+    {
+        return __sv().contains(__x);
+    }
+
+    constexpr bool contains(_CharT __x) const noexcept
+    {
+        return __sv().contains(__x);
+    }
+
+    constexpr bool contains(const _CharT* __s) const
+    {
+        return __sv().contains(__s);
     }
 
 private:
@@ -1477,24 +1700,29 @@ static_assert(sizeof(basic_string<char>) == 4 * sizeof(void*));
 static_assert(sizeof(basic_string<char16_t>) == 4*sizeof(void*));
 static_assert(sizeof(basic_string<char32_t>) == 4*sizeof(void*));
 
-//! @TODO: constraints
 template <class _InputIterator,
           class _Allocator = allocator<typename iterator_traits<_InputIterator>::value_type>>
+    requires __detail::__maybe_iterator<_InputIterator> && __detail::__maybe_allocator<_Allocator>
 basic_string(_InputIterator, _InputIterator, _Allocator = _Allocator())
     -> basic_string<typename iterator_traits<_InputIterator>::value_type,
                     char_traits<typename iterator_traits<_InputIterator>::value_type>,
                     _Allocator>;
 
-//! @TODO: constraints
+template <ranges::input_range _R,
+          class _Allocator = allocator<ranges::range_value_t<_R>>>
+basic_string(from_range_t, _R&&, _Allocator = _Allocator())
+    -> basic_string<ranges::range_value_t<_R>, char_traits<ranges::range_value_t<_R>>, _Allocator>;
+
 template <class _CharT, class _Traits, class _Allocator = allocator<_CharT>>
+    requires __detail::__maybe_allocator<_Allocator>
 explicit basic_string(basic_string_view<_CharT, _Traits>, const _Allocator& = _Allocator())
     -> basic_string<_CharT, _Traits, _Allocator>;
 
-//! @TODO: constraints
 template <class _CharT, class _Traits, class _Allocator = allocator<_CharT>>
+    requires __detail::__maybe_allocator<_Allocator>
 basic_string(basic_string_view<_CharT, _Traits>,
-             typename allocator_traits<_Allocator>::size_type,
-             typename allocator_traits<_Allocator>::size_type,
+             typename basic_string<_CharT, _Traits, _Allocator>::size_type,
+             typename basic_string<_CharT, _Traits, _Allocator>::size_type,
              const _Allocator& = _Allocator())
     -> basic_string<_CharT, _Traits, _Allocator>;
 
@@ -1526,7 +1754,7 @@ constexpr basic_string<_CharT, _Traits, _Alloc>
 operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs, const basic_string<_CharT, _Traits, _Alloc>& __rhs)
 {
     __lhs.append(__rhs);
-    return __XVI_STD_NS::move(__lhs);
+    return std::move(__lhs);
 }
 
 template <class _CharT, class _Traits, class _Alloc>
@@ -1534,7 +1762,7 @@ constexpr basic_string<_CharT, _Traits, _Alloc>
 operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs, const _CharT* __rhs)
 {
     __lhs.append(__rhs);
-    return __XVI_STD_NS::move(__lhs);
+    return std::move(__lhs);
 }
 
 template <class _CharT, class _Traits, class _Alloc>
@@ -1545,11 +1773,11 @@ operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs, basic_string<_CharT, _T
     if (__lhs.get_allocator() == __rhs.get_allocator() && __rhs.capacity() >= __req_size)
     {
         __rhs.insert(0, __lhs);
-        return __XVI_STD_NS::move(__rhs);
+        return std::move(__rhs);
     }
     
     __lhs.append(__rhs);
-    return __XVI_STD_NS::move(__lhs);
+    return std::move(__lhs);
 }
 
 template <class _CharT, class _Traits, class _Alloc>
@@ -1557,7 +1785,7 @@ constexpr basic_string<_CharT, _Traits, _Alloc>
 operator+(const basic_string<_CharT, _Traits, _Alloc>& __lhs, basic_string<_CharT, _Traits, _Alloc>&& __rhs)
 {
     __rhs.insert(0, __lhs);
-    return __XVI_STD_NS::move(__rhs);
+    return std::move(__rhs);
 }
 
 template <class _CharT, class _Traits, class _Alloc>
@@ -1587,7 +1815,7 @@ constexpr basic_string<_CharT, _Traits, _Alloc>
 operator+(_CharT __lhs, basic_string<_CharT, _Traits, _Alloc>&& __rhs)
 {
     __rhs.insert(__rhs.begin(), __lhs);
-    return __XVI_STD_NS::move(__rhs);
+    return std::move(__rhs);
 }
 
 template <class _CharT, class _Traits, class _Alloc>
@@ -1605,7 +1833,7 @@ constexpr basic_string<_CharT, _Traits, _Alloc>
 operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs, _CharT __rhs)
 {
     __lhs.push_back(__rhs);
-    return __XVI_STD_NS::move(__lhs);
+    return std::move(__lhs);
 }
 
 
@@ -1646,15 +1874,23 @@ void swap(basic_string<_CharT, _Traits, _Alloc>& __lhs, basic_string<_CharT, _Tr
 
 
 template <class _CharT, class _Traits, class _Alloc, class _U>
-void erase(basic_string<_CharT, _Traits, _Alloc>& __c, const _U& __value)
+constexpr typename basic_string<_CharT, _Traits, _Alloc>::size_type
+erase(basic_string<_CharT, _Traits, _Alloc>& __c, const _U& __value)
 {
-    __c.erase(remove(__c.begin(), __c.end(), __value), __c.end());
+    auto __it = remove(__c.begin(), __c.end(), __value);
+    auto __r = distance(__it, __c.end());
+    __c.erase(__it, __c.end());
+    return __r;
 }
 
 template <class _CharT, class _Traits, class _Alloc, class _Predicate>
-void erase_if(basic_string<_CharT, _Traits, _Alloc>& __c, _Predicate __pred)
+constexpr typename basic_string<_CharT, _Traits, _Alloc>::size_type
+erase_if(basic_string<_CharT, _Traits, _Alloc>& __c, _Predicate __pred)
 {
-    __c.erase(remove_if(__c.begin(), __c.end(), __pred), __c.end());
+    auto __it = remove_if(__c.begin(), __c.end(), __pred);
+    auto __r = distance(__it, __c.end());
+    __c.erase(__it, __c.end());
+    return __r;
 }
 
 

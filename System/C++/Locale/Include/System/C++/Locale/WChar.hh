@@ -28,6 +28,8 @@ __SYSTEM_CXX_LOCALE_EXPORT size_t wcrtomb(char * __restrict, wchar_t, mbstate_t 
 __SYSTEM_CXX_LOCALE_EXPORT size_t mbsrtowcs(wchar_t * __restrict, const char ** __restrict, size_t, mbstate_t * __restrict);
 __SYSTEM_CXX_LOCALE_EXPORT size_t wcsrtombs(char * __restrict, const wchar_t ** __restrict, size_t, mbstate_t * __restrict);
 
+__SYSTEM_CXX_LOCALE_EXPORT size_t wcsxfrm(wchar_t * __restrict, const wchar_t * __restrict, size_t);
+
 
 } // namespace __XVI_STD_LOCALE_NS
 
