@@ -6,7 +6,7 @@
 #include <System/C++/Utility/Private/Config.hh>
 #include <System/C++/Utility/AllocatorTraits.hh>
 #include <System/C++/Utility/Pair.hh>
-#include <System/C++/Utility/Ranges.hh>
+#include <System/C++/Utility/RangesAlgorithm.hh>
 #include <System/C++/Utility/Private/AddressOf.hh>
 
 
@@ -595,7 +595,7 @@ struct __uninitialized_default_construct
 
     template <__nothrow_forward_range _R>
         requires default_initializable<iter_value_t<iterator_t<_R>>>
-    safe_iterator_t<_R> operator()(_R&& __r) const
+    borrowed_iterator_t<_R> operator()(_R&& __r) const
     {
         return operator()(ranges::begin(__r), ranges::end(__r));
     }
@@ -651,7 +651,7 @@ struct __uninitialized_value_construct
 
     template <__nothrow_forward_range _R>
         requires default_initializable<iter_value_t<iterator_t<_R>>>
-    safe_iterator_t<_R> operator()(_R&& __r) const
+    borrowed_iterator_t<_R> operator()(_R&& __r) const
     {
         return operator()(ranges::begin(__r), ranges::end(__r));
     }
@@ -707,7 +707,7 @@ struct __uninitialized_copy
 
     template <input_range _IR, __nothrow_forward_range _OR>
         requires constructible_from<iter_value_t<iterator_t<_OR>>, iter_reference_t<iterator_t<_IR>>>
-    uninitialized_copy_result<safe_iterator_t<_IR>, safe_iterator_t<_OR>> operator()(_IR&& __ir, _OR&& __or) const
+    uninitialized_copy_result<borrowed_iterator_t<_IR>, borrowed_iterator_t<_OR>> operator()(_IR&& __ir, _OR&& __or) const
     {
         return operator()(ranges::begin(__ir), ranges::end(__ir), ranges::begin(__or), ranges::end(__or));
     }
@@ -764,7 +764,7 @@ struct __uninitialized_move
 
     template <input_range _IR, __nothrow_forward_range _OR>
         requires constructible_from<iter_value_t<iterator_t<_OR>>, iter_rvalue_reference_t<iterator_t<_IR>>>
-    uninitialized_move_result<safe_iterator_t<_IR>, safe_iterator_t<_OR>> operator()(_IR&& __ir, _OR&& __or) const
+    uninitialized_move_result<borrowed_iterator_t<_IR>, borrowed_iterator_t<_OR>> operator()(_IR&& __ir, _OR&& __or) const
     {
         return operator()(ranges::begin(__ir), ranges::end(__ir), ranges::begin(__or), ranges::end(__or));
     }
@@ -821,7 +821,7 @@ struct __uninitialized_fill
 
     template <__nothrow_forward_range _R, class _T>
         requires constructible_from<iter_value_t<iterator_t<_R>>, const _T&>
-    safe_iterator_t<_R> operator()(_R&& __r, const _T& __x) const
+    borrowed_iterator_t<_R> operator()(_R&& __r, const _T& __x) const
     {
         return operator()(ranges::begin(__r), ranges::end(__r), __x);
     }
@@ -874,7 +874,7 @@ struct __destroy
 
     template <__nothrow_input_range _R>
         requires destructible<iter_value_t<iterator_t<_R>>>
-    safe_iterator_t<_R> operator()(_R&& __r) const noexcept
+    borrowed_iterator_t<_R> operator()(_R&& __r) const noexcept
     {
         return operator()(ranges::begin(__r), ranges::end(__r));
     }

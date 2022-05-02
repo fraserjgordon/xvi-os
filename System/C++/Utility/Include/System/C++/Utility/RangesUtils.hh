@@ -6,15 +6,11 @@
 
 #include <System/C++/Utility/Private/Config.hh>
 #include <System/C++/Utility/Iterator.hh>
+#include <System/C++/Utility/Ranges.hh>
 
 
 namespace __XVI_STD_UTILITY_NS
 {
-
-
-struct from_range_t { explicit from_range_t() = default; };
-
-inline constexpr from_range_t from_range {};
 
 
 namespace __detail
