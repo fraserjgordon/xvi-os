@@ -1,0 +1,27 @@
+library("Concurrency")
+{
+    library_name = "System.Concurrency"
+    library_version = "0.1.0"
+
+    target_types = ["static", "static_pic", "shared", "kernel"]
+
+    shared_define = "__SYSTEM_CONCURRENCY_BUILD_SHARED"
+
+    public_headers =
+    [
+        "Mutex.hh",
+        "Seqlock.hh",
+        "Spinlock.hh",
+        "SyncWord.hh",
+    ]
+
+    sources =
+    [
+        "SpinlockHint.hh",
+
+        "Mutex.cc",
+        "Seqlock.cc",
+        "Spinlock.cc",
+        "SyncWord.cc",
+    ]
+}

@@ -8,6 +8,7 @@ library_group("all_single_arch")
         #"C",
         "C++",
         "Compress",
+        "Concurrency",
         "Firmware",
         "HW",
         "Rust",

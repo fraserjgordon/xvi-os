@@ -21,91 +21,125 @@ namespace ranges
 
 
 template <class _I, class _F>
-struct for_each_result
+struct in_fun_result
 {
     [[no_unique_address]] _I in;
     [[no_unique_address]] _F fun;
 
     template <class _I2, class _F2>
         requires convertible_to<const _I&, _I2> && convertible_to<const _F&, _F2>
-    operator for_each_result<_I2, _F2>() const &
+    constexpr operator in_fun_result<_I2, _F2>() const &
     {
         return {in, fun};
     }
 
     template <class _I2, class _F2>
         requires convertible_to<_I, _I2> && convertible_to<_F, _F2>
-    operator for_each_result<_I2, _F2>() &&
+    constexpr operator in_fun_result<_I2, _F2>() &&
     {
         return {std::move(in), std::move(fun)};
     }
 };
 
+template <class _I, class _F>
+using for_each_result = in_fun_result<_I, _F>;
+
+template <class _I, class _F>
+using for_each_n_result = in_fun_result<_I, _F>;
+
 template <class _I1, class _I2>
-struct mismatch_result
+struct in_in_result
 {
     [[no_unique_address]] _I1 in1;
     [[no_unique_address]] _I2 in2;
 
     template <class _II1, class _II2>
         requires convertible_to<const _I1, _II1> && convertible_to<const _I2&, _II2>
-    operator mismatch_result<_II1, _II2>() const &
+    constexpr operator in_in_result<_II1, _II2>() const &
     {
         return {in1, in2};
     }
 
     template <class _II1, class _II2>
         requires convertible_to<_I1, _II1> && convertible_to<_I2, _II2>
-    operator mismatch_result<_II1, _II2>() &&
+    constexpr operator in_in_result<_II1, _II2>() &&
     {
         return {std::move(in1), std::move(in2)};
     }
 };
 
+template <class _I1, class _I2>
+using mismatch_result = in_in_result<_I1, _I2>;
+
+template <class _I1, class _I2>
+using swap_ranges_result = in_in_result<_I1, _I2>;
+
 template <class _I, class _O>
-struct copy_result
+struct in_out_result
 {
     [[no_unique_address]] _I in;
     [[no_unique_address]] _O out;
 
     template <class _I2, class _O2>
         requires convertible_to<const _I&, _I2> && convertible_to<const _O&, _O2>
-    operator copy_result<_I2, _O2>() const &
+    constexpr operator in_out_result<_I2, _O2>() const &
     {
         return {in, out};
     }
 
     template <class _I2, class _O2>
         requires convertible_to<_I, _I2> && convertible_to<_O, _O2>
-    operator copy_result<_I2, _O2>() &&
+    constexpr operator in_out_result<_I2, _O2>() &&
     {
         return {std::move(in), std::move(out)};
     }
 };
 
 template <class _I, class _O>
-using copy_n_result = copy_result<_I, _O>;
+using copy_result = in_out_result<_I, _O>;
 
 template <class _I, class _O>
-using copy_if_result = copy_result<_I, _O>;
+using copy_n_result = in_out_result<_I, _O>;
 
 template <class _I, class _O>
-using copy_backward_result = copy_result<_I, _O>;
+using copy_if_result = in_out_result<_I, _O>;
 
 template <class _I, class _O>
-using move_result = copy_result<_I, _O>;
+using copy_backward_result = in_out_result<_I, _O>;
 
 template <class _I, class _O>
-using move_backward_result = copy_result<_I, _O>;
-
-template <class _I1, class _I2>
-using swap_ranges_result = mismatch_result<_I1, _I2>;
+using move_result = in_out_result<_I, _O>;
 
 template <class _I, class _O>
-using unary_transform_result = copy_result<_I, _O>;
+using move_backward_result = in_out_result<_I, _O>;
+
+template <class _I, class _O>
+using unary_transform_result = in_out_result<_I, _O>;
+
+template <class _I, class _O>
+using replace_copy_result = in_out_result<_I, _O>;
+
+template <class _I, class _O>
+using replace_copy_if_result = in_out_result<_I, _O>;
+
+template <class _I, class _O>
+using remove_copy_result = in_out_result<_I, _O>;
+
+template <class _I, class _O>
+using remove_copy_if_result = in_out_result<_I, _O>;
+
+template <class _I, class _O>
+using unique_copy_result = in_out_result<_I, _O>;
+
+template <class _I, class _O>
+using reverse_copy_result = in_out_result<_I, _O>;
+
+template <class _I, class _O>
+using rotate_copy_result = in_out_result<_I, _O>;
+
 
 template <class _I1, class _I2, class _O>
-struct binary_transform_result
+struct in_in_out_result
 {
     [[no_unique_address]] _I1 in1;
     [[no_unique_address]] _I2 in2;
@@ -113,42 +147,39 @@ struct binary_transform_result
 
     template <class _II1, class _II2, class _OO>
         requires convertible_to<const _I1&, _II1> && convertible_to<const _I2&, _II2> && convertible_to<const _O&, _OO>
-    operator binary_transform_result<_II1, _II2, _OO>() const &
+    constexpr operator in_in_out_result<_II1, _II2, _OO>() const &
     {
         return {in1, in2, out};
     }
 
     template <class _II1, class _II2, class _OO>
         requires convertible_to<_I1, _II1> && convertible_to<_I2, _II2> && convertible_to<_O, _OO>
-    operator binary_transform_result<_II1, _II2, _OO>() &&
+    constexpr operator in_in_out_result<_II1, _II2, _OO>() &&
     {
         return {std::move(in1), std::move(in2), std::move(out)};
     }
 };
 
-template <class _I, class _O>
-using replace_copy_result = copy_result<_I, _O>;
+template <class _I1, class _I2, class _O>
+using binary_transform_result = in_in_out_result<_I1, _I2, _O>;
 
-template <class _I, class _O>
-using replace_copy_if_result = copy_result<_I, _O>;
+template <class _I1, class _I2, class _O>
+using merge_result = in_in_out_result<_I1, _I2, _O>;
 
-template <class _I, class _O>
-using remove_copy_result = copy_result<_I, _O>;
+template <class _I1, class _I2, class _O>
+using set_union_result = in_in_out_result<_I1, _I2, _O>;
 
-template <class _I, class _O>
-using remove_copy_if_result = copy_result<_I, _O>;
+template <class _I1, class _I2, class _O>
+using set_intersection_result = in_in_out_result<_I1, _I2, _O>;
 
-template <class _I, class _O>
-using unique_copy_result = copy_result<_I, _O>;
+template <class _I1, class _I2, class _O>
+using set_difference_result = in_in_out_result<_I1, _I2, _O>;
 
-template <class _I, class _O>
-using reverse_copy_result = copy_result<_I, _O>;
-
-template <class _I, class _O>
-using rotate_copy_result = copy_result<_I, _O>;
+template <class _I1, class _I2, class _O>
+using set_symmetric_difference_result = in_in_out_result<_I1, _I2, _O>;
 
 template <class _I, class _O1, class _O2>
-struct partition_copy_result
+struct in_out_out_result
 {
     [[no_unique_address]] _I    in;
     [[no_unique_address]] _O1   out1;
@@ -156,67 +187,96 @@ struct partition_copy_result
 
     template <class _II, class _OO1, class _OO2>
         requires convertible_to<const _I&, _II> && convertible_to<const _O1&, _OO1> && convertible_to<const _O2&, _OO2>
-    operator partition_copy_result<_II, _OO1, _OO2>() const &
+    constexpr operator in_out_out_result<_II, _OO1, _OO2>() const &
     {
         return {in, out1, out2};
     }
 
     template <class _II, class _OO1, class _OO2>
         requires convertible_to<_I, _II> && convertible_to<_O1, _OO1> && convertible_to<_O2, _OO2>
-    operator partition_copy_result<_II, _OO1, _OO2>() &&
+    constexpr operator in_out_out_result<_II, _OO1, _OO2>() &&
     {
         return {std::move(in), std::move(out1), std::move(out2)};
     }
 };
 
-template <class _I1, class _I2, class _O>
-using merge_result = binary_transform_result<_I1, _I2, _O>;
-
-template <class _I1, class _I2, class _O>
-using set_union_result = binary_transform_result<_I1, _I2, _O>;
-
-template <class _I1, class _I2, class _O>
-using set_intersection_result = binary_transform_result<_I1, _I2, _O>;
-
-template <class _I1, class _I2, class _O>
-using set_difference_result = binary_transform_result<_I1, _I2, _O>;
-
-template <class _I1, class _I2, class _O>
-using set_symmetric_difference_result = binary_transform_result<_I1, _I2, _O>;
+template <class _I, class _O1, class _O2>
+using partition_copy_result = in_out_out_result<_I, _O1, _O2>;
 
 template <class _T>
-struct minmax_result
+struct min_max_result
 {
     [[no_unique_address]] _T min;
     [[no_unique_address]] _T max;
 
     template <class _T2>
         requires convertible_to<const _T&, _T2>
-    operator minmax_result<_T2>() const &
+    constexpr operator min_max_result<_T2>() const &
     {
         return {min, max};
     }
 
     template <class _T2>
         requires convertible_to<_T, _T2>
-    operator minmax_result<_T2>() &&
+    constexpr operator min_max_result<_T2>() &&
     {
         return {std::move(min), std::move(max)};
     }
 };
 
 template <class _I>
-using minmax_element_result = minmax_result<_I>;
+using minmax_result = min_max_result<_I>;
 
 template <class _I>
-struct next_permutation_result
+using minmax_element_result = min_max_result<_I>;
+
+template <class _I>
+struct in_found_result
 {
-    bool found;
-    _I   in;
+    [[no_unique_address]] _I    in;
+    bool                        found;
+
+    template <class _I2>
+        requires convertible_to<const _I&, _I2>
+    constexpr operator in_found_result<_I2>() const &
+    {
+        return {in, found};
+    }
+
+    template <class _I2>
+        requires convertible_to<_I, _I2>
+    constexpr operator in_found_result<_I2>() &&
+    {
+        return {std::move(in), std::move(found)};
+    }
 };
 
 template <class _I>
-using prev_permutation_result = next_permutation_result<_I>;
+using next_permutation_result = in_found_result<_I>;
+
+template <class _I>
+using prev_permutation_result = in_found_result<_I>;
+
+template <class _O, class _T>
+struct out_value_result
+{
+    [[no_unique_address]]   _O out;
+    [[no_unique_address]]   _T value;
+
+    template <class _O2, class _T2>
+        requires convertible_to<const _O&, _O2> && convertible_to<const _T&, _T2>
+    constexpr operator out_value_result<_O2, _T2>() const &
+    {
+        return {out, value};
+    }
+
+    template <class _O2, class _T2>
+        requires convertible_to<_O, _O2> && convertible_to<_T, _T2>
+    constexpr operator out_value_result<_O2, _T2>() &&
+    {
+        return {std::move(out), std::move(value)};
+    }
+};
 
 
 namespace __detail
@@ -290,6 +350,17 @@ struct __for_each
     constexpr ranges::for_each_result<borrowed_iterator_t<_R>, _Fun> operator()(_R&& __r, _Fun __f, _Proj __proj = {}) const
     {
         return operator()(ranges::begin(std::forward<_R>(__r)), ranges::end(std::forward<_R>(__r)), std::move(__f), std::move(__proj));
+    }
+};
+
+struct __for_each_n
+{
+    template <input_iterator _I, class _Proj = identity, indirectly_unary_invocable<projected<_I, _Proj>> _Fun>
+    constexpr ranges::for_each_n_result<_I, _Fun> operator()(_I __first, iter_difference_t<_I> __n, _Fun __f, _Proj __proj = {})
+    {
+        for (iter_difference_t<_I> __i = 0; __i < __n; ++__i, (void)++__first)
+            invoke(__f, invoke(__proj, *__first));
+        return {__first, std::move(__f)};
     }
 };
 
@@ -2769,7 +2840,7 @@ struct __next_permutation
     constexpr next_permutation_result<_I> operator()(_I __first, _S __last, _Comp __comp = {}, _Proj __proj = {}) const
     {
         if (__first == __last || ranges::next(__first) == __last)
-            return {false, __first};
+            return {__first, false};
 
         // Highest index k such that A[k] < A[k + 1].
         auto __k = __last;
@@ -2781,7 +2852,7 @@ struct __next_permutation
         {
             // This is the last permutation and is in reverse-sorted order.
             __reverse{}(__first, __last);
-            return {false, __k};
+            return {__k, false};
         }
 
         // Highest index > k such that A[k] < A[l] (always exists).
@@ -2792,7 +2863,7 @@ struct __next_permutation
 
         ranges::iter_swap(__k, __l);
         __reverse{}(ranges::next(__k), __last);
-        return {true, ranges::next(__k, __last)};
+        return {ranges::next(__k, __last), true};
     }
 
     template <bidirectional_range _R, class _Comp = ranges::less, class _Proj = identity>
@@ -2833,6 +2904,7 @@ inline constexpr __detail::__all_of                     all_of = {};
 inline constexpr __detail::__any_of                     any_of = {};
 inline constexpr __detail::__none_of                    none_of = {};
 inline constexpr __detail::__for_each                   for_each = {};
+inline constexpr __detail::__for_each_n                 for_each_n = {};
 inline constexpr __detail::__find                       find = {};
 inline constexpr __detail::__find_if                    find_if = {};
 inline constexpr __detail::__find_if_not                find_if_not = {};

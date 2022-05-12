@@ -3,7 +3,7 @@
 
 
 #if defined(__mips_eabi) && !defined(__mips64)
-#  define __SYSTEM_ABI_EXECCONTEXt_JMPBUF_WORDS     12
+#  define __SYSTEM_ABI_EXECCONTEXT_JMPBUF_WORDS     12
 #endif
 
 

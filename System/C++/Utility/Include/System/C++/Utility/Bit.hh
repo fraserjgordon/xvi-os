@@ -194,11 +194,11 @@ template <class _T,
 constexpr _T bit_width(_T __x) noexcept
 {
     if constexpr (sizeof(_T) <= sizeof(int))
-        return static_cast<_T>(__builtin_ffs(__x));
+        return static_cast<_T>(static_cast<int>(__builtin_ffs(__x)));
     else if constexpr (sizeof(_T) <= sizeof(long))
-        return static_cast<_T>(__builtin_ffsl(__x));
+        return static_cast<_T>(static_cast<long>(__builtin_ffsl(__x)));
     else if constexpr (sizeof(_T) <= sizeof(long long))
-        return static_cast<_T>(__builtin_ffsll(__x));
+        return static_cast<_T>(static_cast<long long>(__builtin_ffsll(__x)));
 }
 
 template <class _T>
