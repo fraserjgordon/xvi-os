@@ -1,8 +1,10 @@
 library("StdLib")
 {
-    library_name = "C++.StdLib"
+    library_name = "System.C++.StdLib"
     library_version = "0.1.0"
-    use_stdlib = false    
+    use_stdlib = false
+
+    shared_define = "__SYSTEM_CXX_STDLIB_BUILD_SHARED"
 
     public_deps =
     [
@@ -27,5 +29,10 @@ library("StdLib")
     public_headers =
     [
         # TODO
+    ]
+
+    sources =
+    [
+        "Dummy.cc",
     ]
 }

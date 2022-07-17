@@ -1,20 +1,41 @@
+subfolders =
+[
+    "ABI",
+    "Allocator",
+    "Boot",
+    "C",
+    "C++",
+    "Compress",
+    "Concurrency",
+    "Firmware",
+    "HW",
+    "Rust",
+    "Unicode",
+    "Utility",
+]
+
+group("default")
+{
+    deps = []
+    foreach(subfolder, subfolders)
+    {
+        deps += ["${subfolder}/:${subfolder}__default_build_targets"]
+    }
+
+    if (build_all || true)
+    {
+        deps +=
+        [
+            ":all__static",
+            ":all__shared",
+            ":all__kernel",
+        ]
+    }
+}
+
 library_group("all_single_arch")
 {
-    deps =
-    [
-        "ABI",
-        "Allocator",
-        "Boot",
-        #"C",
-        "C++",
-        "Compress",
-        "Concurrency",
-        "Firmware",
-        "HW",
-        "Rust",
-        "Unicode",
-        "Utility",
-    ]
+    deps = subfolders   
 }
 
 library_group("all")

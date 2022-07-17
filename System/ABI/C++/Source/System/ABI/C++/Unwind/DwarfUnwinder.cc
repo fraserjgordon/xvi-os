@@ -49,7 +49,7 @@ public:
 
 protected:
 
-    void resume(Exception*) final;
+    [[noreturn]] void resume(Exception*) final;
 
 private:
 

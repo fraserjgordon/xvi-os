@@ -6,6 +6,8 @@ template("library_group")
     shared_deps = []
     kernel_deps = []
 
+    default_build_targets = []
+
     if (defined(invoker.deps))
     {
         foreach(dep, invoker.deps)
@@ -26,6 +28,11 @@ template("library_group")
             kernel_deps +=
             [
                 "${dep_label}__kernel(${dep_toolchain})",
+            ]
+
+            default_build_targets +=
+            [
+                "${dep_label}__default_build_targets(${dep_toolchain})",
             ]
         }
     }
@@ -50,5 +57,10 @@ template("library_group")
     group("${target_name}__kernel")
     {
         deps = kernel_deps
+    }
+
+    group("${target_name}__default_build_targets")
+    {
+        deps = default_build_targets
     }
 }

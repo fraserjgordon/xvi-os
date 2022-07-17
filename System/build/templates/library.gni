@@ -57,8 +57,32 @@ template("library")
     }
     not_needed(["rust_only"])
 
+    # Standard library linking.
+    use_stdlib = true
+    if (defined(invoker.use_stdlib) && !invoker.use_stdlib)
+    {
+        use_stdlib = false
+    }
+
+    # No-stdlib libraries are implicitly disabled for building for the host. 
+    no_host = !use_stdlib
+    if (defined(invoker.no_host))
+    {
+        no_host = invoker.no_host
+    }
+
+    always_build = ["shared"]
+    if (defined(invoker.always_build))
+    {
+        always_build = invoker.always_build
+    }
+
     # Target types to generate.
     target_types = ["static", "static_pic", "shared", "kernel"]
+    if (!no_host)
+    {
+        target_types += ["host_static"]
+    }
     if (defined(invoker.target_types))
     {
         target_types = []
@@ -118,13 +142,6 @@ template("library")
     if (defined(invoker.define_header_target))
     {
         define_header_target = invoker.define_header_target
-    }
-
-    # Standard library linking.
-    use_stdlib = true
-    if (defined(invoker.use_stdlib) && !invoker.use_stdlib)
-    {
-        use_stdlib = false
     }
 
 
@@ -207,11 +224,51 @@ template("library")
         }
     }
 
+    build_static = filter_include(target_types, ["static"]) != []
+    build_shared = filter_include(target_types, ["shared"]) != []
+    build_kernel = filter_include(target_types, ["kernel"]) != []
+    build_static_pic = filter_include(target_types, ["static_pic"]) != []
+    build_host_static = filter_include(target_types, ["host_static"]) != []
+
+    group("${target_name}__default_build_targets")
+    {
+        deps = []
+
+        if (!header_only)
+        {
+            if (build_static && filter_include(always_build, ["static"]) != [])
+            {
+                deps += [":${orig_target_name}__static"]
+            }
+
+            if (build_static_pic && filter_include(always_build, ["static_pic"]) != [])
+            {
+                deps += [":${orig_target_name}__static_pic"]
+            }
+
+            if (build_shared && filter_include(always_build, ["shared"]) != [])
+            {
+                deps += [":${orig_target_name}__static"]
+            }
+
+            if (build_kernel && filter_include(always_build, ["kernel"]) != [])
+            {
+                deps += [":${orig_target_name}__kernel"]
+            }
+
+            if (build_host_static && filter_include(always_build, ["host_static"]) != [])
+            {
+                deps += [":${orig_target_name}__host_static"]
+            }
+        }
+    }
+
     # Header-only libraries don't get compiled; they only pass along various
     # settings (primarily, the include path).
     if (header_only)
     {   
         not_needed([
+            "always_build",
             "library_name",
             "target_types",
             "use_stdlib",
@@ -251,96 +308,134 @@ template("library")
         public_configs  += [":${target_name}_includes"]
 
 
+        if (build_static)
+        {
         source_set("${target_name}__static")
+            {   
+                orig_public_deps = public_deps
+                public_deps = []
+                foreach(dep, orig_public_deps)
+                {
+                    # TODO: remove the if {} around the code.
+                    dep_name = get_label_info(dep, "name")
+                    if (string_replace(dep_name, "__", "") == dep_name)
+                    {
+                        dep_toolchain = get_label_info(dep, "toolchain")
+                        dep_label = get_label_info(dep, "label_no_toolchain")
+                        public_deps += ["${dep_label}__static(${dep_toolchain})"]
+                    }
+                    else
+                    {
+                        public_deps += [dep]
+                    }
+                }
+
+                public_deps += plain_deps
+            }
+        }
+
+        if (build_static_pic)
+        {
+            source_set("${target_name}__static_pic")
+            {
+                orig_public_deps = public_deps
+                public_deps = []
+                foreach(dep, orig_public_deps)
+                {
+                    # TODO: remove the if {} around the code.
+                    dep_name = get_label_info(dep, "name")
+                    if (string_replace(dep_name, "__", "") == dep_name)
+                    {
+                        dep_toolchain = get_label_info(dep, "toolchain")
+                        dep_label = get_label_info(dep, "label_no_toolchain")
+                        public_deps += ["${dep_label}__static_pic(${dep_toolchain})"]
+                    }
+                    else
+                    {
+                        public_deps += [dep]
+                    }
+                }
+
+                public_deps += plain_deps
+            }
+        }
+
+        if (build_shared)
+        {
+            source_set("${target_name}__shared")
+            {
+                orig_public_deps = public_deps
+                public_deps = []
+                foreach(dep, orig_public_deps)
+                {
+                    # TODO: remove the if {} around the code.
+                    dep_name = get_label_info(dep, "name")
+                    if (string_replace(dep_name, "__", "") == dep_name)
+                    {
+                        dep_toolchain = get_label_info(dep, "toolchain")
+                        dep_label = get_label_info(dep, "label_no_toolchain")
+                        public_deps += ["${dep_label}__shared(${dep_toolchain})"]
+                    }
+                    else
+                    {
+                        public_deps += [dep]
+                    }
+                }
+
+                public_deps += plain_deps
+            }
+        }
+
+        if (build_kernel)
         {   
-            orig_public_deps = public_deps
-            public_deps = []
-            foreach(dep, orig_public_deps)
+            source_set("${target_name}__kernel")
             {
-                # TODO: remove the if {} around the code.
-                dep_name = get_label_info(dep, "name")
-                if (string_replace(dep_name, "__", "") == dep_name)
+                orig_public_deps = public_deps
+                public_deps = []
+                foreach(dep, orig_public_deps)
                 {
-                    dep_toolchain = get_label_info(dep, "toolchain")
-                    dep_label = get_label_info(dep, "label_no_toolchain")
-                    public_deps += ["${dep_label}__static(${dep_toolchain})"]
+                    # TODO: remove the if {} around the code.
+                    dep_name = get_label_info(dep, "name")
+                    if (string_replace(dep_name, "__", "") == dep_name)
+                    {
+                        dep_toolchain = get_label_info(dep, "toolchain")
+                        dep_label = get_label_info(dep, "label_no_toolchain")
+                        public_deps += ["${dep_label}__kernel(${dep_toolchain})"]
+                    }
+                    else
+                    {
+                        public_deps += [dep]
+                    }
                 }
-                else
-                {
-                    public_deps += [dep]
-                }
-            }
 
-            public_deps += plain_deps
+                public_deps += plain_deps
+            }
         }
 
-        source_set("${target_name}__static_pic")
+        if (build_host_static)
         {
-            orig_public_deps = public_deps
-            public_deps = []
-            foreach(dep, orig_public_deps)
-            {
-                # TODO: remove the if {} around the code.
-                dep_name = get_label_info(dep, "name")
-                if (string_replace(dep_name, "__", "") == dep_name)
+            source_set("${target_name}__host_static")
+            {   
+                orig_public_deps = public_deps
+                public_deps = []
+                foreach(dep, orig_public_deps)
                 {
-                    dep_toolchain = get_label_info(dep, "toolchain")
-                    dep_label = get_label_info(dep, "label_no_toolchain")
-                    public_deps += ["${dep_label}__static_pic(${dep_toolchain})"]
+                    # TODO: remove the if {} around the code.
+                    dep_name = get_label_info(dep, "name")
+                    if (string_replace(dep_name, "__", "") == dep_name)
+                    {
+                        dep_toolchain = get_label_info(dep, "toolchain")
+                        dep_label = get_label_info(dep, "label_no_toolchain")
+                        public_deps += ["${dep_label}__host_static(${dep_toolchain})"]
+                    }
+                    else
+                    {
+                        public_deps += [dep]
+                    }
                 }
-                else
-                {
-                    public_deps += [dep]
-                }
+
+                public_deps += plain_deps
             }
-
-            public_deps += plain_deps
-        }
-
-        source_set("${target_name}__shared")
-        {
-            orig_public_deps = public_deps
-            public_deps = []
-            foreach(dep, orig_public_deps)
-            {
-                # TODO: remove the if {} around the code.
-                dep_name = get_label_info(dep, "name")
-                if (string_replace(dep_name, "__", "") == dep_name)
-                {
-                    dep_toolchain = get_label_info(dep, "toolchain")
-                    dep_label = get_label_info(dep, "label_no_toolchain")
-                    public_deps += ["${dep_label}__shared(${dep_toolchain})"]
-                }
-                else
-                {
-                    public_deps += [dep]
-                }
-            }
-
-            public_deps += plain_deps
-        }
-
-        source_set("${target_name}__kernel")
-        {
-            orig_public_deps = public_deps
-            public_deps = []
-            foreach(dep, orig_public_deps)
-            {
-                # TODO: remove the if {} around the code.
-                dep_name = get_label_info(dep, "name")
-                if (string_replace(dep_name, "__", "") == dep_name)
-                {
-                    dep_toolchain = get_label_info(dep, "toolchain")
-                    dep_label = get_label_info(dep, "label_no_toolchain")
-                    public_deps += ["${dep_label}__kernel(${dep_toolchain})"]
-                }
-                else
-                {
-                    public_deps += [dep]
-                }
-            }
-
-            public_deps += plain_deps
         }
     }
     else
@@ -402,11 +497,6 @@ template("library")
             is_source_set = invoker.is_source_set
         }
 
-        build_static = filter_include(target_types, ["static"]) != []
-        build_shared = filter_include(target_types, ["shared"]) != []
-        build_kernel = filter_include(target_types, ["kernel"]) != []
-        build_static_pic = filter_include(target_types, ["static_pic"]) != []
-
         if (build_static_pic)
         {
             # The static library is either PIC or it isn't; we can't have both.
@@ -417,7 +507,8 @@ template("library")
         {
             if (!rust_only)
             {
-                deps    += ["//C++/StdLib"]
+                # In most cases, the C stdlib is redundant here except that GCC insists on linking to it.
+                deps += ["//C++/StdLib", "//C/StdLib"]
             }
 
             configs += ["//build/config:stdlib"]
@@ -448,6 +539,11 @@ template("library")
             static_build_info =
             {
                 output_name = library_name
+
+                if (defined(invoker.output_name))
+                {
+                    output_name = invoker.output_name
+                }
 
                 if (defined(invoker.static_define))
                 {
@@ -613,6 +709,11 @@ template("library")
             {
                 output_name = string_replace(library_name, "System.", "Kernel.", 1)
 
+                if (defined(invoker.output_name))
+                {
+                    output_name = string_replace(invoker.output_name, "System.", "Kernel.", 1)
+                }
+
                 configs += ["//build/config/arch/${current_arch}:kernel_flags"]
                 defines += ["XVI_KERNEL"]
 
@@ -705,6 +806,11 @@ template("library")
             {
                 output_name = library_name
 
+                if (defined(invoker.output_name))
+                {
+                    output_name = invoker.output_name
+                }
+
                 configs += ["//build/config:shared"]
 
                 defines += [invoker.shared_define]
@@ -784,6 +890,102 @@ template("library")
                 {
                     public_deps += [":${static_target_name}"]
                 }
+            }
+        }
+
+        if (build_host_static)
+        {
+            lib_type = "static_library"
+            if (is_source_set)
+            {
+                lib_type = "source_set"
+                library_name += "__host_static_source_set"
+            }
+            else if (rust_only)
+            {
+                lib_type = "rust_library"
+            }
+            else
+            {
+                library_name += "__HOST"
+            }
+            
+            host_static_build_info =
+            {
+                output_name = library_name
+
+                if (defined(invoker.output_name))
+                {
+                    output_name = invoker.output_name
+                }
+
+                if (defined(invoker.static_define))
+                {
+                    defines += invoker.static_define
+                }
+
+                if (defined(invoker.deps_static))
+                {
+                    deps += invoker.deps_static
+                }
+
+                if (defined(invoker.public_deps_static))
+                {
+                    public_deps += invoker.public_deps_static
+                }
+            }
+
+            target(lib_type, "${target_name}__host_static")
+            {
+                forward_variables_from(host_static_build_info, "*")
+
+                orig_deps = deps
+
+                # Remove any stdlib deps as we'll be using the host's stdlibs.
+                foreach(stdlib, ["//C/StdLib", "//C++/StdLib"])
+                {
+                    if (filter_include(orig_deps, [stdlib]) != [])
+                    {
+                        orig_deps -= [stdlib]
+                    }
+                }
+
+                deps = []
+                foreach(dep, orig_deps)
+                {
+                    # TODO: remove the if {} around the code.
+                    dep_name = get_label_info(dep, "name")
+                    if (string_replace(dep_name, "__", "") == dep_name)
+                    {
+                        dep_toolchain = get_label_info(dep, "toolchain")
+                        dep_label = get_label_info(dep, "label_no_toolchain")
+                        deps += ["${dep_label}__host_static(${dep_toolchain})"]
+                    }
+                    else
+                    {
+                        deps += [dep]
+                    }
+                }
+
+                orig_public_deps = public_deps
+                public_deps = []
+                foreach(dep, orig_public_deps)
+                {
+                    # TODO: remove the if {} around the code.
+                    dep_name = get_label_info(dep, "name")
+                    if (string_replace(dep_name, "__", "") == dep_name)
+                    {
+                        dep_toolchain = get_label_info(dep, "toolchain")
+                        dep_label = get_label_info(dep, "label_no_toolchain")
+                        public_deps += ["${dep_label}__host_static(${dep_toolchain})"]
+                    }
+                    else
+                    {
+                        public_deps += [dep]
+                    }
+                }
+
+                deps += plain_deps
             }
         }
     }

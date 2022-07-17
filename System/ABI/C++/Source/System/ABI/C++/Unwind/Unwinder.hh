@@ -52,7 +52,7 @@ protected:
 
     virtual ~Unwinder() = 0;
 
-    virtual void resume(Exception*) = 0;
+    [[noreturn]] virtual void resume(Exception*) = 0;
 
     // Custom operator delete to avoid dependency on the global delete.
     void operator delete(void*);
@@ -171,7 +171,7 @@ public:
         return &m_header;
     }
 
-    void resume()
+    [[noreturn]] void resume()
     {
         context()->unwinder()->resume(this);
     }

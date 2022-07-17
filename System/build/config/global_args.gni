@@ -23,6 +23,9 @@ declare_args()
 
     # Pass -Werror when compiling.
     werror = false
+
+    # Build all targets, not just the default targets.
+    build_all = false
 }
 
 # Compiler arguments

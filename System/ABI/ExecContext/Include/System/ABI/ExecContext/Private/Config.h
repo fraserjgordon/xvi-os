@@ -67,4 +67,14 @@
    .symver System.ABI.ExecContext.##internal, System.ABI.ExecContext.##external##@@SYSTEM_ABI_EXECCONTEXT##ver;
 
 
+// Disable the symbol versioning for now.
+#undef __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST
+#define __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(internal,external,ver) \
+   .global  System.ABI.ExecContext.##external; \
+   __SYSTEM_ABI_EXECCONTEXT_EXPORT_ASM_WORD System.ABI.ExecContext.##external; \
+   .type    System.ABI.ExecContext.##external, STT_FUNC; \
+   .size    .L##internal, .L##internal##_end - .L##internal; \
+   .equ     System.ABI.ExecContext.##external, .L##internal;
+
+
 #endif /* ifndef __SYSTEM_ABI_EXECCONTEXT_H */

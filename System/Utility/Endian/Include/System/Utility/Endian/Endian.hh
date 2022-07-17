@@ -280,6 +280,27 @@ template <class T>
 inline constexpr bool is_endian_type_v = is_endian_type<T>::value;
 
 
+template <std::endian Endian>
+struct endian_traits
+{
+    static constexpr std::endian order = Endian;
+
+    using uint8_t       = std::uint8_t;
+    using uint16_t      = fixed_endian_type<std::uint16_t, Endian>;
+    using uint32_t      = fixed_endian_type<std::uint32_t, Endian>;
+    using uint64_t      = fixed_endian_type<std::uint64_t, Endian>;
+
+    using int8_t        = std::int8_t;
+    using int16_t       = fixed_endian_type<std::int16_t, Endian>;
+    using int32_t       = fixed_endian_type<std::int32_t, Endian>;
+    using int64_t       = fixed_endian_type<std::int64_t, Endian>;
+};
+
+using little_endian_traits = endian_traits<std::endian::little>;
+using big_endian_traits = endian_traits<std::endian::big>;
+using native_endian_traits = endian_traits<std::endian::native>;
+
+
 } // namespace System::Utility::Endian
 
 

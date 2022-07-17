@@ -40,7 +40,7 @@ library("MiniUTF")
     library_version = "0.1.0"
     include_prefix  = "System/Unicode/UTF"
 
-    target_types    = ["static", "kernel"]
+    target_types    = ["static", "static_pic", "kernel"]
 
     use_stdlib = false
 

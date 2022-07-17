@@ -273,6 +273,9 @@ library("C++")
     library_name    = "System.ABI.C++"
     library_version = "0.1.0"
 
+    # TODO: fix compilers to look for "System.ABI.C++" and remove this.
+    output_name = "System.ABI.C++.CRT"
+
     is_source_set = false
     header_only = false
     define_header_target = true

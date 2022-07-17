@@ -89,7 +89,7 @@ template <class _T> reference_wrapper<const _T> cref(reference_wrapper<_T> __t) 
 template <class _T> struct unwrap_reference { using type = _T; };
 template <class _T> struct unwrap_reference<reference_wrapper<_T>> { using type = _T&; };
 
-template <class _T> struct unwrap_ref_decay : unwrap_reference<decay_t<_T>> {};
+template <class _T> struct unwrap_ref_decay : unwrap_reference<std::decay_t<_T>> {};
 template <class _T> using unwrap_ref_decay_t = typename unwrap_ref_decay<_T>::type;
 
 

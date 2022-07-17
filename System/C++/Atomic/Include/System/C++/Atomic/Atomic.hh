@@ -14,6 +14,10 @@ namespace __XVI_STD_ATOMIC_NS
 {
 
 
+// Forward declarations.
+template <class _T> constexpr _T* addressof(_T&);
+
+
 enum class memory_order : int
 {
     relaxed = __ATOMIC_RELAXED,

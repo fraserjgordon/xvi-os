@@ -32,6 +32,12 @@ namespace ranges::__detail
 namespace __detail
 {
 
+#if 0
+#define __DECAY(__x) auto(__x)
+#else
+#define __DECAY(__x) std::decay_t<decltype(__x)>(__x)
+#endif
+
 template <class _T> using __with_reference = _T&;
 
 template <class _T>
@@ -142,7 +148,7 @@ struct indirectly_readable_traits<_T> :
     __detail::__cond_value_type<typename _T::element_type> {};
 
 template <__detail::__has_member_value_type _T>
-    requires __detail::__has_member_value_type<_T>
+    requires __detail::__has_member_element_type<_T>
 struct indirectly_readable_traits<_T> {};
 
 template <__detail::__has_member_value_type _T>
@@ -886,23 +892,23 @@ struct __begin
     template <class _T>
         requires (__lvalue_or_borrowed_range<_T>
             && !std::is_array_v<std::remove_cvref_t<_T>>
-            && requires(_T& __t) { { auto(__t.begin()) } -> input_or_output_iterator; })
+            && requires(_T& __t) { { __DECAY(__t.begin()) } -> input_or_output_iterator; })
     constexpr decltype(auto) operator()(_T&& __t) const
-        noexcept(noexcept(auto(__t.begin())))
+        noexcept(noexcept(__DECAY(__t.begin())))
     {
-        return auto(static_cast<_T&>(__t).begin());
+        return __DECAY(static_cast<_T&>(__t).begin());
     }
 
     template <class _T>
         requires (__lvalue_or_borrowed_range<_T> 
             && !std::is_array_v<std::remove_cvref_t<_T>>
-            && !requires(_T& __t) { { auto(__t.begin())  } -> input_or_output_iterator; }
+            && !requires(_T& __t) { { __DECAY(__t.begin())  } -> input_or_output_iterator; }
             && (std::is_class_v<std::remove_cvref_t<_T>> || std::is_enum_v<std::remove_cvref_t<_T>>)
-            && requires(_T& __t) { { auto(begin(__t)) } -> input_or_output_iterator; })
+            && requires(_T& __t) { { __DECAY(begin(__t)) } -> input_or_output_iterator; })
     constexpr decltype(auto) operator()(_T&& __t) const
-        noexcept(noexcept(auto(begin(static_cast<_T&>(__t)))))
+        noexcept(noexcept(__DECAY(begin(static_cast<_T&>(__t)))))
     {
-        return auto(begin(static_cast<_T&>(__t)));
+        return __DECAY(begin(static_cast<_T&>(__t)));
     }
 };
 
@@ -921,23 +927,23 @@ struct __end
     template <class _T>
         requires (__lvalue_or_borrowed_range<_T>
             && !std::is_array_v<std::remove_cvref_t<_T>>
-            && requires(_T& __t) { { auto(__t.end()) } -> sentinel_for<decltype(__begin()(__t))>; })
+            && requires(_T& __t) { { __DECAY(__t.end()) } -> sentinel_for<decltype(__begin()(__t))>; })
     constexpr decltype(auto) operator()(_T&& __t) const
-        noexcept(noexcept(auto(__t.end())))
+        noexcept(noexcept(__DECAY(__t.end())))
     {
-        return auto(__t.end());
+        return __DECAY(__t.end());
     }
 
     template <class _T>
         requires (__lvalue_or_borrowed_range<_T> 
             && !std::is_array_v<std::remove_cvref_t<_T>>
-            && !requires(_T& __t) { { auto(__t.end()) } -> sentinel_for<decltype(__begin()(__t))>; }
+            && !requires(_T& __t) { { __DECAY(__t.end()) } -> sentinel_for<decltype(__begin()(__t))>; }
             && (std::is_class_v<std::remove_cvref_t<_T>> || std::is_enum_v<std::remove_cvref_t<_T>>)
-            && requires(_T& __t) { { auto(end(__t)) } -> sentinel_for<decltype(__begin()(__t))>; })
+            && requires(_T& __t) { { __DECAY(end(__t)) } -> sentinel_for<decltype(__begin()(__t))>; })
     constexpr decltype(auto) operator()(_T&& __t) const
-        noexcept(noexcept(auto(end(static_cast<_T&>(__t)))))
+        noexcept(noexcept(__DECAY(end(static_cast<_T&>(__t)))))
     {
-        return auto(end(static_cast<_T&>(__t)));
+        return __DECAY(end(static_cast<_T&>(__t)));
     }
 };
 
@@ -987,39 +993,39 @@ struct __size
     constexpr decltype(auto) operator()(_T&&) const noexcept
     {
         static_assert(std::extent_v<std::remove_cvref_t<_T>> > 0);
-        return auto(std::extent_v<std::remove_cvref_t<_T>>);
+        return __DECAY(std::extent_v<std::remove_cvref_t<_T>>);
     }
 
     template <class _T>
         requires (!std::is_array_v<std::remove_cvref_t<_T>>
             && !disable_sized_range<std::remove_cvref_t<_T>>
-            && requires(_T&& __t) { auto(std::forward<_T>(__t).size()); }
-            && __XVI_STD_UTILITY_NS::__detail::__is_integer_like<decltype(auto(declval<_T>().size()))>)
+            && requires(_T&& __t) { __DECAY(std::forward<_T>(__t).size()); }
+            && __XVI_STD_UTILITY_NS::__detail::__is_integer_like<decltype(__DECAY(declval<_T>().size()))>)
     constexpr decltype(auto) operator()(_T&& __t) const
-        noexcept(noexcept(auto(std::forward<_T>(__t).size())))
+        noexcept(noexcept(__DECAY(std::forward<_T>(__t).size())))
     {
-        return auto(std::forward<_T>(__t).size());
+        return __DECAY(std::forward<_T>(__t).size());
     }
 
     template <class _T>
     requires (!std::is_array_v<std::remove_cvref_t<_T>>
         && !disable_sized_range<std::remove_cvref_t<_T>>
-        && (!requires(_T&& __t) { auto(std::forward<_T>(__t).size()); }
-                || !__XVI_STD_UTILITY_NS::__detail::__is_integer_like<decltype(auto(declval<_T>().size()))>)
-        && requires(_T&& __t) { auto(size(std::forward<_T>(__t))); }
-        && __XVI_STD_UTILITY_NS::__detail::__is_integer_like<decltype(auto(size(declval<_T>())))>)
+        && (!requires(_T&& __t) { __DECAY(std::forward<_T>(__t).size()); }
+                || !__XVI_STD_UTILITY_NS::__detail::__is_integer_like<decltype(__DECAY(declval<_T>().size()))>)
+        && requires(_T&& __t) { __DECAY(size(std::forward<_T>(__t))); }
+        && __XVI_STD_UTILITY_NS::__detail::__is_integer_like<decltype(__DECAY(size(declval<_T>())))>)
     constexpr decltype(auto) operator()(_T&& __t) const
-        noexcept(noexcept(auto(size(std::forward<_T>(__t)))))
+        noexcept(noexcept(__DECAY(size(std::forward<_T>(__t)))))
     {
-        return auto(size(std::forward<_T>(__t)));
+        return __DECAY(size(std::forward<_T>(__t)));
     }
 
     template <class _T>
         requires (!std::is_array_v<std::remove_cvref_t<_T>>
-            && (!requires(_T&& __t) { auto(std::forward<_T>(__t).size()); }
-                 || !__XVI_STD_UTILITY_NS::__detail::__is_integer_like<decltype(auto(declval<_T>().size()))>)
-            && (!requires(_T&& __t) { auto(size(std::forward<_T>(__t))); }
-                || !__XVI_STD_UTILITY_NS::__detail::__is_integer_like<decltype(auto(size(declval<_T>())))>)
+            && (!requires(_T&& __t) { __DECAY(std::forward<_T>(__t).size()); }
+                 || !__XVI_STD_UTILITY_NS::__detail::__is_integer_like<decltype(__DECAY(declval<_T>().size()))>)
+            && (!requires(_T&& __t) { __DECAY(size(std::forward<_T>(__t))); }
+                || !__XVI_STD_UTILITY_NS::__detail::__is_integer_like<decltype(__DECAY(size(declval<_T>())))>)
             && requires(_T&& __t)
                 {
                     __to_unsigned_like(__end()(std::forward<_T>(__t)) - __begin()(std::forward<_T>(__t)));
@@ -1086,19 +1092,19 @@ struct __data
 {
     template <class _T>
         requires (__lvalue_or_borrowed_range<std::remove_cvref_t<_T>>
-            && requires(_T&& __t) { auto(std::forward<_T>(__t).data()); }
-            && std::is_pointer_v<decltype(auto(declval<_T&&>().data()))>
-            && std::is_object_v<std::remove_pointer_t<decltype(auto(declval<_T&&>().data()))>>)
+            && requires(_T&& __t) { __DECAY(std::forward<_T>(__t).data()); }
+            && std::is_pointer_v<decltype(__DECAY(declval<_T&&>().data()))>
+            && std::is_object_v<std::remove_pointer_t<decltype(__DECAY(declval<_T&&>().data()))>>)
     constexpr decltype(auto) operator()(_T&& __t) const
-        noexcept(noexcept(auto(std::forward<_T>(__t).data())))
+        noexcept(noexcept(__DECAY(std::forward<_T>(__t).data())))
     {
-        return auto(std::forward<_T>(__t).data());
+        return __DECAY(std::forward<_T>(__t).data());
     }
 
     template <class _T>
         requires (__lvalue_or_borrowed_range<std::remove_cvref_t<_T>>
-            && (!requires(_T&& __t) { auto(std::forward<_T>(__t).data()); }
-                   || !std::is_pointer_v<decltype(auto(declval<_T&&>().data()))>
+            && (!requires(_T&& __t) { __DECAY(std::forward<_T>(__t).data()); }
+                   || !std::is_pointer_v<decltype(__DECAY(declval<_T&&>().data()))>
                    || !std::is_object_v<std::remove_pointer_t<decltype(autoF(declval<_T&&>().data()))>>)
             && requires(_T&& __t) { { __begin()(std::forward<_T>(__t)) } -> contiguous_iterator; })
     constexpr decltype(auto) operator()(_T&& __t) const
@@ -1612,27 +1618,27 @@ struct __rbegin
 {
     template <class _T>
         requires (__lvalue_or_borrowed_range<_T>
-            && requires(_T& __t) { { auto(__t).rbegin() } -> input_or_output_iterator; })
+            && requires(_T& __t) { { __DECAY(__t).rbegin() } -> input_or_output_iterator; })
     constexpr decltype(auto) operator()(_T&& __t) const
-        noexcept(noexcept(auto(static_cast<_T&>(__t).begin())))
+        noexcept(noexcept(__DECAY(static_cast<_T&>(__t).begin())))
     {
-        return auto(static_cast<_T&>(__t).rbegin());
+        return __DECAY(static_cast<_T&>(__t).rbegin());
     }
 
     template <class _T>
         requires (__lvalue_or_borrowed_range<_T>
-            && !requires(_T& __t) { { auto(__t.rbegin()) } -> input_or_output_iterator; }
-            && requires(_T& __t) { { auto(rbegin(__t)) } -> input_or_output_iterator; })
+            && !requires(_T& __t) { { __DECAY(__t.rbegin()) } -> input_or_output_iterator; }
+            && requires(_T& __t) { { __DECAY(rbegin(__t)) } -> input_or_output_iterator; })
     constexpr decltype(auto) operator()(_T&& __t) const
-        noexcept(noexcept(auto(rbegin(static_cast<_T&>(__t)))))
+        noexcept(noexcept(__DECAY(rbegin(static_cast<_T&>(__t)))))
     {
-        return auto(rbegin(static_cast<_T&>(__t)));
+        return __DECAY(rbegin(static_cast<_T&>(__t)));
     }
 
     template <class _T>
         requires (__lvalue_or_borrowed_range<_T>
-            && !requires(_T& __t) { { auto(__t.rbegin()) } -> input_or_output_iterator; }
-            && !requires(_T& __t) { { auto(rbegin(__t)) } -> input_or_output_iterator; }
+            && !requires(_T& __t) { { __DECAY(__t.rbegin()) } -> input_or_output_iterator; }
+            && !requires(_T& __t) { { __DECAY(rbegin(__t)) } -> input_or_output_iterator; }
             && requires(_T& __t)
             {
                 { ranges::begin(__t) } -> bidirectional_iterator;
@@ -1660,27 +1666,27 @@ struct __rend
 {
     template <class _T>
         requires (__lvalue_or_borrowed_range<_T>
-            && requires(_T& __t) { { auto(__t.rend()) } -> sentinel_for<decltype(ranges::rbegin(__t))>; })
+            && requires(_T& __t) { { __DECAY(__t.rend()) } -> sentinel_for<decltype(ranges::rbegin(__t))>; })
     constexpr decltype(auto) operator()(_T&& __t) const
-        noexcept(noexcept(auto(static_cast<_T&>(__t).begin())))
+        noexcept(noexcept(__DECAY(static_cast<_T&>(__t).begin())))
     {
-        return auto(static_cast<_T&>(__t).begin());
+        return __DECAY(static_cast<_T&>(__t).begin());
     }
 
     template <class _T>
         requires (__lvalue_or_borrowed_range<_T>
-            && !requires(_T& __t) { { auto(__t.rend()) } -> sentinel_for<decltype(ranges::rbegin(__t))>; }
-            && requires(_T& __t) { { auto(rend(__t)) } -> sentinel_for<decltype(ranges::rbegin(__t))>; })
+            && !requires(_T& __t) { { __DECAY(__t.rend()) } -> sentinel_for<decltype(ranges::rbegin(__t))>; }
+            && requires(_T& __t) { { __DECAY(rend(__t)) } -> sentinel_for<decltype(ranges::rbegin(__t))>; })
     constexpr decltype(auto) operator()(_T&& __t) const
-        noexcept(noexcept(auto(rbegin(static_cast<_T&>(__t)))))
+        noexcept(noexcept(__DECAY(rbegin(static_cast<_T&>(__t)))))
     {
-        return auto(rbegin(static_cast<_T&>(__t)));
+        return __DECAY(rbegin(static_cast<_T&>(__t)));
     }
 
     template <class _T>
         requires (__lvalue_or_borrowed_range<_T>
-            && !requires(_T& __t) { { auto(__t.rend()) } -> sentinel_for<decltype(ranges::rbegin(__t))>; }
-            && !requires(_T& __t) { { auto(rend(__t)) } -> sentinel_for<decltype(ranges::rbegin(__t))>; }
+            && !requires(_T& __t) { { __DECAY(__t.rend()) } -> sentinel_for<decltype(ranges::rbegin(__t))>; }
+            && !requires(_T& __t) { { __DECAY(rend(__t)) } -> sentinel_for<decltype(ranges::rbegin(__t))>; }
             && requires(_T& __t)
             {
                 { ranges::begin(__t) } -> bidirectional_iterator;

@@ -990,7 +990,7 @@ public:
         requires requires { declval<_Callable>()(declval<_R>()); }
     constexpr auto operator()(_R&& __r) const
     {
-        return _M_callable(std::forward<_R>(__r));
+        return __range_adaptor<_Callable>::_M_callable(std::forward<_R>(__r));
     }
 };
 
@@ -1031,7 +1031,7 @@ namespace views
 inline constexpr __detail::__range_adaptor_closure all = []<class _T>(_T&& __t)
 {
     if constexpr (view<std::decay_t<_T>>)
-        return auto(std::forward<_T>(__t));
+        return __DECAY(std::forward<_T>(__t));
     else if constexpr (requires { ref_view{std::forward<_T>(__t)}; })
         return ref_view{std::forward<_T>(__t)};
     else
@@ -1744,7 +1744,7 @@ inline constexpr __detail::__range_adaptor_closure take = []<class _E, class _F>
 
     if constexpr (__detail::__is_specialization_of_v<empty_view, _T>)
     {
-        return ((void) std::forward<_F>(__f), auto(std::forward<_E>(__e)));
+        return ((void) std::forward<_F>(__f), __DECAY(std::forward<_E>(__e)));
     }
     else if constexpr (random_access_range<_T> && sized_range<_T>
         && (__detail::__is_specialization_of_v<span, _T>
@@ -1991,7 +1991,7 @@ inline constexpr __detail::__range_adaptor_closure drop = []<class _E, class _F>
 
     if constexpr (__detail::__is_specialization_of_v<empty_view, _T>)
     {
-        return ((void) std::forward<_F>(__f), auto(std::forward<_E>(__e)));
+        return ((void) std::forward<_F>(__f), __DECAY(std::forward<_E>(__e)));
     }
     else if constexpr (random_access_range<_T> && sized_range<_T>
         && (__detail::__is_specialization_of_v<span, _T>
@@ -4360,7 +4360,7 @@ namespace views
 inline constexpr __detail::__range_adaptor_closure zip = []<class... _Es>(_Es&&... __es)
 {
     if constexpr (sizeof...(_Es) == 0)
-        return auto(views::empty<tuple<>>);
+        return __DECAY(views::empty<tuple<>>);
     else
         return zip_view<views::all_t<_Es>...>(std::forward<_Es>(__es)...);
 };
@@ -4388,7 +4388,7 @@ inline constexpr __detail::__range_adaptor_closure zip_transform = []<class _F, 
 
         static_assert(std::copy_constructible<_FD> && std::regular_invocable<_FD&> && std::is_object_v<std::decay_t<std::invoke_result_t<_FD&>>>);
 
-        ((void)std::forward<_F>(__f), auto(views::empty<std::decay_t<std::invoke_result_t<_FD&>>>));
+        ((void)std::forward<_F>(__f), __DECAY(views::empty<std::decay_t<std::invoke_result_t<_FD&>>>));
     }
     else
     {
@@ -4415,7 +4415,7 @@ template <std::size_t _N>
 inline constexpr __detail::__range_adaptor_closure adjacent = []<class _E>(_E&& __e)
 {
     if constexpr (_N == 0)
-        ((void)std::forward<_E>(__e), auto(views::empty<tuple<>>));
+        ((void)std::forward<_E>(__e), __DECAY(views::empty<tuple<>>));
     else
         adjancent_view<views::all_t<_E>, _N>(std::forward<_E>(__e));
 };

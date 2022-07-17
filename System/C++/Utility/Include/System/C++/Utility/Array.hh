@@ -182,12 +182,18 @@ struct array
 
     constexpr _T* data() noexcept
     {
-        return _M_arr;
+        if constexpr (_N == 0)
+            return nullptr;
+        else
+            return _M_arr;
     }
 
     constexpr const _T* data() const noexcept
     {
-        return _M_arr;
+        if constexpr (_N == 0)
+            return nullptr;
+        else
+            return _M_arr;
     }
 };
 
