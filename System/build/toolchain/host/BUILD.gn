@@ -1,0 +1,20 @@
+import("//build/toolchain/gcc_toolchain.gni")
+
+gcc_toolchain("host")
+{
+    is_host_toolchain = true
+
+    toolchain_arch = host_arch
+    toolchain_cpu = host_cpu
+    toolchain_os = host_os
+
+    if (host_toolchain_prefix != "")
+    {
+        toolchain_prefix = host_toolchain_prefix
+    }
+
+    if (host_toolchain_root != "")
+    {
+        toolchain_root = host_toolchain_root
+    }
+}

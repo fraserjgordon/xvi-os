@@ -37,9 +37,21 @@ declare_args()
     # for the build.
     cross_toolchain_root = ""
 
+    # As above, but for host toolchains installed in non-default locations.
+    host_toolchain_root = ""
+
+    # Prefix to use when naming the host toolchain (e.g. "x86_64-linux-gnu-".)
+    host_toolchain_prefix = ""
+
     # If set, a Clang-based toolchain will be used. Otherwise, a GCC-based
     # toolchain will be used.
     use_clang = false
+
+    # Name of the toolchain to use when building artefacts to run on the host.
+    host_toolchain = "//build/toolchain/host"
+
+    # Set when the current toolchain builds artefacts that will run on the host.
+    host_build = false
 }
 
 # Internal variables used for toolchain introspection.
@@ -76,5 +88,12 @@ declare_args()
 
 if (toolchain_out_dir == "")
 {
-    toolchain_out_dir = "${current_arch}/${current_cpu}"
+    if (host_build)
+    {
+        toolchain_out_dir = "host"
+    }
+    else
+    {
+        toolchain_out_dir = "${current_arch}/${current_cpu}"
+    }
 }

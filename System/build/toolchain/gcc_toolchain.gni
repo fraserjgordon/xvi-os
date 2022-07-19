@@ -11,6 +11,12 @@ template("gcc_toolchain")
     toolchain_cpu = invoker.toolchain_cpu
     toolchain_os = invoker.toolchain_os
 
+    is_host_toolchain = false
+    if (defined(invoker.is_host_toolchain))
+    {
+        is_host_toolchain = invoker.is_host_toolchain
+    }
+
     # Compiler executables.
     if (use_clang)
     {
@@ -128,6 +134,12 @@ template("gcc_toolchain")
 
     toolchain(target_name)
     {
+        host_build = is_host_toolchain
+        if (toolchain_arch == host_arch && toolchain_cpu == host_cpu && toolchain_os == host_os)
+        {
+            host_build = true
+        }
+
         toolchain_args =
         {
             current_arch    = toolchain_arch
@@ -143,12 +155,24 @@ template("gcc_toolchain")
                 compiler_id = "gcc"
             }
 
-            toolchain_out_dir = "${toolchain_arch}/${toolchain_cpu}"
+            host_build = host_build
+            if (host_build)
+            {
+                toolchain_out_dir = "host"
+            }
+            else
+            {
+                toolchain_out_dir = "${toolchain_arch}/${toolchain_cpu}"
+            }
 
             forward_variables_from(arch_toolchain_args, "*")
         }
 
         default_output_dir = "${toolchain_arch}/${toolchain_cpu}"
+        if (host_build)
+        {
+            default_output_dir = "host"
+        }
 
         tool("cc")
         {

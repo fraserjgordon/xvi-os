@@ -1,0 +1,27 @@
+library("FAT")
+{
+    library_name = "System.Filesystem.FAT"
+    library_version = "0.1.0"
+
+    shared_define = "__SYSTEM_FILESYSTEM_FAT_BUILD_SHARED"
+
+    public_deps =
+    [
+        "//Utility/Endian",
+    ]
+
+    public_headers =
+    [
+        "BPB.hh",
+        "DirEnt.hh",
+        "FAT.hh",
+        "FAT12.hh",
+        "Unaligned.hh",
+    ]
+
+    sources =
+    [
+        "BPB.cc",
+        "DirEnt.cc",
+    ]
+}

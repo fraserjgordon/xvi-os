@@ -228,7 +228,8 @@ template("library")
     build_shared = filter_include(target_types, ["shared"]) != []
     build_kernel = filter_include(target_types, ["kernel"]) != []
     build_static_pic = filter_include(target_types, ["static_pic"]) != []
-    build_host_static = filter_include(target_types, ["host_static"]) != []
+    build_host_static = host_build && filter_include(target_types, ["host_static"]) != []
+    build_host_shared = host_build && filter_include(target_types, ["host_shared"]) != []
 
     group("${target_name}__default_build_targets")
     {
@@ -259,6 +260,11 @@ template("library")
             if (build_host_static && filter_include(always_build, ["host_static"]) != [])
             {
                 deps += [":${orig_target_name}__host_static"]
+            }
+
+            if (build_host_shared && filder_include(always_build, ["host_shared"]) != [])
+            {
+                deps += [":${orig_target_name}__host_shared"]
             }
         }
     }
@@ -310,7 +316,7 @@ template("library")
 
         if (build_static)
         {
-        source_set("${target_name}__static")
+            source_set("${target_name}__static")
             {   
                 orig_public_deps = public_deps
                 public_deps = []
@@ -436,6 +442,11 @@ template("library")
 
                 public_deps += plain_deps
             }
+        }
+
+        if (build_host_shared)
+        {
+            # TODO.
         }
     }
     else
@@ -905,10 +916,6 @@ template("library")
             {
                 lib_type = "rust_library"
             }
-            else
-            {
-                library_name += "__HOST"
-            }
             
             host_static_build_info =
             {
@@ -987,6 +994,11 @@ template("library")
 
                 deps += plain_deps
             }
+        }
+
+        if (build_host_shared)
+        {
+            # TODO.
         }
     }
 }

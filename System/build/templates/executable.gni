@@ -83,9 +83,14 @@ template("xvi_executable")
         public_deps += invoker.public_deps
     }
 
-    if (use_stdlib)
+    if (host_build)
     {
-        deps    += ["//C++/StdLib"]
+        # No special config.
+        not_needed(["use_stdlib"])
+    }
+    else if (use_stdlib)
+    {
+        #deps    += ["//C++/StdLib"]
         configs += ["//build/config:stdlib"]
     }
     else
@@ -95,6 +100,35 @@ template("xvi_executable")
 
     # Include paths.
     include_dirs    += ["Source"]
+
+    link_style = "shared"
+    if (host_build)
+    {
+        link_style = "host_static"
+    }
+    else if (defined(invoker.static_link) && invoker.static_link)
+    {
+        link_style = "static"
+    }
+    not_needed(["link_style"])
+
+    orig_deps = deps
+    deps = []
+    foreach(dep, orig_deps)
+    {
+        # TODO: remove the if {} around the code.
+        dep_name = get_label_info(dep, "name")
+        if (string_replace(dep_name, "__", "") == dep_name)
+        {
+            dep_toolchain = get_label_info(dep, "toolchain")
+            dep_label = get_label_info(dep, "label_no_toolchain")
+            deps += ["${dep_label}__${link_style}(${dep_toolchain})"]
+        }
+        else
+        {
+            deps += [dep]
+        }
+    }
 
     executable(target_name)
     {

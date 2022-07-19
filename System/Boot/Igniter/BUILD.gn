@@ -3,6 +3,9 @@ group("Igniter")
     deps =
     [
         ":Stage2",
+
+        ":IgniterTool",
+        ":IgniterTool(${host_toolchain})",
     ]
 
     if (current_arch == "x86")
@@ -123,6 +126,7 @@ xvi_executable("Stage2")
             ldflags =
             [
                 "-T", rebase_path("Source/System/Boot/Igniter/Arch/x86/Stage2/Stage2.ldscript", root_build_dir),
+                "-Wl,--emit-relocs",
             ]
         }
         else if (current_cpu == "x64")
@@ -140,4 +144,24 @@ xvi_executable("Stage2")
             ]
         }
     }
+}
+
+xvi_executable("IgniterTool")
+{
+    prefix = "System.Boot.Igniter"
+
+    #output_name = "IgniterTool"
+    
+    deps =
+    [
+        "//Filesystem/FAT",
+    ]
+
+    sources =
+    [
+        "Tool/Bootsector.hh",
+
+        "Tool/main.cc",
+        "Tool/Bootsector.cc",
+    ]
 }

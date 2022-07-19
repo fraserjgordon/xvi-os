@@ -1,0 +1,7 @@
+library_group("Filesystem")
+{
+    deps =
+    [
+        "FAT",
+    ]
+}
