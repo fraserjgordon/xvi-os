@@ -29,6 +29,7 @@ public:
     constexpr unaligned& operator=(underlying_type t) noexcept
     {
         __builtin_memcpy(m_data, std::addressof(t), sizeof(underlying_type));
+        return *this;
     }
 
     constexpr operator underlying_type() const noexcept

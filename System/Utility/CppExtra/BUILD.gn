@@ -15,4 +15,15 @@ library("CppExtra")
         "ByteBuffer.hh",
         "RefcountedPtr.hh",
     ]
+
+    # Workaround for missing std::ranges features
+    if (host_build)
+    {
+        public_configs = [":HostWorkarounds"]
+    }
+}
+
+config("HostWorkarounds")
+{
+    defines = ["__SYSTEM_UTILITY_CPPEXTRA_HOST_WORKAROUNDS"]
 }

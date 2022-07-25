@@ -10,6 +10,20 @@ library("Logger")
         "//Utility/CppExtra",
     ]
 
+    # Workaround for compilers not supplying <format> yet.
+    if (host_build)
+    {
+        public_configs =
+        [
+            ":HostLibFmt"
+        ]
+
+        defines =
+        [
+            "__SYSTEM_UTILITY_LOGGER_HOST_BUILD"
+        ]
+    }
+
     public_headers =
     [
         "Logger.hh",
@@ -28,5 +42,18 @@ library("Logger")
         "Logger.cc",
         "Message.cc",
         "Processor.cc",
+    ]
+}
+
+config("HostLibFmt")
+{
+    defines =
+    [
+        "__SYSTEM_UTILITY_LOGGER_USE_LIBFMT",
+    ]
+
+    libs =
+    [
+        "fmt",
     ]
 }

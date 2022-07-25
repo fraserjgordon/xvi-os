@@ -5,12 +5,14 @@
 // Global variables
 //  (or their addresses anyway)
 
-block_list_temp         = 0x7a00    // 512 bytes - storage for block list
+relocate_to             = 0x0600
 
-next_stage_start_addr   = 0x7e00    // seg:offset - first block of next stage
-next_stage_load_ptr     = 0x7e04    // seg:offset - where the next block goes
-block_number_ptr        = 0x7e08    // offset - ptr to next block number to load
-boot_drive              = 0x7e0a    // byte - boot drive number
+block_list_temp         = 0x0800    // 512 bytes - storage for block list
+
+next_stage_start_addr   = 0x0a00    // seg:offset - first block of next stage
+next_stage_load_ptr     = 0x0a04    // seg:offset - where the next block goes
+block_number_ptr        = 0x0a08    // offset - ptr to next block number to load
+boot_drive              = 0x0a0a    // byte - boot drive number
 
 
 // The MBR generally contains a BIOS Parameter Block (BPB) or similar structure
@@ -20,7 +22,7 @@ boot_drive              = 0x7e0a    // byte - boot drive number
 //
 // Interesting registers at entry:
 //
-//  %dl     [CONFIRM ME] BIOS boot drive number
+//  %dl     BIOS boot drive number
 //
 start:
 
@@ -28,6 +30,9 @@ start:
     nop
 
 .org 0x0003
+
+// OEM signature.
+.space 8, 0xCC
 
 // BIOS Parameter Block. Contents unspecified here.
 .space 0x4f, 0xCC
@@ -42,13 +47,24 @@ next_stage_block_list_block:    .long 0xCCCCCCCC
 // other blocks to load. Then, those blocks are read into memory and executed.
 mbr_begin:
 
-    // Set up segment registers appropriately and set the stack pointer.
+    // Ensure interrupts are disabled.
+    cli
+
+    // Relocate this bootsector in case we're going to chainload. Set up the stack pointer too.
+    cld
+    xorw    %bx, %bx
+    movw    $0x7c00, %si
+    movw    $relocate_to, %di
+    movw    %bx, %ds
+    movw    %bx, %es
+    movw    %bx, %ss
+    movw    %si, %sp
+    movw    $512, %cx
+    rep movsw
+
+    // Jump to the relocated code.
     ljmpw   $0, $1f
-1:  movw    %cs, %ax
-    movw    %ax, %ss
-    movw    %ax, %ds
-    movw    %ax, %es
-    movw    $0x8000, %sp
+1: 
 
     // Save the boot drive.
     movb    %dl, boot_drive
@@ -56,15 +72,21 @@ mbr_begin:
     movb    $'$', %cl
     call    print_char
 
+    // Chainload, if we have a partition table that tells us to.
+    //
+    // Note: jmp instead of call as it saves a byte here.
+    jmp     maybe_chainload
+
+ not_chainload:
     // Load the (first) block of the next stage block list.
     movw    next_stage_block_list_block, %ax
     movw    next_stage_block_list_block+2, %cx
     movw    $block_list_temp, %di
+    pushw   %di
     call    load_block
 
     // Read the load address of the next stage.
-    cld
-    movw    $block_list_temp, %si
+    popw    %si
     movw    $next_stage_start_addr, %di
     movsw
     movsw
@@ -116,29 +138,26 @@ block_loop:
     addw    $(512 / 16), next_stage_load_ptr+2
     jmp     block_loop
 
-1:  // Have we reached the end of the list of block list blocks?
-    movw    next_stage_block_list_block, %ax
-    movw    next_stage_block_list_block+2, %cx
-    movw    %ax, %dx
-    orw     %cx, %dx
-    testw   %dx, %dx    // Zero iff 32-bit value cx:ax == 0.
-    jz      3f
-    jmp     2f
-
 // More fixed (non-code) data goes here.
 .skip ((start + 0x00DA) - .), 0x90
 .space 6, 0xCC
 
-2:  // No - load the next block list block.
+1:  // Have we reached the end of the list of block list blocks?
+    movw    next_stage_block_list_block, %ax
+    movw    next_stage_block_list_block+2, %cx
+    movw    %ax, %dx
+    orw     %cx, %dx    // Zero iff 32-bit value cx:ax == 0.   
+    jz      2f
+
+    // No - load the next block list block.
     movw    block_list_temp, %di
     call    load_block
 
     // Prepare to loop through a block list again.
-    cld
     movw    $block_list_temp, %si
     jmp     block_list_loop
 
-3:  // Loading is complete. Prepare to execute the next stage.
+2:  // Loading is complete. Prepare to execute the next stage.
 
     movb    $'!', %cl
     call    print_char
@@ -146,6 +165,40 @@ block_loop:
     // Make the jump.
     ljmpw   *next_stage_start_addr
     
+
+// void maybe_chainload()
+maybe_chainload:
+
+    // Do we have exactly one boot partition?
+    xorw    %si, %si
+    movw    $partition_table, %bx
+    movw    $4, %cx
+1:  andb    $0x80, 0(%bx)
+    jz      2f
+    testw   %si, %si
+    jnz     3f              // Two boot partitions. Invalid.
+2:  addw    $16, %bx
+    loopw   1b
+    testw   %si, %si
+    jz      3f              // No boot partitions.
+
+    // Exactly one boot partition is in the table. Load it.
+    // (only LBA is supported here).
+    movw    $0x7c00, %di
+    movw    8(%si), %ax
+    movw    10(%si), %cx
+    pushw   %si
+    call    load_block
+    popw    %si
+
+    // Restore the boot drive number and jump to the new bootsector.
+    //
+    // Note that %ds:%si points to the partition entry we loaded as some bootsectors expect that.
+    movb    boot_drive, %dl
+    ljmp    $0x0000, $0x7c00
+
+    // No valid chainload found.
+3:  jmp     not_chainload
 
 // void load_block(cx:ax : uint32_t lba, es:di : void *__far to)
 load_block:
@@ -185,7 +238,7 @@ load_block:
     jmp     1b
 
 2:  // Function succeeded.
-    addw    $18, %sp
+    addw    $8, %sp
     ret
 
 load_block_lba:
@@ -234,7 +287,7 @@ load_block_lba:
 
 load_block_failed:
     // Read failed. Unable to continue.
-    movb    $'#', %cl
+    movb    $'?', %cl
     call    print_char
 
     // Wait for 30 seconds.
@@ -262,7 +315,7 @@ print_char:
 
 // Space reserved for partition table entries.
 .skip ((start + 0x01BE) - .), 0x90
-.space 16*4, 0xCC
+partition_table: .space 16*4, 0xCC
 
 // Boot sector footer. Used to indicate that this bootsector is actually
 // bootable. Without this, most BIOSes will refuse to execute this sector.

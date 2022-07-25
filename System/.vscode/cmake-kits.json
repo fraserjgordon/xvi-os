@@ -18,5 +18,17 @@
         "XVI_COMPILER": "gcc",
         "XVI_TARGET": "x86_64"
     }
+  },
+  {
+    "name": "XVI GCC (host)",
+    "toolchainFile": "${workspaceFolder}/cmake/xvi.toolchain.cmake",
+    "compilers": {
+      "C": "/opt/cross/bin/gcc",
+      "CXX": "/opt/cross/bin/g++"
+    },
+    "cmakeSettings": {
+        "XVI_COMPILER": "gcc",
+        "XVI_TARGET": "x86_64"
+    }
   }
 ]

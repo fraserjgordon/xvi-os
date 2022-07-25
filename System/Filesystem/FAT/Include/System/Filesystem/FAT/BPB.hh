@@ -22,14 +22,15 @@ using System::Utility::Endian::uint32le_t;
 
 using bpb_oem_sig = std::array<char, 8>;
 
-constexpr bpb_oem_sig make_oem_sig(const char (&sig)[9])
+consteval bpb_oem_sig make_oem_sig(const char (&sig)[9])
 {
     return {sig[0], sig[1], sig[2], sig[3], sig[4], sig[5], sig[6], sig[7]};
 }
 
 // Some OEM signatures that have special semantics:
-constexpr bpb_oem_sig BPBSignatureNTFS  = make_oem_sig("NTFS    ");
-constexpr bpb_oem_sig BPBSignatureExFAT = make_oem_sig("EXFAT   ");
+constexpr bpb_oem_sig BPBSignatureDefault   = make_oem_sig("MSWIN4.1"); 
+constexpr bpb_oem_sig BPBSignatureNTFS      = make_oem_sig("NTFS    ");
+constexpr bpb_oem_sig BPBSignatureExFAT     = make_oem_sig("EXFAT   ");
 
 
 // FAT types, as determined from the BPB.
@@ -39,20 +40,69 @@ enum class fat_type
     FAT16       = 16,               //!< For partitions with >=4085 but <65525 clusters.
     FAT32       = 32,               //!< For partitions with >=65525 clusters.
 
+    // Non-FAT types that are also useful to detect.
+    ExFAT       = -3,
+    NTFS        = -2,
+
     Unknown     = -1,               //!< Unrecognised or unknown FAT type.
 };
 
 // Max filesystem sizes for each FAT type.
-constexpr std::uint32_t MaxClustersFAT12        = 4085;
-constexpr std::uint32_t MaxClustersFAT16        = 65525;
+constexpr std::uint32_t MaxClustersFAT12        = 4084;
+constexpr std::uint32_t MaxClustersFAT16        = 65524;
 
 
 // FAT media descriptors (defines the geometry of the drive).
+//
+// Note that some media types are shared across different drive types but with different meanings. So for floppy drives,
+// the meaning of the media byte depends on the type of drive (3.5", 5.25" or 8").
+//
+// There is an additional complication with 8" drives: two incompatible floppy types share the same media byte value. To
+// distinguish them an attempt should be made to read the single-density address mark to determine single vs double
+// density.
 enum class media_descriptor : std::uint8_t
 {
-    HighDensityFloppy   = 0xF0,     //!< 5.25" or 3.5" high-density floppy.
-    HardDisk            = 0xF8,     //!< Not a floppy disk.
+    // Non-floppy media.
+    FixedDisk               = 0xF8, //!< Anything that is not a floppy disk.
+
+    // 3.5" floppy disks.
+    Floppy35_HighDensity    = 0xF0, //!< 3.5" high-density floppy (1440kB/2880kB).
+    Floppy35_720k           = 0xF9, //!< 3.5" double-density floppy (720kB).
+
+    // 5.25" floppy disks.
+    Floppy525_1200k         = 0xF9, //!< 5.25" 15-sector double-sided high-density floppy (1200kB).
+    Floppy525_180k          = 0xFC, //!< 5.25" 9-sector single-sided double-density floppy (180kB).
+    Floppy525_360k          = 0xFD, //!< 5.25" 9-sector double-sided double-density floppy (360kB).
+    Floppy525_160k          = 0xFE, //!< 5.25" 8-sector single-sided double-density floppy (160kB).
+    Floppy525_320k          = 0xFF, //!< 5.25" 8-sector double-sided double-density floppy (320kB).
+
+    // 8" floppy disks.
+    Floppy8_500k            = 0xFD, //!< 8" double-sided single-density floppy (500kB).
+    Floppy8_250k            = 0xFE, //!< 8" single-sided single-density floppy (250kB).
+    Floppy8_1200k           = 0xFE, //!< 8" double-sided double-density floppy (1200kB).
 };
+
+
+//! Returns true if the given media byte is a valid floppy disk media type.
+bool IsFloppyMediaType(media_descriptor);
+
+//! Returns true if the given media byte is valid.
+bool IsValidMediaType(media_descriptor);
+
+
+// Structure representing drive geometries implied by different media type bytes.
+struct media_descriptor_geometry
+{
+    std::uint16_t   heads       = 0;    //!< Number of drive heads.
+    std::uint16_t   cylinders   = 0;    //!< Number of cylinders (tracks).
+    std::uint32_t   sectors     = 0;    //!< Number of sectors per track.
+};
+
+
+//! Looks up an expected geometry given a media type byte.
+//!
+//! @returns the expected geometry or zeroes if a non-floppy media type is given.
+media_descriptor_geometry GetExpectedGeometry(media_descriptor);
 
 
 // Signature used to recognise extended BPBs.

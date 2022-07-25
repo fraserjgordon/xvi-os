@@ -28,7 +28,7 @@ struct time_t
     uint16le_t                  raw;
 
     //!< Returns the time-of-day this field represents.
-    constexpr std::chrono::time_of_day<std::chrono::seconds> time_of_day() const
+    constexpr std::chrono::hh_mm_ss<std::chrono::seconds> time_of_day() const
     {
         using namespace std::chrono;
         
@@ -42,7 +42,7 @@ struct time_t
         // And the final 5 bits contain the count of hours.
         hours h = hours{(value >> 11) & 0b11111};
 
-        return std::chrono::time_of_day<seconds>(h + m + s);
+        return std::chrono::hh_mm_ss<seconds>(h + m + s);
     }
 };
 
@@ -89,7 +89,7 @@ constexpr std::byte AttributeArchive        = std::byte{0x20};  //!< File dirty 
 constexpr std::byte AttributeMask           = std::byte{0x2F};
 
 //! This combination of attribute flags indicates the directory entry is a long file name (LFN) entry.
-constexpr std::byte AttributeLFN            = AttributeReadOnly|AttributeHidden|AttributeSystem|AttributeVolumeLabel;
+constexpr std::byte AttributeLFN            = std::byte{0x0f};  // AttributeReadOnly|AttributeHidden|AttributeSystem|AttributeVolumeLabel;
 
 
 //! FAT on-disk directory entry structure.
@@ -112,7 +112,7 @@ struct dirent_t
     using deciseconds = std::chrono::duration<std::chrono::milliseconds::rep, std::deci>;
 
     //! Helper because creation time has extra precision.
-    std::chrono::time_of_day<deciseconds> get_ctime_time_of_day() const;
+    std::chrono::hh_mm_ss<deciseconds> get_ctime_time_of_day() const;
 
     //! Returns the combined cluster number.
     constexpr std::uint32_t get_start_cluster() const
@@ -133,10 +133,10 @@ struct dirent_t
     }
 
     //! Returns true if this is an LFN entry.
-    constexpr bool is_lfn_entry() const
+    /*constexpr bool is_lfn_entry() const
     {
         return (attributes & AttributeMask) == AttributeLFN;
-    }
+    }*/
 
     //! Returns the base name of this entry with any escaping corrected.
     constexpr std::array<std::byte, 8> get_name_base() const

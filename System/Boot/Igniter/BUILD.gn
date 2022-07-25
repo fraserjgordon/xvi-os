@@ -155,13 +155,16 @@ xvi_executable("IgniterTool")
     deps =
     [
         "//Filesystem/FAT",
+        "//Utility/Logger",
     ]
 
     sources =
     [
         "Tool/Bootsector.hh",
+        "Tool/Disk.hh",
 
         "Tool/main.cc",
         "Tool/Bootsector.cc",
+        "Tool/Disk.cc",
     ]
 }

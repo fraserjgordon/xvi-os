@@ -6,16 +6,28 @@
 
 #include <array>
 #include <cstdint>
-#include <format>
 #include <initializer_list>
 #include <limits>
 #include <string>
 #include <string_view>
 #include <utility>
 
+#if defined(__SYSTEM_UTILITY_LOGGER_USE_LIBFMT)
+#  include <fmt/format.h>
+#else
+#  include <format>
+#endif
+
 
 namespace System::Utility::Logger
 {
+
+
+#if defined(__SYSTEM_UTILITY_LOGGER_USE_LIBFMT)
+namespace fmt = ::fmt;
+#else
+namespace fmt = std;
+#endif
 
 
 enum class facility : std::uint32_t {};
@@ -73,6 +85,9 @@ priority minimumLogPriority(facility) __SYSTEM_UTILITY_LOGGER_SYMBOL(MinimumLogP
 __SYSTEM_UTILITY_LOGGER_EXPORT
 void log(facility, priority, const char* msg, std::size_t msg_len, const log_variable_raw* vars, std::size_t nvars) __SYSTEM_UTILITY_LOGGER_SYMBOL(Log);
 
+__SYSTEM_UTILITY_LOGGER_EXPORT
+void enableLogToStderr(bool = true);
+
 
 namespace detail
 {
@@ -98,14 +113,14 @@ void doLogPairs(facility f, priority p, std::string_view msg, Pairs&&... var_pai
 
 template <class... Vars>
     requires (std::is_same_v<Vars, log_variable_fmt> && ...)
-void doLog(facility f, priority p, std::string_view msg_fmt, std::format_args args, Vars&&... vars)
+void doLog(facility f, priority p, std::string_view msg_fmt, fmt::format_args args, Vars&&... vars)
 {
     using sv = std::string_view;
     using pair = std::pair<sv, sv>;
 
-    auto msg = std::vformat(msg_fmt, args);
+    auto msg = fmt::vformat(msg_fmt, args);
 
-    doLogPairs(f, p, msg, pair{vars.first, std::vformat(vars.second, args)}...);
+    doLogPairs(f, p, msg, pair{vars.first, fmt::vformat(vars.second, args)}...);
 }
 
 } // namespace detail
@@ -118,13 +133,13 @@ void log(facility f, priority p, std::string_view msg_fmt, const log_variable_fm
 
     auto makeLogFn = [&f, &p, &msg_fmt](auto&&... fmt)
     {
-        return [&f, &p, &msg_fmt, &fmt...](std::format_args fargs)
+        return [&f, &p, &msg_fmt, &fmt...](fmt::format_args fargs)
         {
            detail::doLog(f, p, msg_fmt, fargs, std::forward<decltype(fmt)>(fmt)...);
         };
     };
 
-    std::apply(makeLogFn, std::to_array(var_fmts))(std::make_format_args(args...));
+    std::apply(makeLogFn, std::to_array(var_fmts))(fmt::make_format_args(args...));
 }
 
 template <class... Args>
@@ -133,12 +148,12 @@ void log(facility f, priority p, std::string_view msg_fmt, const Args&... args)
     if (minimumLogPriority(f) > p)
         return;
 
-    auto logFn = [&f, &p, &msg_fmt](std::format_args fargs)
+    auto logFn = [&f, &p, &msg_fmt](fmt::format_args fargs)
     {
         detail::doLog(f, p, msg_fmt, fargs);
     };
 
-    logFn(std::make_format_args(args...));
+    logFn(fmt::make_format_args(args...));
 }
 
 

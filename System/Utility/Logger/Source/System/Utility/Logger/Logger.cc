@@ -1,5 +1,6 @@
 #include <System/Utility/Logger/Logger.hh>
 
+#include <iostream>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -27,7 +28,7 @@ static std::vector<facility_info> g_facilities;
 facility registerFacility(const char* name_ptr, std::size_t name_len)
 {
     std::string_view name(name_ptr, name_len);
-    g_facilities.push_back({name, priority::all});
+    g_facilities.push_back({std::string{name}, priority::all});
     return static_cast<facility>(g_facilities.size());
 }
 
@@ -75,6 +76,24 @@ void log(facility f, priority p, const char* msg, std::size_t msg_len, const log
 
     processor_base::handleMessage(message);
 }
+
+
+#if defined(__SYSTEM_UTILITY_LOGGER_HOST_BUILD)
+void enableLogToStderr(bool enabled)
+{
+    if (enabled)
+    {
+        Logger::registerMessageProcessor([](void*, Logger::opaque_message m)
+        {
+            Logger::message msg(m);
+
+            std::cerr << msg.msg() << std::endl;
+
+            msg.release();
+        }, nullptr);
+    }
+}
+#endif
 
 
 } // namespace System::Utility::Logger

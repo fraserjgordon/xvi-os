@@ -2,7 +2,8 @@ OUTPUT_FORMAT(binary)
 
 SECTIONS
 {
-	. = 0x7C00;
+	/* loaded to 0x7c00 but then relocates itself to 0x0600 */
+	. = 0x0600;
 	.text : { *(.text) }
 	/DISCARD/ : { *(*) }
 }

@@ -136,7 +136,12 @@ public:
     {
         if constexpr (std::ranges::sized_range<R>)
         {
+#if defined(__SYSTEM_UTILITY_CPPEXTRA_HOST_WORKAROUNDS)
+            auto buffer = readData(n);
+            std::copy(buffer.begin(), buffer.end(), data.data());
+#else
             std::ranges::copy(readData(n), data.data());
+#endif
         }
         else
         {
