@@ -4,15 +4,19 @@ group("Igniter")
     [
         ":Stage2",
 
-        ":IgniterTool",
+        #":IgniterTool",
         ":IgniterTool(${host_toolchain})",
     ]
 
     if (current_arch == "x86")
     {
+        toolchain_x86 = "//build/toolchain/x86/:x86"
+
         deps +=
         [
-            ":Stage0",
+            # Note that we explicitly depend on 32-bit versions of these stages.
+            ":Stage0(${toolchain_x86})",
+            ":Stage1(${toolchain_x86})",
         ]
     }
 }
@@ -39,6 +43,30 @@ if (current_arch == "x86")
         ldflags =
         [
             "-T", rebase_path("Source/System/Boot/Igniter/Arch/x86/Stage0/MBR.ldscript", root_build_dir),
+        ]
+    }
+
+    xvi_executable("Stage1")
+    {
+        prefix = "System.Boot.Igniter"
+
+        output_name = "Stage1.bin"
+        use_stdlib = false
+
+        sources =
+        [
+            "Arch/x86/Stage1/BIOSCall.S",
+            "Arch/x86/Stage1/RealModeEntry.S",
+        ]
+
+        inputs =
+        [
+            "Arch/x86/Stage1/Stage1.ldscript",
+        ]
+
+        ldflags =
+        [
+            "-T", rebase_path("Source/System/Boot/Igniter/Arch/x86/Stage1/Stage1.ldscript", root_build_dir),
         ]
     }
 }
@@ -160,11 +188,15 @@ xvi_executable("IgniterTool")
 
     sources =
     [
+        "Tool/Blocklist.hh",
         "Tool/Bootsector.hh",
+        "Tool/CHS.hh",
         "Tool/Disk.hh",
 
         "Tool/main.cc",
+        "Tool/Blocklist.cc",
         "Tool/Bootsector.cc",
+        "Tool/CHS.cc",
         "Tool/Disk.cc",
     ]
 }

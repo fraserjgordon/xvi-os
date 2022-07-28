@@ -52,12 +52,12 @@ mbr_begin:
 
     // Relocate this bootsector in case we're going to chainload. Set up the stack pointer too.
     cld
-    xorw    %bx, %bx
+    xorw    %ax, %ax
     movw    $0x7c00, %si
     movw    $relocate_to, %di
-    movw    %bx, %ds
-    movw    %bx, %es
-    movw    %bx, %ss
+    movw    %ax, %ds
+    movw    %ax, %es
+    movw    %ax, %ss
     movw    %si, %sp
     movw    $512, %cx
     rep movsw
@@ -73,9 +73,7 @@ mbr_begin:
     call    print_char
 
     // Chainload, if we have a partition table that tells us to.
-    //
-    // Note: jmp instead of call as it saves a byte here.
-    jmp     maybe_chainload
+    call    maybe_chainload
 
  not_chainload:
     // Load the (first) block of the next stage block list.
@@ -106,7 +104,7 @@ block_list_loop:
     movsw
 
     // Next within the block list is the first block to load.
-    movw    %di, block_number_ptr
+    movw    %si, block_number_ptr
 
     movb    $':', %cl
     call    print_char
@@ -120,8 +118,7 @@ block_loop:
     movw    2(%si), %cx
 
     // Load the block destination info.
-    movw    next_stage_load_ptr, %di
-    movw    next_stage_load_ptr+2, %es
+    lesw    next_stage_load_ptr, %di
 
     // Load the block.
     call    load_block
@@ -130,24 +127,30 @@ block_loop:
     call    print_char
 
     // Are we at the end of this block list block?
-    movw    block_number_ptr, %ax
-    addw    $4, %ax
-    cmpw    $(block_list_temp+512), %ax
-    je      1f
-    movw    %ax, block_number_ptr
+    movw    block_number_ptr, %bx
+    addw    $4, %bx
+    cmpw    $(block_list_temp+512), %bx
+    je      2f
+    movw    %bx, block_number_ptr
     addw    $(512 / 16), next_stage_load_ptr+2
-    jmp     block_loop
+    jmp     1f
 
 // More fixed (non-code) data goes here.
 .skip ((start + 0x00DA) - .), 0x90
 .space 6, 0xCC
 
-1:  // Have we reached the end of the list of block list blocks?
+1:  // Have we found a terminator?
+    movw    0(%bx), %ax
+    orw     2(%bx), %ax
+    jz      3f
+    jmp     block_loop
+
+2:  // Have we reached the end of the list of block list blocks?
     movw    next_stage_block_list_block, %ax
     movw    next_stage_block_list_block+2, %cx
     movw    %ax, %dx
     orw     %cx, %dx    // Zero iff 32-bit value cx:ax == 0.   
-    jz      2f
+    jz      3f
 
     // No - load the next block list block.
     movw    block_list_temp, %di
@@ -157,12 +160,18 @@ block_loop:
     movw    $block_list_temp, %si
     jmp     block_list_loop
 
-2:  // Loading is complete. Prepare to execute the next stage.
+3:  // Loading is complete. Prepare to execute the next stage.
+
+    // Push the address of the last sector we loaded. The next stage can use this to figure out which partition it
+    // should be loading from.
+    pushw   -4(%bx)
+    pushw   -6(%bx)
 
     movb    $'!', %cl
     call    print_char
 
     // Make the jump.
+    movb    boot_drive, %dl
     ljmpw   *next_stage_start_addr
     
 
@@ -173,18 +182,16 @@ maybe_chainload:
     xorw    %si, %si
     movw    $partition_table, %bx
     movw    $4, %cx
-1:  andb    $0x80, 0(%bx)
-    jz      2f
-    testw   %si, %si
-    jnz     3f              // Two boot partitions. Invalid.
-2:  addw    $16, %bx
+1:  testb   $0x80, 0(%bx)
+    jnz     2f
+    addw    $16, %bx
     loopw   1b
-    testw   %si, %si
-    jz      3f              // No boot partitions.
 
-    // Exactly one boot partition is in the table. Load it.
-    // (only LBA is supported here).
-    movw    $0x7c00, %di
+    // No boot partitions were found.
+    ret
+
+    // A boot partition was found. Use its LBA address to load its boot sector.
+2:  movw    $0x7c00, %di
     movw    8(%si), %ax
     movw    10(%si), %cx
     pushw   %si
@@ -195,10 +202,10 @@ maybe_chainload:
     //
     // Note that %ds:%si points to the partition entry we loaded as some bootsectors expect that.
     movb    boot_drive, %dl
-    ljmp    $0x0000, $0x7c00
+    jmp     0x7c00
 
     // No valid chainload found.
-3:  jmp     not_chainload
+3:  ret
 
 // void load_block(cx:ax : uint32_t lba, es:di : void *__far to)
 load_block:

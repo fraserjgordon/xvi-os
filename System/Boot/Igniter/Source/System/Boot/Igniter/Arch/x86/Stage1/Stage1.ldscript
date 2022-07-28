@@ -1,0 +1,27 @@
+OUTPUT_FORMAT(binary)
+
+SECTIONS
+{
+	# The real-mode entry is written to start at offset zero within a segment.
+	rmentry 0x0000 : { *(rmentry) }
+
+	# Other real-mode code follows the entry code.
+	realmode : { *(realmode) }
+
+	# Everything else is set up to run at its expected linear load address.
+	.text (0x10000 + SIZEOF(rmentry) + SIZEOF(realmode)) : AT(ADDR(realmode) + SIZEOF(realmode)) { *(.text) }
+	.rodata : { *(.rodata) }
+	.data : { *(.data) }
+
+	# Stage1 loader parameter area.
+	params : { *(params) }
+
+	# Comes after the parameter area as it takes up no size in the image.
+	.bss : { *(.bss) }
+
+	BSS_Start = ADDR(.bss);
+	BSS_Size = SIZEOF(.bss);
+
+	/DISCARD/ : { *(*) }
+}
+

@@ -70,7 +70,7 @@ private:
     fat_type    m_fsType = fat_type::Unknown;
 
 
-    void parseCurrentBootsector();
+    void parseCurrentBootsector(const Disk&);
 
     bool validateStage0Loader(const layout_t& sector);
 };

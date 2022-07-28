@@ -5,6 +5,9 @@
 
 #include <System/Utility/Logger/Logger.hh>
 
+#include <System/Boot/Igniter/Tool/Blocklist.hh>
+#include <System/Boot/Igniter/Tool/CHS.hh>
+
 
 namespace System::Boot::Igniter
 {
@@ -23,7 +26,7 @@ void Bootsector::readFromDisk(const Disk& disk)
     disk.readSector(0, std::as_writable_bytes(std::span{&m_sector, 1}));
 
     // Parse and check the sector that was just read.
-    parseCurrentBootsector();
+    parseCurrentBootsector(disk);
 }
 
 
@@ -109,19 +112,18 @@ void Bootsector::setBlockListBlock(std::uint32_t lba)
             m_sector.fields.bpb.common.medium_type
         );
 
-        std::uint32_t cylinder = lba / (sectors_per_track * head_count);
-        std::uint32_t head = (lba % (sectors_per_track * head_count)) / sectors_per_track;
-        std::uint32_t sector = 1 + lba % sectors_per_track;
+        auto [cylinder, head, sector] = LBAToCHS({cylinder_count, head_count, sectors_per_track}, lba);
+        
         log(DefaultFacility, priority::debug, "setting blocklist block to C,H,S {},{},{}", cylinder, head, sector);
 
-        value = ((head & 0xFF) << 8) | ((sector & 0x3F) << 16) | ((cylinder & 0xFF) << 24) | ((cylinder & 0x300) << 18);
+        value = EncodeCHS({cylinder, head, sector});
     }
 
     m_sector.fields.opts.list_block = value;
 }
 
 
-void Bootsector::parseCurrentBootsector()
+void Bootsector::parseCurrentBootsector(const Disk& disk)
 {
     // We need to detect what filesystem (if any) is currently making use of the bootsector.
     if (m_sector.fields.jmp[0] == std::byte{0xEB}
@@ -182,7 +184,7 @@ void Bootsector::parseCurrentBootsector()
         m_fsType = fat_type::FAT12;
     }
 
-    // As a final sanity check, make sure that the media type is valid.
+    // Make sure that the media type is valid.
     if (!FAT::IsValidMediaType(m_sector.fields.bpb.common.medium_type))
     {
         log(DefaultFacility, priority::error, "existing bootsector has invalid medium type");
