@@ -102,15 +102,25 @@ template("xvi_executable")
     include_dirs    += ["Source"]
 
     link_style = "shared"
+    static_link = defined(invoker.static_link) && invoker.static_link
+    if (defined(invoker.link_style))
+    {
+        link_style = invoker.link_style
+    }
     if (host_build)
     {
         link_style = "host_static"
     }
-    else if (defined(invoker.static_link) && invoker.static_link)
+    else if (static_link)
     {
         link_style = "static"
     }
-    not_needed(["link_style"])
+    not_needed(["link_style", "static_link"])
+
+    if (link_style == "kernel")
+    {
+        configs += [ "//build/config/:kernel" ]
+    }
 
     orig_deps = deps
     deps = []

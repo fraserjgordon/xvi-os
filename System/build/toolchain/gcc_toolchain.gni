@@ -168,6 +168,12 @@ template("gcc_toolchain")
             forward_variables_from(arch_toolchain_args, "*")
         }
 
+        toolchain_id = toolchain_cpu
+        if (host_build)
+        {
+            toolchain_id = "host"
+        }
+
         default_output_dir = "${toolchain_arch}/${toolchain_cpu}"
         if (host_build)
         {
@@ -178,7 +184,7 @@ template("gcc_toolchain")
         {
             depfile                 = "{{output}}.d"
             depsformat              = "gcc"
-            description             = "CC (${toolchain_cpu}) {{source}}"
+            description             = "CC (${toolchain_id}) {{source}}"
             outputs                 = [ "{{target_out_dir}}/{{label_name}}.{{source_file_part}}.o" ]
             precompiled_header_type = "gcc"
 
@@ -189,7 +195,7 @@ template("gcc_toolchain")
         {
             depfile                 = "{{output}}.d"
             depsformat              = "gcc"
-            description             = "CXX (${toolchain_cpu}) {{source}}"
+            description             = "CXX (${toolchain_id}) {{source}}"
             outputs                 = [ "{{target_out_dir}}/{{label_name}}.{{source_file_part}}.o" ]
             precompiled_header_type = "gcc"
 
@@ -200,7 +206,7 @@ template("gcc_toolchain")
         {
             depfile                 = "{{output}}.d"
             depsformat              = "gcc"
-            description             = "ASM (${toolchain_cpu}) {{source}}"
+            description             = "ASM (${toolchain_id}) {{source}}"
             outputs                 = [ "{{target_out_dir}}/{{label_name}}.{{source_file_part}}.o" ]
             precompiled_header_type = "gcc"
 
@@ -210,7 +216,7 @@ template("gcc_toolchain")
         tool("alink")
         {
             default_output_extension= ".a"
-            description             = "AR (${toolchain_cpu}) {{target_output_name}}{{output_extension}}"
+            description             = "AR (${toolchain_id}) {{target_output_name}}{{output_extension}}"
             outputs                 = [ "{{output_dir}}/{{target_output_name}}{{output_extension}}" ]
             output_prefix           = ""
 
@@ -225,7 +231,7 @@ template("gcc_toolchain")
             #command_launcher = "gdb -ex r --return-child-result --batch-silent --args"
             
             default_output_extension= ".so"
-            description             = "Link (${toolchain_cpu}) (dynamic) {{target_output_name}}{{output_extension}}"
+            description             = "Link (${toolchain_id}) (dynamic) {{target_output_name}}{{output_extension}}"
             outputs                 = [ "{{output_dir}}/{{target_output_name}}{{output_extension}}" ]
             output_prefix           = ""
 
@@ -241,7 +247,7 @@ template("gcc_toolchain")
         tool("link")
         {
             default_output_extension= ""
-            description             = "Link (${toolchain_cpu}) {{target_output_name}}{{output_extension}}"
+            description             = "Link (${toolchain_id}) {{target_output_name}}{{output_extension}}"
             outputs                 = [ "{{output_dir}}/{{target_output_name}}{{output_extension}}" ]
 
             rspfile         = "{{target_out_dir}}/{{target_output_name}}{{output_extension}}.rsp"
@@ -267,7 +273,7 @@ template("gcc_toolchain")
         tool("rust_bin")
         {
             default_output_extension= ""
-            description             = "Rust (${toolchain_cpu}) (bin) {{target_output_name}}{{output_extension}}"
+            description             = "Rust (${toolchain_id}) (bin) {{target_output_name}}{{output_extension}}"
             outputs                 = [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
 
             rspfile                 = "{{target_out_dir}}/{{target_output_name}}{{output_extension}}.rsp"
@@ -279,7 +285,7 @@ template("gcc_toolchain")
         tool("rust_cdylib")
         {
             default_output_extension= ".so"
-            description             = "Rust (${toolchain_cpu}) (cdylib) {{target_output_name}}{{output_extension}}"
+            description             = "Rust (${toolchain_id}) (cdylib) {{target_output_name}}{{output_extension}}"
             outputs                 = [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
 
             rspfile                 = "{{target_out_dir}}/{{target_output_name}}{{output_extension}}.rsp"
@@ -291,7 +297,7 @@ template("gcc_toolchain")
         tool("rust_dylib")
         {
             default_output_extension= ".so"
-            description             = "Rust (${toolchain_cpu}) (dylib) {{target_output_name}}{{output_extension}}"
+            description             = "Rust (${toolchain_id}) (dylib) {{target_output_name}}{{output_extension}}"
             outputs                 = [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
 
             rspfile                 = "{{target_out_dir}}/{{target_output_name}}{{output_extension}}.rsp"
@@ -302,7 +308,7 @@ template("gcc_toolchain")
 
         tool("rust_macro")
         {
-            description             = "Rust (${toolchain_cpu}) (proc macro) {{target_output_name}}{{output_extension}}"
+            description             = "Rust (${toolchain_id}) (proc macro) {{target_output_name}}{{output_extension}}"
             outputs                 = [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
 
             rspfile                 = "{{target_out_dir}}/{{target_output_name}}{{output_extension}}.rsp"
@@ -314,7 +320,7 @@ template("gcc_toolchain")
         tool("rust_rlib")
         {
             default_output_extension= ".rlib"
-            description             = "Rust (${toolchain_cpu}) (rlib) {{target_output_name}}{{output_extension}}"
+            description             = "Rust (${toolchain_id}) (rlib) {{target_output_name}}{{output_extension}}"
             outputs                 = [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
 
             rspfile                 = "{{target_out_dir}}/{{target_output_name}}{{output_extension}}.rsp"
@@ -326,7 +332,7 @@ template("gcc_toolchain")
         tool("rust_staticlib")
         {
             default_output_extension= ".a"
-            description             = "Rust (${toolchain_cpu}) (static lib) {{target_output_name}}{{output_extension}}"
+            description             = "Rust (${toolchain_id}) (static lib) {{target_output_name}}{{output_extension}}"
             outputs                 = [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
 
             rspfile                 = "{{target_out_dir}}/{{target_output_name}}{{output_extension}}.rsp"

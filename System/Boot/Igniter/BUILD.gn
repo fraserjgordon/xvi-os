@@ -21,6 +21,39 @@ group("Igniter")
     }
 }
 
+library("IgniterUtils")
+{
+    library_name = "System.Boot.Igniter.IgniterUtils"
+    library_version = "0.1.0"
+    use_stdlib = host_build
+    is_source_set = true
+    target_types = ["static", "kernel", "host_static"]
+
+    include_prefix = "System/Boot/Igniter"
+
+    deps =
+    [
+    ]
+
+    public_sources =
+    [
+        "CHS.hh",
+    ]
+
+    sources =
+    [
+        "CHS.cc",
+    ]
+
+    if (!host_build)
+    {
+        deps =
+        [
+            "//C++/LanguageSupport",
+        ]
+    }
+}
+
 if (current_arch == "x86")
 {
     xvi_executable("Stage0")
@@ -52,9 +85,36 @@ if (current_arch == "x86")
 
         output_name = "Stage1.bin"
         use_stdlib = false
+        link_style = "kernel"
+
+        deps =
+        [
+            ":IgniterUtils",
+
+            "//ABI/Integer",
+            "//Allocator/Classic",
+            "//C++/Containers",
+            "//C++/LanguageSupport",
+            "//C++/Utility",
+            "//HW/CPU/Arch/x86/ControlRegs",
+            "//HW/CPU/Arch/x86/IO",
+            "//Storage/Partition/:Partition_Boot",
+            "//Utility/Logger",
+        ]
 
         sources =
         [
+            "Arch/x86/Stage1/BIOSCall.hh",
+            "Arch/x86/Stage1/DiskIO.hh",
+            "Arch/x86/Stage1/Heap.hh",
+            "Arch/x86/Stage1/Logging.hh",
+
+            "Arch/x86/Stage1/main.cc",
+            "Arch/x86/Stage1/BIOSCall.cc",
+            "Arch/x86/Stage1/DiskIO.cc",
+            "Arch/x86/Stage1/Heap.cc",
+            "Arch/x86/Stage1/Logging.cc",
+
             "Arch/x86/Stage1/BIOSCall.S",
             "Arch/x86/Stage1/RealModeEntry.S",
         ]
@@ -182,6 +242,8 @@ xvi_executable("IgniterTool")
     
     deps =
     [
+        ":IgniterUtils",
+
         "//Filesystem/FAT",
         "//Utility/Logger",
     ]
@@ -190,13 +252,11 @@ xvi_executable("IgniterTool")
     [
         "Tool/Blocklist.hh",
         "Tool/Bootsector.hh",
-        "Tool/CHS.hh",
         "Tool/Disk.hh",
 
         "Tool/main.cc",
         "Tool/Blocklist.cc",
         "Tool/Bootsector.cc",
-        "Tool/CHS.cc",
         "Tool/Disk.cc",
     ]
 }

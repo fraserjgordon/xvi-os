@@ -7,9 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <System/Utility/Endian/Endian.hh>
-
-#include <System/Filesystem/FAT/Unaligned.hh>
+#include <System/Utility/Endian/Unaligned.hh>
 
 
 namespace System::Filesystem::FAT
@@ -18,6 +16,7 @@ namespace System::Filesystem::FAT
 
 using System::Utility::Endian::uint16le_t;
 using System::Utility::Endian::uint32le_t;
+using System::Utility::Endian::unaligned;
 
 
 using bpb_oem_sig = std::array<char, 8>;
@@ -93,8 +92,8 @@ bool IsValidMediaType(media_descriptor);
 // Structure representing drive geometries implied by different media type bytes.
 struct media_descriptor_geometry
 {
-    std::uint16_t   heads       = 0;    //!< Number of drive heads.
     std::uint16_t   cylinders   = 0;    //!< Number of cylinders (tracks).
+    std::uint16_t   heads       = 0;    //!< Number of drive heads.
     std::uint32_t   sectors     = 0;    //!< Number of sectors per track.
 };
 

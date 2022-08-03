@@ -134,16 +134,21 @@ config("default_codegen")
 {
     cflags =
     [
-        "-fno-plt",
+        #"-fno-plt",
         "-fdata-sections",
         "-ffunction-sections",
+    ]
+
+    ldflags =
+    [
+        "-Wl,--gc-sections",
     ]
 
     if (compiler_id == "gcc")
     {
         cflags +=
         [
-            "-fstack-clash-protection"
+            #"-fstack-clash-protection"
         ]
     }
 }
@@ -188,6 +193,12 @@ config("pic")
     ldflags     = ["-fPIC"]
 }
 
+config("no_pic")
+{
+    cflags      = ["-fno-pic", "-fno-pie"]
+    ldflags     = ["-fno-pic", "-fno-pie"]
+}
+
 config("shared_lib_no_undefined_symbols")
 {
     ldflags     = ["-Wl,-z,defs"]
@@ -196,6 +207,11 @@ config("shared_lib_no_undefined_symbols")
 config("shared")
 {
     configs     = [":pic", ":shared_lib_no_undefined_symbols"]
+
+    ldflags =
+    [
+        "-Wl,-Bsymbolic",
+    ]
 }
 
 # Don't link to standard include directories.
@@ -228,6 +244,11 @@ config("no_builtins")
     cflags      = ["-fno-builtin"]
 }
 
+config("hidden_visibility")
+{
+    cflags      = ["-fvisibility=hidden"]
+}
+
 config("gcc_gc_crash_fix")
 {
     if (false && compiler_id == "gcc")
@@ -256,4 +277,17 @@ config("gcc_colour_output")
             "-fcolor-diagnostics",
         ]
     }
+}
+
+config("kernel")
+{
+    configs =
+    [
+        ":no_pic",
+    ]
+
+    defines =
+    [
+        "__XVI_KERNEL",
+    ]
 }

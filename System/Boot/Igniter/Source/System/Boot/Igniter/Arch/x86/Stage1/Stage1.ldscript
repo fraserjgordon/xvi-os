@@ -1,4 +1,5 @@
 OUTPUT_FORMAT(binary)
+ENTRY(RealModeEntry)
 
 SECTIONS
 {
@@ -9,19 +10,28 @@ SECTIONS
 	realmode : { *(realmode) }
 
 	# Everything else is set up to run at its expected linear load address.
-	.text (0x10000 + SIZEOF(rmentry) + SIZEOF(realmode)) : AT(ADDR(realmode) + SIZEOF(realmode)) { *(.text) }
-	.rodata : { *(.rodata) }
-	.data : { *(.data) }
+	.text (0x10000 + SIZEOF(rmentry) + SIZEOF(realmode)) : AT(ADDR(realmode) + SIZEOF(realmode))
+	{ 
+		*(.text)
+		*(.text.*)
+	}
+	.rodata : { *(.rodata*) }
+	.gcc_except_table : { *(.gcc_except_table*) }
+	.eh_frame : { *(.eh_frame*) }
+	.data : { *(.data*) }
 
 	# Stage1 loader parameter area.
 	params : { *(params) }
 
 	# Comes after the parameter area as it takes up no size in the image.
-	.bss : { *(.bss) }
+	.bss : { *(.bss*) }
 
 	BSS_Start = ADDR(.bss);
 	BSS_Size = SIZEOF(.bss);
 
-	/DISCARD/ : { *(*) }
+	/DISCARD/ :
+	{ 
+		*(*)
+	}
 }
 

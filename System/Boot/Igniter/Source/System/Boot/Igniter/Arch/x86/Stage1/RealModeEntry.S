@@ -5,7 +5,8 @@
 
 .org 0x0000
 
-entry:
+.global RealModeEntry
+RealModeEntry:
 
     // Interrupts should already be disabled but make sure.
     cli
@@ -85,21 +86,10 @@ begin_32bit: .code32
     movb    $0, %al
     rep stosb
 
-    // ----- TEST -----
-    pushl   $0x00000000
-    pushl   $0x0000e5e5
-    pushl   $0x0000d5d5
-    pushl   $0xaaaaaaaa
-    pushl   $0xcccccccc
-    pushl   $0xdddddddd
-    pushl   $0xbbbbbbbb
-    pushl   $0x55555555
-    pushl   $0xb5b5b5b5
-    pushl   $0x51515151
-    pushl   $0xd1d1d1d1
-    pushl   %esp
-    pushl   $0x00000011
-    call    BIOSCall
+    // Call the main function.
+    movzxb  %fs:boot_drive, %eax
+    pushl   %eax
+    call    Stage1
 
 halt:
 

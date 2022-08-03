@@ -1,8 +1,12 @@
-#ifndef __SYSTEM_BOOT_IGNITER_TOOL_CHS_H
-#define __SYSTEM_BOOT_IGNITER_TOOL_CHS_H
+#ifndef __SYSTEM_BOOT_IGNITER_CHS_H
+#define __SYSTEM_BOOT_IGNITER_CHS_H
 
 
-#include <cstdint>
+#if defined(__XVI_NO_STDLIB)
+#  include <System/C++/LanguageSupport/StdInt.hh>
+#else
+#  include <cstdint>
+#endif
 
 
 namespace System::Boot::Igniter

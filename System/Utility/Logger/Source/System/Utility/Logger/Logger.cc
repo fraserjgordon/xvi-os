@@ -96,4 +96,43 @@ void enableLogToStderr(bool enabled)
 #endif
 
 
+std::string_view priorityString(priority p)
+{
+    switch (p)
+    {
+        case priority::trace:
+            return "trace";
+
+        case priority::debug:
+            return "debug";
+
+        case priority::verbose:
+            return "verbose";
+
+        case priority::info:
+            return "info";
+
+        case priority::notice:
+            return "notice";
+
+        case priority::warning:
+            return "warning";
+
+        case priority::error:
+            return "error";
+
+        case priority::critical:
+            return "critical";
+
+        case priority::alert:
+            return "alert";
+
+        case priority::emergency:
+            return "emergency";
+    }
+
+    return "unknown";
+}
+
+
 } // namespace System::Utility::Logger

@@ -5,8 +5,8 @@
 
 #include <System/Utility/Logger/Logger.hh>
 
+#include <System/Boot/Igniter/CHS.hh>
 #include <System/Boot/Igniter/Tool/Blocklist.hh>
-#include <System/Boot/Igniter/Tool/CHS.hh>
 
 
 namespace System::Boot::Igniter

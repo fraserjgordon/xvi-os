@@ -37,7 +37,7 @@ media_descriptor_geometry GetExpectedGeometry(media_descriptor type)
     switch (type)
     {
         case media_descriptor::Floppy35_HighDensity:
-            return {2, 80, 18};
+            return {80, 2, 18};
 
         default:
             return {0, 0, 0};

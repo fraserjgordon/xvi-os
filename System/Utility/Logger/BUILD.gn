@@ -10,6 +10,11 @@ library("Logger")
         "//Utility/CppExtra",
     ]
 
+    public_deps_kernel =
+    [
+        "//C++/Format",
+    ]
+
     # Workaround for compilers not supplying <format> yet.
     if (host_build)
     {

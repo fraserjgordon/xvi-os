@@ -6,5 +6,6 @@ library("Endian")
     public_headers =
     [
         "Endian.hh",
+        "Unaligned.hh",
     ]
 }

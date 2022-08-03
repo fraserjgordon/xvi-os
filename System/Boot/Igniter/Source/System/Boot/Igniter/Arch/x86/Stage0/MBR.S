@@ -1,4 +1,3 @@
-.arch i8086
 .code16
 .text
 
@@ -86,13 +85,11 @@ mbr_begin:
     // Read the load address of the next stage.
     popw    %si
     movw    $next_stage_start_addr, %di
-    movsw
-    movsw
+    movsl
 
     // And copy the same value to the current load pointer.
     subw    $4, %si
-    movsw
-    movsw
+    movsl
 
 // Loop for processing the block list blocks.
 block_list_loop:
@@ -100,8 +97,7 @@ block_list_loop:
     // Update the block list source pointer too (in case the block list itself
     // needs more than one block of storage).
     movw    $next_stage_block_list_block, %di
-    movsw
-    movsw
+    movsl
 
     // Next within the block list is the first block to load.
     movw    %si, block_number_ptr
@@ -127,12 +123,12 @@ block_loop:
     call    print_char
 
     // Are we at the end of this block list block?
+    addw    $(512 / 16), next_stage_load_ptr+2
     movw    block_number_ptr, %bx
     addw    $4, %bx
     cmpw    $(block_list_temp+512), %bx
     je      2f
     movw    %bx, block_number_ptr
-    addw    $(512 / 16), next_stage_load_ptr+2
     jmp     1f
 
 // More fixed (non-code) data goes here.
@@ -140,20 +136,21 @@ block_loop:
 .space 6, 0xCC
 
 1:  // Have we found a terminator?
-    movw    0(%bx), %ax
-    orw     2(%bx), %ax
-    jz      3f
+    cmpl    $0, 0(%bx)
+    je      3f
     jmp     block_loop
 
 2:  // Have we reached the end of the list of block list blocks?
     movw    next_stage_block_list_block, %ax
     movw    next_stage_block_list_block+2, %cx
     movw    %ax, %dx
-    orw     %cx, %dx    // Zero iff 32-bit value cx:ax == 0.   
+    orw     %cx, %dx    // Zero iff 32-bit value cx:ax == 0.  
     jz      3f
 
     // No - load the next block list block.
-    movw    block_list_temp, %di
+    pushw   %ds
+    popw    %es
+    movw    $block_list_temp, %di
     call    load_block
 
     // Prepare to loop through a block list again.
@@ -164,8 +161,7 @@ block_loop:
 
     // Push the address of the last sector we loaded. The next stage can use this to figure out which partition it
     // should be loading from.
-    pushw   -4(%bx)
-    pushw   -6(%bx)
+    pushl   -4(%bx)
 
     movb    $'!', %cl
     call    print_char
@@ -217,8 +213,7 @@ load_block:
     jnz     load_block_lba
 
     // Number of times we're going to try the read.
-    movw    $3, %bx
-    pushw   %bx
+    pushw   $3
 
     // The "LBA" address is really in CHS format (it was converted at the time
     // of installation, taking the floppy disk geometry into account).
@@ -309,6 +304,9 @@ load_block_failed:
 
 // void print_char(cl : char c)
 print_char:
+
+    movb    %cl, %al
+    outb    $0xe9
 
     movb    $0x0E, %ah
     movb    %cl, %al

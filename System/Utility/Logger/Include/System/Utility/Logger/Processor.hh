@@ -4,7 +4,11 @@
 
 #include <System/Utility/Logger/Private/Config.hh>
 
-#include <cstddef>
+#if defined(__XVI_NO_STDLIB)
+#  include <System/C++/LanguageSupport/StdDef.hh>
+#else
+#  include <cstddef>
+#endif
 
 #include <System/Utility/Logger/Logger.hh>
 #include <System/Utility/Logger/Message.hh>

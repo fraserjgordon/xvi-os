@@ -4,14 +4,24 @@
 
 #include <System/Utility/Logger/Private/Config.hh>
 
-#include <compare>
-#include <cstddef>
-#include <span>
-#include <stdexcept>
-#include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
+#if defined(__XVI_NO_STDLIB)
+#  include <System/C++/Containers/Vector.hh>
+#  include <System/C++/LanguageSupport/Compare.hh>
+#  include <System/C++/LanguageSupport/StdDef.hh>
+#  include <System/C++/Utility/Span.hh>
+#  include <System/C++/Utility/StdExcept.hh>
+#  include <System/C++/Utility/String.hh>
+#  include <System/C++/Utility/StringView.hh>
+#else
+#  include <compare>
+#  include <cstddef>
+#  include <span>
+#  include <stdexcept>
+#  include <string>
+#  include <string_view>
+#  include <utility>
+#  include <vector>
+#endif
 
 #include <System/Utility/Logger/Logger.hh>
 

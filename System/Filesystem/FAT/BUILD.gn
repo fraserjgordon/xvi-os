@@ -16,7 +16,6 @@ library("FAT")
         "DirEnt.hh",
         "FAT.hh",
         "FAT12.hh",
-        "Unaligned.hh",
     ]
 
     sources =

@@ -4,18 +4,31 @@
 
 #include <System/Utility/Logger/Private/Config.hh>
 
-#include <array>
-#include <cstdint>
-#include <initializer_list>
-#include <limits>
-#include <string>
-#include <string_view>
-#include <utility>
+#if defined(__XVI_NO_STDLIB)
+#  include <System/C++/LanguageSupport/InitializerList.hh>
+#  include <System/C++/LanguageSupport/Limits.hh>
+#  include <System/C++/LanguageSupport/StdInt.hh>
+#  include <System/C++/Utility/Array.hh>
+#  include <System/C++/Utility/String.hh>
+#  include <System/C++/Utility/StringView.hh>
+#else
+#  include <array>
+#  include <cstdint>
+#  include <initializer_list>
+#  include <limits>
+#  include <string>
+#  include <string_view>
+#  include <utility>
+#endif
 
 #if defined(__SYSTEM_UTILITY_LOGGER_USE_LIBFMT)
 #  include <fmt/format.h>
 #else
-#  include <format>
+#  if defined(__XVI_NO_STDLIB)
+#    include <System/C++/Format/Format.hh>
+#  else
+#    include <format>
+#  endif
 #endif
 
 
@@ -87,6 +100,9 @@ void log(facility, priority, const char* msg, std::size_t msg_len, const log_var
 
 __SYSTEM_UTILITY_LOGGER_EXPORT
 void enableLogToStderr(bool = true);
+
+__SYSTEM_UTILITY_LOGGER_EXPORT
+std::string_view priorityString(priority);
 
 
 namespace detail

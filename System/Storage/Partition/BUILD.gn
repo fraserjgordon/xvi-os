@@ -1,0 +1,53 @@
+library("Partition")
+{
+    library_name = "System.Storage.Partition"
+    library_version = "0.1.0"
+
+    shared_define = "__SYSTEM_STORAGE_PARTITION_BUILD_SHARED"
+
+    public_deps =
+    [
+        "//Utility/Endian",
+    ]
+
+    public_headers =
+    [
+        "APM.hh",
+        "BSD.hh",
+        "GPT.hh",
+        "MBR.hh",
+    ]
+
+    sources =
+    [
+        "MBR.cc",   
+    ]
+}
+
+library("Partition_Boot")
+{
+    library_name = "System.Storage.Partition_Boot"
+    library_version = "0.1.0"
+    include_prefix = "System/Storage/Partition"
+    use_stdlib = false
+
+    shared_define = "__SYSTEM_STORAGE_PARTITION_BOOT_BUILD_SHARED"
+
+    public_deps =
+    [
+        "//C++/LanguageSupport",
+        "//C++/Utility",
+        "//Utility/Endian",
+    ]
+
+    public_headers =
+    [
+        "GPT.hh",
+        "MBR.hh",
+    ]
+
+    sources =
+    [
+        "MBR.cc",   
+    ]
+}

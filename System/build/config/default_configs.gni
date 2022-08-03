@@ -7,6 +7,7 @@ default_configs =
     "//build/config:default_debug_info",
     "//build/config:default_errors",
     "//build/config:default_warnings",
+    "//build/config:hidden_visibility",
     "//build/config:gcc_colour_output",
     "//build/config:gcc_gc_crash_fix",
     "//build/config:rust_2021",

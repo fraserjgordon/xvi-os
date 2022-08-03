@@ -6,9 +6,7 @@
 #include <array>
 #include <chrono>
 
-#include <System/Utility/Endian/Endian.hh>
-
-#include <System/Filesystem/FAT/Unaligned.hh>
+#include <System/Utility/Endian/Unaligned.hh>
 
 
 namespace System::Filesystem::FAT
@@ -18,6 +16,7 @@ namespace System::Filesystem::FAT
 using System::Utility::Endian::uint16le_t;
 using System::Utility::Endian::uint32le_t;
 using System::Utility::Endian::char16le_t;
+using System::Utility::Endian::unaligned;
 
 
 //! FAT time field.
@@ -117,7 +116,7 @@ struct dirent_t
     //! Returns the combined cluster number.
     constexpr std::uint32_t get_start_cluster() const
     {
-        return (std::uint16_t{cluster_high} << 16) | std::uint16_t{cluster_low};
+        return (std::uint32_t{cluster_high} << 16) | std::uint16_t{cluster_low};
     }
 
     //! Returns true if this is an empty entry.

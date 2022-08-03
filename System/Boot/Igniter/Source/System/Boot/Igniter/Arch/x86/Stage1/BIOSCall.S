@@ -86,9 +86,9 @@ BIOSCall:
 
     // Store all of the registers as they are now onto the stack.
     pushfl
-    pushw   0
+    pushw   $0
     pushw   %es
-    pushw   0
+    pushw   $0
     pushw   %ds
     pushal
 

@@ -11,6 +11,7 @@ subfolders =
     "Firmware",
     "HW",
     "Rust",
+    "Storage",
     "Unicode",
     "Utility",
 ]

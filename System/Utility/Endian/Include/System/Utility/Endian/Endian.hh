@@ -2,10 +2,16 @@
 #define __SYSTEM_UTILITY_ENDIAN_ENDIAN_H
 
 
-#include <bit>
-#include <cstdint>
-#include <type_traits>
-#include <utility>
+#if defined(__XVI_NO_STDLIB)
+#  include <System/C++/LanguageSupport/StdInt.hh>
+#  include <System/C++/TypeTraits/TypeTraits.hh>
+#  include <System/C++/Utility/Bit.hh>
+#else
+#  include <bit>
+#  include <cstdint>
+#  include <type_traits>
+#  include <utility>
+#endif
 
 
 namespace System::Utility::Endian
@@ -31,7 +37,7 @@ constexpr std::uint32_t byte_swap_32(std::uint32_t x) noexcept
     if constexpr (__has_builtin(__builtin_bswap32))
         return __builtin_bswap32(x);
     else
-        return byte_swap_16((x & 0xFFFF0000) >> 16) | (byte_swap_16(x & 0x0000FFFF) << 16);
+        return byte_swap_16((x & 0xFFFF0000U) >> 16) | (byte_swap_16(x & 0x0000FFFFU) << 16);
 }
 
 constexpr std::uint64_t byte_swap_64(std::uint64_t x) noexcept
@@ -39,7 +45,7 @@ constexpr std::uint64_t byte_swap_64(std::uint64_t x) noexcept
     if constexpr (__has_builtin(__builtin_bswap64))
         return __builtin_bswap64(x);
     else
-        return byte_swap_32((x & 0xFFFFFFFF'00000000) >> 32) | (byte_swap_32(x & 0x00000000'FFFFFFFF) << 32);
+        return byte_swap_32((x & 0xFFFFFFFF'00000000U) >> 32) | (byte_swap_32(x & 0x00000000'FFFFFFFFU) << 32);
 }
 
 constexpr std::int16_t byte_swap_16(std::int16_t x) noexcept

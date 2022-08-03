@@ -1596,7 +1596,7 @@ constexpr const _T& min(const _T& __a, const _T& __b)
 template <class _T, class _Compare>
 constexpr _T min(__XVI_STD_NS::initializer_list<_T> __il, _Compare __comp)
 {
-    const _T& __min = *__il.begin();
+    _T __min = *__il.begin();
 
     for (auto __i = __il.begin() + 1; __i != __il.end(); ++__i)
         __min = __XVI_STD_NS::min(__min, *__i, __comp);

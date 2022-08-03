@@ -2,7 +2,11 @@
 #define __SYSTEM_ALLOCATOR_CLASSIC_CLASSIC_H
 
 
-#include <utility>
+#if defined(__XVI_NO_STDLIB)
+#  include <System/C++/Utility/Pair.hh>
+#else
+#  include <utility>
+#endif
 
 #include <System/Allocator/Classic/Private/Config.hh>
 

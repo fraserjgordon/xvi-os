@@ -111,11 +111,23 @@ template("library")
 
         foreach(source, invoker.sources)
         {
-            sources += [ source_prefix + "${source}"]
+            sources += [ source_prefix + "${source}" ]
         }
 
         not_needed(["source_prefix"])
     }
+
+    public_sources = []
+    if (defined(invoker.public_sources))
+    {
+        source_prefix = "Source/${include_prefix}/"
+
+        foreach(source, invoker.public_sources)
+        {
+            public_sources += [ source_prefix + "${source}" ]
+        }
+    }
+    not_needed(["public_sources"])
 
     if (defined(invoker.sources_shared))
     {
@@ -456,7 +468,7 @@ template("library")
         deps            = []
         defines         = []
         include_dirs    = []
-        public          = public_headers
+        public          = public_headers + public_sources
         public_configs  = []
         public_deps     = []
         plain_deps      = []
@@ -748,11 +760,11 @@ template("library")
 
                 if (defined(invoker.public_deps_kernel))
                 {
-                    deps += invoker.public_deps_kernel
+                    public_deps += invoker.public_deps_kernel
                 }
                 else if (defined(invoker.public_deps_static))
                 {
-                    deps += invoker.public_deps_static
+                    public_deps += invoker.public_deps_static
                 }
 
                 orig_deps = deps
@@ -792,6 +804,8 @@ template("library")
                 }
 
                 deps += plain_deps
+
+                configs += [ "//build/config/:kernel" ]
             }
         }
         else

@@ -1,12 +1,14 @@
-#pragma once
-#ifndef __SYSTEM_FS_FAT_UNALIGNED_H
-#define __SYSTEM_FS_FAT_UNALIGNED_H
+#ifndef __SYSTEM_UTILITY_ENDIAN_UNALIGNED_H
+#define __SYSTEM_UTILITY_ENDIAN_UNALIGNED_H
 
-namespace System::Filesystem::FAT
+
+#include <System/Utility/Endian/Endian.hh>
+
+
+namespace System::Utility::Endian
 {
 
 
-// TODO: refactor this into a common utility header.
 template <class T>
 class unaligned
 {
@@ -46,7 +48,25 @@ private:
 };
 
 
-} // namespace System::Filesystem::FAT
+using uint16ule_t = unaligned<uint16le_t>;
+using uint32ule_t = unaligned<uint32le_t>;
+using uint64ule_t = unaligned<uint64le_t>;
+
+using int16ule_t = unaligned<int16le_t>;
+using int32ule_t = unaligned<int32le_t>;
+using int64ule_t = unaligned<int64le_t>;
+
+using uint16ube_t = unaligned<uint16be_t>;
+using uint32ube_t = unaligned<uint32be_t>;
+using uint64ube_t = unaligned<uint64be_t>;
+
+using int16ube_t = unaligned<int16be_t>;
+using int32ube_t = unaligned<int32be_t>;
+using int64ube_t = unaligned<int64be_t>;
 
 
-#endif /* ifndef __SYSTEM_FS_FAT_UNALIGNED_H */
+
+} // namespace System::Utility::Endian
+
+
+#endif /* ifndef __SYSTEM_UTILITY_ENDIAN_UNALIGNED_H */
