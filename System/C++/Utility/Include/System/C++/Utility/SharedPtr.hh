@@ -185,7 +185,7 @@ public:
         allocator_traits<__alloc_t>::deallocate(__alloc, __p, __size);
     }
 
-    constexpr __shared_ptr_owner(_U* __p, size_t __elems, _D __d = {}, _A __a = {})
+    constexpr __shared_ptr_owner(_U* __p, size_t __elems = 1, _D __d = {}, _A __a = {})
         : __shared_ptr_owner_base(__p, __elems),
           _M_delete(__d),
           _M_allocate(__a)
@@ -202,7 +202,7 @@ public:
             //! @TODO: destroy arrays.
             _M_delete(static_cast<_U*>(__ptr));
             __data_alloc_t __a(_M_allocate);
-            __deallocate(__a, __ptr, __get_elem_count());
+            __deallocate(__a, static_cast<__allocation_t*>(__ptr), __get_elem_count());
         }
         else
         {
@@ -357,7 +357,7 @@ public:
         requires std::is_move_constructible_v<_D> && __detail::__shared_ptr_valid_conversion_d<_T, _Y, _D>
     shared_ptr(_Y* __p, _D __d) __XVI_CXX_UTILITY_FN_TRY
         : _M_ptr(__p),
-          _M_owner(new __detail::__shared_ptr_owner<false, _Y, _D>(__p, __XVI_STD_NS::move(__d)))
+          _M_owner(new __detail::__shared_ptr_owner<false, _Y, _D>(__p, 1, __XVI_STD_NS::move(__d)))
     {
         __XVI_CXX_UTILITY_CHECK_NEW_RESULT(_M_owner);
 

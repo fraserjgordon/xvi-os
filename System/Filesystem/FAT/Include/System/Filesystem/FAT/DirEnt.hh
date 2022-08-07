@@ -88,7 +88,7 @@ constexpr std::byte AttributeArchive        = std::byte{0x20};  //!< File dirty 
 constexpr std::byte AttributeMask           = std::byte{0x2F};
 
 //! This combination of attribute flags indicates the directory entry is a long file name (LFN) entry.
-constexpr std::byte AttributeLFN            = std::byte{0x0f};  // AttributeReadOnly|AttributeHidden|AttributeSystem|AttributeVolumeLabel;
+constexpr std::byte AttributeLFN            = std::byte{0x0F};  // AttributeReadOnly|AttributeHidden|AttributeSystem|AttributeVolumeLabel;
 
 
 //! FAT on-disk directory entry structure.
@@ -131,11 +131,35 @@ struct dirent_t
         return name_base[0] == DirectoryEntryEnd;
     }
 
-    //! Returns true if this is an LFN entry.
-    /*constexpr bool is_lfn_entry() const
+    //! Utility for checking attribute bits.
+    constexpr bool hasAttribute(std::byte attribute) const
     {
-        return (attributes & AttributeMask) == AttributeLFN;
-    }*/
+        return std::uint8_t(attributes) & std::uint8_t(attribute);
+    }
+
+    //! Utility for checking attribute bits.
+    constexpr bool hasAttribute(std::byte attribute, std::byte mask) const
+    {
+        return std::byte{std::uint8_t(attributes) & std::uint8_t(mask)} == attribute;
+    }
+
+    //! Returns true if this is an LFN entry.
+    constexpr bool isLFNEntry() const
+    {
+        return hasAttribute(AttributeLFN, AttributeMask);
+    }
+
+    //! Returns the ordinal (LFN entry order) of this entry.
+    constexpr std::uint8_t lfnOrdinal() const
+    {
+        return static_cast<std::uint8_t>(name_base[0]);
+    }
+
+    //! Returns true if this is the last LFN entry for a file.
+    constexpr bool isLastLFNEntry() const
+    {
+        return isLFNEntry() && (lfnOrdinal() & static_cast<std::uint8_t>(DirectoryEntryLastLFNBit));
+    }
 
     //! Returns the base name of this entry with any escaping corrected.
     constexpr std::array<std::byte, 8> get_name_base() const

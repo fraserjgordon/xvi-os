@@ -91,11 +91,13 @@ if (current_arch == "x86")
         [
             ":IgniterUtils",
 
+            "//ABI/C++",
             "//ABI/Integer",
             "//Allocator/Classic",
             "//C++/Containers",
             "//C++/LanguageSupport",
             "//C++/Utility",
+            "//Filesystem/FAT",
             "//HW/CPU/Arch/x86/ControlRegs",
             "//HW/CPU/Arch/x86/IO",
             "//Storage/Partition/:Partition_Boot",
@@ -105,12 +107,15 @@ if (current_arch == "x86")
         sources =
         [
             "Arch/x86/Stage1/BIOSCall.hh",
+            "Arch/x86/Stage1/BlockCache.hh",
             "Arch/x86/Stage1/DiskIO.hh",
             "Arch/x86/Stage1/Heap.hh",
             "Arch/x86/Stage1/Logging.hh",
+            "Arch/x86/Stage1/MemoryLayout.hh",
 
             "Arch/x86/Stage1/main.cc",
             "Arch/x86/Stage1/BIOSCall.cc",
+            "Arch/x86/Stage1/BlockCache.cc",
             "Arch/x86/Stage1/DiskIO.cc",
             "Arch/x86/Stage1/Heap.cc",
             "Arch/x86/Stage1/Logging.cc",

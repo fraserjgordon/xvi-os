@@ -3,9 +3,15 @@
 #define __SYSTEM_FS_FAT_BPB_H
 
 
+#if !defined(__XVI_NO_STDLIB)
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#else
+#  include <System/C++/LanguageSupport/StdDef.hh>
+#  include <System/C++/LanguageSupport/StdInt.hh>
+#  include <System/C++/Utility/Array.hh>
+#endif
 
 #include <System/Utility/Endian/Unaligned.hh>
 
@@ -195,7 +201,7 @@ union bpb_union
     bpb_common      common;     //!< Fields common to all BPB types.
     bpb_v3_0        v3_0;       //!< Fields present from MS-DOS 3.0 until 3.31.
     bpb_v3_2        v3_2;       //!< Fields present from MS-DOS 3.2 until 3.31.
-    bpb_v3_31       v3_11;      //!< Fields present from MS-DOS 3.31 onwards.
+    bpb_v3_31       v3_31;      //!< Fields present from MS-DOS 3.31 onwards.
     extended_bpb    ext;        //!< Extended BPB for FAT12/FAT16 from MS-DOS 4.0 onwards.
     fat32_bpb       fat32;      //!< Extended BPB for FAT32 volumes.
 };

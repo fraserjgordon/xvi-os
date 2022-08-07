@@ -12,6 +12,7 @@ next_stage_start_addr   = 0x0a00    // seg:offset - first block of next stage
 next_stage_load_ptr     = 0x0a04    // seg:offset - where the next block goes
 block_number_ptr        = 0x0a08    // offset - ptr to next block number to load
 boot_drive              = 0x0a0a    // byte - boot drive number
+progress_count          = 0x0a0b    // byte - progress counter
 
 
 // The MBR generally contains a BIOS Parameter Block (BPB) or similar structure
@@ -119,8 +120,7 @@ block_loop:
     // Load the block.
     call    load_block
 
-    movb    $'.', %cl
-    call    print_char
+    call    progress
 
     // Are we at the end of this block list block?
     addw    $(512 / 16), next_stage_load_ptr+2
@@ -246,21 +246,16 @@ load_block:
 load_block_lba:
 
     // Generate the disk address packet
-    xorw    %dx, %dx
-    pushw   %dx     // Upper half of upper 32 bits of LBA (zero).
-    pushw   %dx     // Lower half of upper 32 bits of LBA (zero).
+    pushl   $0      // Upper 32 bits of LBA (zero).
     pushw   %cx     // Upper half of lower 32 bits of LBA.
     pushw   %ax     // Lower half of lower 32 bits of LBA.
     pushw   %es     // Destination segment.
     pushw   %di     // Destination offset.
-    incw    %dx
-    pushw   %dx     // Number of blocks to transfer (one).
-    movw    $0x0010, %ax
-    pushw   %ax     // Packet size.
+    pushw   $1      // Number of blocks to transfer (one).
+    pushw   $0x0010 // Packet size.
 
     // Number of attempts remaining.
-    addw    $2, %dx
-    pushw   %dx
+    pushw   $3
     
     // Load the boot drive number.
 1:  movb    boot_drive, %dl
@@ -302,6 +297,23 @@ load_block_failed:
     movw    $0x1234, 0x472
     ljmpw   $0xFFFF, $0x0000
 
+// void progress()
+progress:
+
+    movb      $'.', %cl
+
+    //movb    $'\r', %cl
+    //call    print_char
+    //incb    progress_count
+    //movb    progress_count, %al
+    //andb    $0x03, %al
+    //movzxb  %al, %bx
+    //movb    progress_chars(%bx), %cl
+    //call    print_char
+    //ret
+
+//.progress_chars: .ascii "|/-\\"
+
 // void print_char(cl : char c)
 print_char:
 
@@ -309,7 +321,6 @@ print_char:
     outb    $0xe9
 
     movb    $0x0E, %ah
-    movb    %cl, %al
     movw    $0x0007, %bx
     int     $0x10
     retw

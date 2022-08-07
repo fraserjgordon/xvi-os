@@ -1,6 +1,7 @@
 #include <System/Boot/Igniter/Arch/x86/Stage1/Logging.hh>
 
 
+#include <System/C++/Format/Format.hh>
 #include <System/HW/CPU/Arch/x86/IO/IO.hh>
 #include <System/Utility/Logger/Processor.hh>
 
@@ -19,6 +20,9 @@ struct cursor_pos
     std::uint8_t row = 0;
     std::uint8_t column = 0;
 };
+
+
+static cursor_pos s_vgaCursorPos = {};
 
 
 static cursor_pos vgaGetCursor()
@@ -53,6 +57,7 @@ static void vgaWriteString(cursor_pos pos, std::string_view sv, bool update_curs
     params.ah = 0x13;
     params.al = 0;
     params.bh = 0;
+    params.bl = 0x07;
     params.cx = sv.size();
     params.dh = pos.row;
     params.dl = pos.column;
@@ -63,6 +68,15 @@ static void vgaWriteString(cursor_pos pos, std::string_view sv, bool update_curs
         params.al |= 0x01;
 
     BIOSCall(0x10, &params);
+}
+
+
+static void vgaWriteLog(const Logger::message& msg)
+{
+    auto output = std::format("[{}] {}\r\n", Logger::priorityString(msg.priority()), msg.msg());
+
+    vgaWriteString(s_vgaCursorPos, output, true);
+    s_vgaCursorPos = vgaGetCursor();
 }
 
 
@@ -78,24 +92,36 @@ static void bochsWriteString(std::string_view sv)
 }
 
 
+static void bochsWriteLog(const Logger::message& msg)
+{
+    bochsWriteChar('[');
+    bochsWriteString(Logger::priorityString(msg.priority()));
+    bochsWriteChar(']');
+    bochsWriteChar(' ');
+    bochsWriteString(msg.msg());
+    bochsWriteChar('\n');
+
+}
+
+
 void configureLogging()
 {
+    // Get the initial cursor position.
+    s_vgaCursorPos = vgaGetCursor();
+
+    bochsWriteChar('\n');
+
     Logger::registerMessageProcessor([](void*, Logger::opaque_message m)
     {
         Logger::message msg(m);
 
-        bochsWriteChar('[');
-        bochsWriteString(Logger::priorityString(msg.priority()));
-        bochsWriteChar(']');
-        bochsWriteChar(' ');
-        bochsWriteString(msg.msg());
-        bochsWriteChar('\n');
+        bochsWriteLog(msg);
+        vgaWriteLog(msg);
 
         msg.release();
     }, nullptr);
 
     Logger::setMinimumPriority(priority::trace);
-    bochsWriteChar('\n');
 }
 
 

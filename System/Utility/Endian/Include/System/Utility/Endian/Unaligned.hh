@@ -30,15 +30,21 @@ public:
 
     constexpr unaligned& operator=(underlying_type t) noexcept
     {
-        __builtin_memcpy(m_data, std::addressof(t), sizeof(underlying_type));
+        auto ts = T::bswap(t);
+        __builtin_memcpy(m_data, std::addressof(ts), sizeof(ts));
         return *this;
+    }
+
+    constexpr underlying_type value() const noexcept
+    {
+        underlying_type t;
+        __builtin_memcpy(std::addressof(t), m_data, sizeof(underlying_type));
+        return T::bswap(t);
     }
 
     constexpr operator underlying_type() const noexcept
     {
-        underlying_type t;
-        __builtin_memcpy(std::addressof(t), m_data, sizeof(underlying_type));
-        return t;
+        return value();
     }
 
 

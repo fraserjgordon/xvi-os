@@ -195,9 +195,14 @@ public:
 
     ~basic_endian_type() = default;
 
-    constexpr operator T() const noexcept
+    constexpr T value() const noexcept
     {
         return bswap(m_store);
+    }
+
+    constexpr operator T() const noexcept
+    {
+        return value();
     }
 
     friend constexpr auto operator<=>(const basic_endian_type& x, const basic_endian_type& y) noexcept

@@ -203,6 +203,13 @@ public:
             Logger::log(m_facility, p, msg_fmt, var_fmts, args...);
     }
 
+    template <class... Args>
+    void log(priority p, std::string_view msg_fmt, const Args&... args)
+    {
+        if (p >= m_minPriority)
+            Logger::log(m_facility, p, msg_fmt, args...);
+    }
+
 private:
 
     facility    m_facility;

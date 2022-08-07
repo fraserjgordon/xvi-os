@@ -2910,18 +2910,18 @@ constexpr year_month_weekday_last operator/(const month_weekday_last& __mwdl, in
 
 
 // Not defined.
-template <class _Duration> class time_of_day;
+template <class _Duration> class hh_mm_ss;
 
 template <> class
-time_of_day<hours>
+hh_mm_ss<hours>
 {
 public:
 
     using precision = chrono::hours;
 
-    time_of_day() = default;
+    hh_mm_ss() = default;
 
-    constexpr explicit time_of_day(chrono::hours __since_midnight) noexcept
+    constexpr explicit hh_mm_ss(chrono::hours __since_midnight) noexcept
         : _M_hours(__since_midnight.count())
     {
     }
@@ -2957,15 +2957,15 @@ private:
 };
 
 template <> class
-time_of_day<minutes>
+hh_mm_ss<minutes>
 {
 public:
 
     using precision = chrono::minutes;
 
-    time_of_day() = default;
+    hh_mm_ss() = default;
 
-    constexpr explicit time_of_day(chrono::minutes __since_midnight) noexcept
+    constexpr explicit hh_mm_ss(chrono::minutes __since_midnight) noexcept
         : _M_hours(chrono::hours(__since_midnight.count() / 60)),
           _M_mins(__since_midnight.count() % 60)
     {
@@ -3003,20 +3003,20 @@ public:
 
 private:
 
-    time_of_day<chrono::hours> _M_hours;
+    hh_mm_ss<chrono::hours>    _M_hours;
     unsigned char              _M_mins;
 };
 
 template <> class
-time_of_day<seconds>
+hh_mm_ss<seconds>
 {
 public:
 
     using precision = chrono::seconds;
 
-    time_of_day() = default;
+    hh_mm_ss() = default;
 
-    constexpr explicit time_of_day(chrono::seconds __since_midnight) noexcept
+    constexpr explicit hh_mm_ss(chrono::seconds __since_midnight) noexcept
         : _M_mins(chrono::minutes(__since_midnight.count() / 60)),
           _M_secs(__since_midnight.count() % 60)
     {
@@ -3059,20 +3059,20 @@ public:
 
 private:
 
-    time_of_day<chrono::minutes> _M_mins;
+    hh_mm_ss<chrono::minutes>  _M_mins;
     unsigned char                _M_secs;
 };
 
 template <class _Rep, class _Period>
-class time_of_day<duration<_Rep, _Period>>
+class hh_mm_ss<duration<_Rep, _Period>>
 {
 public:
 
     using precision = duration<_Rep, _Period>;
 
-    time_of_day() = default;
+    hh_mm_ss() = default;
 
-    constexpr explicit time_of_day(precision __since_midnight) noexcept
+    constexpr explicit hh_mm_ss(precision __since_midnight) noexcept
         : _M_secs(duration_cast<chrono::seconds>(__since_midnight)),
           _M_frac(__since_midnight - duration_cast<chrono::seconds>(__since_midnight))
     {
@@ -3128,21 +3128,21 @@ private:
                                                               uint32_t,
                                                               uint64_t>>>;
 
-    time_of_day<chrono::seconds> _M_secs;
+    hh_mm_ss<chrono::seconds> _M_secs;
     __rep_t                      _M_frac;
 };
 
 template <class _CharT, class _Traits>
-basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, const time_of_day<hours>& __t);
+basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, const hh_mm_ss<hours>& __t);
 
 template <class _CharT, class _Traits>
-basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, const time_of_day<minutes>& __t);
+basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, const hh_mm_ss<minutes>& __t);
 
 template <class _CharT, class _Traits>
-basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, const time_of_day<seconds>& __t);
+basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, const hh_mm_ss<seconds>& __t);
 
 template <class _CharT, class _Traits, class _Rep, class _Period>
-basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, const time_of_day<duration<_Rep, _Period>>& __t);
+basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, const hh_mm_ss<duration<_Rep, _Period>>& __t);
 
 } // namespace chrono
 
