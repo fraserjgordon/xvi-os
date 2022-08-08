@@ -53,12 +53,12 @@ void Stage1(std::uint8_t boot_drive)
 
     log(priority::debug, "boot drive filesystem mounted successfully");
 
-    /*auto* root = fs.rootDirectory();
+    auto* root = fs.rootDirectory();
 
     root->enumerate([&](const Filesystem::FAT::ObjectInfo& info)
     {
         return true;
-    });*/
+    });
 }
 
 

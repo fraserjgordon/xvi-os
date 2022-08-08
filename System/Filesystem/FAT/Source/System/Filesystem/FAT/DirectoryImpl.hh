@@ -26,6 +26,9 @@ public:
         std::uint8_t                checksum = 0;
 
         static constexpr std::size_t CharsPerLFNEntry = 13;
+        static constexpr std::uint8_t MinLFNOrdinal = 1;
+        static constexpr std::uint8_t MaxLFNOrdinal = 21;
+        static constexpr std::size_t MaxLFNNameLength = 255;
 
 
         bool applyLastLFNEntry(const lfn_dirent_t&);
@@ -33,6 +36,8 @@ public:
         bool applyLFNEntry(const lfn_dirent_t&);
 
         bool validateShortNameEntry(const dirent_t&);
+
+        std::array<char16_t, 13> extractChars(const lfn_dirent_t&);
     };
 
 
@@ -51,7 +56,7 @@ public:
 
 private:
 
-    static ObjectInfoImpl createObjectInfo(const dirent_t&, const lfn_state_t&);
+    ObjectInfoImpl createObjectInfo(const dirent_t&, const lfn_state_t&);
 };
 
 

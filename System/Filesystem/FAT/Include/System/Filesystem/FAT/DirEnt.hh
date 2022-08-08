@@ -114,7 +114,7 @@ struct dirent_t
     std::chrono::hh_mm_ss<deciseconds> get_ctime_time_of_day() const;
 
     //! Returns the combined cluster number.
-    constexpr std::uint32_t get_start_cluster() const
+    constexpr std::uint32_t getStartCluster() const
     {
         return (std::uint32_t{cluster_high} << 16) | std::uint16_t{cluster_low};
     }
@@ -195,11 +195,11 @@ static_assert(sizeof(dirent_t) == 32);
 //! FAT on-disk directory entry structure as used for long file name entries.
 struct lfn_dirent_t
 {
-    std::byte                               ordinal;    //!< Sequence number for this LFN component.
+    std::uint8_t                            ordinal;    //!< Sequence number for this LFN component.
     std::array<unaligned<char16le_t>, 5>    name1;      //!< 5 UTF-16 code units of the name.
     std::byte                               attributes; //!< Must be AttributeLFN.
-    std::byte                               type;       //!< Directory entry type; always zero.
-    std::byte                               checksum;   //!< Checksum of the name of the corresponding short entry.
+    std::uint8_t                            type;       //!< Directory entry type; always zero.
+    std::uint8_t                            checksum;   //!< Checksum of the name of the corresponding short entry.
     std::array<unaligned<char16le_t>, 6>    name2;      //!< 6 UTF-16 code units of the name.
     uint16le_t                              cluster_low;//!< Must be zero.
     std::array<unaligned<char16le_t>, 2>    name3;      //!< 2 UTF-16 code units of the name.

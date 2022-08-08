@@ -8,6 +8,98 @@ namespace System::Filesystem::FAT
 {
 
 
+std::string_view ObjectInfo::name() const
+{
+    return ObjectInfoImpl::from(this).name();
+}
+
+
+std::uint32_t ObjectInfo::size() const
+{
+    return ObjectInfoImpl::from(this).size();
+}
+
+
+ObjectType ObjectInfo::type() const
+{
+    return ObjectInfoImpl::from(this).type();
+}
+
+
+std::uint32_t ObjectInfo::startCluster() const
+{
+    return ObjectInfoImpl::from(this).startCluster();
+}
+
+
+std::uint32_t ObjectInfo::clusterCount() const
+{
+    return ObjectInfoImpl::from(this).clusterCount();
+}
+
+
+std::uint32_t ObjectInfo::lastClusterLength() const
+{
+    return ObjectInfoImpl::from(this).lastClusterLength();
+}
+
+
+Filesystem& ObjectInfo::filesystem() const
+{
+    return ObjectInfoImpl::from(this).filesystem();
+}
+
+
+std::string_view ObjectInfoImpl::name() const
+{
+    return m_name;
+}
+
+
+std::uint32_t ObjectInfoImpl::size() const
+{
+    return m_dirent.size;
+}
+
+
+ObjectType ObjectInfoImpl::type() const
+{
+    return m_type;
+}
+
+
+std::uint32_t ObjectInfoImpl::startCluster() const
+{
+    return m_dirent.getStartCluster();
+}
+
+
+std::uint32_t ObjectInfoImpl::clusterCount() const
+{
+    auto cluster_size = m_filesystem->clusterSize();
+    return (size() + cluster_size - 1) & ~(cluster_size - 1);
+}
+
+
+std::uint32_t ObjectInfoImpl::lastClusterLength() const
+{
+    auto cluster_size = m_filesystem->clusterSize();
+    return size() & (cluster_size - 1);
+}
+
+
+Filesystem& ObjectInfoImpl::filesystem() const
+{
+    return *m_filesystem;
+}
+
+
+const ObjectInfoImpl& ObjectImpl::info() const
+{
+    return m_info;
+}
+
+
 void ObjectImpl::readBlocks(std::uint32_t offset, std::uint32_t length, read_blocks_callback_t callback)
 {
     auto& fs = info().filesystem();

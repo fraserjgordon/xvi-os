@@ -89,6 +89,9 @@ bool Filesystem::mount()
             m_name = bpb.fat32.volume_label;
             m_fsType = bpb.fat32.fs_type_label;
         }
+
+        // The first data cluster comes after the FATs.
+        m_firstCluster = m_fatStart + (m_fatSize * m_fatCount);
     }
     else
     {
@@ -109,10 +112,68 @@ bool Filesystem::mount()
             m_name = bpb.ext.volume_label;
             m_fsType = bpb.ext.fs_type_label;
         }
+
+        // The first data cluster comes after the root directory.
+        m_firstCluster = m_rootDirStart + m_rootDirLength;
     }
 
     log(priority::verbose, "mounted {} as FAT{} volume", id(), static_cast<int>(m_type));
     return true;
+}
+
+
+std::uint32_t Filesystem::sectorSize() const
+{
+    return m_sectorSize;
+}
+
+
+std::uint32_t Filesystem::clusterSize() const
+{
+    return m_clusterSize;
+}
+
+
+std::uint32_t Filesystem::sectorsPerCluster() const
+{
+    return m_sectorsPerCluster;
+}
+
+
+fat_type Filesystem::fatType() const
+{
+    return m_type;
+}
+
+
+std::uint32_t Filesystem::rootDirStartSector() const
+{
+    return m_rootDirStart;
+}
+
+
+std::uint32_t Filesystem::rootDirSectorCount() const
+{
+    return m_rootDirLength;
+}
+
+
+std::uint32_t Filesystem::rootDirFirstCluster() const
+{
+    return m_rootDirStart;
+}
+
+
+std::uint32_t Filesystem::clusterToSector(std::uint32_t cluster) const
+{
+    // Note that cluster indexing is 2-based while sector indexing is 0-based.
+    return m_firstCluster + (cluster - 2) * m_sectorsPerCluster;
+}
+
+
+std::shared_ptr<const std::byte> Filesystem::readBlock(std::uint32_t lba)
+{
+    return m_params.read(lba);
 }
 
 

@@ -8,19 +8,32 @@ library("FAT")
     public_deps =
     [
         "//Utility/Endian",
+        "//Utility/Logger",
     ]
 
     public_headers =
     [
         "BPB.hh",
+        "Directory.hh",
         "DirEnt.hh",
         "FAT.hh",
         "FAT12.hh",
+        "File.hh",
+        "Filesystem.hh",
+        "Object.hh",
     ]
 
     sources =
     [
+        "DirectoryImpl.hh",
+        "Logging.hh",
+        "ObjectImpl.hh",
+
         "BPB.cc",
+        "Directory.cc",
         "DirEnt.cc",
+        "File.cc",
+        "Filesystem.cc",
+        "Object.cc",
     ]
 }
