@@ -193,12 +193,15 @@ template <class _T,
           class = enable_if_t<is_unsigned_v<_T>, void>>
 constexpr _T bit_width(_T __x) noexcept
 {
+    if (__x == 0)
+        return 0;
+
     if constexpr (sizeof(_T) <= sizeof(int))
-        return static_cast<_T>(static_cast<int>(__builtin_ffs(__x)));
+        return static_cast<_T>(static_cast<int>(std::numeric_limits<unsigned int>::digits - __builtin_clz(__x)));
     else if constexpr (sizeof(_T) <= sizeof(long))
-        return static_cast<_T>(static_cast<long>(__builtin_ffsl(__x)));
+        return static_cast<_T>(static_cast<long>(std::numeric_limits<unsigned long>::digits - __builtin_clzl(__x)));
     else if constexpr (sizeof(_T) <= sizeof(long long))
-        return static_cast<_T>(static_cast<long long>(__builtin_ffsll(__x)));
+        return static_cast<_T>(static_cast<long long>(std::numeric_limits<unsigned long long>::digits - __builtin_clzll(__x)));
 }
 
 template <class _T>

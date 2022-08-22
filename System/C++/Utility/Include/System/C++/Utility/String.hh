@@ -427,7 +427,7 @@ public:
             __XVI_CXX_UTILITY_THROW(length_error("std::basic_string::reserve(n) with n > max_size()"));
 
         if (capacity() < __n)
-            (__n);
+            __reallocate(__n);
     }
 
     constexpr void shrink_to_fit()
@@ -614,7 +614,9 @@ public:
         }
 
         for (; __first != __last; ++__first)
-            append(static_cast<_CharT>(*__first));
+            append(size_type{1}, static_cast<_CharT>(*__first));
+
+        return *this;
     }
 
     template <__detail::__container_compatible_range<_CharT> _R>
@@ -627,7 +629,9 @@ public:
         }
 
         for (auto __first = ranges::begin(__r), __last = ranges::end(__r); __first != __last; ++__first)
-            append(static_cast<_CharT>(*__first));
+            append(size_type{1}, static_cast<_CharT>(*__first));
+
+        return *this;
     }
 
     constexpr basic_string& append(initializer_list<_CharT> __il)
@@ -700,6 +704,7 @@ public:
     {
         clear();
         append(__first, __last);
+        return *this;
     }
 
     template <__detail::__container_compatible_range<_CharT> _R>
@@ -707,6 +712,7 @@ public:
     {
         clear();
         append_range(std::forward<_R>(__r));
+        return *this;
     }
 
     constexpr basic_string& assign(initializer_list<_CharT> __il)

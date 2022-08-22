@@ -11,12 +11,17 @@ namespace System::Filesystem::FAT
 {
 
 
+// Forward declarations.
+class ObjectImpl;
+class ObjectInfoImpl;
+
+
 class DirectoryImpl :
     public ObjectImpl
 {
-public:
+    friend class ObjectImpl;
 
-    using enumerate_callback_t = Directory::enumerate_callback_t;
+public:
 
     struct lfn_state_t
     {
@@ -40,9 +45,26 @@ public:
         std::array<char16_t, 13> extractChars(const lfn_dirent_t&);
     };
 
+    using enumerate_callback_t = Directory::enumerate_callback_t;
+    using enumerate_internal_callback_t = std::function<std::pair<bool, bool> (ObjectInfoImpl&)>;
+
 
     void enumerate(enumerate_callback_t);
+    void enumerateInternal(enumerate_internal_callback_t);
 
+    std::unique_ptr<ObjectInfoImpl> find(std::string_view name);
+
+    bool updateObjectMetadata(const ObjectInfoImpl& info);
+
+
+    // Like ObjectImpl::open but with additional checking to ensure the object is a directory.
+    static std::unique_ptr<DirectoryImpl> open(const ObjectInfoImpl& info);
+
+
+    Directory* asDirectory()
+    {
+        return reinterpret_cast<Directory*>(this);
+    }
 
     static DirectoryImpl& from(Directory* dir)
     {
@@ -55,6 +77,8 @@ public:
     }
 
 private:
+
+    DirectoryImpl(const ObjectInfoImpl&);
 
     ObjectInfoImpl createObjectInfo(const dirent_t&, const lfn_state_t&);
 };

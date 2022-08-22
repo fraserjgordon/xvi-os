@@ -162,7 +162,7 @@ struct dirent_t
     }
 
     //! Returns the base name of this entry with any escaping corrected.
-    constexpr std::array<std::byte, 8> get_name_base() const
+    constexpr std::array<std::byte, 8> getNameBase() const
     {
         std::array<std::byte, 8> name = name_base;
         if (name[0] == DirectoryEntryEscaped)
@@ -172,7 +172,7 @@ struct dirent_t
     }
 
     //! Returns the length of the basename (i.e without trailing spaces).
-    constexpr std::size_t get_name_base_length() const
+    constexpr std::size_t getNameBaseLength() const
     {
         std::size_t length = 8;
         while (length > 0 && name_base[length - 1] == std::byte{0x20})
@@ -180,8 +180,14 @@ struct dirent_t
         return length;
     }
 
+    //! Returns the name extension.
+    constexpr std::array<std::byte, 3> getNameExtension() const
+    {
+        return name_ext;
+    }
+
     //! Returns the length of the name extension (i.e without trailing spaces).
-    constexpr std::size_t get_name_extension_length() const
+    constexpr std::size_t getNameExtensionLength() const
     {
         std::size_t length = 3;
         while (length > 0 && name_ext[length - 1] == std::byte{0x20})

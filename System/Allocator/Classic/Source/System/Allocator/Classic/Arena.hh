@@ -121,6 +121,8 @@ public:
 
     void prune();
 
+    const accounting_info& accountingInfo() const;
+
 
     static Arena* createFromMemory(void*, std::size_t size);
 

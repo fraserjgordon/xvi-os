@@ -25,6 +25,7 @@ BIOSCall:
     xorl    %edx, %edx
     movl    %eax, %ds
     movl    %eax, %es
+    movl    %eax, %ss
     movl    %ecx, %fs
     movl    %ecx, %gs
 

@@ -28,8 +28,8 @@ void Stage1(std::uint8_t boot_drive)
 
     Disk boot(boot_drive);
 
-    Filesystem::FAT::Filesystem fs
-    {{
+    auto fs = Filesystem::FAT::Filesystem::open(
+    {
         .sectors = 2880,
         .sectorSize = 512,
         .read = [&](std::uint64_t lba) -> std::shared_ptr<const std::byte>
@@ -43,9 +43,9 @@ void Stage1(std::uint8_t boot_drive)
 
             return std::static_pointer_cast<const std::byte>(data);
         }
-    }};
+    });
 
-    if (!fs.mount())
+    if (!fs->mount())
     {
         log(priority::emergency, "failed to mount boot drive filesystem");
         return;
@@ -53,10 +53,38 @@ void Stage1(std::uint8_t boot_drive)
 
     log(priority::debug, "boot drive filesystem mounted successfully");
 
-    auto* root = fs.rootDirectory();
+    auto root = fs->rootDirectory();
 
-    root->enumerate([&](const Filesystem::FAT::ObjectInfo& info)
+    log(priority::debug, "opened root directory");
+
+    using namespace Filesystem::FAT;
+
+    Directory::handle_t dirXVI = {};
+    Directory::handle_t dirBoot = {};
+    root->enumerate([&](const ObjectInfo& info)
     {
+        log(priority::debug, "dirent: /{}", info.name());
+
+        if (info.name() == "XVI")
+            dirXVI = fs->openDirectory(&info);
+
+        return true;
+    });
+
+    dirXVI->enumerate([&](const ObjectInfo& info)
+    {
+        log(priority::debug, "dirent: /XVI/{}", info.name());
+
+        if (info.name() == "Boot")
+            dirBoot = fs->openDirectory(&info);
+
+        return true;
+    });
+
+    dirBoot->enumerate([&](const ObjectInfo& info)
+    {
+        log(priority::debug, "dirent: /XVI/Boot/{}", info.name());
+
         return true;
     });
 }

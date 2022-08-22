@@ -1,5 +1,11 @@
 #include <System/Utility/Logger/Logger.hh>
 
+#include <vector>
+
+#include <System/Filesystem/FAT/Directory.hh>
+#include <System/Filesystem/FAT/File.hh>
+#include <System/Filesystem/FAT/Filesystem.hh>
+
 #include <System/Boot/Igniter/CHS.hh>
 #include <System/Boot/Igniter/Tool/Blocklist.hh>
 #include <System/Boot/Igniter/Tool/Bootsector.hh>
@@ -13,9 +19,9 @@ int main(int argc, char** argv)
     using namespace System::Utility::Logger;
 
     enableLogToStderr();
-    setMinimumPriority(priority::debug);
+    setMinimumPriority(priority::trace);
 
-    Disk source("igniter-clean.img");
+    //Disk source("igniter-clean.img");
     Disk dest("igniter.img");
 
     std::filesystem::path stage1_name = "out/x86/x86/Stage1.bin";
@@ -23,7 +29,56 @@ int main(int argc, char** argv)
     std::ifstream stage0("out/x86/x86/Stage0.bin");
     std::ifstream stage1(stage1_name.string());
 
+    auto fs = System::Filesystem::FAT::Filesystem::open(
+    {
+        .sectors = 2880,
+        .sectorSize = 512,
+
+        .read = [&](std::uint64_t lba)
+        {
+            std::shared_ptr<std::byte> ptr(new std::byte[512]);
+            dest.readSector(lba, std::span(ptr.get(), 512));
+            return ptr;
+        },
+
+        .write = [&](std::uint64_t lba, std::size_t count, std::span<const std::byte> buffer)
+        {
+            if (count != 1)
+                return false;
+
+            dest.writeSector(lba, buffer);
+            return true;
+        }
+    });
+
+    log(DefaultFacility, priority::trace, "mounting disk...");
+    fs->mount();
+
+    log(DefaultFacility, priority::trace, "opening /XVI/...");
+    auto dirXVI = fs->openDirectory(fs->rootDirectory()->find("XVI"));
+    log(DefaultFacility, priority::trace, "opening /XVI/Boot/...");
+    auto dirBoot = fs->openDirectory(dirXVI->find("Boot"));
+
+    auto fileStage1 = fs->openFile(dirBoot->find("Bootloader.stage1"));
+    auto fileStage1Blocklist = fs->openFile(dirBoot->find("Bootloader.stage1.blocklist"));
+
+    fileStage1->truncate();
+    fileStage1Blocklist->truncate();
+
     char buffer[512];
+
+    auto sectorSize = dest.sectorSize();
+    auto size = std::filesystem::file_size(stage1_name);
+    auto count = ((size + sectorSize - 1) / sectorSize);
+    auto offset = 0;
+    while (offset < size)
+    {
+        stage1.read(buffer, sizeof(buffer));
+        auto len = stage1.gcount();
+        fileStage1->append(std::as_bytes(std::span{buffer, len}));
+
+        offset += len;
+    }
 
     blocklist_header blheader;
     blheader.load_offset = 0x0000;
@@ -36,10 +91,6 @@ int main(int argc, char** argv)
 
     chs_geometry geometry = {80, 2, 18};
 
-    std::uint64_t blHeaderSector = 1439;
-    std::uint64_t nextBLSector = blHeaderSector;
-
-    auto sectorSize = dest.sectorSize();
     auto sectorsAdded = 0;
     auto addToBlocklist = [&](std::uint64_t sector)
     {
@@ -66,26 +117,17 @@ int main(int argc, char** argv)
 
             if (bloffset == 0)
             {
-                auto prevBLSector = nextBLSector;
-                --nextBLSector;
-
-                log(DefaultFacility, priority::debug, "Allocated new blocklist block at sector {}", nextBLSector);
-
                 // We're starting a new blocklist block.
                 if (blsectors == 0)
                 {
                     // This is the first additional blocklist block. Update the blocklist header block to point to it.
-                    blheader.next_blocklist = EncodeCHS(LBAToCHS(geometry, nextBLSector));
-
-                    log(DefaultFacility, priority::debug, "Previous blocklist block is header; will write it later");
+                    //blheader.next_blocklist = EncodeCHS(LBAToCHS(geometry, nextBLSector));
                 }
                 else
                 {
                     // We are moving from one blocklist block to another. Write the completed one.
-                    blblock.next_blocklist = EncodeCHS(LBAToCHS(geometry, nextBLSector));
-                    dest.writeSector(prevBLSector, std::as_bytes(std::span{&blblock, 1}));
-
-                    log(DefaultFacility, priority::debug, "Previous blocklist block at sector {} written out", prevBLSector);
+                    //blblock.next_blocklist = EncodeCHS(LBAToCHS(geometry, nextBLSector));
+                    fileStage1Blocklist->append(std::as_bytes(std::span{&blblock, 1}));
                 }
 
                 std::memset(&blblock, 0, sizeof(blblock));
@@ -100,38 +142,44 @@ int main(int argc, char** argv)
         }
     };
 
-    auto size = std::filesystem::file_size(stage1_name);
-    auto count = ((size + sectorSize - 1) / sectorSize);
-    std::uint64_t sector = 1440;
-    for (std::size_t i = 0; i < count; ++i)
+    dirBoot->updateObjectMetadata(fileStage1->info());
+
+    auto sector_count = fileStage1->info().sectorCount();
+    for (std::uint32_t i = 0; i < sector_count; ++i)
     {
-        stage1.read(buffer, sizeof(buffer));
-        dest.writeSector(sector, std::as_bytes(std::span{buffer}));
-
-        addToBlocklist(sector);
-
-        ++sector;
+        auto sector = fileStage1->info().nthSector(i);
+        addToBlocklist(i);
     }
 
-    log(DefaultFacility, priority::debug, "{} data sectors written", count);
+    dirBoot->updateObjectMetadata(fileStage1Blocklist->info());
 
-    dest.writeSector(blHeaderSector, std::as_bytes(std::span{&blheader, 1}));
-
-    if (sectorsAdded > blheader.blocks.size())
+    // Go back through the blocklist now that it has been written and update the 'next' pointers.
+    sector_count = fileStage1Blocklist->info().sectorCount();
+    for (std::uint32_t i = 0; i < sector_count; ++i)
     {
-        dest.writeSector(nextBLSector, std::as_bytes(std::span{&blblock, 1}));
+        auto next_sector = (i < (sector_count - 1)) ? fileStage1Blocklist->info().nthSector(i + 1) : 0U;
+        auto encoded = (i < (sector_count - 1)) ? EncodeCHS(LBAToCHS(geometry, next_sector)) : 0U;
 
-        log(DefaultFacility, priority::debug, "Final blocklist block at sector {} written out", nextBLSector);
+        if (i == 0)
+        {
+            dest.readSector(i, std::as_writable_bytes(std::span{&blheader, 1}));
+            blheader.next_blocklist = encoded;
+            dest.writeSector(i, std::as_bytes(std::span{&blheader, 1}));
+        }
+        else
+        {
+            dest.readSector(i, std::as_writable_bytes(std::span{&blblock, 1}));
+            blblock.next_blocklist = encoded;
+            dest.writeSector(i, std::as_bytes(std::span{&blblock, 1}));
+        }
     }
-
-    log(DefaultFacility, priority::debug, "{} blocklist sectors written", blHeaderSector - nextBLSector + 1);
 
     stage0.read(buffer, sizeof(buffer));
 
     Bootsector bootsector;
-    bootsector.readFromDisk(source);
+    bootsector.readFromDisk(dest);
     bootsector.applyStage0(std::as_bytes(std::span{buffer}));
-    bootsector.setBlockListBlock(1439);
+    bootsector.setBlockListBlock(fileStage1Blocklist->info().startSector());
     bootsector.writeToDisk(dest);
 
     return 0;

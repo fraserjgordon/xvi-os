@@ -140,6 +140,11 @@ template("xvi_executable")
         }
     }
 
+    if (defined(invoker.plain_deps))
+    {
+        deps += invoker.plain_deps
+    }
+
     executable(target_name)
     {
 

@@ -6,6 +6,12 @@
 #include <System/ABI/String/String.hh>
 
 
+// As this implements a number of built-in functions, prohibit auto-generated calls to them.
+#if defined(__GNUC__) && !defined(__clang__)
+#  pragma GCC optimize "no-tree-loop-distribute-patterns"
+#endif
+
+
 namespace System::ABI::String
 {
 

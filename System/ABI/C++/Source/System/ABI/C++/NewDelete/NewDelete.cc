@@ -14,7 +14,7 @@ using std::bad_alloc;
 
 
 extern "C" [[gnu::weak]] void* __malloc(size_t) asm("System.Allocator.C.Malloc");
-extern "C" [[gnu::weak]] void __free(void*) asm("System.Allocator.C.Malloc");
+extern "C" [[gnu::weak]] void __free(void*) asm("System.Allocator.C.Free");
 
 
 // Note: the C++ standard explicitly requires that the nothrow variants of new call the throwing variant.

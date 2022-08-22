@@ -9,6 +9,12 @@
 #include <System/Allocator/Classic/Classic.hh>
 
 
+#if __SYSTEM_ALLOCATOR_CLASSIC_DEBUG_PRINT
+#  include <array>
+#  include <format>
+#endif
+
+
 namespace System::Allocator::Classic
 {
 
@@ -114,7 +120,7 @@ std::pair<void*, std::size_t> Arena::allocate(std::size_t user_size, std::align_
     m_accounting.allocation_count += 1;
     m_accounting.chunks_allocated += 1;
     m_accounting.chunks_allocated_high_mark = std::max(m_accounting.chunks_allocated_high_mark, m_accounting.chunks_allocated);
-    m_accounting.allocated_size += min_chunk_size;
+    m_accounting.allocated_size += chunk->size();
     m_accounting.allocated_size_high_mark = std::max(m_accounting.allocated_size_high_mark, m_accounting.allocated_size);
 
     return {chunk->data(), chunk->dataSize()};
@@ -130,6 +136,12 @@ void Arena::free(void* memory)
 
     // Convert the user data pointer to a chunk pointer.
     auto chunk = chunk_header::fromDataPointer(memory);
+
+    if (chunk->isFree()) [[unlikely]]
+    {
+        // Uh oh...
+        return;
+    }
 
     // Record the free attempt.
     m_accounting.free_count += 1;
@@ -313,6 +325,11 @@ void Arena::addMemoryBlock(void* where, std::size_t size)
 void Arena::prune()
 {
     // Currently does nothing.
+}
+
+const accounting_info& Arena::accountingInfo() const
+{
+    return m_accounting;
 }
 
 void Arena::corruptionDetected(void* where, const char* message)

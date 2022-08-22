@@ -201,8 +201,6 @@ public:
         {
             //! @TODO: destroy arrays.
             _M_delete(static_cast<_U*>(__ptr));
-            __data_alloc_t __a(_M_allocate);
-            __deallocate(__a, static_cast<__allocation_t*>(__ptr), __get_elem_count());
         }
         else
         {

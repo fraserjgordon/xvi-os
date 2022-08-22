@@ -6,6 +6,7 @@
 #include <System/C++/Utility/Algorithm.hh>
 #include <System/C++/Utility/Array.hh>
 #include <System/C++/Utility/CharTraits.hh>
+#include <System/C++/Utility/Function.hh>
 #include <System/C++/Utility/IntegerCompare.hh>
 #include <System/C++/Utility/StdExcept.hh>
 #include <System/C++/Utility/String.hh>
@@ -29,15 +30,10 @@ namespace __detail
 //template <class _CharT> class __basic_fmt_contiguous_iter;
 template <class _CharT> class __basic_fmt_n_iter;
 template <class _CharT> class __basic_fmt_measuring_iter;
+template <class _CharT> class __basic_fmt_contiguous_iter;
+template <class _CharT> class __basic_fmt_type_erased_iter;
 template <class _Context, class... _Args> class __format_arg_store;
 
-}
-
-
-//! @todo: REMOVE ME
-namespace __detail
-{
-template <class _CharT> using __basic_fmt_contiguous_iter = std::back_insert_iterator<std::basic_string<_CharT>>;
 }
 
 
@@ -46,8 +42,8 @@ template <class _Out, class _CharT> class basic_format_context;
 template <class _Context> class basic_format_args;
 template <class _CharT, class... _Args> struct basic_format_string;
 
-using format_context = basic_format_context<__detail::__basic_fmt_contiguous_iter<char>, char>;
-using wformat_context = basic_format_context<__detail::__basic_fmt_contiguous_iter<wchar_t>, wchar_t>;
+using format_context = basic_format_context<__detail::__basic_fmt_type_erased_iter<char>, char>;
+using wformat_context = basic_format_context<__detail::__basic_fmt_type_erased_iter<wchar_t>, wchar_t>;
 
 using format_args = basic_format_args<format_context>;
 using wformat_args = basic_format_args<wformat_context>;
@@ -1875,8 +1871,8 @@ namespace __detail
 {
 
 
-template <class _Out, class _CharT, bool _OnlyParse = false>
-constexpr _Out __parse_and_format_to(_Out __out, std::basic_string_view<_CharT> __fmt, basic_format_args<basic_format_context<_Out, _CharT>> __args)
+template <class _Out, class _CharT, bool _OnlyParse = false, class _OutIter = __basic_fmt_type_erased_iter<_CharT>>
+constexpr _Out __parse_and_format_to(_Out __out, std::basic_string_view<_CharT> __fmt, basic_format_args<basic_format_context<_OutIter, _CharT>> __args)
 {
     // Parse context.
     basic_format_parse_context<_CharT> __parse {__fmt, __args.__size()};
@@ -1884,7 +1880,7 @@ constexpr _Out __parse_and_format_to(_Out __out, std::basic_string_view<_CharT> 
     // Format context.
     //
     // Note that the format context takes ownership of the output iterator.
-    using _FC = basic_format_context<_Out, _CharT>;
+    using _FC = basic_format_context<_OutIter, _CharT>;
     auto __fc = _FC::__make(__args, std::move(__out));
 
     // Iterate over the literal output and replacement fields.
@@ -2077,7 +2073,8 @@ template <class _CharT>
 consteval void __consteval_parse_impl(std::basic_string_view<_CharT> __fmt, basic_format_args<basic_format_context<__stdfmt_dummy_iter<_CharT>, _CharT>> __args)
 {
     // Evaluated for side-effects only, i.e does it throw?
-    __parse_and_format_to<__stdfmt_dummy_iter<_CharT>, _CharT, true>(__stdfmt_dummy_iter<_CharT>{}, __fmt, __args);
+    using __dummy_t = __stdfmt_dummy_iter<_CharT>;
+    __parse_and_format_to<__dummy_t, _CharT, true, __dummy_t>(__stdfmt_dummy_iter<_CharT>{}, __fmt, __args);
 }
 
 
@@ -2131,6 +2128,247 @@ consteval void __consteval_parse(std::basic_string_view<_CharT> __fmt)
 }
 
 
+/*template <class _CharT>
+class __basic_fmt_contiguous_dest
+{
+    friend class __basic_fmt_contiguous_iter<_CharT>;
+
+public:
+
+    using __commit_fn = std::function<void(const _CharT*, std::size_t)>;
+
+
+    constexpr __basic_fmt_contiguous_iter<_CharT> __begin();
+
+
+protected:
+
+    virtual std::span<_CharT> __data() = 0;
+    virtual std::span<_CharT> __append(_CharT) = 0;
+
+private:
+
+    std::span<_CharT>       _M_buffer;
+};
+
+
+template <class _CharT, class _Container>
+class __basic_fmt_contiguous_dest_impl final :
+    public __basic_fmt_contiguous_dest<_CharT>
+{
+public:
+
+    constexpr __basic_fmt_contiguous_dest_impl(_Container& __cont) :
+        _M_cont{__cont}
+    {
+    }
+
+protected:
+
+    constexpr std::span<_CharT> __data() final
+    {
+        using std::data;
+        using std::size;
+        return {data(_M_cont), size(_M_cont)};
+    }
+
+    constexpr std::span<_CharT> __append(_CharT __value) final
+    {
+        *(std::back_inserter(_M_cont)) = __value;
+        return __data();
+    }
+
+private:
+
+    _Container&     _M_cont;
+};
+
+
+template <class _CharT>
+class __basic_fmt_contiguous_iter
+{
+public:
+
+    using value_type        = _CharT;
+    using difference_type   = std::ptrdiff_t;
+    using pointer           = _CharT*;
+    using reference         = _CharT&;
+    using iterator_category = std::output_iterator_tag;
+
+
+    using __dest_t = __basic_fmt_contiguous_dest<_CharT>;
+
+
+    constexpr __basic_fmt_contiguous_iter() = default;   
+    constexpr __basic_fmt_contiguous_iter(const __basic_fmt_contiguous_iter&) = default;
+
+    constexpr ~__basic_fmt_contiguous_iter() = default;
+
+    constexpr __basic_fmt_contiguous_iter& operator=(const __basic_fmt_contiguous_iter&) = default;
+
+    constexpr explicit __basic_fmt_contiguous_iter(__dest_t& __dest) :
+        _M_dest{&__dest}
+    {
+    }
+
+
+    constexpr reference operator*() const
+    {
+        //! @todo: do the extension in a more sensible way.
+        if (_M_offset > _M_dest->_M_buffer.size())
+            _M_dest->__append(0);
+
+        return _M_dest->_M_buffer[_M_offset];
+    }
+
+    constexpr __basic_fmt_contiguous_iter& operator++()
+    {
+        ++_M_offset;
+        return *this;
+    }
+
+    constexpr __basic_fmt_contiguous_iter operator++(int)
+    {
+        auto __temp = *this;
+        ++_M_offset;
+        return __temp;
+    }
+
+
+    //! @todo: do we need any other methods or is this good enough for internal use?
+
+
+private:
+
+    __dest_t*       _M_dest = nullptr;
+    std::size_t     _M_offset = 0;
+};
+
+
+template <class _CharT>
+constexpr __basic_fmt_contiguous_iter<_CharT> __basic_fmt_contiguous_dest<_CharT>::__begin()
+{
+    return __basic_fmt_contiguous_iter<_CharT>(*this);
+}*/
+
+
+template <class _CharT>
+class __basic_fmt_type_erased_dest
+{
+    friend class __basic_fmt_type_erased_iter<_CharT>;
+
+public:
+
+    constexpr __basic_fmt_type_erased_iter<_CharT> __begin();
+
+protected:
+
+    virtual void __set(_CharT) = 0;
+    virtual void __inc() = 0;
+};
+
+
+template <class _CharT, class _Out>
+class __basic_fmt_type_erased_dest_impl final :
+    public __basic_fmt_type_erased_dest<_CharT>
+{
+public:
+
+    __basic_fmt_type_erased_dest_impl(_Out __iter) :
+        _M_iter{std::move(__iter)}
+    {
+    }
+
+    _Out& __iter()
+    {
+        return _M_iter;
+    }
+
+protected:
+
+    constexpr void __set(_CharT __c) final
+    {
+        *_M_iter = __c;
+    }
+
+    constexpr void __inc() final
+    {
+        ++_M_iter;
+    }
+
+private:
+
+    _Out    _M_iter;
+};
+
+
+template <class _CharT>
+class __basic_fmt_type_erased_iter
+{
+public:
+
+    struct reference
+    {
+        __basic_fmt_type_erased_iter&   __iter;
+
+        constexpr void operator=(_CharT __c) const
+        {
+            __iter.__set(__c);
+        }
+    };
+
+    using value_type        = _CharT;
+    using difference_type   = std::ptrdiff_t;
+    using pointer           = _CharT*;
+    using iterator_category = std::output_iterator_tag;
+
+    constexpr __basic_fmt_type_erased_iter() = default;
+    constexpr __basic_fmt_type_erased_iter(const __basic_fmt_type_erased_iter&) = default;
+
+    constexpr ~__basic_fmt_type_erased_iter() = default;
+
+    constexpr __basic_fmt_type_erased_iter& operator=(const __basic_fmt_type_erased_iter&) = default;
+
+    explicit constexpr __basic_fmt_type_erased_iter(__basic_fmt_type_erased_dest<_CharT>& __dest) :
+        _M_dest{&__dest}
+    {
+    }
+
+    constexpr reference operator*()
+    {
+        return reference{.__iter = *this};
+    }
+
+    constexpr __basic_fmt_type_erased_iter& operator++()
+    {
+        _M_dest->__inc();
+        return *this;
+    }
+
+    constexpr __basic_fmt_type_erased_iter& operator++(int)
+    {
+        _M_dest->__inc();
+        return *this;
+    }
+
+    constexpr void __set(_CharT __c)
+    {
+        _M_dest->__set(__c);
+    }
+
+private:
+
+    __basic_fmt_type_erased_dest<_CharT>*   _M_dest = nullptr;
+};
+
+
+template <class _CharT>
+constexpr __basic_fmt_type_erased_iter<_CharT> __basic_fmt_type_erased_dest<_CharT>::__begin()
+{
+    return __basic_fmt_type_erased_iter<_CharT>{*this};
+}
+
+
 template <class _CharT>
 class __basic_fmt_measuring_iter
 {
@@ -2173,6 +2411,18 @@ private:
 };
 
 
+template <class _Out, class _CharT>
+constexpr _Out __type_erased_parse_and_format_to(_Out __orig_out, std::basic_string_view<_CharT> __fmt, basic_format_args<basic_format_context<__basic_fmt_type_erased_iter<_CharT>, _CharT>> __args)
+{
+    __basic_fmt_type_erased_dest_impl<_CharT, _Out> __dest{__orig_out};
+    auto __out = __dest.__begin();
+
+    __parse_and_format_to<__basic_fmt_type_erased_iter<_CharT>, _CharT>(__out, __fmt, __args);
+
+    return std::move(__dest.__iter());
+}
+
+
 template <class _CharT>
 constexpr std::size_t __vformatted_size(std::basic_string_view<_CharT> __fmt, basic_format_args<basic_format_context<__basic_fmt_measuring_iter<_CharT>, _CharT>> __args)
 {
@@ -2212,7 +2462,7 @@ constexpr std::string vformat(std::string_view __fmt, format_args __args)
     std::string __formatted;
     auto __out = std::back_inserter(__formatted);
 
-    __detail::__parse_and_format_to(std::move(__out), __fmt, __args);
+    __detail::__type_erased_parse_and_format_to(std::move(__out), __fmt, __args);
 
     return __formatted;
 }
@@ -2224,7 +2474,7 @@ constexpr std::wstring vformat(std::wstring_view __fmt, wformat_args __args)
     std::wstring __formatted;
     auto __out = std::back_inserter(__formatted);
 
-    __detail::__parse_and_format_to(std::move(__out), __fmt, __args);
+    __detail::__type_erased_parse_and_format_to(std::move(__out), __fmt, __args);
 
     return __formatted;
 }
@@ -2233,14 +2483,14 @@ constexpr std::wstring vformat(std::wstring_view __fmt, wformat_args __args)
 template <class _Out>
 constexpr _Out vformat_to(_Out __out, std::string_view __fmt, format_args __args)
 {
-    return __detail::__parse_and_format_to(std::move(__out), __fmt, __args);
+    return __detail::__type_erased_parse_and_format_to(std::move(__out), __fmt, __args);
 }
 
 
 template <class _Out>
 constexpr _Out vformat_to(_Out __out, std::wstring_view __fmt, wformat_args __args)
 {
-    return __detail::__parse_and_format_to(std::move(__out), __fmt, __args);
+    return __detail::__type_erased_parse_and_format_to(std::move(__out), __fmt, __args);
 }
 
 
