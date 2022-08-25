@@ -102,9 +102,9 @@ public:
 
     const ObjectInfo& info() const;
 
-    std::uint32_t readTo(std::uint32_t offset, std::uint32_t length, std::span<std::byte> out);
+    std::uint32_t readTo(std::uint32_t offset, std::uint32_t length, std::span<std::byte> out) const;
 
-    void readBlocks(std::uint32_t offset, std::uint32_t length, read_blocks_callback_t);
+    void readBlocks(std::uint32_t offset, std::uint32_t length, read_blocks_callback_t) const;
 
     void close();
 };

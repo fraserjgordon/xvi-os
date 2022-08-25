@@ -17,6 +17,7 @@ group("Igniter")
             # Note that we explicitly depend on 32-bit versions of these stages.
             ":Stage0(${toolchain_x86})",
             ":Stage1(${toolchain_x86})",
+            ":Stage2(${toolchain_x86})",
         ]
     }
 }
@@ -83,7 +84,7 @@ if (current_arch == "x86")
     {
         prefix = "System.Boot.Igniter"
 
-        output_name = "Stage1.bin"
+        output_name = "Stage1.elf"
         use_stdlib = false
         link_style = "kernel"
 
@@ -94,9 +95,8 @@ if (current_arch == "x86")
             "//ABI/C++",
             "//ABI/Integer",
             "//Allocator/Classic",
-            "//C++/Containers",
-            "//C++/LanguageSupport",
-            "//C++/Utility",
+            "//C++/StdLib",
+            "//Executable/Image/ELF",
             "//Filesystem/FAT",
             "//HW/CPU/Arch/x86/ControlRegs",
             "//HW/CPU/Arch/x86/IO",
@@ -106,14 +106,18 @@ if (current_arch == "x86")
 
         sources =
         [
+            "Arch/x86/Stage1/A20.hh",
             "Arch/x86/Stage1/BIOSCall.hh",
             "Arch/x86/Stage1/BlockCache.hh",
             "Arch/x86/Stage1/DiskIO.hh",
             "Arch/x86/Stage1/Heap.hh",
             "Arch/x86/Stage1/Logging.hh",
             "Arch/x86/Stage1/MemoryLayout.hh",
+            "Multiboot/v1.hh",
+            "Multiboot/v2.hh",
 
             "Arch/x86/Stage1/main.cc",
+            "Arch/x86/Stage1/A20.cc",
             "Arch/x86/Stage1/BIOSCall.cc",
             "Arch/x86/Stage1/BlockCache.cc",
             "Arch/x86/Stage1/DiskIO.cc",
@@ -140,7 +144,7 @@ xvi_executable("Stage2")
 {
     prefix = "System.Boot.Igniter"
 
-    output_name = "Stage2.efi"
+    output_name = "Stage2.${current_cpu}"
     use_stdlib = false
 
     deps =

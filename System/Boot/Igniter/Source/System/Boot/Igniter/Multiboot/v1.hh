@@ -30,6 +30,11 @@ struct multiboot_v1_os_header
         checksum = -(magic + flags);
     }
 
+    constexpr bool isValid() const noexcept
+    {
+        return magic == Magic && checksum == -(magic + flags);
+    }
+
     static constexpr multiboot_v1_os_header create(std::uint32_t flags = 0)
     {
         return {.magic = Magic, .flags = flags, .checksum = -(Magic + flags)};

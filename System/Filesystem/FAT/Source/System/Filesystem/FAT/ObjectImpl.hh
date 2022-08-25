@@ -109,9 +109,9 @@ public:
 
     const ObjectInfoImpl& info() const;
 
-    std::uint32_t readTo(std::uint32_t offset, std::uint32_t length, std::span<std::byte> out);
+    std::uint32_t readTo(std::uint32_t offset, std::uint32_t length, std::span<std::byte> out) const;
 
-    void readBlocks(std::uint32_t offset, std::uint32_t length, read_blocks_callback_t);
+    void readBlocks(std::uint32_t offset, std::uint32_t length, read_blocks_callback_t) const;
 
     bool truncate(std::uint32_t length = 0);
     bool append(std::span<const std::byte> data);
@@ -151,7 +151,7 @@ private:
 
 
     // FAT12 and FAT16 require special handling of the root directory.
-    void readRootDirBlocks(std::uint32_t offset, std::uint32_t length, read_blocks_callback_t);
+    void readRootDirBlocks(std::uint32_t offset, std::uint32_t length, read_blocks_callback_t) const;
 
     std::uint32_t clusterLookup(std::uint32_t index, cluster_hint& hint) const;
     std::span<std::byte> ensureBuffer(buffer_t& buffer);

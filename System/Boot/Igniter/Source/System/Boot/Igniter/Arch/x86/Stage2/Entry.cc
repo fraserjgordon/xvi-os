@@ -116,6 +116,13 @@ void run()
         {
             Logger::message msg(m);
 
+            // Output the message severity.
+            X86::outb(0xe9, '[');
+            for (auto b : Logger::priorityString(Logger::getMessagePriority(m)))
+                X86::outb(0xe9, b);
+            X86::outb(0xe9, ']');
+            X86::outb(0xe9, ' ');
+
             // Copy the message to the debugging port.
             for (auto b : msg.msg())
                 X86::outb(0xe9, static_cast<std::uint8_t>(b));
@@ -277,7 +284,7 @@ void abortHandler()
         // Print out the type of the exception.
         auto ti = __cxxabiv1::__cxa_current_exception_type();
         auto __ptr = __cxxabiv1::__cxa_demangle(ti->name(), nullptr, nullptr, nullptr);
-        log(priority::emergency, "FATAL: unhandled exception type={}", __ptr);        
+        log(priority::emergency, "FATAL: unhandled exception type={} ({})", __ptr, ti->name());        
 
         // Rethrow the exception to see if it's one we can get more information on.
         try

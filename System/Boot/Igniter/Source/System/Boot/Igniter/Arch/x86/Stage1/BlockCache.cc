@@ -18,7 +18,7 @@ std::pair<bool, BlockCache::block_ptr> BlockCache::findOrAllocate(std::uint64_t 
         // Is this the entry we're looking for?
         if (m_descriptors[i].lba == lba && m_descriptors[i].ptr)
         {
-            log(priority::trace, "BlockCache: cache hit for LBA {} in slot {}", lba, i);
+            //log(priority::trace, "BlockCache: cache hit for LBA {} in slot {}", lba, i);
             return {true, m_descriptors[i].ptr};
         }
 
@@ -29,7 +29,7 @@ std::pair<bool, BlockCache::block_ptr> BlockCache::findOrAllocate(std::uint64_t 
             if (empty == nullptr || empty->ptr != nullptr)
                 empty = &m_descriptors[i];
         }
-        else if (m_descriptors[i].ptr.use_count() == 1 && empty == nullptr)
+        else if (m_descriptors[i].ptr.use_count() <= 1 && empty == nullptr)
         {
             // This slot is in use but could be viable as nobody holds a reference.
             empty = &m_descriptors[i];
@@ -42,11 +42,11 @@ std::pair<bool, BlockCache::block_ptr> BlockCache::findOrAllocate(std::uint64_t 
     auto index = empty - &m_descriptors[0];
     if (empty->ptr)
     {
-        log(priority::trace, "BlockCache: evicting LBA {} from slot {} in favour of {}", empty->lba, index, lba);
+        //log(priority::trace, "BlockCache: evicting LBA {} from slot {} in favour of {}", empty->lba, index, lba);
     }
     else
     {
-        log(priority::trace, "BlockCache: inserting LBA {} into unused slot {}", lba, index);
+        //log(priority::trace, "BlockCache: inserting LBA {} into unused slot {}", lba, index);
     }
 
     // We manage the lifetime of the block in the cache by creating a shared_ptr with the following characteristics:

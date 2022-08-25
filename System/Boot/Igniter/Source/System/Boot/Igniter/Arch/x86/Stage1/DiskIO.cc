@@ -56,7 +56,7 @@ std::uint32_t Disk::read(std::uint64_t lba, std::uint32_t count, std::span<std::
         auto chs = LBAToCHS(*m_geometry, lba);
 
         // Clamp the count so that all reads are from within the same track.
-        count = std::min({count, m_geometry->sectors - chs.sector});
+        count = std::min({count, m_geometry->sectors - (chs.sector -  1)});
 
         // Attempt the read.
         for (int i = 0; i < ReadRetryCount; ++i)
@@ -140,7 +140,7 @@ bool Disk::readDiskCHS(std::uint8_t drive, const chs_address& address, std::uint
     bios_call_params params;
     params.al = length;
     params.ah = 0x02;
-    params.cl = address.sector | (address.cylinder >> 2);
+    params.cl = address.sector | ((address.cylinder & 0x300) >> 2);
     params.ch = address.cylinder & 0xFF;
     params.dl = drive;
     params.dh = address.head;

@@ -196,7 +196,7 @@ std::uint32_t ObjectInfoImpl::nthSector(std::uint32_t n) const
     auto cluster_index = n / sectors_per_cluster;
     auto cluster = nthCluster(cluster_index);
 
-    return cluster + n % sectors_per_cluster;
+    return m_filesystem->clusterToSector(cluster) + n % sectors_per_cluster;
 }
 
 
@@ -250,6 +250,12 @@ const ObjectInfo& Object::info() const
 }
 
 
+std::uint32_t Object::readTo(std::uint32_t offset, std::uint32_t length, std::span<std::byte> buffer) const
+{
+    return ObjectImpl::from(this).readTo(offset, length, buffer);
+}
+
+
 void Object::close()
 {
     delete &ObjectImpl::from(this);
@@ -268,14 +274,56 @@ const ObjectInfoImpl& ObjectImpl::info() const
 }
 
 
-void ObjectImpl::readBlocks(std::uint32_t offset, std::uint32_t length, read_blocks_callback_t callback)
+std::uint32_t ObjectImpl::readTo(std::uint32_t offset, std::uint32_t length, std::span<std::byte> out) const
 {
     auto& fs = info().filesystem();
 
-    // Directories other than a FAT12/FAT16 root directory have an unknown size so we don't clamp them.
+    // Sanity check the buffer.
+    if (out.size_bytes() < length)
+        return 0;
+
+    log(priority::trace, "read {} bytes from {} offset {}", length, info().name(), offset);
+
+    auto sector_size = fs.sectorSize();
+    auto sector_offset = offset % sector_size;
+
+    // Align the read to sector boundaries.
+    auto end = offset + length;
+    offset = offset & ~(sector_size - 1);
+    end = (end + sector_size - 1) & ~(sector_size - 1);
+    length = end - offset;
+
+    std::uint32_t read = 0;
+    readBlocks(offset, length, [&](std::uint32_t, std::span<const std::byte> data)
+    {
+        // If this is the first or last block, a partial copy might be needed.
+        auto copy_offset = 0;
+        auto copy_length = data.size_bytes();
+
+        if (read == 0 || copy_length > out.size_bytes())
+        {
+            copy_offset = sector_offset;
+            copy_length = std::min<std::size_t>(copy_length - copy_offset, out.size_bytes());
+        }
+
+        std::memcpy(out.data(), data.data() + copy_offset, copy_length);
+
+        read += copy_length;
+        out = out.subspan(copy_length);
+
+        return !out.empty();
+    });
+
+    return read;
+}
+
+
+void ObjectImpl::readBlocks(std::uint32_t offset, std::uint32_t length, read_blocks_callback_t callback) const
+{
+    auto& fs = info().filesystem();
+
     auto size = info().size();
-    if (info().type() == ObjectType::Directory)
-        size = UINT32_MAX - offset;
+    auto sector_size = fs.sectorSize();
 
     // Clamp the length (and therefore the ending offset) to the size of the object.
     auto end = std::min(offset + length, size);
@@ -285,8 +333,7 @@ void ObjectImpl::readBlocks(std::uint32_t offset, std::uint32_t length, read_blo
         return;
 
     // Round the offset to a block boundary and re-adjust the length to compensate.
-    auto sector_size = fs.sectorSize();
-    auto adjustment = -(offset & (sector_size - 1));
+    auto adjustment = (offset & (sector_size - 1));
     offset = offset - adjustment;
     length = end - offset;
 
@@ -296,14 +343,14 @@ void ObjectImpl::readBlocks(std::uint32_t offset, std::uint32_t length, read_blo
 
     // How many sectors are we going to read?
     auto first_sector = offset / sector_size;
-    auto sector_count = length / sector_size;
-    auto last_sector = first_sector + sector_count;
+    auto last_sector = (end + sector_size - 1) / sector_size;
+    auto sector_count = last_sector - first_sector;
 
     // What is the index of the first and last clusters that we are interested in?
     auto sectors_per_cluster = fs.sectorsPerCluster();
-    auto first_cluster_index = offset / sectors_per_cluster;
-    auto cluster_count = (sector_count + sectors_per_cluster - 1) / sectors_per_cluster;
-    auto last_cluster_index = first_cluster_index + cluster_count;
+    auto cluster_size = fs.clusterSize();
+    auto first_cluster_index = offset / cluster_size;
+    auto last_cluster_index = (end + cluster_size - 1) / cluster_size;
 
     // Read the cluster chain.
     fs.readClusterChain(info().startCluster(), [&](std::uint32_t n, std::uint32_t cluster)
@@ -460,7 +507,7 @@ std::unique_ptr<ObjectImpl> ObjectImpl::open(const ObjectInfoImpl& info)
 }
 
 
-void ObjectImpl::readRootDirBlocks(std::uint32_t offset, std::uint32_t length, read_blocks_callback_t callback)
+void ObjectImpl::readRootDirBlocks(std::uint32_t offset, std::uint32_t length, read_blocks_callback_t callback) const
 {
     // With FAT12 and FAT16, the root directory is a pre-allocated contiguous area before the first data cluster. We can
     // just read it as requested.

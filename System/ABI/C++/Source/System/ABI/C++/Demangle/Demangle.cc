@@ -329,7 +329,7 @@ struct number
 
     static std::optional<number> parse(std::string_view& in)
     {
-        bool negative;
+        bool negative = false;
         if (in.starts_with("n"))
         {
             in = in.substr(1);

@@ -9,9 +9,6 @@
 #include <System/Utility/Endian/Endian.hh>
 
 
-//! @TODO: add [[nodiscard]] to all byte_swap methods.
-
-
 namespace System::Executable::Image::ELF
 {
 
@@ -367,7 +364,7 @@ struct basic_section_header_32
     Traits::word_t          address_alignment   = 0;
     Traits::word_t          entry_size          = 0;
 
-    constexpr byte_swapped_type byte_swap() const noexcept
+    [[nodiscard]] constexpr byte_swapped_type byte_swap() const noexcept
     {
         return
         {
@@ -412,7 +409,7 @@ struct basic_section_header_64
     Traits::xword_t         address_alignment   = 0;
     Traits::xword_t         entry_size          = 0;
 
-    constexpr byte_swapped_type byte_swap() const noexcept
+    [[nodiscard]] constexpr byte_swapped_type byte_swap() const noexcept
     {
         return
         {
@@ -450,7 +447,7 @@ struct basic_compression_header_32
     Traits::address_t       size            = 0;    // Uncompressed size.
     Traits::word_t          alignment       = 0;    // Required alignment.
 
-    constexpr byte_swapped_type byte_swap() const noexcept
+    [[nodiscard]] constexpr byte_swapped_type byte_swap() const noexcept
     {
         return
         {
@@ -482,7 +479,7 @@ struct basic_compression_header_64
     Traits::xword_t         size            = 0;    // Uncompressed size.
     Traits::xword_t         alignment       = 0;    // Required alignment.
 
-    constexpr byte_swapped_type byte_swap() const noexcept
+    [[nodiscard]] constexpr byte_swapped_type byte_swap() const noexcept
     {
         return
         {
@@ -517,7 +514,7 @@ struct basic_symbol_32
     std::uint8_t            other           = 0;
     Traits::half_t          section         = 0;
 
-    constexpr byte_swapped_type byte_swap() const noexcept
+    [[nodiscard]] constexpr byte_swapped_type byte_swap() const noexcept
     {
         return
         {
@@ -554,7 +551,7 @@ struct basic_symbol_64
     Traits::xword_t         value           = 0;
     Traits::xword_t         size            = 0;
 
-    constexpr byte_swapped_type byte_swap() const noexcept
+    [[nodiscard]] constexpr byte_swapped_type byte_swap() const noexcept
     {
         return
         {
@@ -587,7 +584,7 @@ struct basic_relocation_32
     Traits::offset_t        offset          = 0;
     Traits::word_t          info            = 0;
 
-    constexpr byte_swapped_type byte_swap() const noexcept
+    [[nodiscard]] constexpr byte_swapped_type byte_swap() const noexcept
     {
         return
         {
@@ -617,7 +614,7 @@ struct basic_relocationa_32
     Traits::word_t          info            = 0;
     Traits::sword_t         addend          = 0;
 
-    constexpr byte_swapped_type byte_swap() const noexcept
+    [[nodiscard]] constexpr byte_swapped_type byte_swap() const noexcept
     {
         return
         {
@@ -647,7 +644,7 @@ struct basic_relocation_64
     Traits::offset_t        offset          = 0;
     Traits::xword_t         info            = 0;
 
-    constexpr byte_swapped_type byte_swap() const noexcept
+    [[nodiscard]] constexpr byte_swapped_type byte_swap() const noexcept
     {
         return
         {
@@ -677,7 +674,7 @@ struct basic_relocationa_64
     Traits::xword_t         info            = 0;
     Traits::sxword_t        addend          = 0;
 
-    constexpr byte_swapped_type byte_swap() const noexcept
+    [[nodiscard]] constexpr byte_swapped_type byte_swap() const noexcept
     {
         return
         {
@@ -713,7 +710,7 @@ struct basic_program_header_32
     Traits::word_t          flags               = 0;
     Traits::word_t          alignment           = 0;
 
-    constexpr byte_swapped_type byte_swap() const noexcept
+    [[nodiscard]] constexpr byte_swapped_type byte_swap() const noexcept
     {
         return
         {
@@ -754,7 +751,7 @@ struct basic_program_header_64
     Traits::xword_t         memory_size         = 0;
     Traits::xword_t         alignment           = 0;
 
-    constexpr byte_swapped_type byte_swap() const noexcept
+    [[nodiscard]] constexpr byte_swapped_type byte_swap() const noexcept
     {
         return
         {
@@ -799,7 +796,7 @@ struct basic_dynamic_tag_32
         type = static_cast<std::uint32_t>(t);
     }
 
-    constexpr byte_swapped_type byte_swap() const noexcept
+    [[nodiscard]] constexpr byte_swapped_type byte_swap() const noexcept
     {
         return
         {
@@ -838,7 +835,7 @@ struct basic_dynamic_tag_64
         type = static_cast<std::uint64_t>(t);
     }
 
-    constexpr byte_swapped_type byte_swap() const noexcept
+    [[nodiscard]] constexpr byte_swapped_type byte_swap() const noexcept
     {
         return
         {
@@ -949,7 +946,7 @@ struct basic_file_header_common
     endian<ProcessorType>                   machine = ProcessorType::None;
     Traits::word_t                          version = static_cast<std::uint32_t>(FormatVersion::Current);
 
-    constexpr byte_swapped_type byte_swap() const noexcept
+    [[nodiscard]] constexpr byte_swapped_type byte_swap() const noexcept
     {
         return
         {
@@ -988,7 +985,7 @@ struct basic_file_header_32 : basic_file_header_common<Traits>
     Traits::half_t      section_header_count        = 0;
     Traits::half_t      section_header_name_section = 0;
 
-    constexpr byte_swapped_type byte_swap() const noexcept
+    [[nodiscard]] constexpr byte_swapped_type byte_swap() const noexcept
     {
         return
         {

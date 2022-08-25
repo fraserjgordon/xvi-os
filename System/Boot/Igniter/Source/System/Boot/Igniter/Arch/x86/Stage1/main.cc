@@ -1,5 +1,7 @@
+#include <System/C++/Utility/CString.hh>
 #include <System/C++/Utility/Span.hh>
 
+#include <System/Executable/Image/ELF/Types.hh>
 #include <System/Filesystem/FAT/Directory.hh>
 #include <System/Filesystem/FAT/Filesystem.hh>
 #include <System/Filesystem/FAT/Object.hh>
@@ -9,6 +11,7 @@
 #include <System/Boot/Igniter/Arch/x86/Stage1/Heap.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage1/Logging.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage1/MemoryLayout.hh>
+#include <System/Boot/Igniter/Multiboot/v1.hh>
 
 
 namespace System::Boot::Igniter
@@ -59,34 +62,99 @@ void Stage1(std::uint8_t boot_drive)
 
     using namespace Filesystem::FAT;
 
-    Directory::handle_t dirXVI = {};
-    Directory::handle_t dirBoot = {};
-    root->enumerate([&](const ObjectInfo& info)
+    Directory::handle_t dirXVI = fs->openDirectory(root->find("XVI"));
+    Directory::handle_t dirBoot = fs->openDirectory(dirXVI->find("Boot"));
+
+    File::handle_t fileStage2 = fs->openFile(dirBoot->find("Bootloader.stage2.x86"));
+
+    log(priority::debug, "opened Stage2 {}: {} bytes", fileStage2->info().name(), fileStage2->info().size());
+
+    // Search for the multiboot header, if any, in the image.
+    std::span multiboot_search_temp {reinterpret_cast<std::byte*>(0x100000), 8192};  // 8kB at 1M.
+    auto multiboot_search_len = fileStage2->readTo(0, 8192, multiboot_search_temp);
+    for (std::size_t i = 0; i < multiboot_search_len; i += 4)
     {
-        log(priority::debug, "dirent: /{}", info.name());
+        auto hdr = reinterpret_cast<const multiboot_v1_os_header_extended*>(multiboot_search_temp.data() + i);
+        if (hdr->isValid())
+        {
+            log(priority::debug, "multiboot: found v1 header at offset {}; flags={:#x}", i, hdr->flags);
 
-        if (info.name() == "XVI")
-            dirXVI = fs->openDirectory(&info);
+            if (hdr->flags & hdr->FlagLoadPageAligned)
+            {
+                log(priority::debug, "multiboot: page alignment requested");
+            }
 
-        return true;
-    });
+            if (hdr->flags & hdr->FlagRequireMemoryMap)
+            {
+                log(priority::debug, "muliboot: requires memory map");
+            }
 
-    dirXVI->enumerate([&](const ObjectInfo& info)
+            if (hdr->flags & hdr->FlagHaveLoadInfo)
+            {
+                log(priority::debug, "multiboot: load info: offset={:#x} loadstart={:#x} loadend={:#x} bssend={:#x} entry={:#x}",
+                    hdr->ext.header_address, hdr->ext.load_start, hdr->ext.load_end, hdr->ext.bss_end, hdr->ext.entry
+                );
+            }
+        }
+    }
+
+    using namespace Executable::Image::ELF;
+
+    file_header_32le exehdr;
+    auto read = fileStage2->readTo(0, sizeof(exehdr), std::as_writable_bytes(std::span{&exehdr, 1}));
+
+    if (read < sizeof(exehdr))
+        log(priority::error, "failed to read ELF header");
+
+    log(priority::debug, "ehdr: entry={:#x} phdroff={} shdroff={} flags={:#x} ehdrsize={} phdrsize={} phdrcount={} shdrsize={} shdrcount={} shdrnamesec={}",
+        exehdr.entry_point.value(),
+        exehdr.program_header_offset.value(),
+        exehdr.section_header_offset.value(),
+        exehdr.flags.value(),
+        exehdr.file_header_size.value(),
+        exehdr.program_header_size.value(),
+        exehdr.program_header_count.value(),
+        exehdr.section_header_size.value(),
+        exehdr.section_header_count.value(),
+        exehdr.section_header_name_section.value()
+    );
+
+    for (int i = 0; i < exehdr.program_header_count; ++i)
     {
-        log(priority::debug, "dirent: /XVI/{}", info.name());
+        program_header_32le phdr;
+        auto offset = exehdr.program_header_offset + exehdr.program_header_size * i;
+        fileStage2->readTo(offset, sizeof(phdr), std::as_writable_bytes(std::span{&phdr, 1}));
 
-        if (info.name() == "Boot")
-            dirBoot = fs->openDirectory(&info);
+        log(priority::debug, "phdr: type={} offset={:#x} va={:#x} pa={:#x} fsize={:#x} msize={:#x} flags={:#x} align={:#x}",
+            static_cast<std::uint32_t>(phdr.type.value()),
+            phdr.offset.value(),
+            phdr.virtual_address.value(),
+            phdr.physical_address.value(),
+            phdr.file_size.value(),
+            phdr.memory_size.value(),
+            phdr.flags.value(),
+            phdr.alignment.value()
+        );
 
-        return true;
-    });
+        if (phdr.type == SegmentType::Load)
+        {
+            log(priority::debug, "loading segment from {:#x}+{:x} to {:#x}+{:x}",
+                phdr.offset.value(), phdr.file_size.value(),
+                phdr.physical_address.value(), phdr.memory_size.value()
+            );
 
-    dirBoot->enumerate([&](const ObjectInfo& info)
-    {
-        log(priority::debug, "dirent: /XVI/Boot/{}", info.name());
+            std::span load {reinterpret_cast<std::byte*>(phdr.physical_address.value()), phdr.memory_size};
+            fileStage2->readTo(phdr.offset, phdr.file_size, load);
+            std::memset(load.data() + phdr.file_size, 0, phdr.memory_size - phdr.file_size);
+        }
+    }
 
-        return true;
-    });
+    asm volatile
+    (
+        "jmp    *%0"
+        :
+        : "r" (exehdr.entry_point)
+    );
 }
 
 

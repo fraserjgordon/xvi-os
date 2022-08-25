@@ -411,7 +411,9 @@ void FilesystemImpl::readClusterChain(std::uint32_t cluster, cluster_chain_callb
         }
 
         // Invoke the callback.
-        callback(index, cluster);
+        auto more = callback(index, cluster);
+        if (!more)
+            break;
 
         // Have we reached the end of the cluster chain?
         if (isEndOfChain(next))
@@ -515,6 +517,8 @@ void FilesystemImpl::writeClusterChainLink(std::uint32_t from, std::uint32_t to)
                 value = static_cast<std::uint16_t>((value & 0xF000) | (to & 0x0FFF));
 
             // Write the value back.
+            low = value & 0xFF;
+            high = value >> 8;
             first.get()[m_sectorSize - 1] = static_cast<std::byte>(low);
             second.get()[0] = static_cast<std::byte>(high);   
         }

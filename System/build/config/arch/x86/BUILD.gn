@@ -4,6 +4,8 @@ config("kernel_flags")
     cflags =
     [
         "-mno-sse",
+        "-fno-pic",
+        "-fno-pie",
     ]
     
     if (current_cpu == "x86")
@@ -15,7 +17,6 @@ config("kernel_flags")
         cflags +=
         [
             "-mcmodel=kernel",
-            "-fno-pic",
         ]
     }
 }

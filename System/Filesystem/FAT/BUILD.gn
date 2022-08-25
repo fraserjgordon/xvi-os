@@ -26,6 +26,8 @@ library("FAT")
     sources =
     [
         "DirectoryImpl.hh",
+        "FileImpl.hh",
+        "FilesystemImpl.hh",
         "Logging.hh",
         "ObjectImpl.hh",
 
