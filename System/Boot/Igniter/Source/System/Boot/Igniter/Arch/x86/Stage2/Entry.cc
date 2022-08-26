@@ -17,6 +17,7 @@
 #include <System/Boot/Igniter/Arch/x86/Stage2/Logging.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage2/Interrupts.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage2/Probe.hh>
+#include <System/Boot/Igniter/Arch/x86/Stage2/V86.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage2/VGAConsole.hh>
 
 
@@ -176,97 +177,11 @@ void run()
     auto& gfx = vga.graphicsController();
     auto& seq = vga.sequencer();
 
-    /*log(priority::debug,
-        "Attr: Palette0={:02x} Palette0={:02x} Palette0={:02x} Palette0={:02x} Palette0={:02x}\n"
-        "      Palette0={:02x} Palette0={:02x} Palette0={:02x} Palette0={:02x} Palette0={:02x}\n"
-        "      Palette0={:02x} Palette0={:02x} Palette0={:02x} Palette0={:02x} Palette0={:02x}\n"
-        "      Palette0={:02x} ModeControl={:02x} OverscanColour={:02x} ColourPlaneEnable={:02x}\n"
-        "      HorizontalPixelPan={:02x} ColourSelect={:02x}",
-        attr.readRegister(AttrReg::Palette0),
-        attr.readRegister(AttrReg::Palette1),
-        attr.readRegister(AttrReg::Palette2),
-        attr.readRegister(AttrReg::Palette3),
-        attr.readRegister(AttrReg::Palette4),
-        attr.readRegister(AttrReg::Palette5),
-        attr.readRegister(AttrReg::Palette6),
-        attr.readRegister(AttrReg::Palette7),
-        attr.readRegister(AttrReg::Palette8),
-        attr.readRegister(AttrReg::Palette9),
-        attr.readRegister(AttrReg::Palette10),
-        attr.readRegister(AttrReg::Palette11),
-        attr.readRegister(AttrReg::Palette12),
-        attr.readRegister(AttrReg::Palette13),
-        attr.readRegister(AttrReg::Palette14),
-        attr.readRegister(AttrReg::Palette15),
-        attr.readRegister(AttrReg::ModeControl),
-        attr.readRegister(AttrReg::OverscanColour),
-        attr.readRegister(AttrReg::ColourPlaneEnable),
-        attr.readRegister(AttrReg::HorizontalPixelPan),
-        attr.readRegister(AttrReg::ColourSelect)
-    );
-
-    log(priority::debug,
-        "CRTC: HorizontalTotal={:02x} HorizontalDisplayEnableEnd={:02x} HorizontalBlankStart={:02x}\n"
-        "      HorizontalBlankEnd={:02x} HorizontalRetraceStart={:02x} HorizontalRetraceEnd={:02x}\n"
-        "      VerticalTotal={:02x} Overflow={:02x} PresetRowScan={:02x} MaximumScanLineAddress={:02x}\n"
-        "      CursorStart={:02x} CursorEnd={:02x} StartAddressHigh={:02x} StartAddressLow={:02x}\n"
-        "      CursorLocationHigh={:02x} CursorLocationLow={:02x} VerticalRetraceStart={:02x}\n"
-        "      VerticalRetraceEnd={:02x} VerticalDisplayEnableEnd={:02x} Offset={:02x}\n"
-        "      UnderlineLocation={:02x} VerticalBlankStart={:02x} VerticalBlankEnd={:02x}\n"
-        "      ModeControl={:02x} LineCompare={:02x}",
-        crtc.readRegister(CRTCReg::HorizontalTotal),
-        crtc.readRegister(CRTCReg::HorizontalDisplayEnableEnd),
-        crtc.readRegister(CRTCReg::HorizontalBlankingStart),
-        crtc.readRegister(CRTCReg::HorizontalBlankingEnd),
-        crtc.readRegister(CRTCReg::HorizontalRetraceStart),
-        crtc.readRegister(CRTCReg::HorizontalRetraceEnd),
-        crtc.readRegister(CRTCReg::VerticalTotal),
-        crtc.readRegister(CRTCReg::Overflow),
-        crtc.readRegister(CRTCReg::PresetRowScan),
-        crtc.readRegister(CRTCReg::MaximumScanLineAddress),
-        crtc.readRegister(CRTCReg::CursorStart),
-        crtc.readRegister(CRTCReg::CursorEnd),
-        crtc.readRegister(CRTCReg::StartAddressHigh),
-        crtc.readRegister(CRTCReg::StartAddressLow),
-        crtc.readRegister(CRTCReg::CursorLocationHigh),
-        crtc.readRegister(CRTCReg::CursorLocationLow),
-        crtc.readRegister(CRTCReg::VerticalRetraceStart),
-        crtc.readRegister(CRTCReg::VerticalRetraceEnd),
-        crtc.readRegister(CRTCReg::VerticalDisplayEnableEnd),
-        crtc.readRegister(CRTCReg::Offset),
-        crtc.readRegister(CRTCReg::UnderlineLocation),
-        crtc.readRegister(CRTCReg::VerticalBlankingStart),
-        crtc.readRegister(CRTCReg::VerticalBlankingEnd),
-        crtc.readRegister(CRTCReg::ModeControl),
-        crtc.readRegister(CRTCReg::LineCompare)
-    );
-
-    log(priority::debug,
-        "Gfx: SetReset={:02x} EnableSetReset={:02x} ColourCompare={:02x} DataRotate={:02x}\n"
-        "     ReadMapSelect={:02x} GraphicsMode={:02x} MiscGraphics={:02x} ColourDontCare={:02x}\n"
-        "     BitMask={:02x}",
-        gfx.readRegister(GfxReg::SetReset),
-        gfx.readRegister(GfxReg::EnableSetReset),
-        gfx.readRegister(GfxReg::ColourCompare),
-        gfx.readRegister(GfxReg::DataRotate),
-        gfx.readRegister(GfxReg::ReadMapSelect),
-        gfx.readRegister(GfxReg::GraphicsMode),
-        gfx.readRegister(GfxReg::MiscGraphics),
-        gfx.readRegister(GfxReg::ColourDontCare),
-        gfx.readRegister(GfxReg::BitMask)
-    );
-
-    log(priority::debug,
-        "Sequencer: Reset={:02x} ClockingMode={:02x} MapMask={:02x} CharacterMap={:02x} MemoryMode={:02x}",
-        seq.readRegister(SeqReg::Reset),
-        seq.readRegister(SeqReg::ClockingMode),
-        seq.readRegister(SeqReg::MapMask),
-        seq.readRegister(SeqReg::CharacterMap),
-        seq.readRegister(SeqReg::MemoryMode)
-    );*/
-
     // Run an initial memory probe.
     performEarlyMemoryProbe();
+
+    // Now that we have some memory, set up the V86 supervisor so we can begin probing the BIOS.
+    prepareV86Mode();
 
     // We shouldn't get here.
     log(priority::emergency, "FATAL: boot loader exit without starting system");

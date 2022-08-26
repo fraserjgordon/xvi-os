@@ -25,6 +25,11 @@ void performEarlyMemoryProbe();
 void performMemoryProbe();
 
 
+// Allocates pages of memory located in the lower 1MB of address space (i.e the addresses that are accessible in real
+// mode).
+std::uint32_t allocateEarlyRealModePage();
+
+
 } // namespace System::Boot::Igniter
 
 

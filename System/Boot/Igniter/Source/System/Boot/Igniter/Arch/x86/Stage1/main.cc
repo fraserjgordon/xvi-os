@@ -6,6 +6,7 @@
 #include <System/Filesystem/FAT/Filesystem.hh>
 #include <System/Filesystem/FAT/Object.hh>
 
+#include <System/Boot/Igniter/Arch/x86/Stage1/A20.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage1/BlockCache.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage1/DiskIO.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage1/Heap.hh>
@@ -28,6 +29,9 @@ void Stage1(std::uint8_t boot_drive)
     // Set up logging and print the banner.
     configureLogging();
     log(priority::notice, "XVI Igniter stage 1 booting...");
+
+    // Enable the "A20" address line to make addresses >1MB work properly.
+    enableA20();
 
     Disk boot(boot_drive);
 
@@ -72,6 +76,7 @@ void Stage1(std::uint8_t boot_drive)
     // Search for the multiboot header, if any, in the image.
     std::span multiboot_search_temp {reinterpret_cast<std::byte*>(0x100000), 8192};  // 8kB at 1M.
     auto multiboot_search_len = fileStage2->readTo(0, 8192, multiboot_search_temp);
+    std::uint32_t entry = 0;
     for (std::size_t i = 0; i < multiboot_search_len; i += 4)
     {
         auto hdr = reinterpret_cast<const multiboot_v1_os_header_extended*>(multiboot_search_temp.data() + i);
@@ -81,7 +86,7 @@ void Stage1(std::uint8_t boot_drive)
 
             if (hdr->flags & hdr->FlagLoadPageAligned)
             {
-                log(priority::debug, "multiboot: page alignment requested");
+                log(priority::debug, "multiboot: requires module page alignment");
             }
 
             if (hdr->flags & hdr->FlagRequireMemoryMap)
@@ -89,71 +94,96 @@ void Stage1(std::uint8_t boot_drive)
                 log(priority::debug, "muliboot: requires memory map");
             }
 
+            if (hdr->flags & hdr->FlagRequireVideoMode)
+            {
+                log(priority::debug, "multiboot: requires video mode table");
+            }
+
             if (hdr->flags & hdr->FlagHaveLoadInfo)
             {
-                log(priority::debug, "multiboot: load info: offset={:#x} loadstart={:#x} loadend={:#x} bssend={:#x} entry={:#x}",
+                log(priority::debug, "multiboot: load info: header={:#x} loadstart={:#x} loadend={:#x} bssend={:#x} entry={:#x}",
                     hdr->ext.header_address, hdr->ext.load_start, hdr->ext.load_end, hdr->ext.bss_end, hdr->ext.entry
                 );
+
+                // Perform the load as specified in the load info table.
+                auto offset = hdr->ext.header_address - i;
+                auto file_size = hdr->ext.load_end - hdr->ext.load_start;
+                auto bss_size = hdr->ext.bss_end - hdr->ext.load_end;
+                std::span dest {reinterpret_cast<std::byte*>(hdr->ext.load_start), file_size + bss_size};
+                fileStage2->readTo(hdr->ext.load_start - offset, file_size, dest);
+                std::memset(dest.data() + file_size, 0, bss_size);
+                entry = hdr->ext.entry;
             }
         }
     }
 
-    using namespace Executable::Image::ELF;
+    // Create a multiboot information structure to pass to the next stage.
+    multiboot_v1_info multiboot_info;
 
-    file_header_32le exehdr;
-    auto read = fileStage2->readTo(0, sizeof(exehdr), std::as_writable_bytes(std::span{&exehdr, 1}));
-
-    if (read < sizeof(exehdr))
-        log(priority::error, "failed to read ELF header");
-
-    log(priority::debug, "ehdr: entry={:#x} phdroff={} shdroff={} flags={:#x} ehdrsize={} phdrsize={} phdrcount={} shdrsize={} shdrcount={} shdrnamesec={}",
-        exehdr.entry_point.value(),
-        exehdr.program_header_offset.value(),
-        exehdr.section_header_offset.value(),
-        exehdr.flags.value(),
-        exehdr.file_header_size.value(),
-        exehdr.program_header_size.value(),
-        exehdr.program_header_count.value(),
-        exehdr.section_header_size.value(),
-        exehdr.section_header_count.value(),
-        exehdr.section_header_name_section.value()
-    );
-
-    for (int i = 0; i < exehdr.program_header_count; ++i)
+    // If we don't have multiboot load info, load according to the ELF header.
+    if (entry == 0)
     {
-        program_header_32le phdr;
-        auto offset = exehdr.program_header_offset + exehdr.program_header_size * i;
-        fileStage2->readTo(offset, sizeof(phdr), std::as_writable_bytes(std::span{&phdr, 1}));
+        using namespace Executable::Image::ELF;
 
-        log(priority::debug, "phdr: type={} offset={:#x} va={:#x} pa={:#x} fsize={:#x} msize={:#x} flags={:#x} align={:#x}",
-            static_cast<std::uint32_t>(phdr.type.value()),
-            phdr.offset.value(),
-            phdr.virtual_address.value(),
-            phdr.physical_address.value(),
-            phdr.file_size.value(),
-            phdr.memory_size.value(),
-            phdr.flags.value(),
-            phdr.alignment.value()
+        file_header_32le exehdr;
+        auto read = fileStage2->readTo(0, sizeof(exehdr), std::as_writable_bytes(std::span{&exehdr, 1}));
+
+        if (read < sizeof(exehdr))
+            log(priority::error, "failed to read ELF header");
+
+        log(priority::debug, "ehdr: entry={:#x} phdroff={} shdroff={} flags={:#x} ehdrsize={} phdrsize={} phdrcount={} shdrsize={} shdrcount={} shdrnamesec={}",
+            exehdr.entry_point.value(),
+            exehdr.program_header_offset.value(),
+            exehdr.section_header_offset.value(),
+            exehdr.flags.value(),
+            exehdr.file_header_size.value(),
+            exehdr.program_header_size.value(),
+            exehdr.program_header_count.value(),
+            exehdr.section_header_size.value(),
+            exehdr.section_header_count.value(),
+            exehdr.section_header_name_section.value()
         );
 
-        if (phdr.type == SegmentType::Load)
+        for (int i = 0; i < exehdr.program_header_count; ++i)
         {
-            log(priority::debug, "loading segment from {:#x}+{:x} to {:#x}+{:x}",
-                phdr.offset.value(), phdr.file_size.value(),
-                phdr.physical_address.value(), phdr.memory_size.value()
+            program_header_32le phdr;
+            auto offset = exehdr.program_header_offset + exehdr.program_header_size * i;
+            fileStage2->readTo(offset, sizeof(phdr), std::as_writable_bytes(std::span{&phdr, 1}));
+
+            log(priority::debug, "phdr: type={} offset={:#x} va={:#x} pa={:#x} fsize={:#x} msize={:#x} flags={:#x} align={:#x}",
+                static_cast<std::uint32_t>(phdr.type.value()),
+                phdr.offset.value(),
+                phdr.virtual_address.value(),
+                phdr.physical_address.value(),
+                phdr.file_size.value(),
+                phdr.memory_size.value(),
+                phdr.flags.value(),
+                phdr.alignment.value()
             );
 
-            std::span load {reinterpret_cast<std::byte*>(phdr.physical_address.value()), phdr.memory_size};
-            fileStage2->readTo(phdr.offset, phdr.file_size, load);
-            std::memset(load.data() + phdr.file_size, 0, phdr.memory_size - phdr.file_size);
+            if (phdr.type == SegmentType::Load)
+            {
+                log(priority::debug, "loading segment from {:#x}+{:x} to {:#x}+{:x}",
+                    phdr.offset.value(), phdr.file_size.value(),
+                    phdr.physical_address.value(), phdr.memory_size.value()
+                );
+
+                std::span load {reinterpret_cast<std::byte*>(phdr.physical_address.value()), phdr.memory_size};
+                fileStage2->readTo(phdr.offset, phdr.file_size, load);
+                std::memset(load.data() + phdr.file_size, 0, phdr.memory_size - phdr.file_size);
+            }
         }
+
+        entry = exehdr.entry_point;
     }
 
     asm volatile
     (
-        "jmp    *%0"
+        "jmp    *%2"
         :
-        : "r" (exehdr.entry_point)
+        : "a" (MultibootV1LoaderMagic),
+          "b" (&multiboot_info),
+          "r" (entry)
     );
 }
 

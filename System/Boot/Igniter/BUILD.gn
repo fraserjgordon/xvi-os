@@ -206,6 +206,7 @@ xvi_executable("Stage2")
 
                 "Arch/x86/Stage2/Entry.S",
                 "Arch/x86/Stage2/InterruptEntry.S",
+                "Arch/x86/Stage2/V86.S",
 
                 "Arch/x86/Stage2/Entry.cc",
                 "Arch/x86/Stage2/Interrupts.cc",

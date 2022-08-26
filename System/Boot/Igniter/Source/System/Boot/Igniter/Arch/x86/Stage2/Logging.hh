@@ -22,10 +22,10 @@ inline System::Utility::Logger::opaque_processor g_logBuffer = nullptr;
 
 
 template <class... Args>
-void log(priority p, Args&&... args)
-    requires requires { System::Utility::Logger::log(System::Utility::Logger::DefaultFacility, p, std::forward<Args>(args)...); }
+void log(priority p, std::string_view format, Args&&... args)
+    requires requires { System::Utility::Logger::log(System::Utility::Logger::DefaultFacility, p, format, std::forward<Args>(args)...); }
 {
-    System::Utility::Logger::log(System::Utility::Logger::DefaultFacility, p, std::forward<Args>(args)...);
+    System::Utility::Logger::log(System::Utility::Logger::DefaultFacility, p, format, std::forward<Args>(args)...);
 }
 
 inline void configureLogging(std::span<std::byte> buffer, priority prio = priority::info)

@@ -41,14 +41,15 @@ public:
         markUnavailable(m_baseAddress, m_length);
     }
 
-    std::uintptr_t allocatePage();
+    std::uintptr_t allocatePage(std::uintptr_t address_limit = ~std::uintptr_t(0));
     void freePage(std::uintptr_t address);
 
     std::size_t getAvailableSize(std::uintptr_t address_limit = ~std::uintptr_t(0)) const;
 
 private:
 
-    using element_t = std::bitset<std::numeric_limits<std::uintptr_t>::digits>;
+    static constexpr auto Bits = std::numeric_limits<std::uintptr_t>::digits;
+    using element_t = std::bitset<Bits>;
     static_assert(sizeof(element_t) == sizeof(std::uintptr_t));
 
     std::uintptr_t      m_baseAddress   = 0;

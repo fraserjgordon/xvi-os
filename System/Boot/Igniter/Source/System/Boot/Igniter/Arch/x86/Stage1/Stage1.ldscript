@@ -1,4 +1,4 @@
-OUTPUT_FORMAT(binary)
+OUTPUT_FORMAT(elf32-i386)
 ENTRY(RealModeEntry)
 
 SECTIONS
@@ -16,8 +16,6 @@ SECTIONS
 		*(.text.*)
 	}
 	.rodata : { *(.rodata*) }
-	.gcc_except_table : { *(.gcc_except_table*) }
-	.eh_frame : { *(.eh_frame*) }
 	.data : { *(.data*) }
 
 	# Stage1 loader parameter area.
@@ -29,9 +27,18 @@ SECTIONS
 	BSS_Start = ADDR(.bss);
 	BSS_Size = SIZEOF(.bss);
 
+	# Discarded by objcopy.
+	discardme :
+	{
+		.tbss : { *(.tbss*) }
+		.gcc_except_table : { *(.gcc_except_table*) }
+		.eh_frame : { *(.eh_frame*) }
+	}
+
 	/DISCARD/ :
 	{ 
-		*(*)
+		#*(*)
+		*(.note*)
 	}
 }
 

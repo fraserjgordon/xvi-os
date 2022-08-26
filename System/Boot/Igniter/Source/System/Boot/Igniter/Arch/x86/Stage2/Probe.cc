@@ -5,6 +5,7 @@
 #include <string_view>
 
 #include <System/Firmware/Arch/x86/BIOS/DataArea.hh>
+#include <System/HW/CPU/Arch/x86/IO/IO.hh>
 #include <System/HW/CPU/Arch/x86/Segmentation/RealMode.hh>
 
 #include <System/Boot/Igniter/Memory/Bitmap.hh>
@@ -62,11 +63,29 @@ void setMultibootTablePointer(const multiboot_v2_info* info)
 }
 
 
+static void reserve(std::uintptr_t start, std::uintptr_t size, std::string_view description)
+{
+    log(priority::debug, "    reserve: {:#010x}+{:>8x} ({})", start, size, description);
+    g_earlyPageBitmap.markUnavailable(start, size);
+}
+
+
 static void reserveBIOSMemory()
 {
+    // Do nothing if there's no traditional BIOS present.
+    if (!s_probeInfo.has_bios)
+        return;
+
     // Mark the real-mode IVT and BIOS data area as unavailable.
-    log(priority::debug, "    reserve: {:#010x}+{:x} (IVT and BIOS data area)", 0, 0x0500);
-    g_earlyPageBitmap.markUnavailable(0x00000000, 0x0500);
+    reserve(0x00000000, 0x500, "IVT and BIOS data area");
+
+    // Mark the extended BIOS data area as unavailable.
+    static constexpr std::uint32_t EBDAEnd = 0xA0000;
+    auto ebda_segment = g_biosDataArea->ebda_segment;
+    auto ebda_address = (ebda_segment << 4);
+    auto ebda_size = EBDAEnd - ebda_address;
+    if (ebda_address != 0 && ebda_size != 0)
+        reserve(ebda_address, ebda_size, "EBDA");
 }
 
 static void reserveMultibootV1Memory()
@@ -74,64 +93,49 @@ static void reserveMultibootV1Memory()
     // Mark the multiboot information table as being unavailable.
     auto info = s_probeInfo.multiboot_v1;
     auto info_address = reinterpret_cast<std::uintptr_t>(info);
-    log(priority::debug, "    reserve: {:#010x}+{:x} (Multiboot info table)", info_address, sizeof(multiboot_v1_info));
-    g_earlyPageBitmap.markUnavailable(info_address, sizeof(multiboot_v1_info));
+    reserve(info_address, sizeof(multiboot_v1_info), "Multiboot info table");
     
     if (info->flags & multiboot_v1_info::FlagCommandLine)
     {
         std::string_view cmdline {reinterpret_cast<const char*>(info->command_line.ptr)};
-        log(priority::debug, "    reserve: {:#010x}+{:x} (Multiboot command line)", info->command_line.ptr, cmdline.length() + 1);
-        g_earlyPageBitmap.markUnavailable(info->command_line.ptr, cmdline.length() + 1);
+        reserve(info->command_line.ptr, cmdline.length() + 1, "Multiboot command line");
     }
 
     if (info->flags & multiboot_v1_info::FlagModules)
     {
         // Reserve the module information list itself.
         auto length = info->modules.count * sizeof(multiboot_module_t);
-        log(priority::debug, "    reserve: {:#010x}+{:x} (Multiboot module list)", info->modules.ptr, length);
-        g_earlyPageBitmap.markUnavailable(info->modules.ptr, length);
+        reserve(info->modules.ptr, length, "multiboot module list");
 
         // Then, reserve each module and it's associated command line.
         std::span modules {reinterpret_cast<const multiboot_module_t*>(info->modules.ptr), info->modules.count};
         for (const auto& module : modules)
         {
-            log(priority::debug, "    reserve: {:#010x}+{:x} (Multiboot module)", module.start, module.end - module.start);
-            g_earlyPageBitmap.markUnavailable(module.start, module.end - module.start);
+            reserve(module.start, module.end - module.start, "Multiboot module");
 
             std::string_view cmdline {reinterpret_cast<const char*>(module.string)};
-            log(priority::debug, "    reserve: {:#010x}+{:x} (Multiboot module string)", module.string, cmdline.length());
-            g_earlyPageBitmap.markUnavailable(module.string, cmdline.length());
+            reserve(module.string, cmdline.length(), "Multiboot module string");
         }
     }
 
     //! @TODO: reserve space occupied by the debug symbols.
 
     if (info->flags & multiboot_v1_info::FlagMemoryMap)
-    {
-        log(priority::debug, "    reserve: {:#010x}+{:x} (Multiboot memory map)", info->memory_map.ptr, info->memory_map.length);
-        g_earlyPageBitmap.markUnavailable(info->memory_map.ptr, info->memory_map.length);
-    }
+        reserve(info->memory_map.ptr, info->memory_map.length, "Multiboot memory map");
 
     if (info->flags & multiboot_v1_info::FlagDriveInfo)
-    {
-        log(priority::debug, "    reserve: {:#010x}+{:x} (Multiboot drive map)", info->drive_info.ptr, info->drive_info.length);
-        g_earlyPageBitmap.markUnavailable(info->drive_info.ptr, info->drive_info.length);
-    }
+        reserve(info->drive_info.ptr, info->drive_info.length, "Multiboot drive map");
 
     // The BIOS configuration table is stored within BIOS-owned memory and doesn't need to be reserved here.
 
     if (info->flags & multiboot_v1_info::FlagBootLoaderInfo)
     {
         std::string_view name {reinterpret_cast<const char*>(info->bootloader_info.name_ptr)};
-        log(priority::debug, "    reserve: {:#010x}+{:x} (Multiboot bootloader info)", info->bootloader_info.name_ptr, name.length());
-        g_earlyPageBitmap.markUnavailable(info->bootloader_info.name_ptr, name.length());
+        reserve(info->bootloader_info.name_ptr, name.length(), "Multiboot bootloader info");
     }
 
     if (info->flags & multiboot_v1_info::FlagAPM)
-    {
-        log(priority::debug, "    reserve: {:#010x}+{:x} (Multiboot APM info)", info->apm.table_ptr, sizeof(multiboot_apm_info_t));
-        g_earlyPageBitmap.markUnavailable(info->apm.table_ptr, sizeof(multiboot_apm_info_t));
-    }
+        reserve(info->apm.table_ptr, sizeof(multiboot_apm_info_t), "Multiboot APM info");
 }
 
 static void earlyMemoryProbeMultibootV1()
@@ -189,7 +193,25 @@ static void earlyMemoryProbeMultibootV1()
 static void earlyMemoryProbeFallback()
 {
     log(priority::debug, "Using fallback heuristics for early memory probe");
-    throw std::logic_error("earlyMemoryProbeFallback(): not implemented");
+
+    // Read the CMOS memory to get a rough estimate of the memory size.
+    constexpr std::uint16_t CMOSAddressPort = 0x0070;
+    constexpr std::uint16_t CMOSDataPort = 0x0071;
+    constexpr std::uint8_t CMOSRegisterMemLow = 0x30;
+    constexpr std::uint8_t CMOSRegisterMemHigh = 0x31;
+    X86::outb(CMOSAddressPort, CMOSRegisterMemLow);
+    auto low = X86::inb(CMOSDataPort);
+    X86::outb(CMOSAddressPort, CMOSRegisterMemHigh);
+    auto high = X86::inb(CMOSDataPort);
+    auto cmos_size = ((high << 8) | low);
+
+    log(priority::debug, "CMOS reports {}kB memory present", cmos_size);
+    g_earlyPageBitmap.markAvailable(0, cmos_size * 1024);
+
+    // For safety, assume that there's an (E)ISA MMIO hole from 15-16MB.
+    constexpr std::uint32_t MMIOHoleStart = 0x00F00000;
+    constexpr std::uint32_t MMIOHoleSize  = 0x00100000;
+    reserve(MMIOHoleStart, MMIOHoleSize, "possible MMIO region");
 }
 
 
@@ -219,17 +241,28 @@ void performEarlyMemoryProbe()
     if (s_probeInfo.multiboot_v1)
         reserveMultibootV1Memory();
 
+    // Reserve the PC-compatible MMIO range.
+    constexpr std::uint32_t PCMMIOStart = 0x000A0000;
+    constexpr std::uint32_t PCMMIOSize  = 0x00060000;
+    reserve(PCMMIOStart, PCMMIOSize, "PC-compatible MMIO");
+
     // Mark the in-memory image as reserved.
     auto image_start = reinterpret_cast<std::uint32_t>(&_IMAGE_LOAD_START);
     auto image_end = reinterpret_cast<std::uint32_t>(&_IMAGE_BSS_END);
-    log(priority::debug, "    reserve: {:#010x}+{:x} (this bootloader)", image_start, image_end - image_start);
-    g_earlyPageBitmap.markUnavailable(image_start, image_end - image_start);
+    reserve(image_start, image_end - image_start, "this bootloader");
 
     auto real_mode = g_earlyPageBitmap.getAvailableSize(0x00100000) / 1024;
     auto total = g_earlyPageBitmap.getAvailableSize() / 1024;
     log(priority::debug, "After early memory probe, {}kB real-mode / {}kB total available for init", real_mode, total);
 
     log(priority::trace, "Finished early memory probe");
+}
+
+
+std::uint32_t allocateEarlyRealModePage()
+{
+    // Any page below the 1MB limit will do.
+    return g_earlyPageBitmap.allocatePage(1024*1024);
 }
 
 
