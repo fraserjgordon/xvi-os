@@ -513,19 +513,19 @@ constexpr bool SupportsCPUID()
 inline bool SupportsCPUIDRaw()
 {
     // See if the ID flag (bit 17) of the %eflags register can be modified.
-    unsigned int result;
+    unsigned int before, after;
     asm
     (
         "pushfl     \n\t"
-        "xorl       $(1<<17), (%%esp)\n\t"
-        "popfl      \n\t"
-        "movl       4(%%esp), %[result]\n\t"
         "pushfl     \n\t"
-        "xorl       (%%esp), %[result]\n\t"
-        "addl       $4, %%esp\n\t"
-        : [result] "=r" (result)
+        "xorl       $(1<<21), (%%esp)\n\t"
+        "popfl      \n\t"
+        "pushfl     \n\t"
+        "popl       %[after]\n\t"
+        "popl       %[before]\n\t"
+        : [before] "=r" (before), [after] "=r" (after)
     );
-    return (result & 0x00020000);
+    return ((before ^ after) & (1U<<21));
 }
 
 [[gnu::const]]

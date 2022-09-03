@@ -7,6 +7,18 @@ library("MMU")
 
     target_types = ["kernel"]
 
+    public_deps =
+    [
+        "//HW/CPU/Arch/x86/ControlRegs",
+    ]
+
+    public_headers =
+    [
+        "InitPageTable.hh",
+        "MMU.hh",
+        "Types.hh",
+    ]
+
     sources =
     [
         "Cache.hh",
@@ -14,6 +26,8 @@ library("MMU")
         "PageTable.hh",
         "TLB.hh",
 
+        "InitPageTable.cc",
+        "MMU.cc",
         "PageTable.cc",
     ]
 }

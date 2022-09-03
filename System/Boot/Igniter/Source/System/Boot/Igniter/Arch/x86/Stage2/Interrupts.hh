@@ -6,6 +6,7 @@
 
 #include <System/ABI/ExecContext/Arch/x86/GeneralRegs.hh>
 #include <System/HW/CPU/Arch/x86/Segmentation/Selector.hh>
+#include <System/HW/CPU/Arch/x86/Segmentation/TSS.hh>
 
 
 namespace System::Boot::Igniter
@@ -55,6 +56,8 @@ struct interrupt_context
 void configureInterruptTable();
 
 void registerInterruptHandler(std::uint8_t vector, void (*handler)());
+
+System::HW::CPU::X86::tss32_t& tss();
 
 
 } // namespace System::Boot::Igniter

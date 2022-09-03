@@ -181,21 +181,20 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,_1.0)
 .LCaptureContext__v1_0:
 
     // Parameters:
-    //  pair<...>*          return       4(%esp)
-    //  sysv_x86_frame_t*   ctxt         8(%esp)
-    //  std::uint32_t       param_first 12(%esp)
+    //  sysv_x86_frame_t*   ctxt         4(%esp)
+    //  std::uint32_t       param_first  8(%esp)
     //
     // Expected return values:
-    //  sysv_x86_frame_t*   prev        0(pair) note: set to the input ctxt
-    //  std::uint32_t       param       4(pair) note: set to the input param_first
+    //  sysv_x86_frame_t*   prev        %eax    note: set to the input ctxt
+    //  std::uint32_t       param       %edx    note: set to the input param_first
     //
 
     .cfi_startproc
     .cfi_offset %eip, -4
 
     // Load the parameters into registers.
-    movl    8(%esp), %eax
-    movl    12(%esp), %edx
+    movl    4(%esp), %eax
+    movl    8(%esp), %edx
 
     // Calculate the value of %esp after this function returns.
     leal    4(%esp), %ecx
@@ -210,11 +209,6 @@ __SYSTEM_ABI_EXECCONTEXT_ASM_FN_LATEST(CaptureContext__v1_0,CaptureContext,_1.0)
     // Capture the return instruction pointer too.
     movl    0(%esp), %ecx
     movl    %ecx, __SYSV_X86_OFFSET_EIP(%eax)
-
-    // Save the return values to the output location.
-    movl    4(%esp), %ecx
-    movl    %eax, 0(%ecx)
-    movl    %edx, 4(%ecx)
 
     // And return.
     retl

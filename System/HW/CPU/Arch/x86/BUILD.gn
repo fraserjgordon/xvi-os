@@ -6,6 +6,6 @@ library_group("x86")
         "IO",
         "MMU",
         "Segmentation",
-        #"VM86",
+        "VM86",
     ]
 }

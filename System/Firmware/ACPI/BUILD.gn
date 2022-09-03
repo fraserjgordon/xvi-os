@@ -1,0 +1,20 @@
+library("ACPI")
+{
+    library_name = "System.Firmware.ACPI"
+    library_version = "0.1.0"
+
+    #shared_define = "_SYSTEM_FIRMWARE_ACPI_BUILD_SHARED"
+
+    public_deps =
+    [
+        "//Utility/Endian",
+    ]
+
+    public_headers =
+    [
+        "Table/Common.hh",
+        "Table/FADT.hh",
+        "Table/RSDP.hh",
+        "Table/RSDT.hh",
+    ]
+}

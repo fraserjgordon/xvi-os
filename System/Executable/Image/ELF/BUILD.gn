@@ -1,0 +1,23 @@
+library("ELF")
+{
+    library_name = "System.Executable.Image.ELF"
+    library_version = "0.1.0"
+
+    shared_define = "__SYSTEM_EXECUTABLE_IMAGE_ELF_BUILD_SHARED"
+
+    deps =
+    [
+        "//Utility/Endian",
+    ]
+
+    public_headers =
+    [
+        "Relocations.hh",
+        "Types.hh",
+    ]
+
+    sources =
+    [
+        "ELF.cc",
+    ]
+}

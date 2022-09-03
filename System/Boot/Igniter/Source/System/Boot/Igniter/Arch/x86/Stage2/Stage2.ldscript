@@ -26,7 +26,21 @@ SECTIONS
         KEEP (*(multiboot.header.v1))
     }
 
-    .text ALIGN(4K) :
+    .Lrealmode.text.vma = .;
+
+    realmode.text 0 : AT(ALIGN(LOADADDR(multiboot) + SIZEOF(multiboot), 4K))
+    #realmode.text :
+    {
+        KEEP (*(realmode.text))
+    } 
+
+    PROVIDE_HIDDEN (_REALMODE_TEXT_START = LOADADDR(realmode.text));
+    PROVIDE_HIDDEN (_REALMODE_TEXT_END = LOADADDR(realmode.text) + SIZEOF(realmode.text));
+
+    # Get the location counter back to something sensible.
+    . = .Lrealmode.text.vma + SIZEOF(realmode.text);
+    
+    .text ALIGN(_REALMODE_TEXT_END, 4K) : AT(ALIGN(_REALMODE_TEXT_END, 4K))
     {
         PROVIDE_HIDDEN (_TEXT_START = . - _IMAGE_OFFSET);
 
@@ -36,16 +50,6 @@ SECTIONS
     PROVIDE_HIDDEN (_ENTRY_MULTIBOOT = _IgniterStage2MultibootEntry - _IMAGE_OFFSET);
     PROVIDE_HIDDEN (_ENTRY_EFI32 = _IgniterStage2Efi32Entry - _IMAGE_OFFSET);
     PROVIDE_HIDDEN (_ENTRY_EFI64 = _IgniterStage2Efi64Entry - _IMAGE_OFFSET);
-
-    realmode.text 0 : AT(LOADADDR(.text) + SIZEOF(.text))
-    {
-        KEEP (*(realmode.text))
-    } 
-
-    PROVIDE_HIDDEN (_REALMODE_TEXT_START = LOADADDR(realmode.text));
-    PROVIDE_HIDDEN (_REALMODE_TEXT_END = LOADADDR(realmode.text) + SIZEOF(realmode.text));
-
-    . = ADDR(.text) + SIZEOF(.text) + SIZEOF(realmode.text);
 
     .rodata :
     {
@@ -80,32 +84,11 @@ SECTIONS
         *(.gcc_except_table .gcc_except_table.*)
     }
 
-    .hash :
-    {
-        *(.hash)
-    }
-
-    .gnu.hash :
-    {
-        *(.gnu.hash)
-    }
-
     .data ALIGN(4K) :
     {
         PROVIDE_HIDDEN (_DATA_START = . - _IMAGE_OFFSET);        
 
         *(.data .data.* .gnu.linkonce.d.*)
-    }
-
-    .got :
-    {
-        PROVIDE_HIDDEN (_GLOBAL_OFFSET_TABLE_ = .);
-        *(.got)
-    }
-
-    .got.plt :
-    {
-        *(.got.plt)
     }
 
     .tdata :
@@ -137,32 +120,6 @@ SECTIONS
     }
 
     PROVIDE_HIDDEN (_IMAGE_BSS_END = . - _IMAGE_OFFSET);
-
-    .reloc :
-    {
-        *(.reloc)
-    }
-
-    .rel :
-    {
-        *(.rel*)
-        *(.data.rel*)
-    }
-
-    .dynamic :
-    {
-        *(.dynamic)
-    }
-
-    .dynsym :
-    {
-        *(.dynsym)
-    }
-
-    .dynstr :
-    {
-        *(.dynstr)
-    }
 
     /DISCARD/ :
     {

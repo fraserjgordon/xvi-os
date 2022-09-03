@@ -44,6 +44,11 @@ std::uintptr_t PageBitmap::allocatePage(std::uintptr_t address_limit)
     return 0;
 }
 
+void PageBitmap::freePage(std::uintptr_t address)
+{
+    markAvailable(address, PageSize);
+}
+
 std::size_t PageBitmap::getAvailableSize(std::uintptr_t address_limit) const
 {
     // The accumulated available size.

@@ -1,9 +1,8 @@
-#pragma once
 #ifndef __SYSTEM_HW_CPU_ARCH_X86_CONTROLREGS_MSR_H
 #define __SYSTEM_HW_CPU_ARCH_X86_CONTROLREGS_MSR_H
 
 
-#include <System/C++/LanguageSupport/StdInt.hh>
+#include <cstdint>
 
 
 namespace System::HW::CPU::X86
@@ -46,14 +45,14 @@ constexpr std::uint32_t KERNELGSBASE        = 0xC000'0102;      // Base address 
 constexpr std::uint32_t TSC_AUX             = 0xC000'0103;      // Returned by the RDTSCP instruction.
 constexpr std::uint32_t TSC_RATIO           = 0xC000'0104;      // TSC scale ratio.
 
-constexpr std::uint32_t MTRR_BASE(int n)
+constexpr std::uint32_t MTRR_BASE(unsigned int n)
 {
-    return MTRR_BASE_0 + 2*n;
+    return MTRR_BASE_0 + 2U*n;
 }
 
-constexpr std::uint32_t MTRR_MASK(int n)
+constexpr std::uint32_t MTRR_MASK(unsigned int n)
 {
-    return MTRR_MASK_0 + 2*n;
+    return MTRR_MASK_0 + 2U*n;
 }
 
 // AMD-specific MSRs.
@@ -85,8 +84,8 @@ inline void wrmsr(std::uint32_t msr, std::uint64_t value)
     (
         "wrmsr"
         :
-        : "a" (value & 0xFFFFFFFF),
-          "d" ((value >> 32) & 0xFFFFFFFF),
+        : "a" (static_cast<std::uint32_t>(value & 0xFFFFFFFF)),
+          "d" (static_cast<std::uint32_t>((value >> 32) & 0xFFFFFFFF)),
           "c" (msr)
         : "memory"
     );
@@ -112,6 +111,7 @@ namespace EFER
 
 enum EFERBits : std::uint64_t
 {
+    None    = 0,
     SCE     = 0x00000001,       // System Call Extension.
     LME     = 0x00000100,       // Long Mode Enable.
     LMA     = 0x00000400,       // Long Mode Active.
@@ -121,6 +121,33 @@ enum EFERBits : std::uint64_t
     FFXSR   = 0x00004000,       // Fast FXSAVE/FXRSTOR.
     TCE     = 0x00008000,       // Translation Cache Extension.
 };
+
+constexpr EFERBits operator|(EFERBits x, EFERBits y)
+{
+    return static_cast<EFERBits>(static_cast<std::uint64_t>(x) | static_cast<std::uint64_t>(y));
+}
+
+constexpr EFERBits operator&(EFERBits x, EFERBits y)
+{
+    return static_cast<EFERBits>(static_cast<std::uint64_t>(x) & static_cast<std::uint64_t>(y));
+}
+
+constexpr EFERBits operator~(EFERBits x)
+{
+    return static_cast<EFERBits>(~static_cast<std::uint32_t>(x));
+}
+
+constexpr EFERBits& operator|=(EFERBits& x, EFERBits y)
+{
+    x = x | y;
+    return x;
+}
+
+constexpr EFERBits& operator&=(EFERBits& x, EFERBits y)
+{
+    x = x & y;
+    return x;
+}
 
 inline void write(EFERBits value)
 {
@@ -143,6 +170,8 @@ inline void unset(EFERBits bits)
 }
 
 } // namespace EFER
+
+using efer_t = EFER::EFERBits;
 
 
 #if __x86_64__

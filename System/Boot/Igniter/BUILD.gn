@@ -146,14 +146,16 @@ xvi_executable("Stage2")
 
     output_name = "Stage2.${current_cpu}"
     use_stdlib = false
+    link_style = "kernel"
 
     deps =
     [
-        "//ABI/C++:C++__kernel",
-        "//ABI/ExecContext:ExecContext__kernel",
-        "//Allocator/Classic:Classic__kernel",
-        "//C++/StdLib:StdLib__kernel",
-        "//Utility/Logger:Logger__kernel",
+        "//ABI/C++",
+        "//ABI/ExecContext",
+        "//Allocator/Classic",
+        "//C++/StdLib",
+        "//Firmware/ACPI",
+        "//Utility/Logger",
     ]
 
     sources =
@@ -173,16 +175,19 @@ xvi_executable("Stage2")
     {
         deps +=
         [
-            "//Firmware/EFI:EFI__kernel",
-            "//HW/CPU/Arch/x86/IO:IO__kernel",
-            "//HW/CPU/Arch/x86/MMU:MMU__kernel",
-            "//HW/CPU/Arch/x86/Segmentation:Segmentation__kernel",
-            "//HW/GPU/VGA:VGA__kernel",
+            "//Firmware/EFI",
+            "//HW/CPU/Arch/x86/IO",
+            "//HW/CPU/Arch/x86/MMU",
+            "//HW/CPU/Arch/x86/Segmentation",
+            "//HW/GPU/VGA",
         ]
 
         sources +=
         [
+            "Arch/x86/Stage2/MMU.hh",
+
             "Arch/x86/Stage2/Allocator.cc",
+            "Arch/x86/Stage2/MMU.cc",
         ]
 
         inputs +=
@@ -193,7 +198,8 @@ xvi_executable("Stage2")
         {
             deps +=
             [
-                "//Firmware/Arch/x86/BIOS:BIOS__kernel",
+                "//Firmware/Arch/x86/BIOS",
+                "//HW/CPU/Arch/x86/VM86",
             ]
             
             sources +=
@@ -224,7 +230,6 @@ xvi_executable("Stage2")
             ldflags =
             [
                 "-T", rebase_path("Source/System/Boot/Igniter/Arch/x86/Stage2/Stage2.ldscript", root_build_dir),
-                "-Wl,--emit-relocs",
             ]
         }
         else if (current_cpu == "x64")

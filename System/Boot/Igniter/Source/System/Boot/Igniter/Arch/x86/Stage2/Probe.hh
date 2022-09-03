@@ -22,12 +22,23 @@ void setMultibootTablePointer(const multiboot_v2_info*);
 //  - marks potentially-occupied memory as being unavailble (e.g this loader, any multiboot tables, etc).
 void performEarlyMemoryProbe();
 
-void performMemoryProbe();
-
 
 // Allocates pages of memory located in the lower 1MB of address space (i.e the addresses that are accessible in real
 // mode).
 std::uint32_t allocateEarlyRealModePage();
+
+// Allocates pages of memory early in the boot process.
+std::uint32_t allocateEarlyPage();
+
+// Frees a page of memory that was allocated early.
+void freeEarlyPage(std::uint32_t);
+
+
+// Called by the MMU code to request that the early memory mappings are added.
+void mapEarlyMemory();
+
+
+void hardwareProbe();
 
 
 } // namespace System::Boot::Igniter

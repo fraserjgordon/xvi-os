@@ -1,9 +1,8 @@
-#pragma once
 #ifndef __SYSTEM_HW_CPU_ARCH_X86_CONTROLREGS_EFLAGS_H
 #define __SYSTEM_HW_CPU_ARCH_X86_CONTROLREGS_EFLAGS_H
 
 
-#include <System/C++/LanguageSupport/StdInt.hh>
+#include <cstdint>
 
 
 namespace System::HW::CPU::X86

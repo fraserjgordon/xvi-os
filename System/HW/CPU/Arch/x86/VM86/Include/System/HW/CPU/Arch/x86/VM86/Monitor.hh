@@ -5,23 +5,25 @@
 
 #include <System/C++/Utility/UniquePtr.hh>
 
+#include <System/HW/CPU/Arch/x86/VM86/Context.hh>
+#include <System/HW/CPU/Arch/x86/VM86/Emulator.hh>
+
 
 namespace System::HW::CPU::X86
 {
 
 
-// Forward declarations.
-class VM86Emulator;
-
-
 class VM86Monitor
 {
+public:
+
+    // Should be called from the #GP interrupt handler so VM86-related exceptions can be handled.
+    bool handleGeneralProtectionFault(vm86_interrupt_frame_t* frame, general_regs32_t* regs);
+
 private:
 
     // The emulator instance used to emulate instructions that can't be directly executed in VM86 mode.
-    std::unique_ptr<VM86Emulator> m_emulator;
-
-    // 
+    VM86Emulator m_emulator;
 };
 
 

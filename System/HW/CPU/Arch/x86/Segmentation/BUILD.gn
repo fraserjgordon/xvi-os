@@ -3,9 +3,9 @@ library("Segmentation")
     library_name = "System.HW.CPU.x86.Segmentation"
     library_version = "0.1.0"
 
-    include_prefix = "System/HW/CPU/Arch/x86/Segmentation"
+    shared_define = "__SYSTEM_HW_CPU_X86_SEGMENTATION_BUILD_SHARED"
 
-    target_types = ["static", "kernel"]
+    include_prefix = "System/HW/CPU/Arch/x86/Segmentation"
 
     public_deps =
     [

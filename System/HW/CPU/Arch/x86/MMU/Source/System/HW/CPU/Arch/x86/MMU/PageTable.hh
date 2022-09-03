@@ -8,6 +8,9 @@
 #include <limits>
 #include <type_traits>
 
+#include <System/HW/CPU/Arch/x86/MMU/MMU.hh>
+#include <System/HW/CPU/Arch/x86/MMU/Types.hh>
+
 
 namespace System::HW::CPU::X86::MMU
 {
@@ -42,7 +45,7 @@ struct PTE
     static constexpr std::size_t   PKeyShift    = 59;
 
     template <class T>
-    static constexpr T AddressMask = static_cast<T>(0x000fffff'fffff000);
+    static constexpr T AddressMask = static_cast<T>(0x01ffffff'fffff000);
 
     template <class T>
     static constexpr T LargeAddressMask = AddressMask<T>;
@@ -67,23 +70,48 @@ struct PDE : PTE
 struct PDPE : PDE
 {
     template <class T>
-    static constexpr T LargeAddressMask = static_cast<T>(0x000fffff'c0000000);
+    static constexpr T LargeAddressMask = static_cast<T>(0x01ffffff'c0000000);
 };
 
-// PML4Es use th same bits as PDPEs.
+// PML4Es use the same bits as PDPEs.
 struct PML4E : PDPE
 {
     // There is no hardware support for 512GB pages but they're not architecturally impossible.
     template <class T>
-    static constexpr T LargeAddressMask = static_cast<T>(0x000fff80'00000000);
+    static constexpr T LargeAddressMask = static_cast<T>(0x01ffff80'00000000);
+};
+
+// PML5Es use the same bits as PML4Es.
+struct PML5E : PML4E
+{
+    // There is no hardware support for 256TB pages but they're not architecturally impossible.
+    template <class T>
+    static constexpr T LargeAddressMask = static_cast<T>(0x01ff0000'00000000);
 };
 
 
-template <class T, class Model>
+template <class T, class ModelType>
 struct entry_t
 {
+    using Model = ModelType;
+
     static constexpr T AddressMask = Model::template AddressMask<T>;
     
+    // Import bit definitions from the model.
+    static constexpr auto Present   = Model::Present;
+    static constexpr auto Write     = Model::Write;
+    static constexpr auto User      = Model::User;
+    static constexpr auto CacheBit0 = Model::CacheBit0;
+    static constexpr auto CacheBit1 = Model::CacheBit1;
+    static constexpr auto CacheBit2 = Model::CacheBit2;
+    static constexpr auto Accessed  = Model::Accessed;
+    static constexpr auto Dirty     = Model::Dirty;
+    static constexpr auto Global    = Model::Global;
+    static constexpr auto LargePage = Model::LargePage;
+    static constexpr auto NoExecute = Model::NoExecute;
+    static constexpr auto PKeyMask  = Model::PKeyMask;
+    static constexpr auto PKeyShift = Model::PKeyShift;
+
     // One of the user-defined flags is used as a spinlock bit. When set, the entry is being manipulated and should not
     // be modified until the bit is cleared.
     static constexpr std::uint32_t Lock         = Model::UserFlag0;
@@ -123,7 +151,38 @@ struct entry_t
 
         return (raw & AddressMask);
     }
+
+    void setAddress(paddr_t address)
+    {
+        // The PSE36 extension for legacy-mode MMUs has a non-trivial layout for the address.
+        if constexpr (Pse36Swizzle)
+        {
+            if (isLargePage())
+            {
+                auto lower = static_cast<paddr_t>(address);
+                auto upper = (address >> Model::PseSwizzleShift) & Model::PseSwizzleMask;
+
+                raw = (raw & ~AddressMask) | lower | upper;
+                return;
+            }
+        }
+
+        raw = (raw & ~AddressMask) | address;
+    }
 };
+
+
+template <class T>
+void lockEntry(T* entry)
+{
+    //! @todo implement
+}
+
+template <class T>
+void unlockEntry(T* entry)
+{
+    //! @todo implement
+}
 
 template <class T>
 struct pte_t : entry_t<T, PTE>
@@ -152,15 +211,33 @@ struct pdpe_t : entry_t<T, PDPE>
 using pdpe32_t = pdpe_t<std::uint32_t>;
 using pdpe64_t = pdpe_t<std::uint64_t>;
 
-struct pml4e64_t : entry_t<std::uint64_t, PML4E>
+template <class T>
+struct pml4e_t : entry_t<T, PML4E>
 {
-    using next_t = pdpe_t<std::uint64_t>;
+    using next_t = pdpe_t<T>;
 };
+
+using pml4e64_t = pml4e_t<std::uint64_t>;
+
+template <class T>
+struct pml5e_t : entry_t<T, PML5E>
+{
+    using next_t = pml4e_t<T>;
+};
+
+using pml5e64_t = pml5e_t<std::uint64_t>;
 
 
 template <class T, class PtrT, int Level>
 struct table_t
 {
+    // Types used to represent physical and virtual addr`sses.
+    using paddr_t   = typename T::paddr_t;
+    using vaddr_t   = PtrT;
+    using psize_t   = paddr_t;
+    using vsize_t   = vaddr_t;
+
+
     // All paging tables are 4kB in size except for the PDPT in PAE mode (which has 4 entries of 8 bytes each).
     static constexpr bool        LegacyPDPT         = (sizeof(PtrT) == sizeof(std::uint32_t) && Level == 2);
     static constexpr std::size_t LeafPageSize       = 4096;
@@ -175,7 +252,7 @@ struct table_t
 
     // The size of pages at this level of the paging hierarchy.
     static constexpr std::size_t PageShift          = OffsetBits;
-    static constexpr std::size_t PageSize           = (1U << OffsetBits);
+    static constexpr psize_t     PageSize           = (psize_t(1) << OffsetBits);
 
     // The table at level 0 never points to another layer of tables.
     static constexpr bool        Leaf               = (Level == 0);
@@ -186,12 +263,6 @@ struct table_t
 
     // Type of the next-lower table.
     using next_t    = std::conditional_t<Leaf, void, table_t<typename T::next_t, PtrT, Level - 1>>;
-
-    // Types used to represent physical and virtual addresses.
-    using paddr_t   = typename T::paddr_t;
-    using vaddr_t   = PtrT;
-    using psize_t   = paddr_t;
-    using vsize_t   = vaddr_t;
 
 
     //! @brief  Adds a sub-table to the current table.
@@ -204,50 +275,119 @@ struct table_t
     //!
     //! @note   Only non-leaf tables can have sub-tables.
     //!
-    //! @param  address     the virtual address6 that the sub-table will map
+    //! @param  address     the virtual address that the sub-table will map
     //! @param  page        the page of physical memory to hold the sub-table
     //! @param  mapping     the virtual address at which \p page may be accessed
     //!
-    bool addSubTable(PtrT address, paddr_t page, next_t* mapping)
+    bool addSubTable(PtrT address, paddr_t page)
         requires (!Leaf)
     {
         // Sub-tables are always configured with the most permissive flags (user, write, not no-execute) so that the
         // permissions are controlled entirely by the permission bits at the final level.
         constexpr auto SubTableFlags = entry_t::Present | entry_t::Write | entry_t::User;
 
+        // PAE page directory pointer table (PDPT) entries require a different set of flags.
+        auto flags = SubTableFlags;
+        if constexpr (LegacyPDPT)
+            flags = entry_t::Present;
+
         // Update the applicable entry to point to the new subtable.
-        const entry_t entry {.raw = page | SubTableFlags};
-        entry_t expected {.raw = 0};
-        if (!entries[indexForAddress(address)].compare_exchange_strong(entry, expected, std::memory_order::relaxed))
+        const entry_t entry {page | flags};
+        entry_t expected {0};
+        if (!entries[indexForAddress(address)].compare_exchange_strong(expected, entry, std::memory_order::relaxed))
             return false;
 
         // No TLB flushing is needed as there was no previous entry.
-        return true;    
+        return true;
     }
 
-    template <class Allocator, class Mapper>
-    bool addMapping(PtrT address, paddr_t page, psize_t page_size/*, ??? flags, */, Allocator page_allocator, Mapper page_mapper)
+    template <class Mapper>
+    bool addMapping(vaddr_t address, paddr_t page, psize_t page_size, page_flags flags, unsigned int pat, TablePageAllocator& page_allocator, const Mapper& page_mapper, paddr_t* parent_entry)
     {
         // To add this mapping, are we adding the page at this level or at a lower level?
         if (page_size == PageSize)
         {
-            // We're adding a mapping to this table.
+            // We're adding a mapping to this table. Convert the flags into the right form.
+            paddr_t entry_flags = entry_t::LargePage;   // Will be zero for 4kB pages.
+            entry_flags |= entry_t::Present;
+            if (flags & PageFlag::U)
+                entry_flags |= entry_t::User;
+            if (flags & PageFlag::W)
+                entry_flags |= entry_t::Write;
+            if ((flags & PageFlag::X) == 0)
+                entry_flags |= entry_t::NoExecute;
+            if (flags & PageFlag::G)
+                entry_flags |= entry_t::Global;
+            if (pat & 0b001)
+                entry_flags |= entry_t::CacheBit0;
+            if (pat & 0b010)
+                entry_flags |= entry_t::CacheBit1;
+            if (pat & 0b100)
+                entry_flags |= entry_t::CacheBit2;
+
+            // Write the entry, assuming the parent entry has been locked.
+            auto index = indexForAddress(address);
+            entry_t entry {entry_flags};
+            entry.setAddress(address);
+            entries[index].store(entry, std::memory_order_relaxed);
+
+            return true;
         }
-        else
+        else if constexpr (!Leaf)
         {
+            // Validate the page size.
+            if (page_size > next_t::PageSize)
+                return false;
+
             // We need to recurse into a lower-level table. Does it exist yet?
             auto index = indexForAddress(address);
             auto entry = entries[index].load(std::memory_order::relaxed);
-            if (entry.isPresent())
+           
+            // Attempt to allocate a sub-table if needed.
+            paddr_t subtable_addr = entry.isPresent() ? entry.address() : 0;
+            next_t* subtable_ptr = next_t::mapFrom(address, subtable_addr, page_mapper);
+            if (!entry.isPresent())
             {
+                // Allocate a new sub-table.
+                if (subtable_addr == 0)
+                {
+                    subtable_addr = page_allocator.allocate();
+                    subtable_ptr = next_t::mapFrom(address, subtable_addr, page_mapper);
+                }
 
+                // Insert it.
+                if (!addSubTable(address, subtable_addr))
+                {
+                    page_allocator.free(subtable_addr);
+                    return false;
+                }
             }
+
+            // Lock the entry and recurse into the next level of page tables.
+            //
+            // After locking, we release the lock on the parent entry so that independent parts of the page tables can
+            // be modified in parallel.
+            lockEntry(&raw_entries[index]);
+            if (parent_entry)
+                unlockEntry(parent_entry);
+
+            return subtable_ptr->addMapping(address, page, page_size, flags, pat, page_allocator, page_mapper, &raw_entries[index]);
         }
+
+        // None of the expected conditions applied...
+        return false;
+    }
+
+
+    template <class Mapper>
+    static table_t* mapFrom(vaddr_t address, paddr_t page, const Mapper& page_mapper)
+    {
+        return reinterpret_cast<table_t*>(page_mapper.map(address, PageSize, page));
     }
 
 private:
 
-    [[nodiscard]] bool lockEntry(std::size_t index)
+    /*[[nodiscard]] bool lockEntry(std::size_t index)
     {
         auto entry = entries[index].load(std::memory_order::acquire);
         while (true)
@@ -275,16 +415,20 @@ private:
         // Make sure that the lock flag is clear and write the entry,
         entry.raw &= ~entry_t::Lock;
         entries[index].store(entry, std::memory_order::release);
-    }
+    }*/
 
     static constexpr std::size_t indexForAddress(PtrT address)
     {
-        return (address >> OffsetBits) & (DecodedBits - 1);
+        return (address >> OffsetBits) & ((PtrT(1) << DecodedBits) - 1);
     }
 
 
     // The table itself.
-    std::atomic<entry_t>    entries[EntryCount];
+    union
+    {
+        std::atomic<entry_t>    entries[EntryCount];
+        paddr_t                 raw_entries[EntryCount];
+    };
 };
 
 // Legacy page tables: 32-bit physical and virtual addresses.
@@ -320,7 +464,23 @@ public:
     using vdiff_t   = std::make_signed<vsize_t>;
 
 
-    
+    paddr_t root() const noexcept
+    {
+        return m_root;
+    }
+
+    template <class Mapper>
+    bool mapOnePage(vaddr_t address, paddr_t to, psize_t page_size, page_flags flags, unsigned int pat, TablePageAllocator& page_allocator, const Mapper& page_mapper)
+    {
+        auto table = rootTable(page_mapper);
+        return table->addMapping(address, to, page_size, flags, pat, page_allocator, page_mapper, nullptr);
+    }
+
+
+    static PageTable fromRoot(paddr_t root)
+    {
+        return PageTable{root};
+    }
 
 private:
 
@@ -331,12 +491,44 @@ private:
     // Zero is, in theory, a valid address for a page table root but declaring it as unusable isn't likely to be a
     // problem.
     paddr_t m_root  = 0;
+
+    // Index of the entry in the top-level table used to recursively map the page table itself.
+    unsigned int m_selfMapIndex = 0;
+
+
+    explicit constexpr PageTable(paddr_t root) :
+        m_root{root}
+    {
+    }
+
+    template <class Mapper>
+    root_t* rootTable(const Mapper& page_mapper)
+    {
+        return reinterpret_cast<root_t*>(page_mapper.rootTableAddress(m_root));
+    }
 };
 
 
 using PageTableLegacy   = PageTable<pd32_t>;
 using PageTablePAE      = PageTable<pdpt32pae_t>;
 using PageTableLongMode = PageTable<pml4_t>;
+
+
+template <class V, class P>
+class IdentityMapper
+{
+public:
+
+    V map(V, P, P table_physical_addr) const noexcept
+    {
+        return static_cast<V>(table_physical_addr);
+    }
+
+    V rootTableAddress(P root) const noexcept
+    {
+        return static_cast<V>(root);
+    }
+};
 
 
 } // namespace System::HW::CPU::X86::MMU

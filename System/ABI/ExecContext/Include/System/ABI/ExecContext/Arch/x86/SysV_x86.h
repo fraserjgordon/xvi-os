@@ -70,6 +70,7 @@ struct sysv_x86_integer_t :
 //!
 //! @returns                the context that switched to this context and an uninterpreted value from that context
 //!
+//! @todo: this needs a wrapper like CreateContext below.
 __SYSTEM_ABI_EXECCONTEXT_EXPORT
 [[gnu::returns_twice]]
 [[gnu::sysv_abi]]
@@ -99,6 +100,13 @@ __SYSTEM_ABI_EXECCONTEXT_EXPORT
 void ResumeContextFull(sysv_x86_integer_t* next)
     __SYSTEM_ABI_EXECCONTEXT_SYMBOL(ResumeContextFull);
 
+__SYSTEM_ABI_EXECCONTEXT_EXPORT
+//[[gnu::returns_twice]]
+[[gnu::sysv_abi]]
+std::uint64_t
+CaptureContextImpl(sysv_x86_frame_t* ctxt, std::uintptr_t param_first) 
+    __SYSTEM_ABI_EXECCONTEXT_SYMBOL(CaptureContext);
+
 //! @brief Captures the execution context without switching to another context.
 //!
 //! The first time this function returns, it will return the input context pointer and the given parameter. On
@@ -110,12 +118,16 @@ void ResumeContextFull(sysv_x86_integer_t* next)
 //!
 //! @returns                    the context that switched to this context and an uninterpreted value from that context
 //!
-__SYSTEM_ABI_EXECCONTEXT_EXPORT
+[[gnu::always_inline]]
 [[gnu::returns_twice]]
-[[gnu::sysv_abi]]
-std::pair<sysv_x86_frame_t*, std::uintptr_t>
+inline std::pair<sysv_x86_frame_t*, std::uintptr_t>
 CaptureContext(sysv_x86_frame_t* ctxt, std::uintptr_t param_first)
-    __SYSTEM_ABI_EXECCONTEXT_SYMBOL(CaptureContext);
+{
+    // We need to wrap the real method as it returns the two values in %eax:%edx, which isn't compliant with the SysV
+    // ABI. 64-bit integers, however, do get returned in that register pair...
+    auto result = CaptureContextImpl(ctxt, param_first);
+    return { reinterpret_cast<sysv_x86_frame_t*>(result & 0xFFFFFFFF), static_cast<std::uintptr_t>(result >> 32) };
+}
 
 
 //! @brief  Function signature suitable for use with @ref CreateContext() or @ref CreateContextWithData().

@@ -10,6 +10,7 @@
 #include <System/HW/CPU/Arch/x86/Segmentation/TSS.hh>
 
 #include <System/Boot/Igniter/Arch/x86/Stage2/Logging.hh>
+#include <System/Boot/Igniter/Arch/x86/Stage2/V86.hh>
 
 
 namespace System::Boot::Igniter
@@ -114,6 +115,26 @@ void handleInterrupt(interrupt_context* context)
     };
     auto desc = (context->vector < 32) ? exceptions[context->vector] : "unknown interrupt";
 
+    //log(priority::trace, "interrupt #{} ({}) at {:04x}:{:0{}x})",
+    //    context->vector, desc,
+    //    context->near.cs,
+    //    context->near.ip, context->near.eflags.bits.VM ? 4 : 8
+    //);
+
+    bool handled = false;
+
+    // Was the CPU in V86 mode when the interrupt happened?
+    if (context->near.eflags.bits.VM)
+    {
+        // General-protection faults need to be passed to the V86 supervisor. If it handled the interrupt, no further
+        // action is necessary. The supervisor may also handle certain other exception types (e.g. undefined opcodes).
+        handled = v86HandleInterrupt(context);
+    }
+
+    // If the interrupt was handled, resume.
+    if (handled)
+        return;
+
     log(priority::emergency, "FATAL: unhandled interrupt #{}", context->vector);
     log(priority::alert, 
         "Interrupt: {}, error code {:08x}\n"
@@ -164,6 +185,9 @@ void configureInterruptTable()
     log(priority::debug, "LDT: loading null selector");
     SegmentSelector::setLDTR(Selector::Null);
 
+    // Fill out the important entries in the TSS (at least those that we know up front).
+    s_TSS.tss().ss0 = Selector::Data;
+
     // Activate the TSS.
     log(priority::debug, "TSS: activating {} bytes at {} (selector={:#4x})", s_TSS.size(), static_cast<void*>(&s_TSS.tss()), Selector::Tss.getValue());
     SegmentSelector::setTR(Selector::Tss);
@@ -181,6 +205,13 @@ void configureInterruptTable()
     log(priority::debug, "IDT: activating 256 entries at {}", static_cast<void*>(s_IDT.data()));
 
     idt.activate();
+}
+
+
+
+System::HW::CPU::X86::tss32_t& tss()
+{
+    return s_TSS.tss();
 }
 
 

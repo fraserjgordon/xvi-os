@@ -11,11 +11,11 @@ namespace System::HW::CPU::X86
 {
 
 
-bool VM86Emulator::generalProtectionException(std::uint32_t error_code, vm86_interrupt_frame_t& frame, general_regs32_t& regs)
+bool VM86Emulator::generalProtectionException(vm86_interrupt_frame_t& frame, general_regs32_t& regs)
 {
     // All of the opcodes requiring emulation generate an error code of zero. A non-zero error code suggests something
     // else has happened.
-    if (error_code != 0)
+    if (frame.error_code != 0)
         return false;
 
     // Decode the faulting instruction.
@@ -290,30 +290,61 @@ bool VM86Emulator::checkInterruptFlagChange(const decoded_insn& insn, vm86_inter
 
 bool VM86Emulator::checkAndEmulateInterruptFlagChange(const decoded_insn& insn, vm86_interrupt_frame_t& frame, general_regs32_t& regs)
 {
+    // Are we actually changing the interrupt flag?
+    realmode_ptr<std::uint16_t> sp{frame.ss, frame.sp};
+    bool change = false;
+    switch (insn.op)
+    {
+        // Treat explicit IF changes as always a "change" (and therefore checked).
+        case Opcode::CLI:
+        case Opcode::STI:
+            change = true;
+            break;
+
+        case Opcode::PUSHF:
+            // Doesn't actually change IF.
+            change = false;
+            break;
+
+        case Opcode::POPF:
+            // Might change IF but we need to check.
+            change = frame.eflags.bits.IF != realmode_ptr_cast<eflags_t>(sp)->bits._if;
+            break;
+
+        case Opcode::IRET:
+            // This is a bit complicated - we'll decide later.
+            change = false;
+            break;
+
+        default:
+            // Unknown opcode.
+            change = false;
+            break;
+    }
+
     // Check whether we need to emulate the interrupt flag change.
-    if (!checkInterruptFlagChange(insn, frame, regs))
+    if (change && !checkInterruptFlagChange(insn, frame, regs))
         return true;
 
     // Emulate the instruction.
-    realmode_ptr<std::uint16_t> sp{frame.ss, frame.sp};
     switch (insn.op)
     {
         case Opcode::CLI:
             // Clear the interrupt flag (disable interrupts).
-            frame.eflags.bits._if = 0;
+            frame.eflags.bits.IF = 0;
             return true;
 
         case Opcode::STI:
             // Set the interrupt flag (enable interrupts).
-            frame.eflags.bits._if = 1;
+            frame.eflags.bits.IF = 1;
             return true;
 
         case Opcode::PUSHF:
             // Store the processor flags to the stack. We don't hide any bits from the VM86 code.
             if (insn.o32)
-                *realmode_ptr_cast<std::uint32_t>(sp -= 2) = frame.eflags.uint32;
+                *realmode_ptr_cast<std::uint32_t>(sp -= 2) = frame.eflags.all;
             else
-                *--sp = static_cast<std::uint16_t>(frame.eflags.uint32);
+                *--sp = static_cast<std::uint16_t>(frame.eflags.all);
             frame.sp = sp.offset();
             return true;
 
@@ -323,13 +354,13 @@ bool VM86Emulator::checkAndEmulateInterruptFlagChange(const decoded_insn& insn, 
             {
                 auto raw = *realmode_ptr_cast<std::uint32_t>(sp);
                 sp += 2;
-                frame.eflags.uint32 = raw;
-                frame.eflags.bits.vm = 1;
+                frame.eflags.all = raw;
+                frame.eflags.bits.VM = 1;
             }
             else
             {
                 auto raw = *sp++;
-                frame.eflags.uint32 = (frame.eflags.uint32 & 0xFFFF0000) | raw;
+                frame.eflags.all = (frame.eflags.all & 0xFFFF0000) | raw;
             }
             frame.sp = sp.offset();
             return true;
@@ -342,18 +373,21 @@ bool VM86Emulator::checkAndEmulateInterruptFlagChange(const decoded_insn& insn, 
                 // from the Intel system instruction manual.
                 //
                 // Note that all 32 bits of %eip are popped here.
+                //
+                //! @todo: check for IF changes.
                 auto esp = realmode_ptr_cast<std::uint32_t>(sp);
                 frame.eip = *esp++;
                 frame.cs = static_cast<std::uint16_t>(*esp++);
                 auto flags = *esp++;
-                frame.eflags.uint32 = (flags & 0x00257FD5) | (frame.eflags.uint32 & 0x001A0000);
+                frame.eflags.all = (flags & 0x00257FD5) | (frame.eflags.all & 0x001A0000);
                 frame.sp = esp.offset();
             }
             else
             {
+                //! @todo: check for IF changes.
                 frame.ip = *sp++;
                 frame.cs = *sp++;
-                frame.eflags.uint32 = (frame.eflags.uint32 & 0xFFFF0000) | *sp++;
+                frame.eflags.all = (frame.eflags.all & 0xFFFF0000) | *sp++;
                 frame.sp = sp.offset();
             }
             return true;
@@ -416,7 +450,7 @@ bool VM86Emulator::checkAndEmulateIO(const decoded_insn& insn, vm86_interrupt_fr
 
             // Calculate the update size.
             std::int32_t increment = static_cast<std::int32_t>(io.size);
-            if (frame.eflags.bits.df)
+            if (frame.eflags.bits.DF)
                 increment = -increment;
 
             // Update the string pointer.
@@ -530,7 +564,7 @@ bool VM86Emulator::injectInterrupt(vm86_interrupt_frame_t& frame, std::uint8_t v
     
     // Generate the exception frame on the real-mode stack. Note that this might underflow the stack and corrupt random
     // memory (within the %ss segment); it's unclear what a real i8086 would do in this situation.
-    *--sp = static_cast<std::uint16_t>(frame.eflags.uint32);
+    *--sp = static_cast<std::uint16_t>(frame.eflags.all);
     *--sp = frame.cs;
     *--sp = static_cast<std::uint16_t>(frame.eip);
 

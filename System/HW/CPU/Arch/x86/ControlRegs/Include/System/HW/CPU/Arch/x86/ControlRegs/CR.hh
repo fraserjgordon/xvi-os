@@ -1,9 +1,8 @@
-#pragma once
 #ifndef __SYSTEM_HW_CPU_ARCH_X86_CONTROLREGS_CR_H
 #define __SYSTEM_HW_CPU_ARCH_X86_CONTROLREGS_CR_H
 
 
-#include <System/C++/LanguageSupport/StdInt.hh>
+#include <cstdint>
 
 
 namespace System::HW::CPU::X86
@@ -15,6 +14,7 @@ namespace CR0
 
 enum CR0Bits : std::uint32_t
 {
+    None    = 0,
     PE      = 0x00000001,   // Protection Enabled
     MP      = 0x00000002,   // Monitor (co-)Processor
     EM      = 0x00000004,   // Emulation
@@ -28,28 +28,55 @@ enum CR0Bits : std::uint32_t
     PG      = 0x80000000,   // Paging
 };
 
+constexpr CR0Bits operator|(CR0Bits x, CR0Bits y)
+{
+    return static_cast<CR0Bits>(static_cast<std::uint32_t>(x) | static_cast<std::uint32_t>(y));
+}
+
+constexpr CR0Bits operator&(CR0Bits x, CR0Bits y)
+{
+    return static_cast<CR0Bits>(static_cast<std::uint32_t>(x) & static_cast<std::uint32_t>(y));
+}
+
+constexpr CR0Bits operator~(CR0Bits x)
+{
+    return static_cast<CR0Bits>(~static_cast<std::uint32_t>(x));
+}
+
+constexpr CR0Bits& operator|=(CR0Bits& x, CR0Bits y)
+{
+    x = x | y;
+    return x;
+}
+
+constexpr CR0Bits& operator&=(CR0Bits& x, CR0Bits y)
+{
+    x = x & y;
+    return x;
+}
+
 inline void write(CR0Bits value)
 {
     asm volatile
     (
-        "mov    %0, %%cr0"
+        "mov   %0, %%cr0"
         :
-        : "r" (value)
+        : "r" (static_cast<std::uintptr_t>(value))
         : "memory"
     );
 }
 
 inline CR0Bits read()
 {
-    CR0Bits value;
+    std::uintptr_t value;
     asm volatile
     (
-        "mov    %%cr0, %0"
+        "mov   %%cr0, %0"
         : "=r" (value)
         :
         :
     );
-    return value;
+    return static_cast<CR0Bits>(value);
 }
 
 inline void set(CR0Bits bits)
@@ -168,7 +195,7 @@ inline void write(std::uint32_t value)
         :
         : "r" (value)
         : "memory"
-    )
+    );
 }
 #endif
 
@@ -180,6 +207,7 @@ namespace CR4
 
 enum CR4Bits : std::uint32_t
 {
+    None        = 0,
     VME         = 0x00000001,   // Virtual Mode Extensions
     PVI         = 0x00000002,   // Protected Virtual Interrupts
     TSD         = 0x00000004,   // Time Stamp Disable
@@ -202,20 +230,47 @@ enum CR4Bits : std::uint32_t
     PKE         = 0x00400000,   // Protection Key Enable
 };
 
+constexpr CR4Bits operator|(CR4Bits x, CR4Bits y)
+{
+    return static_cast<CR4Bits>(static_cast<std::uint32_t>(x) | static_cast<std::uint32_t>(y));
+}
+
+constexpr CR4Bits operator&(CR4Bits x, CR4Bits y)
+{
+    return static_cast<CR4Bits>(static_cast<std::uint32_t>(x) & static_cast<std::uint32_t>(y));
+}
+
+constexpr CR4Bits operator~(CR4Bits x)
+{
+    return static_cast<CR4Bits>(~static_cast<std::uint32_t>(x));
+}
+
+constexpr CR4Bits& operator|=(CR4Bits& x, CR4Bits y)
+{
+    x = x | y;
+    return x;
+}
+
+constexpr CR4Bits& operator&=(CR4Bits& x, CR4Bits y)
+{
+    x = x & y;
+    return x;
+}
+
 inline void write(CR4Bits value)
 {
     asm volatile
     (
         "mov    %0, %%cr4"
         :
-        : "r" (value)
+        : "r" (static_cast<std::uintptr_t>(value))
         : "memory"
     );
 }
 
 inline CR4Bits read()
 {
-    CR4Bits value;
+    std::uintptr_t value;
     asm volatile
     (
         "mov    %%cr4, %0"
@@ -223,7 +278,7 @@ inline CR4Bits read()
         :
         :
     );
-    return value;
+    return static_cast<CR4Bits>(value);
 }
 
 inline void set(CR4Bits bits)

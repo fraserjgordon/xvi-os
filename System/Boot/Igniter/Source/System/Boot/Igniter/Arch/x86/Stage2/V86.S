@@ -1,8 +1,9 @@
-.section realmode.text, "x", @progbits
+.section realmode.text, "ax", @progbits
 .code16
 
-.global RMBIOSCallExit
-RMBIOSCallExit:
+.global V86Exit
+.hidden V86Exit
+V86Exit:
 
-    xorl    %eax, %eax
-    int     $0x80
+    // Special attention sequence (invalid opcode), with operation 0 (exit).
+    .byte 0xc4, 0xc4, 0x00

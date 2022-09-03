@@ -30,8 +30,8 @@ public:
     ~realmode_ptr() = default;
 
     constexpr explicit realmode_ptr(std::uint16_t segment, std::uint16_t offset)
-        : m_segment(segment),
-          m_offset(offset)
+        : m_offset(offset),
+          m_segment(segment)
     {
     }
 
@@ -135,8 +135,8 @@ public:
 
 private:
 
-    std::uint16_t   m_segment = 0;
     std::uint16_t   m_offset = 0;
+    std::uint16_t   m_segment = 0;
 };
 
 

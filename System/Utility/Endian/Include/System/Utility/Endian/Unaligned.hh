@@ -10,7 +10,7 @@ namespace System::Utility::Endian
 
 
 template <class T>
-class unaligned
+class [[gnu::packed]] unaligned
 {
 public:
 

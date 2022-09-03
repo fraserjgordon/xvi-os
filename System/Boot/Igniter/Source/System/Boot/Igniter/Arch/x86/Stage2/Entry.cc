@@ -16,6 +16,7 @@
 #include <System/Boot/Igniter/Multiboot/v2.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage2/Logging.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage2/Interrupts.hh>
+#include <System/Boot/Igniter/Arch/x86/Stage2/MMU.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage2/Probe.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage2/V86.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage2/VGAConsole.hh>
@@ -165,23 +166,18 @@ void run()
     // Create a VGA console. If configured for text output, log messages will be printed to the screen.
     VGAConsole console;
 
-    using AttrReg = VGA::AttributeController::Register;
-    using CRTCReg = VGA::CRTC::Register;
-    using GfxReg = VGA::GraphicsController::Register;
-    using SeqReg = VGA::Sequencer::Register;
-
-    VGA::VGADevice vga;
-
-    auto& attr = vga.attributeController();
-    auto& crtc = vga.crtc();
-    auto& gfx = vga.graphicsController();
-    auto& seq = vga.sequencer();
-
     // Run an initial memory probe.
     performEarlyMemoryProbe();
 
     // Now that we have some memory, set up the V86 supervisor so we can begin probing the BIOS.
     prepareV86Mode();
+
+    // With both memory and V86 mode available, we can properly probe the BIOS for memory and, from there, probe the
+    // rest of the hardware that we need to known about.
+    hardwareProbe();
+
+    // Enable paging.
+    enablePaging();
 
     // We shouldn't get here.
     log(priority::emergency, "FATAL: boot loader exit without starting system");

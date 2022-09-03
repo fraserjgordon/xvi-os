@@ -147,7 +147,7 @@ public:
     // handles it.
     //
     // Returns true if the exception is consumed by the VM86 monitor and false if it still needs to be handled.
-    bool generalProtectionException(std::uint32_t error_code, vm86_interrupt_frame_t& frame, general_regs32_t& regs);
+    bool generalProtectionException(vm86_interrupt_frame_t& frame, general_regs32_t& regs);
 
 
     static constexpr IOOperation ioOperation(IO direction, OperationSize size)

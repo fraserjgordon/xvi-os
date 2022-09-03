@@ -211,7 +211,7 @@ constexpr bool operator==(const array<_T, _N>& __x, const array<_T, _N>& __y)
 template <class _T, size_t _N>
 constexpr __detail::__synth_three_way_result<_T> operator<=>(const array<_T, _N>& __x, const array<_T, _N>& __y)
 {
-    return std::lexicographical_compare_three_way(__x.begin(), __x.end(), __y.begin(), __detail::__synth_three_way);
+    return std::lexicographical_compare_three_way(__x.begin(), __x.end(), __y.begin(), __y.end(), __detail::__synth_three_way);
 }
 
 

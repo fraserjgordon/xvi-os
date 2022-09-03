@@ -30,9 +30,10 @@ SECTIONS
 	# Discarded by objcopy.
 	discardme :
 	{
-		.tbss : { *(.tbss*) }
-		.gcc_except_table : { *(.gcc_except_table*) }
-		.eh_frame : { *(.eh_frame*) }
+		*(.tbss*)
+		*(.tdata*)
+		*(.gcc_except_table*)
+		*(.eh_frame*)
 	}
 
 	/DISCARD/ :

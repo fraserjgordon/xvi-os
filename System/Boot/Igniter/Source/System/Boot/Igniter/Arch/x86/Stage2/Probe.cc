@@ -1,15 +1,21 @@
 #include <System/Boot/Igniter/Arch/x86/Stage2/Probe.hh>
 
 #include <algorithm>
+#include <array>
+#include <map>
 #include <span>
 #include <string_view>
 
+#include <System/Firmware/ACPI/Table/RSDP.hh>
+#include <System/Firmware/ACPI/Table/RSDT.hh>
 #include <System/Firmware/Arch/x86/BIOS/DataArea.hh>
 #include <System/HW/CPU/Arch/x86/IO/IO.hh>
 #include <System/HW/CPU/Arch/x86/Segmentation/RealMode.hh>
 
 #include <System/Boot/Igniter/Memory/Bitmap.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage2/Logging.hh>
+#include <System/Boot/Igniter/Arch/x86/Stage2/MMU.hh>
+#include <System/Boot/Igniter/Arch/x86/Stage2/V86.hh>
 
 
 namespace System::Boot::Igniter
@@ -46,6 +52,16 @@ struct probe_info
 
     // This flag is set if we think there's an IBM PC-style BIOS present.
     bool                        has_bios;
+
+    // Pointer to the extended BIOS data area (EBDA).
+    X86::realmode_ptr<void>     ebda;
+
+    // ACPI root pointer table.
+    const Firmware::ACPI::rsdp* acpi_rsdp;
+
+    // ACPI tables.
+    using acpi_table_map = std::map<std::array<char, 4>, const Firmware::ACPI::data_table_header*>;
+    acpi_table_map              acpi_tables;
 };
 
 
@@ -85,7 +101,10 @@ static void reserveBIOSMemory()
     auto ebda_address = (ebda_segment << 4);
     auto ebda_size = EBDAEnd - ebda_address;
     if (ebda_address != 0 && ebda_size != 0)
+    {
         reserve(ebda_address, ebda_size, "EBDA");
+        s_probeInfo.ebda = X86::realmode_ptr<void> { ebda_segment, 0 };
+    }
 }
 
 static void reserveMultibootV1Memory()
@@ -263,6 +282,223 @@ std::uint32_t allocateEarlyRealModePage()
 {
     // Any page below the 1MB limit will do.
     return g_earlyPageBitmap.allocatePage(1024*1024);
+}
+
+
+std::uint32_t allocateEarlyPage()
+{
+    return g_earlyPageBitmap.allocatePage();
+}
+
+
+void freeEarlyPage(std::uint32_t page)
+{
+    g_earlyPageBitmap.freePage(page);
+}
+
+
+static bool memoryProbeE820()
+{
+    // Output format from the BIOS E820 memory map.
+    struct entry_t
+    {
+        std::uint64_t base = 0;
+        std::uint64_t length = 0;
+        std::uint32_t type = 0;
+        std::uint32_t flags = 0;
+    };
+
+    log(priority::debug, "attemping memory probe via BIOS \"E820\" interface...");
+
+    // Allocate some real-mode memory for the output.
+    auto page = allocateEarlyRealModePage();
+    X86::realmode_ptr<entry_t> out{page >> 4, 0};
+
+    bool success = false;
+    std::uint32_t offset = 0;
+    while (true)
+    {
+        // Set the output buffer to a known state as the BIOS may not write all of it (e.g. the flags field).
+        auto ptr = out.linear_ptr();
+        *ptr = {};
+
+        // Set up the parameters for the call.
+        bios_call_params params;
+        params.eax = 0x0000E820;
+        params.edx = 0x534D4150;
+        params.ecx = sizeof(entry_t);
+        params.ebx = offset;
+        params.es = out.segment();
+        params.di = out.offset();
+
+        // Make the call.
+        v86CallBIOS(0x15, params);
+
+        // Was the call successful?
+        if (params.eflags.bits.CF || params.eax != 0x534D4150)
+            break;
+        
+        success = true;
+        log(priority::debug, "E820: {:#018x}+{:016x} {:>8} {:#010x}",
+            ptr->base, ptr->length, ptr->type, ptr->flags
+        );
+
+        // Are we done?
+        if (params.ebx == 0)
+            break;
+
+        offset = params.ebx;
+    }
+
+    g_earlyPageBitmap.freePage(page);
+
+    if (!success)
+        log(priority::debug, "E820: probe failed");
+
+    return success;
+}
+
+
+static const Firmware::ACPI::rsdp* findACPI()
+{
+    auto check_rsdp = [](std::uint32_t address)
+    {
+        auto ptr = reinterpret_cast<const Firmware::ACPI::rsdp*>(address);
+        return (ptr->validSignature() && ptr->checksumCorrect() && (!ptr->hasExtendedFields() || ptr->extendedChecksumCorrect()))
+            ? ptr
+            : nullptr;
+    };
+
+    // First step: search the EBDA for the pointer table.
+    const Firmware::ACPI::rsdp* rsdp = nullptr;
+    if (auto address = s_probeInfo.ebda.linear(); address != 0)
+    {
+        // ACPI says the table can be at a 16-byte offset in the first 1kB of the EBDA.
+        for (std::uint32_t offset = 0; offset < 1024; offset += 16)
+        {
+            // Check we've not overrun the EBDA.
+            if (address + offset >= 0xA0000)
+                break;
+
+            // Is this a valid RSDP?
+            if (auto candidate = check_rsdp(address + offset); candidate)
+            {
+                rsdp = candidate;
+                break;
+            }
+        }
+    }
+
+    // Next, check the BIOS ROM space.
+    if (!rsdp)
+    {
+        std::uint32_t address = 0xE0000;
+        std::uint32_t end = 0x100000;
+
+        // ACPI says the table can be at a 16-byte offset within the BIOS ROM space.
+        for (; address < end; address += 16)
+        {
+            // Is this a valid RSDP?
+            if (auto candidate = check_rsdp(address); candidate)
+            {
+                rsdp = candidate;
+                break;
+            }
+        }
+    }
+
+    if (rsdp)
+    {
+        log(priority::verbose, "ACPI support detected");
+        log(priority::debug, "ACPI: RSDP detected at {:010} (revision {}); RSDT={:#010x} XSDT={:#018x}",
+            static_cast<const void*>(rsdp),
+            rsdp->revision,
+            rsdp->rsdt_address.value(),
+            rsdp->hasExtendedFields() ? rsdp->xsdt_address.value() : 0
+        );
+    }
+    else
+    {
+        log(priority::verbose, "no ACPI support detected");
+    }
+
+    return rsdp;
+}
+
+
+static void handleACPITable(std::uint64_t address)
+{
+    auto header = reinterpret_cast<const Firmware::ACPI::data_table_header*>(static_cast<std::uint32_t>(address));
+    auto checksum_ok = header->checksumCorrect();
+
+    log(priority::debug, "ACPI: table {} at {:#010x}+{:x}{}",
+        std::string_view{&header->signature[0], header->signature.size()},
+        address, header->length.value(),
+        checksum_ok ? "" : " (checksum invalid}"
+    );
+
+    // Record the table so we can use it later.
+    //s_probeInfo.acpi_tables.emplace(header->signature, header);
+}
+
+
+static void probeACPI()
+{
+    // Scan the ACPI tables. We use the XSDT if it exists or the RSDT otherwise.
+    auto rsdp = s_probeInfo.acpi_rsdp;
+    bool valid = false;
+    if (rsdp->xsdt_address)
+    {
+        auto xsdt = reinterpret_cast<const Firmware::ACPI::xsdt*>(static_cast<std::uint32_t>(rsdp->xsdt_address));
+        if (xsdt->header.checksumCorrect() && xsdt->signatureCorrect())
+        {
+            valid = true;
+            for (auto entry : xsdt->entries())
+                handleACPITable(entry);
+        }
+        else
+        {
+            log(priority::error, "ACPI: XSDT detected but invalid");
+        }
+    }
+
+    if (!valid)
+    {
+        auto rsdt = reinterpret_cast<const Firmware::ACPI::rsdt*>(rsdp->rsdt_address.value());
+        if (rsdt->header.checksumCorrect() && rsdt->signatureCorrect())
+        {
+            valid = true;
+            for (auto entry : rsdt->entries())
+                handleACPITable(entry);
+        }
+        else
+        {
+            log(priority::error, "ACPI: RSDT detected but invalid");
+        }
+    }
+}
+
+
+void mapEarlyMemory()
+{
+    //! @todo implement
+    addEarlyMap(0x00000000, 0x000A0000, EarlyMapFlag::RWXC);
+    addEarlyMap(0x000A0000, 0x00020000, EarlyMapFlag::RW);
+    addEarlyMap(0x000C0000, 0x00040000, EarlyMapFlag::RXC);
+    addEarlyMap(0x00100000, 0x07F00000, EarlyMapFlag::RWXC);
+}
+
+
+void hardwareProbe()
+{
+    memoryProbeE820();
+
+    // Search for ACPI.
+    s_probeInfo.acpi_rsdp = findACPI();
+    if (s_probeInfo.acpi_rsdp)
+    {
+        probeACPI();
+    }
 }
 
 
