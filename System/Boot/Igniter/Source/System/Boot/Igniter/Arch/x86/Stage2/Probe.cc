@@ -482,9 +482,9 @@ static void probeACPI()
 void mapEarlyMemory()
 {
     //! @todo implement
-    addEarlyMap(0x00000000, 0x000A0000, EarlyMapFlag::RWXC);
+    addEarlyMap(0x00000000, 0x000A0000, EarlyMapFlag::RWXUC);
     addEarlyMap(0x000A0000, 0x00020000, EarlyMapFlag::RW);
-    addEarlyMap(0x000C0000, 0x00040000, EarlyMapFlag::RXC);
+    addEarlyMap(0x000C0000, 0x00040000, EarlyMapFlag::RXUC);
     addEarlyMap(0x00100000, 0x07F00000, EarlyMapFlag::RWXC);
 }
 

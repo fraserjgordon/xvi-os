@@ -239,7 +239,7 @@ template("gcc_toolchain")
             soflags = "-Wl,-soname=${soname}"
 
             rspfile         = "{{target_out_dir}}/${soname}.rsp"
-            rspfile_content = "{{inputs}} {{solibs}} {{libs}}"
+            rspfile_content = "-Wl,--start-group {{inputs}} {{solibs}} {{libs}} -Wl,--end-group"
 
             command = "${cxx_exe} -shared ${arch_cflags} ${arch_ldflags} ${arch_soflags} ${soflags} {{ldflags}} -o {{output}} @${rspfile}"
         }
@@ -251,7 +251,7 @@ template("gcc_toolchain")
             outputs                 = [ "{{output_dir}}/{{target_output_name}}{{output_extension}}" ]
 
             rspfile         = "{{target_out_dir}}/{{target_output_name}}{{output_extension}}.rsp"
-            rspfile_content = "{{inputs}} {{solibs}} {{libs}}"
+            rspfile_content = "-Wl,--start-group {{inputs}} {{solibs}} {{libs}} -Wl,--end-group"
 
             command = "${cxx_exe} ${arch_cflags} ${arch_ldflags} {{ldflags}} -o {{output}} @${rspfile}"
         }

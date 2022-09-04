@@ -8,6 +8,13 @@
 #include <System/ABI/ExecContext/Private/Config.h>
 
 
+#if defined(__XVI_KERNEL)
+#  define __ALL_FP_REGS
+#else
+#  define __ALL_FP_REGS "st", "st(1)", "st(2)", "st(3)", "st(4)", "st(5)", "st(6)", "st(7)"
+#endif
+
+
 namespace System::ABI::ExecContext
 {
 
@@ -97,7 +104,7 @@ static inline void fnstenv(fenv_t& save_area)
         "fnstenv %0"
         : "=m" (save_area)
         :
-        : "st", "st(1)", "st(2)", "st(3)", "st(4)", "st(5)", "st(6)", "st(7)"
+        : __ALL_FP_REGS
     );
 }
 
@@ -123,7 +130,7 @@ static inline void fldenv(const fenv_t& save_area)
         "fldenv %0"
         :
         : "m" (save_area)
-        : "st", "st(1)", "st(2)", "st(3)", "st(4)", "st(5)", "st(6)", "st(7)"
+        : __ALL_FP_REGS
     );
 }
 
@@ -135,7 +142,7 @@ static inline void fnsave(fsave_t& save_area)
         "fnsave %0"
         : "=m" (save_area)
         :
-        : "st", "st(1)", "st(2)", "st(3)", "st(4)", "st(5)", "st(6)", "st(7)"
+        : __ALL_FP_REGS
     );
 }
 
@@ -150,7 +157,7 @@ static inline void fnsave_fldenv(fsave_t& save_area)
         "fldenv     %0\n\t"
         : "=m" (save_area)
         :
-        : "st", "st(1)", "st(2)", "st(3)", "st(4)", "st(5)", "st(6)", "st(7)"
+        : __ALL_FP_REGS
     );
 }
 
@@ -162,7 +169,7 @@ static inline void frstor(const fsave_t& save_area)
         "frstor %0\n\t"
         :
         : "m" (save_area)
-        : "st", "st(1)", "st(2)", "st(3)", "st(4)", "st(5)", "st(6)", "st(7)"
+        : __ALL_FP_REGS
     );
 }
 
@@ -174,7 +181,7 @@ static inline void fninit()
         "fninit"
         :
         :
-        : "st", "st(1)", "st(2)", "st(3)", "st(4)", "st(5)", "st(6)", "st(7)"
+        : __ALL_FP_REGS
     );  
 }
 
@@ -211,7 +218,10 @@ static inline void fxrstor(const fxsave_t& save_area)
         "fxrstor %0"
         :
         : "m" (save_area)
-        : "st", "st(1)", "st(2)", "st(3)", "st(4)", "st(5)", "st(6)", "st(7)",
+        : 
+#if !defined(__XVI_KERNEL)
+          "st", "st(1)", "st(2)", "st(3)", "st(4)", "st(5)", "st(6)", "st(7)",
+#endif
           "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7"
 #ifdef __x86_64__
           , "xmm8", "xmm9", "xmm10", "xmm11", "xmm12", "xmm13", "xmm14", "xmm15"

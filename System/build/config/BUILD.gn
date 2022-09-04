@@ -290,4 +290,10 @@ config("kernel")
     [
         "__XVI_KERNEL",
     ]
+
+    if (target_arch == "x86")
+    {
+        # Prevent GCC from generating floating-point instructions.
+        cflags = [ "-mgeneral-regs-only" ]
+    }
 }

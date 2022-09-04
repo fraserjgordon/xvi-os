@@ -29,14 +29,14 @@ public:
             index >>= 4;
             index ^= (index >> 30);
             index ^= (index >> 10) ^ (index >> 20);
-            index &= 0x7ff;
+            index %= NumLocks;
             return &m_locks[index];
         }
         else
         {
             // Drop the bottom two bits (leaving 30) which we then fold together.
             auto uintptr = __uintptr_t(ptr);
-            auto index = (uintptr >> 2) ^ (uintptr >> 12) ^ (uintptr >> 22);
+            auto index = ((uintptr >> 2) ^ (uintptr >> 12) ^ (uintptr >> 22)) % NumLocks;
             return &m_locks[index];
         }
     }

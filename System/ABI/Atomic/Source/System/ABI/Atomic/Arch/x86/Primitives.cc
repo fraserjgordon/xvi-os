@@ -579,9 +579,9 @@ void __Atomic_lock_acquire(volatile AtomicSpinlockArray::spinlock_t* lock)
     asm volatile
     (
         "1:         \n\t"
-        "lock btsl  $0x01, (%0)\n\t"
+        "lock btsl  $0x00, (%0)\n\t"
         "pause      \n\t"
-        "jnz        1b\n\t"
+        "jc         1b\n\t"
         :
         : "r" (lock)
         : "memory"
@@ -592,7 +592,7 @@ void __Atomic_lock_acquire(volatile AtomicSpinlockArray::spinlock_t* lock)
 void __Atomic_lock_release(volatile AtomicSpinlockArray::spinlock_t* lock)
 {
     __Atomic_thread_fence(__memory_order_release);
-    *reinterpret_cast<volatile uint8_t*>(lock) = 0;
+    *lock = 0;
     asm volatile("" ::: "memory");
 }
 
@@ -616,9 +616,11 @@ void __Atomic_load(size_t n, const volatile void* ptr, void* result, int order)
             case 8:
                 *static_cast<uint64_t*>(result) = __Atomic_load_8(ptr, order);
                 return;
+#ifdef __x86_64__
             case 16:
                 *static_cast<__uint128_t*>(result) = __Atomic_load_16(ptr, order);
                 return;
+#endif
         }
 
         // No other sizes are possible.
@@ -651,9 +653,11 @@ void __Atomic_store(size_t n, volatile void* ptr, void* value, int order)
             case 8:
                 __Atomic_store_8(ptr, *static_cast<uint64_t*>(value), order);
                 return;
+#ifdef __x86_64__
             case 16:
                 __Atomic_store_16(ptr, *static_cast<__uint128_t*>(value), order);
                 return;
+#endif
         }
 
         // No other sizes are possible.
@@ -686,9 +690,11 @@ void __Atomic_exchange(size_t n, volatile void* ptr, void* value, void* result, 
             case 8:
                 *static_cast<uint64_t*>(result) = __Atomic_exchange_8(ptr, *static_cast<uint64_t*>(value), order);
                 return;
+#ifdef __x86_64__
             case 16:
                 *static_cast<__uint128_t*>(result) = __Atomic_exchange_16(ptr, *static_cast<__uint128_t*>(value), order);
                 return;
+#endif
         }
 
         // No other sizes are possible.
@@ -718,8 +724,10 @@ bool __Atomic_compare_exchange(size_t n, volatile void* ptr, void* expect, void*
                 return __Atomic_compare_exchange_4(ptr, expect, *static_cast<uint32_t*>(desire), success, fail);
             case 8:
                 return __Atomic_compare_exchange_8(ptr, expect, *static_cast<uint64_t*>(desire), success, fail);
+#ifdef __x86_64__
             case 16:
                 return __Atomic_compare_exchange_16(ptr, expect, *static_cast<__uint128_t*>(desire), success, fail);
+#endif
         }
 
         // No other sizes are possible.

@@ -90,7 +90,6 @@ void enablePaging()
 
     // We write %cr0 last as this is the action that actually enables paging.
     log(priority::debug, "MMU: enabling paging");
-    asm volatile ("xchgw %bx, %bx");
     X86::CR0::write(cr0);
     log(priority::debug, "MMU: paging enabled");
 }
@@ -107,6 +106,8 @@ void addEarlyMap(std::uint32_t address, std::uint32_t size, early_map_flag_t fla
         page_flags |= X86::MMU::PageFlag::W;
     if (flags & EarlyMapFlag::X)
         page_flags |= X86::MMU::PageFlag::X;
+    if (flags & EarlyMapFlag::U)
+        page_flags |= X86::MMU::PageFlag::U;
 
     // Calculate the caching type for the mapping.
     X86::MMU::cache_type cache_type = X86::MMU::CacheType::Uncached;
