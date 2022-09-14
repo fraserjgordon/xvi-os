@@ -88,6 +88,11 @@ void enablePaging()
         X86::EFER::write(efer);
     }
 
+    if (s_mmu->patValue() != 0)
+    {
+        X86::wrmsr(X86::MSR::PAT, s_mmu->patValue());
+    }
+
     // We write %cr0 last as this is the action that actually enables paging.
     log(priority::debug, "MMU: enabling paging");
     X86::CR0::write(cr0);

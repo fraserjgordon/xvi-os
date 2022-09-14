@@ -220,14 +220,18 @@ enum CR4Bits : std::uint32_t
     OSFXSR      = 0x00000200,   // OS FXSAVE/FXRSTOR support
     OSXMMEXCPT  = 0x00000400,   // OS unmasked SSE exception support
     UMIP        = 0x00000800,   // User-Mode Instruction Prevention
+    LA57        = 0x00001000,   // 5-level paging (57-bit virtual addresses).
     VMXE        = 0x00002000,   // VMX Enable
     SMXE        = 0x00004000,   // SMX Enable
     FSGSBASE    = 0x00010000,   // Enable {RD,WR}{FS,GS}BASE instructions
     PCIDE       = 0x00020000,   // Process Context ID Enable
     OSXSAVE     = 0x00040000,   // XSAVE enabled
+    KL          = 0x00080000,   // Key Locker
     SMEP        = 0x00100000,   // Supervisor Mode Execution Prevention
     SMAP        = 0x00200000,   // Supervisor Mode Access Protection
     PKE         = 0x00400000,   // Protection Key Enable
+    CET         = 0x00800000,   // Control-flow Enforcement Technology
+    PKS         = 0x01000000,   // Protection Key for Supervisor mode
 };
 
 constexpr CR4Bits operator|(CR4Bits x, CR4Bits y)

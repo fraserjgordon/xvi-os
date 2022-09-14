@@ -16,6 +16,9 @@ namespace MSR
 constexpr std::uint32_t TSC                 = 0x0000'0010;      // Time stamp counter.
 constexpr std::uint32_t APIC_BASE           = 0x0000'001B;      // APIC MMIO base address.
 constexpr std::uint32_t MTRR_CAP            = 0x0000'00FE;      // MTRR capabilities.
+constexpr std::uint32_t SYSENTER_CS         = 0x0000'0174;      // Target CS for sysenter.
+constexpr std::uint32_t SYSENTER_ESP        = 0x0000'0175;      // Stack pointer for sysenter.
+constexpr std::uint32_t SYSENTER_EIP        = 0x0000'0176;      // Target EIP for sysenter.
 constexpr std::uint32_t MTRR_BASE_0         = 0x0000'0200;      // Variable MTRR 0 base register.
 constexpr std::uint32_t MTRR_MASK_0         = 0x0000'0201;      // Variable MTRR 0 mask register.
 constexpr std::uint32_t MTRR_FIX_64K_00000  = 0x0000'0250;      // Fixed MTRR for 00000-80000.
@@ -31,9 +34,10 @@ constexpr std::uint32_t MTRR_FIX_4K_F0000   = 0x0000'026E;      // Fixed MTRR fo
 constexpr std::uint32_t MTRR_FIX_4K_F8000   = 0x0000'026F;      // Fixed MTRR for F8000-100000.
 constexpr std::uint32_t PAT                 = 0x0000'0277;      // Page attribute table.
 constexpr std::uint32_t MTRR_DEFAULT_TYPE   = 0x0000'02FF;      // Attributes for memory not covered by MTRRs.
-constexpr std::uint32_t SYSENTER_CS         = 0x0000'0174;      // Target CS for sysenter.
-constexpr std::uint32_t SYSENTER_ESP        = 0x0000'0175;      // Stack pointer for sysenter.
-constexpr std::uint32_t SYSENTER_EIP        = 0x0000'0176;      // Target EIP for sysenter.  
+constexpr std::uint32_t MC0_CTL             = 0x0000'0400;      // Machine check bank 0 control register.
+constexpr std::uint32_t MC0_STATUS          = 0x0000'0401;      // Machine check bank 0 status register.
+constexpr std::uint32_t MC0_ADDR            = 0x0000'0402;      // Machine check bank 0 address register.
+constexpr std::uint32_t MC0_MISC0           = 0x0000'0403;      // Machine check bank 0 misc register.
 constexpr std::uint32_t EFER                = 0xC000'0080;      // Extended Features Enable Register.
 constexpr std::uint32_t STAR                = 0xC000'0081;      // Syscall/sysret target CS/SS/EIP (32-bit).
 constexpr std::uint32_t LSTAR               = 0xC000'0082;      // Target RIP for syscall from long mode.
@@ -44,6 +48,7 @@ constexpr std::uint32_t GSBASE              = 0xC000'0101;      // Base address 
 constexpr std::uint32_t KERNELGSBASE        = 0xC000'0102;      // Base address for kernel %gs segment.
 constexpr std::uint32_t TSC_AUX             = 0xC000'0103;      // Returned by the RDTSCP instruction.
 constexpr std::uint32_t TSC_RATIO           = 0xC000'0104;      // TSC scale ratio.
+constexpr std::uint32_t MC0_MISC1           = 0xC000'0400;      // Machine check bank 0 scalable misc register 1.
 
 constexpr std::uint32_t MTRR_BASE(unsigned int n)
 {
@@ -54,6 +59,27 @@ constexpr std::uint32_t MTRR_MASK(unsigned int n)
 {
     return MTRR_MASK_0 + 2U*n;
 }
+
+constexpr std::uint32_t MCi_CTL(unsigned int i)
+{
+    return MC0_CTL + 4U*i;
+}
+
+constexpr std::uint32_t MCi_STATUS(unsigned int i)
+{
+    return MC0_STATUS + 4U*i;
+}
+
+constexpr std::uint32_t MCi_ADDR(unsigned int i)
+{
+    return MC0_ADDR + 4U*i;
+}
+
+constexpr std::uint32_t MCi_MISCj(unsigned int blkptr, unsigned int j)
+{
+    return MC0_MISC1 + (blkptr << 3) + (j - 1);
+}
+
 
 // AMD-specific MSRs.
 namespace AMD
@@ -120,6 +146,9 @@ enum EFERBits : std::uint64_t
     LMSLE   = 0x00002000,       // Long Mode Segment Limit Enable.
     FFXSR   = 0x00004000,       // Fast FXSAVE/FXRSTOR.
     TCE     = 0x00008000,       // Translation Cache Extension.
+    MCOMMIT = 0x00020000,       // MCOMMIT instruction.
+    INTWB   = 0x00040000,       // Interruptable WBINVD/WBNOINVD.
+    UAIE    = 0x00100000,       // Upper Address Ignore Enable.
 };
 
 constexpr EFERBits operator|(EFERBits x, EFERBits y)

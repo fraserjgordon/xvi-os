@@ -1,0 +1,15 @@
+library("Runpatch")
+{
+    library_name = "System.Kernel.Runpatch"
+    library_version = "0.1.0"
+
+    target_types = ["kernel"]
+
+    if (target_arch == "x86")
+    {
+        public_headers =
+        [
+            "Arch/x86/Runpatch.hh",
+        ]
+    }
+}

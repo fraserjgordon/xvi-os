@@ -33,6 +33,10 @@ struct PTE
     static constexpr std::uint32_t UserFlag1    = 0x400;
     static constexpr std::uint32_t UserFlag2    = 0x800;
 
+    // Despite being allocated as a user-defined flag, MMUs that are using HLAT paging define a hardware purpose: stop
+    // HLAT and restart this lookup using ordinary paging.
+    static constexpr std::uint32_t HLATRestart  = 0x800;
+
     // This is defined so all entry types have it but defining it as zero here means that any tests against this bit
     // will always be false.
     static constexpr std::uint32_t LargePage    = 0x000;
@@ -445,6 +449,7 @@ using pt64_t    = table_t<pte64_t, std::uint64_t, 0>;
 using pd64_t    = table_t<pde64_t, std::uint64_t, 1>;
 using pdpt64_t  = table_t<pdpe64_t, std::uint64_t, 2>;
 using pml4_t    = table_t<pml4e64_t, std::uint64_t, 3>;
+using pml5_t    = table_t<pml5e64_t, std::uint64_t, 4>;
 
 
 template <class Root>
@@ -512,6 +517,7 @@ private:
 using PageTableLegacy   = PageTable<pd32_t>;
 using PageTablePAE      = PageTable<pdpt32pae_t>;
 using PageTableLongMode = PageTable<pml4_t>;
+using PageTableLongMode57 = PageTable<pml5_t>;
 
 
 template <class V, class P>

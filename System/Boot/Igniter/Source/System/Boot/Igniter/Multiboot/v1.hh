@@ -67,28 +67,28 @@ inline constexpr std::uint32_t MultibootV1LoaderMagic = 0x2badb002;
 
 struct multiboot_v1_info
 {
-    std::uint32_t       flags;
+    std::uint32_t       flags = 0;
     
     struct simple_mem_info_t
     {
-        std::uint32_t       kb_lower;
-        std::uint32_t       kb_upper;
+        std::uint32_t       kb_lower = 0;
+        std::uint32_t       kb_upper = 0;
     } simple_mem_info;
 
     struct boot_device_t
     {
-        std::uint32_t       device_id;
+        std::uint32_t       device_id = 0;
     } boot_device;
 
     struct command_line_t
     {
-        std::uint32_t       ptr;
+        std::uint32_t       ptr = 0;
     } command_line;
 
     struct modules_t
     {
-        std::uint32_t       count;
-        std::uint32_t       ptr;
+        std::uint32_t       count = 0;
+        std::uint32_t       ptr = 0;
     } modules;
 
     union symbols_t
@@ -99,7 +99,7 @@ struct multiboot_v1_info
             std::uint32_t   entry_size;
             std::uint32_t   table_ptr;
             std::uint32_t   string_table_ptr;
-        } elf;
+        } elf = {};
 
         struct aout_t
         {
@@ -111,50 +111,50 @@ struct multiboot_v1_info
 
     struct memory_map_t
     {
-        std::uint32_t       length;
-        std::uint32_t       ptr;
+        std::uint32_t       length = 0;
+        std::uint32_t       ptr = 0;
     } memory_map;
 
     struct drive_info_t
     {
-        std::uint32_t       length;
-        std::uint32_t       ptr;
+        std::uint32_t       length = 0;
+        std::uint32_t       ptr = 0;
     } drive_info;
 
     struct bios_config_table_t
     {
-        std::uint32_t       ptr;
+        std::uint32_t       ptr = 0;
     } bios_config_table;
 
     struct bootloader_info_t
     {
-        std::uint32_t       name_ptr;
+        std::uint32_t       name_ptr = 0;
     } bootloader_info;
 
     struct apm_t
     {
-        std::uint32_t       table_ptr;
+        std::uint32_t       table_ptr = 0;
     } apm;
 
     struct vbe_t
     {
-        std::uint32_t       control_info;
-        std::uint32_t       mode_info;
-        std::uint16_t       mode;
-        std::uint16_t       interface_segment;
-        std::uint16_t       interface_offset;
-        std::uint16_t       interface_length;
+        std::uint32_t       control_info = 0;
+        std::uint32_t       mode_info = 0;
+        std::uint16_t       mode = 0;
+        std::uint16_t       interface_segment = 0;
+        std::uint16_t       interface_offset = 0;
+        std::uint16_t       interface_length = 0;
     } vbe;
 
     struct framebuffer_t
     {
-        std::uint64_t       address;
-        std::uint32_t       pitch;
-        std::uint32_t       width;
-        std::uint32_t       height;
-        std::uint8_t        bpp;
-        std::uint8_t        type;
-        std::uint8_t        colour_info[6];
+        std::uint64_t       address = 0;
+        std::uint32_t       pitch = 0;
+        std::uint32_t       width = 0;
+        std::uint32_t       height = 0;
+        std::uint8_t        bpp = 0;
+        std::uint8_t        type = 0;
+        std::uint8_t        colour_info[6] = {0, 0, 0, 0, 0, 0};
     } framebuffer;
 
 

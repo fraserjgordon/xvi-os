@@ -84,6 +84,26 @@ SECTIONS
         *(.gcc_except_table .gcc_except_table.*)
     }
 
+    runpatch.keys :
+    {
+        *(runpatch.keys)
+    }
+
+    runpatch.alternatives.text :
+    {
+        *(runpatch.alternatives.text)
+    }
+
+    runpatch.alternatives.info :
+    {
+        *(runpatch.alternatives.info)
+    }
+
+    runpatch.control :
+    {
+        *(runpatch.control)
+    }
+
     .data ALIGN(4K) :
     {
         PROVIDE_HIDDEN (_DATA_START = . - _IMAGE_OFFSET);        

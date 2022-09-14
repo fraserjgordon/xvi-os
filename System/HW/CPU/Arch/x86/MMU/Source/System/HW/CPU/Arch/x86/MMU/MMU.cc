@@ -1,5 +1,7 @@
 #include <System/HW/CPU/Arch/x86/MMU/MMU.hh>
 
+#include <array>
+
 #include <System/HW/CPU/CPUID/Arch/x86/CPUID.hh>
 
 #include <System/HW/CPU/Arch/x86/MMU/InitPageTable.hh>
@@ -23,8 +25,13 @@ MMU::MMU()
         // All CPUs that support CPUID implement supervisor-mode write protection.
         m_supervisorWriteProtect = true;
 
+        // All CPUs that support CPUID implement alignment checking.
+        m_alignmentChecking = true;
+
         // Which extended paging modes are available?
-        if (CPUID::HasFeature(CPUID::Feature::LongMode))
+        if (CPUID::HasFeature(CPUID::Feature::LA57))
+            m_maxPagingMode = PagingMode::LongMode5Level;
+        else if (CPUID::HasFeature(CPUID::Feature::LongMode))
             m_maxPagingMode = PagingMode::LongMode;
         else if (CPUID::HasFeature(CPUID::Feature::PhysicalAddressExtension))
             m_maxPagingMode = PagingMode::PAE;
@@ -33,8 +40,12 @@ MMU::MMU()
         auto bits = CPUID::GetFeature(CPUID::Feature::PhysicalAddrBits);
         if (bits > 0)
             m_physicalAddressBits = bits;
+        else if (m_maxPagingMode >= PagingMode::PAE)
+            m_physicalAddressBits = 36;
 
-        if (m_maxPagingMode >= PagingMode::LongMode)
+        if (m_maxPagingMode >= PagingMode::LongMode5Level)
+            m_virtualAddressBits = 57;
+        else if (m_maxPagingMode >= PagingMode::LongMode)
             m_virtualAddressBits = 48;
 
         // Which large page sizes are supported?
@@ -64,6 +75,20 @@ MMU::MMU()
             m_mtrrs = true;
         if (CPUID::HasFeature(CPUID::Feature::PageAttributeTable))
             m_pat = true;
+
+        // Are process context IDs supported?
+        if (CPUID::HasFeature(CPUID::Feature::ProcessContextId))
+            m_processContextID = true;
+
+        // Are supervisor mode execution/access prevention features available?
+        if (CPUID::HasFeature(CPUID::Feature::SvExecProtection))
+            m_supervisorExecProtection = true;
+        if (CPUID::HasFeature(CPUID::Feature::SvAccessProtection))
+            m_supervisorAccessProtection = true;
+
+        // Are protection keys supported?
+        if (CPUID::HasFeature(CPUID::Feature::UserMemoryKeys))
+            m_protectionKeys = true;
     }
 
     // Based on the features we've detected, configure the MMU control registers.
@@ -73,14 +98,84 @@ MMU::MMU()
     if (m_supervisorWriteProtect)
         m_cr0Set |= X86::CR0::WP;
 
+    if (m_alignmentChecking)
+        m_cr0Set |= X86::CR0::AM;
+
     if (m_pageSizes > (4U<<10))
         m_cr4Set |= X86::CR4::PSE;
 
     if (m_globalPages)
         m_cr4Set |= X86::CR4::PGE;
 
+    // Only settable once long mode has been activated.
+    //if (m_processContextID)
+    //    m_cr4Set |= X86::CR4::PCIDE;
+
+    if (m_supervisorExecProtection)
+        m_cr4Set |= X86::CR4::SMEP;
+
+    if (m_supervisorAccessProtection)
+        m_cr4Set |= X86::CR4::SMAP;
+
+    if (m_protectionKeys)
+        m_cr4Set |= X86::CR4::PKE;
+
     if (m_noExecute)
         m_eferSet |= X86::EFER::NXE;
+
+    // The code below accesses CPU MSRs (model-specific registers) that are associated with the MMU. Because the x86
+    // architecture requires that the MTRRs and PAT are configured identically on all CPUs within the system, it is safe
+    // to use whichever CPU we're executing on as representative.
+
+    // If the MTRR feature is available, probe it.
+    if (m_mtrrs)
+    {
+        // Read the MTRR capabilities register.
+        m_mtrrCaps = X86::rdmsr(X86::MSR::MTRR_CAP);
+        auto count = (m_mtrrCaps & 0xFF);         // Number of variable-range registers.
+        bool fixed = (m_mtrrCaps & 0x100);        // Fixed-range registers are supported.
+        m_writeCombine = (m_mtrrCaps & 0x400);    // Write-combine memory type supported.
+
+        // Read the default memory type register.
+        m_mtrrDefaults = X86::rdmsr(X86::MSR::MTRR_DEFAULT_TYPE);
+
+        // Read the fixed-range MTRRs.
+        if (fixed)
+        {
+            for (unsigned int i = 0; i < FixedMtrrCount; ++i)
+            {
+                m_fixedMtrrs[i].raw = X86::rdmsr(FixedMtrrMSRs[i]);
+            }
+        }
+
+        // Read the variable-range MTRRs.
+        for (unsigned int i = 0; i < count; ++i)
+        {
+            m_variableMtrrs[i] =
+            {
+                .base = X86::rdmsr(X86::MSR::MTRR_BASE(i)),
+                .mask = X86::rdmsr(X86::MSR::MTRR_MASK(i)),
+            };
+        }
+    }
+
+    // If the PAT feature is available, program it to give access to all of the cache types.
+    if (m_pat)
+    {
+        // Assume that the write-combining cache type is available as PAT is supported.
+        //! @todo is this correct?
+        m_writeCombine = true;
+
+        // Read the existing PAT.
+        m_originalPatValue = X86::rdmsr(X86::MSR::PAT);
+
+        // We program the PAT so that the two pre-PAT caching bits map to the same values with and without the PAT (this
+        // allows the page table code to configure non-leaf entries as cached without knowing about PAT. The cache types
+        // that are not covered by that are then added to the additional slots.
+        //
+        // If this value is changed, the mapCacheType method needs to be adjusted to match.
+        m_patValue = 0x0000010500070406;
+    }
 }
 
 
@@ -125,6 +220,12 @@ efer_t MMU::eferSetBits() const noexcept
 }
 
 
+std::uint64_t MMU::patValue() const noexcept
+{
+    return m_patValue;
+}
+
+
 paging_mode MMU::highestSupportedPagingMode() const noexcept
 {
     return m_maxPagingMode;
@@ -154,6 +255,8 @@ InitPageTable MMU::createInitPageTable(paging_mode target_mode)
         m_cr4Set |= X86::CR4::PAE;
     if (m_targetPagingMode >= PagingMode::LongMode)
         m_eferSet |= X86::EFER::LME;
+    if (m_targetPagingMode >= PagingMode::LongMode5Level)
+        m_cr4Set |= X86::CR4::LA57;
 
     // Create the root table.
     InitPageTable init_pt{*this, m_allocator->allocate()};
@@ -192,23 +295,53 @@ bool MMU::supports1GPages() const noexcept
 
 unsigned int MMU::mapCacheType(cache_type type) const
 {
-    //! @todo: PAT support.
-
-    switch (type)
+    if (m_pat)
     {
-        case CacheType::Uncached:
-        case CacheType::WriteProtect:
-            return 0b011;
+        // The PAT value in the constructor determines the mapping here; do not change this mapping without adjusting
+        // the PAT value to match.
+        switch (type)
+        {
+            case CacheType::Uncached:
+                return 0b011;
 
-        case CacheType::UncachedMinus:
-        case CacheType::WriteCombine:
-            return 0b010;
+            case CacheType::WriteCombine:
+                // This cache type is not supported on all processors.
+                if (m_writeCombine)
+                    return 0b101;
+                else
+                    return 0b011;   // Uncached.
 
-        case CacheType::WriteThrough:
-            return 0b001;
+            case CacheType::WriteThrough:
+                return 0b001;
 
-        case CacheType::WriteBack:
-            return 0b000;
+            case CacheType::WriteProtect:
+                return 0b100;
+
+            case CacheType::WriteBack:
+                return 0b000;
+
+            case CacheType::UncachedMinus:
+                return 0b010;
+        }
+    }
+    else
+    {
+        switch (type)
+        {
+            case CacheType::Uncached:
+            case CacheType::WriteProtect:
+                return 0b011;
+
+            case CacheType::UncachedMinus:
+            case CacheType::WriteCombine:
+                return 0b010;
+
+            case CacheType::WriteThrough:
+                return 0b001;
+
+            case CacheType::WriteBack:
+                return 0b000;
+        }
     }
 
     // Unknown caching type (somehow). Select uncached.

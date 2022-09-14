@@ -47,21 +47,27 @@ static constexpr X86::realmode_ptr<BIOS::data_area_t> g_biosDataArea {0x0040, 0x
 struct probe_info
 {
     // Pointers to Multiboot information tables, if loaded by a Multiboot-compatible loader.
-    const multiboot_v1_info*    multiboot_v1;
-    const multiboot_v2_info*    multiboot_v2;
+    const multiboot_v1_info*    multiboot_v1 = nullptr;
+    const multiboot_v2_info*    multiboot_v2 = nullptr;
 
     // This flag is set if we think there's an IBM PC-style BIOS present.
-    bool                        has_bios;
+    bool                        has_bios = false;
+
+    // Limits of memory discovered during early probe. These aren't comprehensive but are a good hint for what needs to
+    // be mapped when setting up the initial page tables.
+    std::uint32_t               low_memory = 0;     // Contiguous RAM from 0 up to a max of 1MB.
+    std::uint32_t               mid_memory = 0;     // Contiguous RAM from 1MB up to a max of 4GB.
+    std::uint32_t               high_memory = 0;    // Contiguous RAM from 16MB up to a max of 4GB.
 
     // Pointer to the extended BIOS data area (EBDA).
-    X86::realmode_ptr<void>     ebda;
+    X86::realmode_ptr<void>     ebda = {};
 
     // ACPI root pointer table.
-    const Firmware::ACPI::rsdp* acpi_rsdp;
+    const Firmware::ACPI::rsdp* acpi_rsdp = nullptr;
 
     // ACPI tables.
     using acpi_table_map = std::map<std::array<char, 4>, const Firmware::ACPI::data_table_header*>;
-    acpi_table_map              acpi_tables;
+    //acpi_table_map              acpi_tables;
 };
 
 
@@ -205,6 +211,9 @@ static void earlyMemoryProbeMultibootV1()
         g_earlyPageBitmap.markAvailable(0x00000000, lower * 1024);
         g_earlyPageBitmap.markAvailable(0x00100000, upper * 1024);
 
+        s_probeInfo.low_memory = lower * 1024;
+        s_probeInfo.mid_memory = upper * 1024;
+
         log(priority::debug, "No memory map available; {}kB lower, {}kB upper reported", lower, upper);
     }
 }
@@ -231,6 +240,18 @@ static void earlyMemoryProbeFallback()
     constexpr std::uint32_t MMIOHoleStart = 0x00F00000;
     constexpr std::uint32_t MMIOHoleSize  = 0x00100000;
     reserve(MMIOHoleStart, MMIOHoleSize, "possible MMIO region");
+
+    if (cmos_size * 1024 > (16U<<20))
+    {
+        // As above, assume there may be a whole from 15-16MB.
+        s_probeInfo.mid_memory = 14U<<20;
+        s_probeInfo.high_memory = (cmos_size * 1024) - (16U<<20);
+    }
+    else
+    {
+        // The reported memory doesn't go as far as the hole so we can ignore it for now.
+        s_probeInfo.mid_memory = (cmos_size * 1024) - (1U<<20);
+    }
 }
 
 
@@ -242,12 +263,15 @@ void performEarlyMemoryProbe()
     //! @TODO: disable when booted from EFI.
     s_probeInfo.has_bios = true;
 
+    // We simply assume that there is memory from 0 up to the start of the VGA MMIO area.
+    s_probeInfo.low_memory = 0xA0000;
+
     // Start by marking all of the early memory map as unavailable.
     g_earlyPageBitmap.markAllUnavailable();
 
     // If we have a multiboot information table and it has appropriate entries, use that to get memory information.
     constexpr auto MultibootMemoryFlags = multiboot_v1_info::FlagSimpleMemInfo | multiboot_v1_info::FlagMemoryMap;
-    if (s_probeInfo.multiboot_v1 && (s_probeInfo.multiboot_v1->flags & MultibootMemoryFlags))
+    if (s_probeInfo.multiboot_v1 && (s_probeInfo.multiboot_v1->flags & MultibootMemoryFlags) != 0)
         earlyMemoryProbeMultibootV1();
     else
         earlyMemoryProbeFallback();
@@ -260,7 +284,7 @@ void performEarlyMemoryProbe()
     if (s_probeInfo.multiboot_v1)
         reserveMultibootV1Memory();
 
-    // Reserve the PC-compatible MMIO range.
+    // Reserve the PC-compatible MMIO & ROM range.
     constexpr std::uint32_t PCMMIOStart = 0x000A0000;
     constexpr std::uint32_t PCMMIOSize  = 0x00060000;
     reserve(PCMMIOStart, PCMMIOSize, "PC-compatible MMIO");
@@ -481,11 +505,17 @@ static void probeACPI()
 
 void mapEarlyMemory()
 {
-    //! @todo implement
-    addEarlyMap(0x00000000, 0x000A0000, EarlyMapFlag::RWXUC);
+    // Map the areas we discovered during the early memory probe.
+    // Note that the low area is mapped with user permissions so we can use it with V86 mode.
+    addEarlyMap(0x00000000, s_probeInfo.low_memory, EarlyMapFlag::RWXUC);
+    addEarlyMap(0x00100000, s_probeInfo.mid_memory, EarlyMapFlag::RWXC);
+    addEarlyMap(0x01000000, s_probeInfo.high_memory, EarlyMapFlag::RWXC);
+
+    // Map the VGA memory area.
     addEarlyMap(0x000A0000, 0x00020000, EarlyMapFlag::RW);
+
+    // Map the BIOS ROM area. Like the low area, it needs to be usable in V86 mode.
     addEarlyMap(0x000C0000, 0x00040000, EarlyMapFlag::RXUC);
-    addEarlyMap(0x00100000, 0x07F00000, EarlyMapFlag::RWXC);
 }
 
 

@@ -90,8 +90,7 @@ static bool mapRange(MMU& mmu, std::uint64_t root, std::uint64_t address, std::u
             return mapRangeImpl<PageTableLongMode>(mmu, root, address, size, physical, flags, pat);
 
         case PagingMode::LongMode5Level:
-            // Not yet supported.
-            return false;
+            return mapRangeImpl<PageTableLongMode57>(mmu, root, address, size, physical, flags, pat);
     }
 
     // Shouldn't get here.

@@ -54,6 +54,20 @@ struct mtrr_record
 };
 
 
+union mtrr_fixed
+{
+    std::uint64_t       raw;
+    std::uint8_t        entries[8];
+};
+
+
+struct mtrr_variable
+{
+    std::uint64_t       base;
+    std::uint64_t       mask;
+};
+
+
 } // namespace System::HW::CPU::X86::MMU
 
 

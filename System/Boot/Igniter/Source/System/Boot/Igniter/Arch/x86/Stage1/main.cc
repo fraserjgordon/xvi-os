@@ -184,6 +184,7 @@ void Stage1(std::uint8_t boot_drive)
         : "a" (MultibootV1LoaderMagic),
           "b" (&multiboot_info),
           "r" (entry)
+        : "memory"
     );
 }
 

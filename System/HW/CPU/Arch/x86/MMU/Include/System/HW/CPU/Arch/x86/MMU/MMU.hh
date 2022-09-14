@@ -2,6 +2,7 @@
 #define __SYSTEM_HW_CPU_ARCH_X86_MMU_MMU_H
 
 
+#include <array>
 #include <cstdint>
 #include <memory>
 #include <span>
@@ -81,11 +82,42 @@ public:
 
 private:
 
+    // There are 11 fixed-range MTRR registers and an architectural limit of 256 variable-range MTRR registers.
+    static constexpr std::size_t FixedMtrrCount     = 11;
+    static constexpr std::size_t VariableMtrrCount  = 256;
+    using fixed_mtrr_array = std::array<mtrr_fixed, FixedMtrrCount>;
+    using variable_mtrr_array = std::array<mtrr_variable, VariableMtrrCount>;
+
+    // Mapping between fixed MTRR array indices and MSR numbers.
+    static constexpr std::array<std::uint64_t, FixedMtrrCount> FixedMtrrMSRs =
+    {
+        System::HW::CPU::X86::MSR::MTRR_FIX_64K_00000,
+        System::HW::CPU::X86::MSR::MTRR_FIX_16K_80000,
+        System::HW::CPU::X86::MSR::MTRR_FIX_16K_A0000,
+        System::HW::CPU::X86::MSR::MTRR_FIX_4K_C0000,
+        System::HW::CPU::X86::MSR::MTRR_FIX_4K_C8000,
+        System::HW::CPU::X86::MSR::MTRR_FIX_4K_D0000,
+        System::HW::CPU::X86::MSR::MTRR_FIX_4K_D8000,
+        System::HW::CPU::X86::MSR::MTRR_FIX_4K_E0000,
+        System::HW::CPU::X86::MSR::MTRR_FIX_4K_E8000,
+        System::HW::CPU::X86::MSR::MTRR_FIX_4K_F0000,
+        System::HW::CPU::X86::MSR::MTRR_FIX_4K_F8000,
+    };
+
+
     // Cached MMU control register settings.
-    X86::cr0_t  m_cr0Set = X86::CR0::None;
-    X86::cr0_t  m_cr0Clear = X86::CR0::None;
-    X86::cr4_t  m_cr4Set = X86::CR4::None;
-    X86::efer_t m_eferSet = X86::EFER::None;
+    X86::cr0_t      m_cr0Set = X86::CR0::None;
+    X86::cr0_t      m_cr0Clear = X86::CR0::None;
+    X86::cr4_t      m_cr4Set = X86::CR4::None;
+    X86::efer_t     m_eferSet = X86::EFER::None;
+    std::uint64_t   m_patValue = 0;
+    std::uint64_t   m_mtrrCaps = 0;
+    std::uint64_t   m_mtrrDefaults = 0;
+    fixed_mtrr_array    m_fixedMtrrs = {};
+    variable_mtrr_array m_variableMtrrs = {};
+
+    // Cache of some initial control values in case they need to be reset.
+    std::uint64_t   m_originalPatValue = 0;
 
     // Paging mode information.
     paging_mode m_maxPagingMode = PagingMode::Disabled;
@@ -101,10 +133,16 @@ private:
 
     // Other MMU features.
     bool            m_supervisorWriteProtect = false;
+    bool            m_alignmentChecking = false;
     bool            m_globalPages = false;
     bool            m_noExecute = false;
     bool            m_mtrrs = false;
     bool            m_pat = false;
+    bool            m_writeCombine = false;
+    bool            m_processContextID = false;
+    bool            m_supervisorExecProtection = false;
+    bool            m_supervisorAccessProtection = false;
+    bool            m_protectionKeys = false;
 
     // Allocator object.
     std::unique_ptr<TablePageAllocator> m_allocator = {};

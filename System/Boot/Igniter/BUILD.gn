@@ -180,6 +180,7 @@ xvi_executable("Stage2")
             "//HW/CPU/Arch/x86/MMU",
             "//HW/CPU/Arch/x86/Segmentation",
             "//HW/GPU/VGA",
+            "//Kernel/Runpatch",
         ]
 
         sources +=
