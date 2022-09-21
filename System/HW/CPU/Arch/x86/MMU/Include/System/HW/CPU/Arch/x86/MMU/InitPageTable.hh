@@ -26,8 +26,9 @@ public:
     constexpr InitPageTable() = default;
     constexpr InitPageTable(const InitPageTable&) = default;
 
-    constexpr InitPageTable(MMU& mmu, std::uint64_t root) :
+    constexpr InitPageTable(MMU& mmu, std::uint64_t root, std::uint64_t self_map_address) :
         m_root{root},
+        m_selfMap{self_map_address},
         m_mmu{&mmu}
     {
     }
@@ -52,6 +53,7 @@ public:
 private:
 
     std::uint64_t       m_root = 0;
+    std::uint64_t       m_selfMap = 0;
     MMU*                m_mmu = nullptr;
 };
 

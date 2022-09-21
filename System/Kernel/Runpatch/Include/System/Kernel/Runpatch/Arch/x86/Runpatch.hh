@@ -57,16 +57,6 @@ R"(
 .endm
 
 .macro runpatch_emit_alternative idx:req code:req
-    # If this is the first alternative, set up our book-keeping variables.
-    .ifnotdef .Lrp\idx\()_alt_info
-        .pushsection runpatch.alternatives.info, "a", @progbits
-            .Lrp\idx\()_alt_info = .
-        .popsection
-
-        .Lrp\idx\()_alt_count = 0
-        .Lrp\idx\()_alt_max = 0
-    .endif
-
     runpatch_emit_alternative_impl  \idx "\code"
 
     .Lrp\idx\()_alt_count = .Lrp\idx\()_alt_count + 1
@@ -102,6 +92,14 @@ R"(
     .pushsection runpatch.keys, "aSM", @progbits, 1
         .Lrp\idx\()_key: .asciz "\key"
     .popsection
+
+    # Initialise the book-keeping variables.
+    .pushsection runpatch.alternatives.info, "a", @progbits
+        .Lrp\idx\()_alt_info = .
+    .popsection
+
+    .Lrp\idx\()_alt_count = 0
+    .Lrp\idx\()_alt_max = 0
 .endm
 
 .macro runpatch_finish idx:req

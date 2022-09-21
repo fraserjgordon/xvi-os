@@ -10,6 +10,7 @@ library("MMU")
     public_deps =
     [
         "//HW/CPU/Arch/x86/ControlRegs",
+        "//Kernel/Runpatch",
     ]
 
     public_headers =

@@ -101,7 +101,9 @@ SECTIONS
 
     runpatch.control :
     {
+        PROVIDE_HIDDEN (_RUNPATCH_CONTROL_START = . - _IMAGE_OFFSET);
         *(runpatch.control)
+        PROVIDE_HIDDEN (_RUNPATCH_CONTROL_END = . - _IMAGE_OFFSET);
     }
 
     .data ALIGN(4K) :

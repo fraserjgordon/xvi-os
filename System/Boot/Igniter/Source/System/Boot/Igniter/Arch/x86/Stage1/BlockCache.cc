@@ -18,7 +18,7 @@ std::pair<bool, BlockCache::block_ptr> BlockCache::findOrAllocate(std::uint64_t 
         // Is this the entry we're looking for?
         if (m_descriptors[i].lba == lba && m_descriptors[i].ptr)
         {
-            //log(priority::trace, "BlockCache: cache hit for LBA {} in slot {}", lba, i);
+            m_descriptors[i].lru = ++m_lruCounter;
             return {true, m_descriptors[i].ptr};
         }
 
@@ -29,10 +29,12 @@ std::pair<bool, BlockCache::block_ptr> BlockCache::findOrAllocate(std::uint64_t 
             if (empty == nullptr || empty->ptr != nullptr)
                 empty = &m_descriptors[i];
         }
-        else if (m_descriptors[i].ptr.use_count() <= 1 && empty == nullptr)
+        else if (m_descriptors[i].ptr.use_count() <= 1)
         {
-            // This slot is in use but could be viable as nobody holds a reference.
-            empty = &m_descriptors[i];
+            // This slot is in use but could be viable as nobody holds a reference. We'll only use it if it is less
+            // recently used than our current selected victim (or if we don't have a victim yet).
+            if (empty == nullptr || empty->lru > m_descriptors[i].lru)
+                empty = &m_descriptors[i];
         }
     }
 
@@ -40,14 +42,6 @@ std::pair<bool, BlockCache::block_ptr> BlockCache::findOrAllocate(std::uint64_t 
     //! @todo what if we couldn't find an empty slot?
 
     auto index = empty - &m_descriptors[0];
-    if (empty->ptr)
-    {
-        //log(priority::trace, "BlockCache: evicting LBA {} from slot {} in favour of {}", empty->lba, index, lba);
-    }
-    else
-    {
-        //log(priority::trace, "BlockCache: inserting LBA {} into unused slot {}", lba, index);
-    }
 
     // We manage the lifetime of the block in the cache by creating a shared_ptr with the following characteristics:
     //  - originally points to the descriptor
@@ -58,6 +52,7 @@ std::pair<bool, BlockCache::block_ptr> BlockCache::findOrAllocate(std::uint64_t 
     std::shared_ptr<std::byte[BlockSize]> returned_ptr(original_ptr, block);
     empty->lba = lba;
     empty->ptr = returned_ptr;
+    empty->lru = ++m_lruCounter;
 
     return {false, returned_ptr};
 }

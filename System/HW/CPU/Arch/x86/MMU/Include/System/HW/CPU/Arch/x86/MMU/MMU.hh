@@ -25,7 +25,7 @@ class TablePageAllocator
 public:
 
     virtual ~TablePageAllocator() {};
-    virtual std::uint64_t allocate() = 0;
+    virtual std::uint64_t allocate() = 0;   // Page must be zeroed.
     virtual void free(std::uint64_t) = 0;
 };
 
@@ -65,7 +65,7 @@ public:
     unsigned int maxTablePagesNeeded(std::size_t size) const;
 
     // Creates an initial page table for the given paging mode.
-    InitPageTable createInitPageTable(paging_mode);
+    InitPageTable createInitPageTable(paging_mode, std::uint64_t self_map_address);
 
     // Indicates whether the MMU supports the given page size in the current/target paging mode.
     bool supports2MPages() const noexcept;

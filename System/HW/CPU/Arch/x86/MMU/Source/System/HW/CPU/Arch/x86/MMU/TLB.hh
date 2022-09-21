@@ -4,70 +4,151 @@
 
 #include <cstdint>
 
+#include <System/Kernel/Runpatch/Arch/x86/Runpatch.hh>
+
 
 namespace System::HW::CPU::X86::MMU
 {
 
 
-inline void invlpg(std::uintptr_t addr)
+inline void tlbInvalidatePage(std::uintptr_t address);
+
+inline void tlbInvalidatePageAndTables(std::uintptr_t address);
+
+inline void tlbFlushAll()
 {
+    std::uintptr_t temp;
     asm volatile
     (
-        "invlpg (%0)"
+        RUNPATCH_START("x86.tlbFlushAll")
+
+        // 1: global pages are enabled.
+        // Simply writing %cr3 is not enough; we need to toggle the PGE bit in %cr4.
+        RUNPATCH_DEFINE_ALTERNATIVE(
+            "mov     %%cr4, %0 ; \
+             xor     $0x80, %0 ; \
+             mov     %0, %%cr4 ; \
+             xor     $0x80, %0 ; \
+             mov     %0, %%cr4 ;"
+        )
+
+        // 2: invpcid is available
+        // We can use invpcid to flush all TLB entries by using the right op.
+#ifdef __x86_64__
+        RUNPATCH_DEFINE_ALTERNATIVE(
+            "xorq    %0, %0 ; \
+             pushq   %0 ; \
+             pushq   %0 ; \
+             addq    $2, %0 ; \
+             invpcid 0(%%rsp), %0 ; \
+             addq    $16, %%rsp"
+        )
+#else
+        RUNPATCH_DEFINE_ALTERNATIVE(
+            ".arch push ; \
+             .arch .invpcid ; \
+             xorl    %0, %0 ; \
+             pushl   %0 ; \
+             pushl   %0 ; \
+             pushl   %0 ; \
+             pushl   %0 ; \
+             addl    $2, %0 ; \
+             invpcid 0(%%esp), %0 ; \
+             addl    $16, %%esp ; \
+             .arch pop"
+        )
+#endif
+
+        // Base case (no enhanced features supported): a write to %cr3 fill flush the entire TLB.
+        RUNPATCH_DEFINE_DEFAULT(
+            "mov     %%cr3, %0 ; \
+             mov     %0, %%cr3"
+        )
+
+        RUNPATCH_FINISH()
+
+        : "=&r" (temp)
         :
-        : "r" (addr)
         : "memory"
     );
 }
 
-inline void invlpga(std::uintptr_t addr, std::uint32_t asid)
+inline void tlbFlushNonGlobal()
 {
+    std::uintptr_t temp;
     asm volatile
     (
-        "invlpga"
+        RUNPATCH_START("x86.tlbFlush")
+
+        // 1: invpcid is available and PCID is enabled.
+        // We can use invpcid to flush all non-global TLB entries by using the right op.
+#ifdef __x86_64__
+        RUNPATCH_DEFINE_ALTERNATIVE(
+            "xorq    %0, %0 ; \
+             pushq   %0 ; \
+             pushq   %0 ; \
+             addq    $3, %0 ; \
+             invpcid 0(%%rsp), %0 ; \
+             addq    $16, %%rsp"
+        )
+#endif
+
+        // Base case: a write to %cr3 fill flush the entire TLB.
+        RUNPATCH_DEFINE_DEFAULT(
+            "mov     %%cr3, %0 ; \
+             mov     %0, %%cr3"
+        )
+
+        RUNPATCH_FINISH()
+        : "=&r" (temp)
         :
-        : "a" (addr), "c" (asid)
         : "memory"
     );
 }
 
-inline void invlpgb(std::uintptr_t address_info, std::uint32_t attr, std::uint32_t count)
+inline void tlbFlushPCID(std::uint32_t pcid)
 {
+    std::uintptr_t temp;
     asm volatile
     (
-        "invlpgb"
-        :
-        : "a" (address_info), "b" (attr), "c" (count)
+        RUNPATCH_START("x86.tlbFlushPCID")
+
+        // 1: invpcid is available and PCID is enabled.
+        // We can flush all TLB entries corresponding to the given PCID.
+#ifdef __x86_64__
+        RUNPATCH_DEFINE_ALTERNATIVE(
+            "xorq    %0, %0 ; \
+             pushq   %0 ; \
+             pushq   %q1 ; \
+             addq    $1, %0 ; \
+             invpcid 0(%%rsp), %0 ; \
+             addq    $16, %%rsp"
+        )
+#endif
+
+        // Base case: PCIDs aren't supported; write to %cr3 to flush all non-global entries.
+        RUNPATCH_DEFINE_DEFAULT(
+            "mov     %%cr3, %0 ; \
+             mov     %0, %%cr3"
+        )
+
+        RUNPATCH_FINISH()
+        : "=&r" (temp)
+        : "r" (pcid)
         : "memory"
     );
 }
 
-inline void invlpcid(std::uintptr_t address, std::uint32_t pcid, std::uint32_t scope)
+inline void tlbFlushThisPCID()
 {
-    struct descriptor_t
-    {
-        std::uint64_t   pcid:12     = 0;
-        std::uint64_t   :0          = 0;
-        std::uint64_t   address     = 0;
-    };
-
-    descriptor_t descriptor { .pcid = pcid, .address = address };
+    // Regardless of PCID status, we can flush the TLB for the current PCID by writing to %cr3.
+    std::uintptr_t temp;
+    asm volatile
+    (
+        "mov     %%cr3, %0 ; \
+         mov     %0, %%cr3"
     
-    asm volatile
-    (
-        "invlpcid   %0, %1"
-        :
-        : "r" (scope), "m" (descriptor)
-        : "memory"
-    );
-}
-
-inline void tlbsync()
-{
-    asm volatile
-    (
-        "tlbsync"
-        :
+        : "=&r" (temp)
         :
         : "memory"
     );

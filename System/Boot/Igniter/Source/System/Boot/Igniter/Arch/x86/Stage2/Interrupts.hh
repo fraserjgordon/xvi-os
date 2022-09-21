@@ -34,10 +34,14 @@ struct interrupt_context
 {
     struct segment_regs_t
     {
-        std::uint32_t       gs;
-        std::uint32_t       fs;
-        std::uint32_t       es;
-        std::uint32_t       ds;
+        std::uint16_t       gs;
+        std::uint16_t       _gs_pad;
+        std::uint16_t       fs;
+        std::uint16_t       _fs_pad;
+        std::uint16_t       es;
+        std::uint16_t       _es_pad;
+        std::uint16_t       ds;
+        std::uint16_t       _ds_pad;
     } segment_regs;
 
     System::ABI::ExecContext::pushl_t general_regs;

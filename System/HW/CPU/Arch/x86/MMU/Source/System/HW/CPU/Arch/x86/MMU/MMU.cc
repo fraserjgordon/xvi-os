@@ -6,6 +6,7 @@
 
 #include <System/HW/CPU/Arch/x86/MMU/InitPageTable.hh>
 #include <System/HW/CPU/Arch/x86/MMU/PageTable.hh>
+#include <System/HW/CPU/Arch/x86/MMU/TLB.hh>
 
 
 namespace System::HW::CPU::X86::MMU
@@ -162,10 +163,6 @@ MMU::MMU()
     // If the PAT feature is available, program it to give access to all of the cache types.
     if (m_pat)
     {
-        // Assume that the write-combining cache type is available as PAT is supported.
-        //! @todo is this correct?
-        m_writeCombine = true;
-
         // Read the existing PAT.
         m_originalPatValue = X86::rdmsr(X86::MSR::PAT);
 
@@ -244,7 +241,7 @@ paging_mode MMU::targetPagingMode() const noexcept
 }
 
 
-InitPageTable MMU::createInitPageTable(paging_mode target_mode)
+InitPageTable MMU::createInitPageTable(paging_mode target_mode, std::uint64_t self_map_address)
 {
     m_targetPagingMode = target_mode;
 
@@ -258,18 +255,62 @@ InitPageTable MMU::createInitPageTable(paging_mode target_mode)
     if (m_targetPagingMode >= PagingMode::LongMode5Level)
         m_cr4Set |= X86::CR4::LA57;
 
-    // Create the root table.
-    InitPageTable init_pt{*this, m_allocator->allocate()};
+    // Root table address.
+    std::uint64_t root;
 
-    // Special handling is needed for PAE mode - all four entries in the root PDPT must be filled.
+    // PAE mode needs special handling as the top-level page table is only 4 entries and (because we're making it
+    // recursive) is embedded as four consecutive entries within one of the next-level tables.
     if (m_targetPagingMode == PagingMode::PAE)
     {
-        auto* pdpt = reinterpret_cast<pdpt32pae_t*>(init_pt.root());
-        pdpt->addSubTable(0x00000000, m_allocator->allocate());
-        pdpt->addSubTable(0x40000000, m_allocator->allocate());
-        pdpt->addSubTable(0x80000000, m_allocator->allocate());
-        pdpt->addSubTable(0xC0000000, m_allocator->allocate());
+        // Allocate the four page directory tables.
+        auto pd0 = m_allocator->allocate();
+        auto pd1 = m_allocator->allocate();
+        auto pd2 = m_allocator->allocate();
+        auto pd3 = m_allocator->allocate();
+        std::uint64_t pds[4] = {pd0, pd1, pd2, pd3};
+
+        // Which one are we embedding in?
+        auto which_pd = (self_map_address >> 30);
+        auto index = (self_map_address >> 21) & 0x1FF;
+        root = pds[which_pd] + (index * sizeof(std::uint64_t));
+
+        // We set the pinning bit in PDPT entries due to the way in which CPUs load the entries.
+        constexpr auto Flags = pdpt32pae_t::entry_t::PinnedTable;
+
+        // Write the 4 page directories to the embedded PDPT.
+        auto* pdpt = reinterpret_cast<pdpt32pae_t*>(root);
+        pdpt->addSubTable(0x00000000, pd0, Flags);
+        pdpt->addSubTable(0x40000000, pd1, Flags);
+        pdpt->addSubTable(0x80000000, pd2, Flags);
+        pdpt->addSubTable(0xC0000000, pd3, Flags);
     }
+    else
+    {
+        // Allocate a single page as the root table.
+        root = m_allocator->allocate();
+
+        // Create the recursive entry in the table.
+        switch (m_targetPagingMode)
+        {
+            case PagingMode::Legacy:
+                reinterpret_cast<pd32_t*>(root)->addSubTable(self_map_address, root);
+                break;
+
+            case PagingMode::PAE:
+                break;
+
+            case PagingMode::LongMode:
+                reinterpret_cast<pml4_t*>(root)->addSubTable(self_map_address, root);
+                break;
+
+            case PagingMode::LongMode5Level:
+                reinterpret_cast<pml5_t*>(root)->addSubTable(self_map_address, root);
+                break;
+        }
+    }
+
+    // Create the root table object.
+    InitPageTable init_pt{*this, root, self_map_address};
 
     return init_pt;
 }

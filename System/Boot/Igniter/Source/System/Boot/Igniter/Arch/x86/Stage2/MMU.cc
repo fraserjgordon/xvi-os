@@ -19,6 +19,11 @@ static X86::MMU::MMU* s_mmu = nullptr;
 static std::uint64_t  s_pagingRoot = 0;
 
 
+// The initial page table will be recursive. Use the highest possible address in the lower half of the 32-bit address
+// space for this (so we don't infringe on addresses that the kernel might want to be mapped to when we load it).
+constexpr std::uint32_t SelfMapAddress = 0x7F800000;
+
+
 class InitTablePageAllocator final :
     public X86::MMU::TablePageAllocator
 {
@@ -26,6 +31,7 @@ public:
 
     std::uint64_t allocate() final
     {
+        //! @todo zero the page before passing to the MMU.
         return allocateEarlyPage();
     }
 
@@ -59,7 +65,7 @@ void enablePaging()
         mode = X86::MMU::PagingMode::PAE;
 
     // Create the initial page table.
-    auto init_pt = s_mmu->createInitPageTable(mode);
+    auto init_pt = s_mmu->createInitPageTable(mode, SelfMapAddress);
     s_pagingRoot = init_pt.root();
     log(priority::debug, "MMU: creating initial page table at {:#010x}", s_pagingRoot);
 
@@ -103,7 +109,7 @@ void enablePaging()
 void addEarlyMap(std::uint32_t address, std::uint32_t size, early_map_flag_t flags)
 {
     // Re-create the page table object.
-    X86::MMU::InitPageTable init_pt {*s_mmu, s_pagingRoot};
+    X86::MMU::InitPageTable init_pt {*s_mmu, s_pagingRoot, SelfMapAddress};
 
     // Calculate the flags for the mapping.
     X86::MMU::page_flags page_flags = {};

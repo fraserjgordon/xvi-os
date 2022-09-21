@@ -120,6 +120,12 @@ struct entry_t
     // be modified until the bit is cleared.
     static constexpr std::uint32_t Lock         = Model::UserFlag0;
 
+    // One of the user-defined flags is used as a pinning bit. When set in an entry pointing to a page table (i.e this
+    // bit is not used in leaf pages), it indicates that the page table should not be freed nor moved. This is used, for
+    // example, for the entries in a PAE page directory that hold the four PDPT entries - the CPU loads those pointers
+    // when %cr3 is loaded so freeing them is not safe.
+    static constexpr std::uint32_t PinnedTable  = Model::UserFlag1;
+
     // Do we need to worry about bit-swizzling because of the PSE36 feature? It only applies for legacy mode and only
     // for PDEs that are large pages.
     static constexpr bool Pse36Swizzle = (sizeof(T) == sizeof(std::uint32_t)) && std::is_same_v<Model, PDE>;
@@ -242,9 +248,12 @@ struct table_t
     using vsize_t   = vaddr_t;
 
 
+    static constexpr int TableLevel = Level;
+
     // All paging tables are 4kB in size except for the PDPT in PAE mode (which has 4 entries of 8 bytes each).
     static constexpr bool        LegacyPDPT         = (sizeof(PtrT) == sizeof(std::uint32_t) && Level == 2);
-    static constexpr std::size_t LeafPageSize       = 4096;
+    static constexpr std::size_t LeafPageBits       = 12;
+    static constexpr std::size_t LeafPageSize       = (1U << LeafPageBits);
     static constexpr std::size_t TableSize          = LegacyPDPT ? 32 : LeafPageSize;
     static constexpr std::size_t EntryCount         = TableSize / sizeof(T);
     static constexpr std::size_t FullEntryCount     = LeafPageSize / sizeof(T);
@@ -283,7 +292,7 @@ struct table_t
     //! @param  page        the page of physical memory to hold the sub-table
     //! @param  mapping     the virtual address at which \p page may be accessed
     //!
-    bool addSubTable(PtrT address, paddr_t page)
+    bool addSubTable(PtrT address, paddr_t page, paddr_t extra_flags = 0)
         requires (!Leaf)
     {
         // Sub-tables are always configured with the most permissive flags (user, write, not no-execute) so that the
@@ -296,7 +305,7 @@ struct table_t
             flags = entry_t::Present;
 
         // Update the applicable entry to point to the new subtable.
-        const entry_t entry {page | flags};
+        const entry_t entry {page | flags | extra_flags};
         entry_t expected {0};
         if (!entries[indexForAddress(address)].compare_exchange_strong(expected, entry, std::memory_order::relaxed))
             return false;
@@ -386,7 +395,7 @@ struct table_t
     template <class Mapper>
     static table_t* mapFrom(vaddr_t address, paddr_t page, const Mapper& page_mapper)
     {
-        return reinterpret_cast<table_t*>(page_mapper.map(address, PageSize, page));
+        return reinterpret_cast<table_t*>(page_mapper.map(address, TableLevel, page));
     }
 
 private:
@@ -468,6 +477,8 @@ public:
     using pdiff_t   = std::make_signed<psize_t>;
     using vdiff_t   = std::make_signed<vsize_t>;
 
+    static constexpr auto Levels = root_t::TableLevel + 1;
+
 
     paddr_t root() const noexcept
     {
@@ -525,7 +536,7 @@ class IdentityMapper
 {
 public:
 
-    V map(V, P, P table_physical_addr) const noexcept
+    V map(V, int, P table_physical_addr) const noexcept
     {
         return static_cast<V>(table_physical_addr);
     }
@@ -534,6 +545,58 @@ public:
     {
         return static_cast<V>(root);
     }
+};
+
+
+template <class Table>
+class RecursiveMapper
+{
+public:
+
+    using V = typename Table::vaddr_t;
+    using P = typename Table::paddr_t;
+
+    using root_t = typename Table::root_t;
+
+
+    V map(V address, int level, P) const noexcept
+    {
+        constexpr auto LeafBits = root_t::LeafPageBits;
+        constexpr auto IndexBits = root_t::FullDecodedBits;
+
+        // Which bits from the address are we going to use to index into the recursive map? The higher the level of the
+        // page table, the fewer bits we use because we will recurse more.
+        auto offset = address >> (LeafBits + level * IndexBits);
+
+        // Which bits come from the recursion?
+        static_assert(IndexBits == 9 || IndexBits == 10);
+        if constexpr (IndexBits == 10)
+        {
+            // Classic paging; level will be either 0 or 1.
+            if (level > 0)
+                offset | (recurse_index << IndexBits);
+        }
+        else
+        {
+            // Constant with a bit set every 9 bits. If we multiply the base index by this, it'll supply the repeated
+            // base index bits for the recursion.
+            constexpr auto RecurseMultiplier = P(0x00002010'08040200);
+
+            auto multiplier_mask = (P(1) << ((level + 1) * IndexBits)) - 1;
+            offset |= (RecurseMultiplier & multiplier_mask) * recurse_index;
+        }
+
+        return base + offset;
+    }
+
+    V rootTableAddress(P) const noexcept
+    {
+        return map(base, root_t::PageSize);
+    }
+
+
+    V               base;
+    std::size_t     recurse_index;
 };
 
 

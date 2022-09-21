@@ -32,8 +32,9 @@ private:
 
     struct block_descriptor
     {
-        std::uint64_t               lba;
-        block_ptr                   ptr;
+        std::uint64_t               lba = 0;
+        block_ptr                   ptr = {};
+        std::uint32_t               lru = 0;
     };
 
     struct block_deleter
@@ -43,6 +44,7 @@ private:
 
 
     std::array<block_descriptor, CacheSize>     m_descriptors;
+    std::uint32_t                               m_lruCounter = 0;
 
 
     static BlockCache s_instance;
