@@ -2,10 +2,10 @@
 %prefix "asn1_parser"
 
 # Result type used by the rules.
-%value "std::unique_ptr<ASN1::ASTNode>"
+%value "std::unique_ptr<System::Crypto::ASN1::ASTNode> "
 
 # Type of the auxiliary data passed to each rule.
-%auxil "ASN1::ParseContext*"
+%auxil "System::Crypto::ASN1::ParseContext* "
 
 %common
 {
@@ -19,20 +19,25 @@
 %source
 {
 
-/*
-static const char *dbg_str[] = { "Evaluating rule", "Matched rule", "Abandoning rule" };
-#define PCC_DEBUG(event, rule, level, pos, buffer, length) \
-fprintf(stderr, "%*s%s %s @%lu [%.*s]\n", int(level * 2), "", dbg_str[event], rule, pos, int(length), buffer)
-*/
+#define PCC_GETCHAR(auxil)              auxil->getChar()
+#define PCC_ERROR(auxil)                auxil->error()
+#define PCC_MALLOC(auxil, size)         auxil->allocate(size)
+#define PCC_REALLOC(auxil, ptr, size)   auxil->reallocate(ptr, size)
+#define PCC_FREE(auxil, ptr)            auxil->free(ptr)
+
+#ifndef PCC_DEBUG
+#  define PCC_DEBUG(auxil, event, rule, level, pos, buffer, length) \
+        auxil->debug(event, rule, level, pos, buffer, length)
+#endif
 
 }
 
 # Starting symbol (needs to come first).
-start <- ModuleDefinition !.
+start <- ModuleDefinitions !.
 
 # Keywords.
 ABSENT <- "ABSENT"
-#ABSTRACT_SYNTAX <- "ABSTRACT-SYNTAX"
+ABSTRACT_SYNTAX <- "ABSTRACT-SYNTAX"
 ALL <- "ALL"
 APPLICATION <- "APPLICATION"
 AUTOMATIC <- "AUTOMATIC"
@@ -43,7 +48,6 @@ BOOLEAN <- "BOOLEAN"
 #BY <- "BY"
 CHARACTER <- "CHARACTER"
 CHOICE <- "CHOICE"
-#CLASS <- "CLASS"
 COMPONENT <- "COMPONENT"
 COMPONENTS <- "COMPONENTS"
 #CONSTRAINED <- "CONSTRAINED"
@@ -104,16 +108,14 @@ SET <- "SET"
 SETTINGS <- "SETTINGS"
 SIZE <- "SIZE"
 STRING <- "STRING"
-#SYNTAX <- "SYNTAX"
 T61_STRING <- "T61String"
 TAGS <- "TAGS"
 TELETEX_STRING <- "TeletexString"
 TIME <- "TIME"
 TIME_OF_DAY <- "TIME-OF-DAY"
 TRUE <- "TRUE"
-#TYPE_IDENTIFIER <- "TYPE-IDENTIFIER"
+TYPE_IDENTIFIER <- "TYPE-IDENTIFIER"
 UNION <- "UNION"
-#UNIQUE <- "UNIQUE"
 UNIVERSAL <- "UNIVERSAL"
 UNIVERSAL_STRING <- "UniversalString"
 #UTC_TIME <- "UTCTime"
@@ -122,34 +124,28 @@ VIDEOTEX_STRING <- "VideotexString"
 VISIBLE_STRING <- "VisibleString"
 WITH <- "WITH"
 
+# Keywords from X.681.
+CLASS <- "CLASS"
+INSTANCE <- "INSTANCE"
+SYNTAX <- "SYNTAX"
+UNIQUE <- "UNIQUE"
+
 # Placeholders.
 EXTERNAL_THING <- "!!!!! EXTERNAL THING !!!!!"
-objectclassreference <- EXTERNAL_THING
-objectreference <- EXTERNAL_THING
-objectsetreference <- EXTERNAL_THING
 EncodingClassReference <- EXTERNAL_THING
 EncodingControlSections <- EXTERNAL_THING?
 EncodingInstruction <- EXTERNAL_THING
 GeneralConstraint <- EXTERNAL_THING?
-InstanceOfType <- EXTERNAL_THING
-InstanceOfValue <- EXTERNAL_THING
 #ItemId <- EXTERNAL_THING
-ObjectAssignment <- EXTERNAL_THING
-ObjectClassAssignment <- EXTERNAL_THING
-ObjectClassFieldType <- EXTERNAL_THING
-ObjectClassFieldValue <- EXTERNAL_THING
-ObjectSetAssignment <- EXTERNAL_THING
-ObjectSetElements <- EXTERNAL_THING
 ParameterizedAssignment <- EXTERNAL_THING
+ParameterizedObject <- EXTERNAL_THING
+ParameterizedObjectClass <- EXTERNAL_THING
+ParameterizedObjectSet <- EXTERNAL_THING
 ParameterizedReference <- EXTERNAL_THING
 ParameterizedType <- EXTERNAL_THING
 ParameterizedValue <- EXTERNAL_THING
 ParameterizedValueSetType <- EXTERNAL_THING
 TypeFromObject <- EXTERNAL_THING
-ValueFromObject <- EXTERNAL_THING
-ValueSetFromObjects <- EXTERNAL_THING
-XMLInstanceOfValue <- EXTERNAL_THING
-XMLObjectClassFieldValue <- EXTERNAL_THING
 
 # Identifiers, numbers, strings, etc.
 ht <- "\t"
@@ -169,12 +165,13 @@ newline <- [\n\v\f\r]+
 #upperidentifier <- uppercase alnumhyphen* alnum?
 loweridentifier <- [a-z] ([a-zA-Z0-9] / '-' !'-' &[a-zA-Z0-9])* [a-zA-Z0-9]?
 upperidentifier <- [A-Z] ([a-zA-Z0-9] / '-' !'-' &[a-zA-Z0-9])* [a-zA-Z0-9]?
+allupperidentifier <- [A-Z] ([A-Z0-9] / '-' !'-' &[A-Z0-9])* [A-Z0-9]?
 typereference <- upperidentifier
 identifier <- loweridentifier
 valuereference <- identifier
 modulereference <- typereference
 linecomment <- "--" (!"--" !newline .)* ("--" / newline)
-blockcomment <- "/*" (blockcomment / !"/*" .)* "*/"
+blockcomment <- "/*" (&"/*" blockcomment / !"/*" !"*/" .)* "*/"
 comment <- linecomment / blockcomment
 empty <- ""
 number <- '0' / [1-9][0-9]*
@@ -197,30 +194,43 @@ extendedfalse <- "false" / "0"
 xmlasn1typename <- [A-Z][A-Z_]*
 _ <- (whitespace / comment)*
 
+# Identifiers etc from X.681
+objectclassreference <- allupperidentifier
+objectreference <- valuereference
+objectsetreference <- typereference
+typefieldreference <- '&' typereference
+valuefieldreference <- '&' valuereference
+valuesetfieldreference <- '&' typereference
+objectfieldreference <- '&' objectreference
+objectsetfieldreference <- '&' objectsetreference
+word <- allupperidentifier
+
 # Rules.
+ModuleDefinitions <-
+    ModuleDefinition (_ ModuleDefinition)*
+
 ModuleDefinition <- 
     _ ModuleIdentifier
-    _ DEFINITIONS
+    _ DEFINITIONS               ~{ auxil->syntaxError({$0s, $0e}, "expected \"DEFINITIONS\""); }
     _ EncodingReferenceDefault
     _ TagDefault
     _ ExtensionDefault
-    _ "::="
-    _ BEGIN
-    _ ModuleBody
+    _ "::="                     ~{ auxil->syntaxError({$0s, $0e}, "expected \"::=\""); }
+    _ BEGIN                     ~{ auxil->syntaxError({$0s, $0e}, "expected \"BEGIN\""); }
+    _ ModuleBody                ~{ auxil->syntaxError({$0s, $0e}, "failed to parse module body"); }
     _ EncodingControlSections
-    _ END
+    _ END                       ~{ auxil->syntaxError({$0s, $0e}, "expected \"END\""); }
     _
+{
+    $$ = std::make_unique<System::Crypto::ASN1::ASTNode>();
+}
 
-ModuleIdentifier <- modulereference _ DefinitiveIdentification
+ModuleIdentifier <- modulereference _ DefinitiveIdentification?
 
 DefinitiveIdentification <-
-        DefinitiveOID
-    /   DefinitiveOIDandIRI
-    /   empty
+        DefinitiveOID _ IRIValue?
 
 DefinitiveOID <- '{' _ DefinitiveObjIdComponentList _ '}'
-
-DefinitiveOIDandIRI <- DefinitiveOID _ IRIValue
 
 DefinitiveObjIdComponentList <- (DefinitiveObjIdComponent _)+
 
@@ -496,7 +506,7 @@ EmptyElementInteger <- "<" identifier _ "/>"
 
 TextInteger <- identifier
 
-EnumeratedType <- ENUMERATED _ '(' _ Enumerations _ ')'
+EnumeratedType <- ENUMERATED _ '{' _ Enumerations _ '}'
 
 Enumerations <- RootEnumeration (_ ',' _ "..." _ ExceptionSpec (_ ',' _ AdditionalEnumeration)?)?
 
@@ -507,8 +517,8 @@ AdditionalEnumeration <- Enumeration
 Enumeration <- EnumerationItem (_ ',' _ EnumerationItem)*
 
 EnumerationItem <-
-        identifier
-    /   NamedNumber
+        NamedNumber
+    /   identifier
 
 EnumeratedValue <- identifier
 
@@ -703,7 +713,7 @@ ExtensionAdditionAlternative <-
 
 ExtensionAdditionAlternativesGroup <- "[[" _ VersionNumber _ AlternativeTypeList _ "]]"
 
-AlternativeTypeList <- NamedType (_ ',' NamedType)*
+AlternativeTypeList <- NamedType (_ ',' _ NamedType)*
 
 ChoiceValue <- identifier _ ':' _ Value
 
@@ -933,11 +943,11 @@ ConstraintSpec <- SubtypeConstraint _ GeneralConstraint
 
 SubtypeConstraint <- ElementSetSpecs
 
-ElementSetSpecs <- RootElementSpec (_ ',' _ "..." (_ ',' _ AdditionalElementSpec)?)?
+ElementSetSpecs <- RootElementSetSpec (_ ',' _ "..." (_ ',' _ AdditionalElementSetSpec)?)?
 
-RootElementSpec <- ElementSetSpec
+RootElementSetSpec <- ElementSetSpec
 
-AdditionalElementSpec <- ElementSetSpec
+AdditionalElementSetSpec <- ElementSetSpec
 
 ElementSetSpec <-
         Unions
@@ -1076,3 +1086,231 @@ ExceptionIdentification <-
         SignedNumber
     /   DefinedValue
     /   Type _ ':' _ Value
+
+
+###### Rules from X.681 #####
+
+DefinedObjectClass <-
+        ExternalObjectClassReference
+    /   DefinedObject
+    /   UsefulObjectClassReference
+
+DefinedObject <-
+        ExternalObjectReference
+    /   objectreference
+
+DefinedObjectSet <-
+        ExternalObjectSetReference
+    /   objectsetreference
+
+ExternalObjectClassReference <-
+    modulereference _ "." _ objectclassreference
+
+ExternalObjectReference <-
+    modulereference _ "."_  objectreference
+
+ExternalObjectSetReference <-
+    modulereference _ "." _ objectsetreference
+
+UsefulObjectClassReference <-
+        TYPE_IDENTIFIER
+    /   ABSTRACT_SYNTAX
+
+ObjectClassAssignment <-
+    objectclassreference _ "::=" _ ObjectClass
+
+ObjectClass <-
+        DefinedObjectClass
+    /   ObjectClassDefn
+    /   ParameterizedObjectClass
+
+ObjectClassDefn <-
+    CLASS _ "{" _ FieldSpec ( _ "," _ FieldSpec)* _ "}" _ WithSyntaxSpec?
+
+WithSyntaxSpec <-
+    WITH _ SYNTAX _ SyntaxList
+
+FieldSpec <-
+        TypeFieldSpec
+    /   FixedTypeValueFieldSpec
+    /   VariableTypeValueFieldSpec
+    /   FixedTypeValueSetFieldSpec
+    /   VariableTypeValueSetFieldSpec
+    /   ObjectFieldSpec
+    /   ObjectSetFieldSpec
+
+TypeFieldSpec <-
+    typefieldreference _ TypeOptionalitySpec?
+
+TypeOptionalitySpec <-
+    OPTIONAL / DEFAULT _ Type
+
+FixedTypeValueFieldSpec <-
+    valuefieldreference _ Type _ UNIQUE? _ ValueOptionalitySpec?
+
+ValueOptionalitySpec <-
+    OPTIONAL / DEFAULT _ Value
+
+VariableTypeValueFieldSpec <-
+    valuefieldreference _ FieldName _ ValueOptionalitySpec?
+
+FixedTypeValueSetFieldSpec <-
+    valuesetfieldreference _ Type _ ValueSetOptionalitySpec?
+
+ValueSetOptionalitySpec <-
+    OPTIONAL / DEFAULT _ ValueSet
+
+VariableTypeValueSetFieldSpec <-
+    valuesetfieldreference _ FieldName _ ValueSetOptionalitySpec?
+
+ObjectFieldSpec <-
+    objectfieldreference _ DefinedObjectClass _ ObjectOptionalitySpec?
+
+ObjectOptionalitySpec <-
+    OPTIONAL / DEFAULT _ Object
+
+ObjectSetFieldSpec <-
+    objectsetfieldreference _ DefinedObjectClass _ ObjectSetOptionalitySpec?
+
+ObjectSetOptionalitySpec <-
+    OPTIONAL / DEFAULT _ ObjectSet
+
+PrimitiveFieldName <-
+        typefieldreference
+    /   valuefieldreference
+    /   valuesetfieldreference
+    /   objectfieldreference
+    /   objectsetfieldreference
+
+FieldName <-
+    PrimitiveFieldName (_ "." _ PrimitiveFieldName)*
+
+SyntaxList <-
+    "{" _ ( TokenOrGroupSpec _ empty )+ _ "}"
+
+TokenOrGroupSpec <-
+        RequiredToken
+    /   OptionalGroup
+
+OptionalGroup <-
+    "[" _ ( TokenOrGroupSpec _ empty )+ _ "]"
+
+RequiredToken <-
+        Literal
+    /   PrimitiveFieldName
+
+Literal <-
+        word
+    /   ","
+
+ObjectAssignment <-
+    objectreference _ DefinedObjectClass _ "::=" _ Object
+
+Object <-
+        DefinedObject
+    /   ObjectDefn
+    /   ObjectFromObject
+    /   ParameterizedObject
+
+ObjectDefn <-
+        DefaultSyntax
+    /   DefinedSyntax
+
+DefaultSyntax <-
+    "{" _ ( FieldSetting ( _ "," _ FieldSetting )* )? "}"
+
+FieldSetting <-
+    PrimitiveFieldName _ Setting
+
+DefinedSyntax <-
+    "{" _ ( DefinedSyntaxToken _ empty )* _ "}"
+
+DefinedSyntaxToken <-
+        Literal
+    /   Setting
+
+Setting <-
+        Type
+    /   Value
+    /   ValueSet
+    /   Object
+    /   ObjectSet
+
+ObjectSetAssignment <-
+    objectsetreference _ DefinedObjectClass _ "::=" _ ObjectSet
+
+ObjectSet <-
+    "{" _ ObjectSetSpec _ "}"
+
+ObjectSetSpec <-
+        RootElementSetSpec
+    /   RootElementSetSpec _ "," _ "..."
+    /   "..."
+    /   "..." _ "," _ AdditionalElementSetSpec
+    /   RootElementSetSpec _ "," _ "..." _ "," _ AdditionalElementSetSpec
+
+ObjectSetElements <-
+        Object
+    /   DefinedObjectSet
+    /   ObjectSetFromObjects
+    /   ParameterizedObjectSet
+
+ObjectClassFieldType <-
+    DefinedObjectClass _ "." _ FieldName
+
+ObjectClassFieldValue <-
+        OpenTypeFieldVal
+    /   FixedTypeFieldVal
+
+OpenTypeFieldVal <-
+    Type _ ":" _ Value
+
+FixedTypeFieldVal <-
+        BuiltinValue
+    /   ReferencedValue
+
+XMLObjectClassFieldValue <-
+        XMLOpenTypeFieldVal
+    /   XMLFixedTypeFieldVal
+
+XMLOpenTypeFieldVal <-
+        XMLTypedValue
+    /   xmlhstring
+
+XMLFixedTypeFieldVal <-
+    XMLBuiltinValue
+
+# Defined but unused in X.681.
+#InformationFromObjects <-
+#        ValueFromObject
+#    /   ValueSetFromObjects
+#    /   TypeFromObject
+#    /   ObjectFromObject
+#    /   ObjectSetFromObjects
+
+ValueFromObject <-
+    ReferencedObjects _ "." _ FieldName
+
+ValueSetFromObjects <-
+    ReferencedObjects _ "." _ FieldName
+
+ObjectFromObject <-
+    ReferencedObjects _ "." _ FieldName
+
+ObjectSetFromObjects <-
+    ReferencedObjects _ "." _ FieldName
+
+ReferencedObjects <-
+        DefinedObject
+    /   ParameterizedObject
+    /   DefinedObjectSet
+    /   ParameterizedObjectSet
+
+InstanceOfType <-
+    INSTANCE _ OF _ DefinedObjectClass
+
+InstanceOfValue <-
+    Value
+
+XMLInstanceOfValue <-
+    XMLValue
