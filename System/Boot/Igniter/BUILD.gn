@@ -177,9 +177,9 @@ xvi_executable("Stage2")
         [
             "//Firmware/EFI",
             "//HW/CPU/Arch/x86/IO",
-            "//HW/CPU/Arch/x86/MMU",
             "//HW/CPU/Arch/x86/Segmentation",
             "//HW/GPU/VGA",
+            "//Kernel/Arch/x86/MMU",
             "//Kernel/Runpatch",
         ]
 

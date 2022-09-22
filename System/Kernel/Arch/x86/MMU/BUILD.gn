@@ -1,9 +1,9 @@
 library("MMU")
 {
-    library_name = "System.HW.CPU.x86.MMU"
+    library_name = "Kernel.x86.MMU"
     library_version = "0.1.0"
 
-    include_prefix = "System/HW/CPU/Arch/x86/MMU"
+    include_prefix = "System/Kernel/Arch/x86/MMU"
 
     target_types = ["kernel"]
 

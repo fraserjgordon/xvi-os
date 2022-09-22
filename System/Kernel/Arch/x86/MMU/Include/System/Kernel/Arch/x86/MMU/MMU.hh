@@ -1,5 +1,5 @@
-#ifndef __SYSTEM_HW_CPU_ARCH_X86_MMU_MMU_H
-#define __SYSTEM_HW_CPU_ARCH_X86_MMU_MMU_H
+#ifndef __SYSTEM_KERNEL_ARCH_X86_MMU_MMU_H
+#define __SYSTEM_KERNEL_ARCH_X86_MMU_MMU_H
 
 
 #include <array>
@@ -11,12 +11,15 @@
 #include <System/HW/CPU/Arch/x86/ControlRegs/CR.hh>
 #include <System/HW/CPU/Arch/x86/ControlRegs/MSR.hh>
 
-#include <System/HW/CPU/Arch/x86/MMU/InitPageTable.hh>
-#include <System/HW/CPU/Arch/x86/MMU/Types.hh>
+#include <System/Kernel/Arch/x86/MMU/InitPageTable.hh>
+#include <System/Kernel/Arch/x86/MMU/Types.hh>
 
 
-namespace System::HW::CPU::X86::MMU
+namespace System::Kernel::X86::MMU
 {
+
+
+namespace Creg = System::HW::CPU::X86;
 
 
 // Interface that a table page allocator should implement.
@@ -45,10 +48,10 @@ public:
 
     // Returns the values that should be written to MMU control registers of newly-booted CPUs to configure them
     // properly.
-    X86::cr0_t cr0SetBits() const noexcept;
-    X86::cr0_t cr0ClearBits() const noexcept;
-    X86::cr4_t cr4SetBits() const noexcept;
-    X86::efer_t eferSetBits() const noexcept;
+    Creg::cr0_t cr0SetBits() const noexcept;
+    Creg::cr0_t cr0ClearBits() const noexcept;
+    Creg::cr4_t cr4SetBits() const noexcept;
+    Creg::efer_t eferSetBits() const noexcept;
     std::uint64_t patValue() const noexcept;
     std::span<const mtrr_record> mtrrValues() const noexcept;
 
@@ -106,10 +109,10 @@ private:
 
 
     // Cached MMU control register settings.
-    X86::cr0_t      m_cr0Set = X86::CR0::None;
-    X86::cr0_t      m_cr0Clear = X86::CR0::None;
-    X86::cr4_t      m_cr4Set = X86::CR4::None;
-    X86::efer_t     m_eferSet = X86::EFER::None;
+    Creg::cr0_t     m_cr0Set = Creg::CR0::None;
+    Creg::cr0_t     m_cr0Clear = Creg::CR0::None;
+    Creg::cr4_t     m_cr4Set = Creg::CR4::None;
+    Creg::efer_t    m_eferSet = Creg::EFER::None;
     std::uint64_t   m_patValue = 0;
     std::uint64_t   m_mtrrCaps = 0;
     std::uint64_t   m_mtrrDefaults = 0;
@@ -152,7 +155,7 @@ private:
 };
 
 
-} // namespace System::HW::CPU::X86::MMU
+} // namespace System::Kernel::X86::MMU
 
 
-#endif /* ifndef __SYSTEM_HW_CPU_ARCH_X86_MMU_MMU_H */
+#endif /* ifndef __SYSTEM_KERNEL_ARCH_X86_MMU_MMU_H */

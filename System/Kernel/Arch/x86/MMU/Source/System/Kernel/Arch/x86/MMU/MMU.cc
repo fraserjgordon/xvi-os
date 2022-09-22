@@ -1,16 +1,19 @@
-#include <System/HW/CPU/Arch/x86/MMU/MMU.hh>
+#include <System/Kernel/Arch/x86/MMU/MMU.hh>
 
 #include <array>
 
 #include <System/HW/CPU/CPUID/Arch/x86/CPUID.hh>
 
-#include <System/HW/CPU/Arch/x86/MMU/InitPageTable.hh>
-#include <System/HW/CPU/Arch/x86/MMU/PageTable.hh>
-#include <System/HW/CPU/Arch/x86/MMU/TLB.hh>
+#include <System/Kernel/Arch/x86/MMU/InitPageTable.hh>
+#include <System/Kernel/Arch/x86/MMU/PageTable.hh>
+#include <System/Kernel/Arch/x86/MMU/TLB.hh>
 
 
-namespace System::HW::CPU::X86::MMU
+namespace System::Kernel::X86::MMU
 {
+
+
+namespace CPUID = System::HW::CPU::CPUID;
 
 
 MMU::MMU()
@@ -93,36 +96,36 @@ MMU::MMU()
     }
 
     // Based on the features we've detected, configure the MMU control registers.
-    m_cr0Set |= X86::CR0::PE;
-    m_cr0Clear |= X86::CR0::CD | X86::CR0::NW;
+    m_cr0Set |= Creg::CR0::PE;
+    m_cr0Clear |= Creg::CR0::CD | Creg::CR0::NW;
 
     if (m_supervisorWriteProtect)
-        m_cr0Set |= X86::CR0::WP;
+        m_cr0Set |= Creg::CR0::WP;
 
     if (m_alignmentChecking)
-        m_cr0Set |= X86::CR0::AM;
+        m_cr0Set |= Creg::CR0::AM;
 
     if (m_pageSizes > (4U<<10))
-        m_cr4Set |= X86::CR4::PSE;
+        m_cr4Set |= Creg::CR4::PSE;
 
     if (m_globalPages)
-        m_cr4Set |= X86::CR4::PGE;
+        m_cr4Set |= Creg::CR4::PGE;
 
     // Only settable once long mode has been activated.
     //if (m_processContextID)
     //    m_cr4Set |= X86::CR4::PCIDE;
 
     if (m_supervisorExecProtection)
-        m_cr4Set |= X86::CR4::SMEP;
+        m_cr4Set |= Creg::CR4::SMEP;
 
     if (m_supervisorAccessProtection)
-        m_cr4Set |= X86::CR4::SMAP;
+        m_cr4Set |= Creg::CR4::SMAP;
 
     if (m_protectionKeys)
-        m_cr4Set |= X86::CR4::PKE;
+        m_cr4Set |= Creg::CR4::PKE;
 
     if (m_noExecute)
-        m_eferSet |= X86::EFER::NXE;
+        m_eferSet |= Creg::EFER::NXE;
 
     // The code below accesses CPU MSRs (model-specific registers) that are associated with the MMU. Because the x86
     // architecture requires that the MTRRs and PAT are configured identically on all CPUs within the system, it is safe
@@ -132,20 +135,20 @@ MMU::MMU()
     if (m_mtrrs)
     {
         // Read the MTRR capabilities register.
-        m_mtrrCaps = X86::rdmsr(X86::MSR::MTRR_CAP);
+        m_mtrrCaps = Creg::rdmsr(Creg::MSR::MTRR_CAP);
         auto count = (m_mtrrCaps & 0xFF);         // Number of variable-range registers.
         bool fixed = (m_mtrrCaps & 0x100);        // Fixed-range registers are supported.
         m_writeCombine = (m_mtrrCaps & 0x400);    // Write-combine memory type supported.
 
         // Read the default memory type register.
-        m_mtrrDefaults = X86::rdmsr(X86::MSR::MTRR_DEFAULT_TYPE);
+        m_mtrrDefaults = Creg::rdmsr(Creg::MSR::MTRR_DEFAULT_TYPE);
 
         // Read the fixed-range MTRRs.
         if (fixed)
         {
             for (unsigned int i = 0; i < FixedMtrrCount; ++i)
             {
-                m_fixedMtrrs[i].raw = X86::rdmsr(FixedMtrrMSRs[i]);
+                m_fixedMtrrs[i].raw = Creg::rdmsr(FixedMtrrMSRs[i]);
             }
         }
 
@@ -154,8 +157,8 @@ MMU::MMU()
         {
             m_variableMtrrs[i] =
             {
-                .base = X86::rdmsr(X86::MSR::MTRR_BASE(i)),
-                .mask = X86::rdmsr(X86::MSR::MTRR_MASK(i)),
+                .base = Creg::rdmsr(Creg::MSR::MTRR_BASE(i)),
+                .mask = Creg::rdmsr(Creg::MSR::MTRR_MASK(i)),
             };
         }
     }
@@ -164,7 +167,7 @@ MMU::MMU()
     if (m_pat)
     {
         // Read the existing PAT.
-        m_originalPatValue = X86::rdmsr(X86::MSR::PAT);
+        m_originalPatValue = Creg::rdmsr(Creg::MSR::PAT);
 
         // We program the PAT so that the two pre-PAT caching bits map to the same values with and without the PAT (this
         // allows the page table code to configure non-leaf entries as cached without knowing about PAT. The cache types
@@ -193,25 +196,25 @@ TablePageAllocator* MMU::allocator() const noexcept
 }
 
 
-cr0_t MMU::cr0SetBits() const noexcept
+Creg::cr0_t MMU::cr0SetBits() const noexcept
 {
     return m_cr0Set;
 }
 
 
-cr0_t MMU::cr0ClearBits() const noexcept
+Creg::cr0_t MMU::cr0ClearBits() const noexcept
 {
     return m_cr0Clear;
 }
 
 
-cr4_t MMU::cr4SetBits() const noexcept
+Creg::cr4_t MMU::cr4SetBits() const noexcept
 {
     return m_cr4Set;
 }
 
 
-efer_t MMU::eferSetBits() const noexcept
+Creg::efer_t MMU::eferSetBits() const noexcept
 {
     return m_eferSet;
 }
@@ -247,13 +250,13 @@ InitPageTable MMU::createInitPageTable(paging_mode target_mode, std::uint64_t se
 
     // Get the MMU control bits based on the target mode.
     if (m_targetPagingMode >= PagingMode::Legacy)
-        m_cr0Set |= X86::CR0::PG;
+        m_cr0Set |= Creg::CR0::PG;
     if (m_targetPagingMode >= PagingMode::PAE)
-        m_cr4Set |= X86::CR4::PAE;
+        m_cr4Set |= Creg::CR4::PAE;
     if (m_targetPagingMode >= PagingMode::LongMode)
-        m_eferSet |= X86::EFER::LME;
+        m_eferSet |= Creg::EFER::LME;
     if (m_targetPagingMode >= PagingMode::LongMode5Level)
-        m_cr4Set |= X86::CR4::LA57;
+        m_cr4Set |= Creg::CR4::LA57;
 
     // Root table address.
     std::uint64_t root;
@@ -421,4 +424,4 @@ std::string_view MMU::pagingModeShortName(paging_mode mode)
 
 
 
-} // namespace System::HW::CPU::X86::MMU
+} // namespace System::Kernel::X86::MMU

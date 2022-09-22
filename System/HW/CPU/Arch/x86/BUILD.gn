@@ -4,7 +4,6 @@ library_group("x86")
     [
         "ControlRegs",
         "IO",
-        "MMU",
         "Segmentation",
         "VM86",
     ]

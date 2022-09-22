@@ -1,10 +1,10 @@
-#include <System/HW/CPU/Arch/x86/MMU/InitPageTable.hh>
+#include <System/Kernel/Arch/x86/MMU/InitPageTable.hh>
 
-#include <System/HW/CPU/Arch/x86/MMU/MMU.hh>
-#include <System/HW/CPU/Arch/x86/MMU/PageTable.hh>
+#include <System/Kernel/Arch/x86/MMU/MMU.hh>
+#include <System/Kernel/Arch/x86/MMU/PageTable.hh>
 
 
-namespace System::HW::CPU::X86::MMU
+namespace System::Kernel::X86::MMU
 {
 
 
@@ -110,4 +110,4 @@ bool InitPageTable::addMapping(std::uint64_t vaddr, std::uint64_t size, std::uin
 }
 
 
-} // namespace System::HW::CPU::X86::MMU
+} // namespace System::Kernel::X86::MMU

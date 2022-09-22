@@ -1,11 +1,11 @@
-#ifndef __SYSTEM_HW_CPU_ARCH_X86_MMU_OPS_H
-#define __SYSTEM_HW_CPU_ARCH_X86_MMU_OPS_H
+#ifndef __SYSTEM_KERNEL_ARCH_X86_MMU_OPS_H
+#define __SYSTEM_KERNEL_ARCH_X86_MMU_OPS_H
 
 
 #include <cstdint>
 
 
-namespace System::HW::CPU::X86::MMU
+namespace System::Kernel::X86::MMU
 {
 
 
@@ -111,7 +111,7 @@ inline void wrpkru(std::uint32_t keys)
 }
 
 
-} // namespace System::HW::CPU::X86::MMU
+} // namespace System::Kernel::X86::MMU
 
 
-#endif /* ifndef __SYSTEM_HW_CPU_ARCH_X86_MMU_OPS_H *?
+#endif /* ifndef __SYSTEM_KERNEL_ARCH_X86_MMU_OPS_H *?

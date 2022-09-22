@@ -1,12 +1,12 @@
-#ifndef __SYSTEM_HW_CPU_ARCH_X86_MMU_TYPES_H
-#define __SYSTEM_HW_CPU_ARCH_X86_MMU_TYPES_H
+#ifndef __SYSTEM_KERNEL_ARCH_X86_MMU_TYPES_H
+#define __SYSTEM_KERNEL_ARCH_X86_MMU_TYPES_H
 
 
 #include <compare>
 #include <cstdint>
 
 
-namespace System::HW::CPU::X86::MMU
+namespace System::Kernel::X86::MMU
 {
 
 
@@ -68,7 +68,7 @@ struct mtrr_variable
 };
 
 
-} // namespace System::HW::CPU::X86::MMU
+} // namespace System::Kernel::X86::MMU
 
 
-#endif /* ifndef __SYSTEM_HW_CPU_ARCH_X86_MMU_TYPES_H */
+#endif /* ifndef __SYSTEM_KERNEL_ARCH_X86_MMU_TYPES_H */

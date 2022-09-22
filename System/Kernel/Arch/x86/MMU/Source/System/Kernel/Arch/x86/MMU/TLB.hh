@@ -1,5 +1,5 @@
-#ifndef __SYSTEM_HW_CPU_X86_MMU_TLB_H
-#define __SYSTEM_HW_CPU_X86_MMU_TLB_H
+#ifndef __SYSTEM_KERNEL_X86_MMU_TLB_H
+#define __SYSTEM_KERNEL_X86_MMU_TLB_H
 
 
 #include <cstdint>
@@ -7,7 +7,7 @@
 #include <System/Kernel/Runpatch/Arch/x86/Runpatch.hh>
 
 
-namespace System::HW::CPU::X86::MMU
+namespace System::Kernel::X86::MMU
 {
 
 
@@ -155,7 +155,7 @@ inline void tlbFlushThisPCID()
 }
 
 
-} // namespace System::HW::CPU::X86::MMU
+} // namespace System::Kernel::X86::MMU
 
 
-#endif /* ifndef __SYSTEM_HW_CPU_X86_MMU_TLB_H */
+#endif /* ifndef __SYSTEM_KERNEL_X86_MMU_TLB_H */

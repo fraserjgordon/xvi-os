@@ -1,8 +1,8 @@
 #include <System/Boot/Igniter/Arch/x86/Stage2/MMU.hh>
 
 #include <System/HW/CPU/Arch/x86/ControlRegs/CR.hh>
-#include <System/HW/CPU/Arch/x86/MMU/InitPageTable.hh>
-#include <System/HW/CPU/Arch/x86/MMU/MMU.hh>
+#include <System/Kernel/Arch/x86/MMU/InitPageTable.hh>
+#include <System/Kernel/Arch/x86/MMU/MMU.hh>
 
 #include <System/Boot/Igniter/Arch/x86/Stage2/Logging.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage2/Probe.hh>
@@ -15,7 +15,7 @@ namespace System::Boot::Igniter
 namespace X86 = HW::CPU::X86;
 
 
-static X86::MMU::MMU* s_mmu = nullptr;
+static Kernel::X86::MMU::MMU* s_mmu = nullptr;
 static std::uint64_t  s_pagingRoot = 0;
 
 
@@ -25,7 +25,7 @@ constexpr std::uint32_t SelfMapAddress = 0x7F800000;
 
 
 class InitTablePageAllocator final :
-    public X86::MMU::TablePageAllocator
+    public Kernel::X86::MMU::TablePageAllocator
 {
 public:
 
@@ -45,10 +45,10 @@ public:
 static void initMMU()
 {
     // Create the MMU object.
-    s_mmu = X86::MMU::MMU::create().release();
+    s_mmu = Kernel::X86::MMU::MMU::create().release();
 
     // Configure the allocator.
-    s_mmu->setAllocator(std::unique_ptr<X86::MMU::TablePageAllocator>(new InitTablePageAllocator()));
+    s_mmu->setAllocator(std::unique_ptr<Kernel::X86::MMU::TablePageAllocator>(new InitTablePageAllocator()));
 }
 
 
@@ -61,8 +61,8 @@ void enablePaging()
     log(priority::debug, "MMU: max paging mode: {}", s_mmu->pagingModeShortName(mode));
 
     // Limit the paging mode to PAE - we need V86 mode to work.
-    if (mode >= X86::MMU::PagingMode::LongMode)
-        mode = X86::MMU::PagingMode::PAE;
+    if (mode >= Kernel::X86::MMU::PagingMode::LongMode)
+        mode = Kernel::X86::MMU::PagingMode::PAE;
 
     // Create the initial page table.
     auto init_pt = s_mmu->createInitPageTable(mode, SelfMapAddress);
@@ -109,21 +109,21 @@ void enablePaging()
 void addEarlyMap(std::uint32_t address, std::uint32_t size, early_map_flag_t flags)
 {
     // Re-create the page table object.
-    X86::MMU::InitPageTable init_pt {*s_mmu, s_pagingRoot, SelfMapAddress};
+    Kernel::X86::MMU::InitPageTable init_pt {*s_mmu, s_pagingRoot, SelfMapAddress};
 
     // Calculate the flags for the mapping.
-    X86::MMU::page_flags page_flags = {};
+    Kernel::X86::MMU::page_flags page_flags = {};
     if (flags & EarlyMapFlag::W)
-        page_flags |= X86::MMU::PageFlag::W;
+        page_flags |= Kernel::X86::MMU::PageFlag::W;
     if (flags & EarlyMapFlag::X)
-        page_flags |= X86::MMU::PageFlag::X;
+        page_flags |= Kernel::X86::MMU::PageFlag::X;
     if (flags & EarlyMapFlag::U)
-        page_flags |= X86::MMU::PageFlag::U;
+        page_flags |= Kernel::X86::MMU::PageFlag::U;
 
     // Calculate the caching type for the mapping.
-    X86::MMU::cache_type cache_type = X86::MMU::CacheType::Uncached;
+    Kernel::X86::MMU::cache_type cache_type = Kernel::X86::MMU::CacheType::Uncached;
     if (flags & EarlyMapFlag::C)
-        cache_type = X86::MMU::CacheType::WriteBack;
+        cache_type = Kernel::X86::MMU::CacheType::WriteBack;
 
     // Add the map as requested.
     init_pt.addMapping(address, size, address, page_flags, cache_type);
