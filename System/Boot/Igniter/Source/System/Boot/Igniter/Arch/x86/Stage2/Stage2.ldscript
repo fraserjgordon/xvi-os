@@ -2,31 +2,34 @@ ENTRY(_IgniterStage2EfiEntry)
 LD_FEATURE("SANE_EXPR")
 #OUTPUT_FORMAT("pei-i386")
 
-_IMAGE_BASE = 0x00200000;
+_IMAGE_LOAD = 0x00200000;
+_IMAGE_BASE = 0x40200000;
 
 /* Used for testing; should be zero otherwise. */
 _IMAGE_OFFSET = 0;
+
+_IMAGE_ADJUST = _IMAGE_LOAD - _IMAGE_BASE;
 
 . = _IMAGE_BASE + _IMAGE_OFFSET;
 
 SECTIONS
 {
-    PROVIDE_HIDDEN (_IMAGE_LOAD_START = . - _IMAGE_OFFSET);
+    PROVIDE_HIDDEN (_IMAGE_LOAD_START = _IMAGE_LOAD - _IMAGE_OFFSET);
 
     . += SIZEOF_HEADERS;
 
-    multiboot :
+    multiboot : AT(_IMAGE_LOAD + SIZEOF_HEADERS)
     {
         . = ALIGN(32);
-        PROVIDE_HIDDEN (_MULTIBOOT_V2_HDR = . - _IMAGE_OFFSET);
+        PROVIDE_HIDDEN (_MULTIBOOT_V2_HDR = . + _IMAGE_ADJUST - _IMAGE_OFFSET);
         KEEP (*(multiboot.header.v2))
 
         . = ALIGN(32);
-        PROVIDE_HIDDEN (_MULTIBOOT_V1_HDR = . - _IMAGE_OFFSET);
+        PROVIDE_HIDDEN (_MULTIBOOT_V1_HDR = . + _IMAGE_ADJUST - _IMAGE_OFFSET);
         KEEP (*(multiboot.header.v1))
     }
 
-    .Lrealmode.text.vma = .;
+    .Lrealmode.text.vma = ALIGN(., 4K);
 
     realmode.text 0 : AT(ALIGN(LOADADDR(multiboot) + SIZEOF(multiboot), 4K))
     #realmode.text :
@@ -40,18 +43,21 @@ SECTIONS
     # Get the location counter back to something sensible.
     . = .Lrealmode.text.vma + SIZEOF(realmode.text);
     
-    .text ALIGN(_REALMODE_TEXT_END, 4K) : AT(ALIGN(_REALMODE_TEXT_END, 4K))
+    .text ALIGN(., 4K) : AT(ALIGN(_REALMODE_TEXT_END, 4K))
     {
         PROVIDE_HIDDEN (_TEXT_START = . - _IMAGE_OFFSET);
 
         *(.text .text.* .gnu.linkonce.t.*)
     }
 
-    PROVIDE_HIDDEN (_ENTRY_MULTIBOOT = _IgniterStage2MultibootEntry - _IMAGE_OFFSET);
+    PROVIDE_HIDDEN (_ENTRY_MULTIBOOT = _IgniterStage2MultibootEntry + _IMAGE_ADJUST - _IMAGE_OFFSET);
     PROVIDE_HIDDEN (_ENTRY_EFI32 = _IgniterStage2Efi32Entry - _IMAGE_OFFSET);
     PROVIDE_HIDDEN (_ENTRY_EFI64 = _IgniterStage2Efi64Entry - _IMAGE_OFFSET);
 
-    .rodata :
+    PROVIDE_HIDDEN(_TEXT_START = _IMAGE_BASE);
+    PROVIDE_HIDDEN(_TEXT_END = .);
+
+    .rodata ALIGN(., 4K) :
     {
         *(.rodata .rodata.* .gnu.linkonce.r.*)
     }
@@ -106,6 +112,9 @@ SECTIONS
         PROVIDE_HIDDEN (_RUNPATCH_CONTROL_END = . - _IMAGE_OFFSET);
     }
 
+    PROVIDE_HIDDEN(_RODATA_START = ADDR(.rodata));
+    PROVIDE_HIDDEN(_RODATA_END = .);
+
     .data ALIGN(4K) :
     {
         PROVIDE_HIDDEN (_DATA_START = . - _IMAGE_OFFSET);        
@@ -120,7 +129,9 @@ SECTIONS
         PROVIDE_HIDDEN (_TDATA_END = . - _IMAGE_OFFSET);
     }
 
-    PROVIDE_HIDDEN (_IMAGE_LOAD_END = . - _IMAGE_OFFSET);
+    PROVIDE_HIDDEN (_IMAGE_LOAD_END = . + _IMAGE_ADJUST - _IMAGE_OFFSET);
+    PROVIDE_HIDDEN (_DATA_START = ADDR(.data));
+    PROVIDE_HIDDEN (_DATA_END = .);
 
     .tbss :
     {
@@ -141,10 +152,13 @@ SECTIONS
         . += 8; /* For the TLS linear pointer and the DTV pointer */
     }
 
-    PROVIDE_HIDDEN (_IMAGE_BSS_END = . - _IMAGE_OFFSET);
+    PROVIDE_HIDDEN (_IMAGE_BSS_END = . + _IMAGE_ADJUST - _IMAGE_OFFSET);
+    PROVIDE_HIDDEN (_BSS_START = ADDR(.tbss));
+    PROVIDE_HIDDEN (_BSS_END = .);
 
     /DISCARD/ :
     {
+        # If this isn't discarded, it creates a LOAD segment with invalid addresses.
         *(.note.gnu.build-id)
     }
 }

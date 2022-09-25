@@ -21,12 +21,12 @@ public:
     // Makes this global descriptor table active on the executing CPU.
     //
     // It is not possible to activate 32-bit IDTs in 64-bit mode.
-    void activate() const
+    void activate(std::uintptr_t virtual_to_physical_adjustment = 0) const
     {
         struct [[gnu::packed]] { std::uint16_t limit; std::uint32_t base; } descriptor =
         {
             .limit = getLimit(),
-            .base = getBaseAddress()
+            .base = getBaseAddress() + virtual_to_physical_adjustment
         };
         asm volatile
         (
@@ -79,12 +79,12 @@ public:
     // Makes this interrupt descriptor table active on the executing CPU.
     //
     // It is not possible to activate 64-bit IDTs in 16- or 32-bit modes.
-    void activate() const
+    void activate(std::uintptr_t virtual_to_physical_adjustment = 0) const
     {
         struct { std::uint16_t limit; std::uint64_t base; } descriptor =
         {
             .limit = getLimit(),
-            .base = getBaseAddress()
+            .base = getBaseAddress() + virtual_to_physical_adjustment
         };
         asm volatile
         (

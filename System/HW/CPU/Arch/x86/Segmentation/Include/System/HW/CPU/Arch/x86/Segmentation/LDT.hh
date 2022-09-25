@@ -27,9 +27,9 @@ public:
     // not run "lldt" on this descriptor in 64-bit mode.
     //
     // This 32-bit variant will wrap the base address if located >4GiB!
-    SegmentDescriptor getDescriptor32() const
+    SegmentDescriptor getDescriptor32(std::uintptr_t virtual_to_physical_adjust = 0) const
     {
-        return SegmentDescriptor::createSystem(SegmentType::LDT, static_cast<std::uint32_t>(getBaseAddress()), getLimit());
+        return SegmentDescriptor::createSystem(SegmentType::LDT, static_cast<std::uint32_t>(getBaseAddress()) + virtual_to_physical_adjust, getLimit());
     }
 
     // Returns a segment descriptor that can be added to a GDT to make this LDT usable. This is the 64-bit variant; do

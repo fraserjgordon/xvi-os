@@ -1,4 +1,4 @@
-#include <System/Kernel/Arch/x86/MMU/PageTable.hh>
+#include <System/Kernel/Arch/x86/MMU/PageTableImpl.hh>
 
 #include <System/Kernel/Arch/x86/MMU/TLB.hh>
 

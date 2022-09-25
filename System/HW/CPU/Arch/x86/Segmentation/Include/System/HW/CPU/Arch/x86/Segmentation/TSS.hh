@@ -144,11 +144,11 @@ public:
     }
 
     // Returns a segment descriptor appropriate for this TSS object.
-    SegmentDescriptor createDescriptor() const
+    SegmentDescriptor createDescriptor(std::uintptr_t virtual_to_physical_adjust = 0) const
     {
         // TODO: this should be based on the run-time size.
         auto size = sizeof(*this);
-        return SegmentDescriptor::createSystem(SegmentType::TSS, reinterpret_cast<std::uint32_t>(this), size - 1);
+        return SegmentDescriptor::createSystem(SegmentType::TSS, reinterpret_cast<std::uint32_t>(this) + virtual_to_physical_adjust, size - 1);
     }
 
     // Returns whether the given interrupt is redirected or not.

@@ -4,8 +4,24 @@
 #include <System/Kernel/Arch/x86/MMU/InitPageTable.hh>
 #include <System/Kernel/Arch/x86/MMU/MMU.hh>
 
+#include <System/Boot/Igniter/Arch/x86/Stage2/Interrupts.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage2/Logging.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage2/Probe.hh>
+
+
+// Offset we need to apply to access the VGA memory at the right address.
+extern std::uint32_t g_loadOffset;
+
+// Symbols defining the limits of the in-memory image.
+extern const std::byte _TEXT_START asm("_TEXT_START");
+extern const std::byte _TEXT_END asm("_TEXT_END");
+extern const std::byte _RODATA_START asm("_RODATA_START");
+extern const std::byte _RODATA_END asm("_RODATA_END");
+extern const std::byte _DATA_START asm("_DATA_START");
+extern const std::byte _DATA_END asm("_DATA_END");
+extern const std::byte _BSS_START asm("_BSS_START");
+extern const std::byte _BSS_END asm("_BSS_END");
+
 
 
 namespace System::Boot::Igniter
@@ -52,6 +68,7 @@ static void initMMU()
 }
 
 
+#if !defined(__x86_64__)
 void enablePaging()
 {
     initMMU();
@@ -65,12 +82,35 @@ void enablePaging()
         mode = Kernel::X86::MMU::PagingMode::PAE;
 
     // Create the initial page table.
-    auto init_pt = s_mmu->createInitPageTable(mode, SelfMapAddress);
+    auto init_pt = s_mmu->createInitPageTable(mode, SelfMapAddress, g_loadOffset);
     s_pagingRoot = init_pt.root();
     log(priority::debug, "MMU: creating initial page table at {:#010x}", s_pagingRoot);
 
     // Request that the probe code adds mappings for the memory it has detected so far.
     mapEarlyMemory();
+
+    // Also create maps covering this loader and its memory.
+    //! @bug bad things will happen if the link and load addresses are different but overlapping...
+    namespace F = Kernel::X86::MMU::PageFlag;
+    auto map = [&](const std::byte& start, const std::byte& end, Kernel::X86::MMU::page_flags flags)
+    {
+        constexpr auto WB = Kernel::X86::MMU::CacheType::WriteBack;
+        auto v = reinterpret_cast<std::uintptr_t>(&start);
+        auto s = (&end - &start + 0x0fff) & ~0xfff;
+        auto p = v + g_loadOffset;
+
+        log(priority::debug, "MMU: mapping loader {:#010x}+{:08x} -> {:#010x}", v, s, p);
+
+        init_pt.addMapping(v, s, p, flags, WB);
+    };
+
+    map(_TEXT_START, _TEXT_END, F::X);
+    map(_RODATA_START, _RODATA_END, 0);
+    map(_DATA_START, _BSS_END, F::W);
+
+    // Also map in the VGA memory.
+    //! @todo find a better way to do this; this is hacky.
+    init_pt.addMapping(0xA0000 - g_loadOffset, 0x20000, 0xA0000, F::W, Kernel::X86::MMU::CacheType::Uncached);
 
     // Write the address of the root of the page tables to %cr3.
     X86::CR3::write(static_cast<std::uintptr_t>(init_pt.root()));
@@ -101,15 +141,44 @@ void enablePaging()
 
     // We write %cr0 last as this is the action that actually enables paging.
     log(priority::debug, "MMU: enabling paging");
-    X86::CR0::write(cr0);
+    asm volatile
+    (   R"(
+            # Switch to flat segments.
+            leal    1f(%%ebx), %%edx
+            pushl   %[codeseg]
+            pushl   %%edx
+            lretl
+        1:  movl    %[dataseg], %%eax
+            movl    %%eax, %%ss
+            movl    %%eax, %%ds
+            movl    %%eax, %%es
+
+            # Enable paging.
+            movl    %[pagebits], %%cr0
+
+            # Long jump to clear prefetched instructions.
+            ljmpl   %[codeseg], $2f
+
+        2:
+        )"
+        :
+        : [codeseg] "i" (Selector::CodeFlat.getValue()),
+          [dataseg] "i" (Selector::DataFlat.getValue()),
+          [offset] "b" (g_loadOffset),
+          [pagebits] "c" (cr0)
+        : "eax", "edx", "memory"
+    );
     log(priority::debug, "MMU: paging enabled");
+
+    reconfigureInterruptTableForPaging();
 }
+#endif /* if !defined(__x86_64__) */
 
 
 void addEarlyMap(std::uint32_t address, std::uint32_t size, early_map_flag_t flags)
 {
     // Re-create the page table object.
-    Kernel::X86::MMU::InitPageTable init_pt {*s_mmu, s_pagingRoot, SelfMapAddress};
+    Kernel::X86::MMU::InitPageTable init_pt {*s_mmu, s_pagingRoot, SelfMapAddress, g_loadOffset};
 
     // Calculate the flags for the mapping.
     Kernel::X86::MMU::page_flags page_flags = {};

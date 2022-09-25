@@ -5,7 +5,7 @@
 #include <System/HW/CPU/CPUID/Arch/x86/CPUID.hh>
 
 #include <System/Kernel/Arch/x86/MMU/InitPageTable.hh>
-#include <System/Kernel/Arch/x86/MMU/PageTable.hh>
+#include <System/Kernel/Arch/x86/MMU/PageTableImpl.hh>
 #include <System/Kernel/Arch/x86/MMU/TLB.hh>
 
 
@@ -244,7 +244,7 @@ paging_mode MMU::targetPagingMode() const noexcept
 }
 
 
-InitPageTable MMU::createInitPageTable(paging_mode target_mode, std::uint64_t self_map_address)
+InitPageTable MMU::createInitPageTable(paging_mode target_mode, std::uint64_t self_map_address, std::uint64_t adjust)
 {
     m_targetPagingMode = target_mode;
 
@@ -265,6 +265,9 @@ InitPageTable MMU::createInitPageTable(paging_mode target_mode, std::uint64_t se
     // recursive) is embedded as four consecutive entries within one of the next-level tables.
     if (m_targetPagingMode == PagingMode::PAE)
     {
+        //! @todo is embedding these entries workable? Will the CPU object when it loads them and sees that the dirty or
+        //        accessed bits have been set? (the Intel docs seem to imply so...)
+
         // Allocate the four page directory tables.
         auto pd0 = m_allocator->allocate();
         auto pd1 = m_allocator->allocate();
@@ -277,11 +280,15 @@ InitPageTable MMU::createInitPageTable(paging_mode target_mode, std::uint64_t se
         auto index = (self_map_address >> 21) & 0x1FF;
         root = pds[which_pd] + (index * sizeof(std::uint64_t));
 
-        // We set the pinning bit in PDPT entries due to the way in which CPUs load the entries.
+        // We set the pinning bit in PDPT entries due to the way in which CPUs load the entries. It isn't possible to
+        // set the NoExecute flag on these entries, unfortunately, as the PDPTEs require that particular bit to be
+        // unset.
+        //
+        // We don't set the User flag as that would give user-mode code access to the page tables!
         constexpr auto Flags = pdpt32pae_t::entry_t::PinnedTable;
 
         // Write the 4 page directories to the embedded PDPT.
-        auto* pdpt = reinterpret_cast<pdpt32pae_t*>(root);
+        auto* pdpt = reinterpret_cast<pdpt32pae_t*>(root - adjust);
         pdpt->addSubTable(0x00000000, pd0, Flags);
         pdpt->addSubTable(0x40000000, pd1, Flags);
         pdpt->addSubTable(0x80000000, pd2, Flags);
@@ -292,28 +299,36 @@ InitPageTable MMU::createInitPageTable(paging_mode target_mode, std::uint64_t se
         // Allocate a single page as the root table.
         root = m_allocator->allocate();
 
+        // If possible, add the recursive mappings with no-execute permissions. The pinning bit isn't required here but
+        // we set it as it's an extra level of safety.
+        //
+        // We don't set the User flag as that would give user-mode code access to the page tables!
+        std::uint64_t flags = pte32_t::PinnedTable;
+        if (m_noExecute)
+            flags |= pdpe64_t::NoExecute;
+
         // Create the recursive entry in the table.
         switch (m_targetPagingMode)
         {
             case PagingMode::Legacy:
-                reinterpret_cast<pd32_t*>(root)->addSubTable(self_map_address, root);
+                reinterpret_cast<pd32_t*>(root - adjust)->addSubTable(self_map_address, root, flags);
                 break;
 
             case PagingMode::PAE:
                 break;
 
             case PagingMode::LongMode:
-                reinterpret_cast<pml4_t*>(root)->addSubTable(self_map_address, root);
+                reinterpret_cast<pml4_t*>(root - adjust)->addSubTable(self_map_address, root, flags);
                 break;
 
             case PagingMode::LongMode5Level:
-                reinterpret_cast<pml5_t*>(root)->addSubTable(self_map_address, root);
+                reinterpret_cast<pml5_t*>(root - adjust)->addSubTable(self_map_address, root, flags);
                 break;
         }
     }
 
     // Create the root table object.
-    InitPageTable init_pt{*this, root, self_map_address};
+    InitPageTable init_pt{*this, root, self_map_address, adjust};
 
     return init_pt;
 }

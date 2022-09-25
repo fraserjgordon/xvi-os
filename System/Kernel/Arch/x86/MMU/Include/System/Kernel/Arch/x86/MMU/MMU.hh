@@ -12,6 +12,7 @@
 #include <System/HW/CPU/Arch/x86/ControlRegs/MSR.hh>
 
 #include <System/Kernel/Arch/x86/MMU/InitPageTable.hh>
+#include <System/Kernel/Arch/x86/MMU/PageTable.hh>
 #include <System/Kernel/Arch/x86/MMU/Types.hh>
 
 
@@ -28,8 +29,13 @@ class TablePageAllocator
 public:
 
     virtual ~TablePageAllocator() {};
-    virtual std::uint64_t allocate() = 0;   // Page must be zeroed.
-    virtual void free(std::uint64_t) = 0;
+    virtual paddr_t allocate() = 0;   // Page must be zeroed.
+    virtual void free(paddr_t) = 0;
+
+    virtual paddr_t allocateNonZeroed()
+    {
+        return allocate();
+    }
 };
 
 
@@ -68,7 +74,7 @@ public:
     unsigned int maxTablePagesNeeded(std::size_t size) const;
 
     // Creates an initial page table for the given paging mode.
-    InitPageTable createInitPageTable(paging_mode, std::uint64_t self_map_address);
+    InitPageTable createInitPageTable(paging_mode, std::uint64_t self_map_address, std::uint64_t virtual_to_physical_adjust);
 
     // Indicates whether the MMU supports the given page size in the current/target paging mode.
     bool supports2MPages() const noexcept;
@@ -77,6 +83,12 @@ public:
 
     // Maps a cache type to the best combination of PAT bits.
     unsigned int mapCacheType(cache_type) const;
+
+    // Returns the page table that is currently active on the executing CPU.
+    PageTable currentPageTable();
+
+    // If true, the faulting instruction for a page fault should be retried.
+    bool shouldRetryAfterPageFault(std::uintptr_t address, std::uint32_t error_code);
 
 
     static std::unique_ptr<MMU> create();

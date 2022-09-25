@@ -22,7 +22,7 @@ _IgniterStage2MultibootEntry:
     movl    $0x7c04, %esp
     call    1f
 1:  movl    (%esp), %ecx
-    movl    %ebp, (%ebp)
+    movl    %ebp, (%esp)
     subl    $1b, %ecx
 
     // %ecx now contains the delta between the load address and the expected (link) address. We need to set up the
@@ -69,11 +69,14 @@ _IgniterStage2MultibootEntry:
     // Store the load offset into a global variable as later parts of the loader will need it.
     movl    %ecx, g_loadOffset
 
+    // Adjust the multiboot pointer by the load offset, to account for the segments we've set up.
+    subl    g_loadOffset, %ebx
+
     // We can now set up a small, initial stack so that C++ code can be called.
     movl    $InitStackTop, %esp
     xorl    %ebp, %ebp
 
-    // And now that we have a stack, we can stack the Multiboot information and free up some registers.
+    // And now that we have a stack, we can push the Multiboot information and free up some registers.
     pushl   %ebx
     pushl   %eax
 

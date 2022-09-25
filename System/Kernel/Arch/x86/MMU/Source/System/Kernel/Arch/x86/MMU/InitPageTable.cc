@@ -1,7 +1,7 @@
 #include <System/Kernel/Arch/x86/MMU/InitPageTable.hh>
 
 #include <System/Kernel/Arch/x86/MMU/MMU.hh>
-#include <System/Kernel/Arch/x86/MMU/PageTable.hh>
+#include <System/Kernel/Arch/x86/MMU/PageTableImpl.hh>
 
 
 namespace System::Kernel::X86::MMU
@@ -39,14 +39,14 @@ static P bestPageSize(const MMU& mmu, V address, V size, P physical)
 }
 
 template <class PageTableType, class V = PageTableType::vaddr_t, class P = PageTableType::paddr_t>
-static bool addOneMappingImpl(PageTableType& root_table, V address, P page_size, P physical, page_flags flags, unsigned int pat, TablePageAllocator& page_allocator)
+static bool addOneMappingImpl(PageTableType& root_table, V address, P page_size, P physical, page_flags flags, unsigned int pat, TablePageAllocator& page_allocator, std::uintptr_t offset)
 {
     // Perform the mapping, using an identity mapping for the physical -> virtual addresses.
-    return root_table.mapOnePage(address, physical, page_size, flags, pat, page_allocator, IdentityMapper<V, P>{});
+    return root_table.mapOnePage(address, physical, page_size, flags, pat, page_allocator, IdentityMapper<V, P>{offset});
 }
 
 template <class PageTableType, class V = PageTableType::vaddr_t, class P = PageTableType::paddr_t>
-static bool mapRangeImpl(MMU& mmu, P root, V address, V size, P physical, page_flags flags, unsigned int pat)
+static bool mapRangeImpl(MMU& mmu, P root, V address, V size, P physical, page_flags flags, unsigned int pat, std::uintptr_t offset)
 {
     // Wrap the root table into an object.
     auto root_table = PageTableType::fromRoot(root);
@@ -58,7 +58,7 @@ static bool mapRangeImpl(MMU& mmu, P root, V address, V size, P physical, page_f
         auto page_size = bestPageSize(mmu, address, size, physical);
 
         // Map this page.
-        if (!addOneMappingImpl(root_table, address, page_size, physical, flags, pat, *mmu.allocator()))
+        if (!addOneMappingImpl(root_table, address, page_size, physical, flags, pat, *mmu.allocator(), offset))
             return false;
 
         // Move on to the next page.
@@ -71,7 +71,7 @@ static bool mapRangeImpl(MMU& mmu, P root, V address, V size, P physical, page_f
     return true;
 }
 
-static bool mapRange(MMU& mmu, std::uint64_t root, std::uint64_t address, std::uint64_t size, std::uint64_t physical, page_flags flags, unsigned int pat)
+static bool mapRange(MMU& mmu, std::uint64_t root, std::uint64_t address, std::uint64_t size, std::uint64_t physical, page_flags flags, unsigned int pat, std::uintptr_t offset)
 {
     // What paging mode are we targeting?
     switch (mmu.targetPagingMode())
@@ -81,16 +81,16 @@ static bool mapRange(MMU& mmu, std::uint64_t root, std::uint64_t address, std::u
             return false;
 
         case PagingMode::Legacy:
-            return mapRangeImpl<PageTableLegacy>(mmu, static_cast<std::uint32_t>(root), static_cast<std::uint32_t>(address), static_cast<std::uint32_t>(size), static_cast<std::uint32_t>(physical), flags, pat);
+            return mapRangeImpl<PageTableLegacy>(mmu, static_cast<std::uint32_t>(root), static_cast<std::uint32_t>(address), static_cast<std::uint32_t>(size), static_cast<std::uint32_t>(physical), flags, pat, offset);
 
         case PagingMode::PAE:
-            return mapRangeImpl<PageTablePAE>(mmu, root, static_cast<std::uint32_t>(address), static_cast<std::uint32_t>(size), physical, flags, pat);
+            return mapRangeImpl<PageTablePAE>(mmu, root, static_cast<std::uint32_t>(address), static_cast<std::uint32_t>(size), physical, flags, pat, offset);
 
         case PagingMode::LongMode:
-            return mapRangeImpl<PageTableLongMode>(mmu, root, address, size, physical, flags, pat);
+            return mapRangeImpl<PageTableLongMode>(mmu, root, address, size, physical, flags, pat, offset);
 
         case PagingMode::LongMode5Level:
-            return mapRangeImpl<PageTableLongMode57>(mmu, root, address, size, physical, flags, pat);
+            return mapRangeImpl<PageTableLongMode57>(mmu, root, address, size, physical, flags, pat, offset);
     }
 
     // Shouldn't get here.
@@ -106,7 +106,7 @@ static unsigned int cacheTypeValue(MMU& mmu, cache_type type)
 
 bool InitPageTable::addMapping(std::uint64_t vaddr, std::uint64_t size, std::uint64_t physical, page_flags flags, cache_type cache)
 {
-    return mapRange(*m_mmu, m_root, vaddr, size, physical, flags, cacheTypeValue(*m_mmu, cache));
+    return mapRange(*m_mmu, m_root, vaddr, size, physical, flags, cacheTypeValue(*m_mmu, cache), m_offset);
 }
 
 

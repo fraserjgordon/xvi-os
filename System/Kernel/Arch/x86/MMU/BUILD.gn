@@ -17,6 +17,8 @@ library("MMU")
     [
         "InitPageTable.hh",
         "MMU.hh",
+        "Ops.hh",
+        "PageTable.hh",
         "Types.hh",
     ]
 
@@ -24,7 +26,7 @@ library("MMU")
     [
         "Cache.hh",
         "MTRR.hh",
-        "PageTable.hh",
+        "PageTableImpl.hh",
         "TLB.hh",
 
         "InitPageTable.cc",

@@ -59,6 +59,8 @@ struct interrupt_context
 
 void configureInterruptTable();
 
+void reconfigureInterruptTableForPaging();
+
 void registerInterruptHandler(std::uint8_t vector, void (*handler)());
 
 System::HW::CPU::X86::tss32_t& tss();

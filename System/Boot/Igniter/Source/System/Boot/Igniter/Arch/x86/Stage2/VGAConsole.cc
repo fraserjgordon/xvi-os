@@ -5,6 +5,10 @@
 #include <System/Boot/Igniter/Arch/x86/Stage2/Logging.hh>
 
 
+// Offset we need to apply to access the VGA memory at the right address.
+extern std::uint32_t g_loadOffset;
+
+
 namespace System::Boot::Igniter
 {
 
@@ -65,7 +69,7 @@ VGAConsole::VGAConsole()
         }
 
         // Save the memory parameters.
-        m_base = reinterpret_cast<std::uint16_t*>(base);
+        m_base = reinterpret_cast<std::uint16_t*>(base - g_loadOffset);
         m_memorySize = static_cast<std::ptrdiff_t>(size / sizeof(std::uint16_t));
 
         // Next, determine the screen dimensions from the CRTC.

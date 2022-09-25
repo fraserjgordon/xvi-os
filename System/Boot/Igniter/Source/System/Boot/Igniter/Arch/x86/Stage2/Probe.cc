@@ -18,6 +18,10 @@
 #include <System/Boot/Igniter/Arch/x86/Stage2/V86.hh>
 
 
+// Offset we need to apply to access physical memory at the right address.
+extern std::uint32_t g_loadOffset;
+
+
 namespace System::Boot::Igniter
 {
 
@@ -103,7 +107,8 @@ static void reserveBIOSMemory()
 
     // Mark the extended BIOS data area as unavailable.
     static constexpr std::uint32_t EBDAEnd = 0xA0000;
-    auto ebda_segment = g_biosDataArea->ebda_segment;
+    auto data_area = reinterpret_cast<const System::Firmware::X86::BIOS::data_area_t*>(g_biosDataArea.linear() - g_loadOffset);
+    auto ebda_segment = data_area->ebda_segment;
     auto ebda_address = (ebda_segment << 4);
     auto ebda_size = EBDAEnd - ebda_address;
     if (ebda_address != 0 && ebda_size != 0)
@@ -117,12 +122,12 @@ static void reserveMultibootV1Memory()
 {
     // Mark the multiboot information table as being unavailable.
     auto info = s_probeInfo.multiboot_v1;
-    auto info_address = reinterpret_cast<std::uintptr_t>(info);
+    auto info_address = reinterpret_cast<std::uintptr_t>(info) + g_loadOffset;
     reserve(info_address, sizeof(multiboot_v1_info), "Multiboot info table");
     
     if (info->flags & multiboot_v1_info::FlagCommandLine)
     {
-        std::string_view cmdline {reinterpret_cast<const char*>(info->command_line.ptr)};
+        std::string_view cmdline {reinterpret_cast<const char*>(info->command_line.ptr - g_loadOffset)};
         reserve(info->command_line.ptr, cmdline.length() + 1, "Multiboot command line");
     }
 
@@ -133,12 +138,12 @@ static void reserveMultibootV1Memory()
         reserve(info->modules.ptr, length, "multiboot module list");
 
         // Then, reserve each module and it's associated command line.
-        std::span modules {reinterpret_cast<const multiboot_module_t*>(info->modules.ptr), info->modules.count};
+        std::span modules {reinterpret_cast<const multiboot_module_t*>(info->modules.ptr - g_loadOffset), info->modules.count};
         for (const auto& module : modules)
         {
             reserve(module.start, module.end - module.start, "Multiboot module");
 
-            std::string_view cmdline {reinterpret_cast<const char*>(module.string)};
+            std::string_view cmdline {reinterpret_cast<const char*>(module.string - g_loadOffset)};
             reserve(module.string, cmdline.length(), "Multiboot module string");
         }
     }
@@ -155,7 +160,7 @@ static void reserveMultibootV1Memory()
 
     if (info->flags & multiboot_v1_info::FlagBootLoaderInfo)
     {
-        std::string_view name {reinterpret_cast<const char*>(info->bootloader_info.name_ptr)};
+        std::string_view name {reinterpret_cast<const char*>(info->bootloader_info.name_ptr - g_loadOffset)};
         reserve(info->bootloader_info.name_ptr, name.length(), "Multiboot bootloader info");
     }
 
@@ -172,7 +177,7 @@ static void earlyMemoryProbeMultibootV1()
     if (info->flags & multiboot_v1_info::FlagMemoryMap)
     {
         // Span covering the entry list.
-        std::span map_span {reinterpret_cast<const std::byte*>(info->memory_map.ptr), info->memory_map.length};
+        std::span map_span {reinterpret_cast<const std::byte*>(info->memory_map.ptr - g_loadOffset), info->memory_map.length};
 
         // Process each entry.
         log(priority::debug, "Multiboot memory map:");

@@ -1,5 +1,5 @@
-#ifndef __SYSTEM_KERNEL_ARCH_X86_MMU_PAGETABLE_H
-#define __SYSTEM_KERNEL_ARCH_X86_MMU_PAGETABLE_H
+#ifndef __SYSTEM_KERNEL_ARCH_X86_MMU_PAGETABLEIMPL_H
+#define __SYSTEM_KERNEL_ARCH_X86_MMU_PAGETABLEIMPL_H
 
 
 #include <atomic>
@@ -295,14 +295,17 @@ struct table_t
     bool addSubTable(PtrT address, paddr_t page, paddr_t extra_flags = 0)
         requires (!Leaf)
     {
-        // Sub-tables are always configured with the most permissive flags (user, write, not no-execute) so that the
+        // Sub-tables are always configured with somewhat permissive flags (in particular: writeable) so that the
         // permissions are controlled entirely by the permission bits at the final level.
-        constexpr auto SubTableFlags = entry_t::Present | entry_t::Write | entry_t::User;
+        constexpr auto SubTableFlags = entry_t::Present | entry_t::Write;
 
         // PAE page directory pointer table (PDPT) entries require a different set of flags.
         auto flags = SubTableFlags;
         if constexpr (LegacyPDPT)
-            flags = entry_t::Present;
+        {
+            flags &= ~entry_t::Write;
+            extra_flags &= ~(entry_t::User | entry_t::Write | entry_t::NoExecute);
+        }
 
         // Update the applicable entry to point to the new subtable.
         const entry_t entry {page | flags | extra_flags};
@@ -341,7 +344,7 @@ struct table_t
             // Write the entry, assuming the parent entry has been locked.
             auto index = indexForAddress(address);
             entry_t entry {entry_flags};
-            entry.setAddress(address);
+            entry.setAddress(page);
             entries[index].store(entry, std::memory_order_relaxed);
 
             return true;
@@ -368,12 +371,21 @@ struct table_t
                     subtable_ptr = next_t::mapFrom(address, subtable_addr, page_mapper);
                 }
 
+                // Calculate flags to add to the subtable.
+                auto subtable_flags = 0;
+                if (flags & PageFlag::U)
+                    subtable_flags |= next_t::entry_t::User;
+
                 // Insert it.
-                if (!addSubTable(address, subtable_addr))
+                if (!addSubTable(address, subtable_addr, subtable_flags))
                 {
                     page_allocator.free(subtable_addr);
                     return false;
                 }
+            }
+            else if (false)
+            {
+                //! @todo handle subtables that need their flags altered (in particular, adding the User bit).
             }
 
             // Lock the entry and recurse into the next level of page tables.
@@ -462,7 +474,7 @@ using pml5_t    = table_t<pml5e64_t, std::uint64_t, 4>;
 
 
 template <class Root>
-class PageTable
+class PageTableImpl
 {
 public:
 
@@ -493,9 +505,9 @@ public:
     }
 
 
-    static PageTable fromRoot(paddr_t root)
+    static PageTableImpl fromRoot(paddr_t root)
     {
-        return PageTable{root};
+        return PageTableImpl{root};
     }
 
 private:
@@ -512,7 +524,7 @@ private:
     unsigned int m_selfMapIndex = 0;
 
 
-    explicit constexpr PageTable(paddr_t root) :
+    explicit constexpr PageTableImpl(paddr_t root) :
         m_root{root}
     {
     }
@@ -525,10 +537,10 @@ private:
 };
 
 
-using PageTableLegacy   = PageTable<pd32_t>;
-using PageTablePAE      = PageTable<pdpt32pae_t>;
-using PageTableLongMode = PageTable<pml4_t>;
-using PageTableLongMode57 = PageTable<pml5_t>;
+using PageTableLegacy   = PageTableImpl<pd32_t>;
+using PageTablePAE      = PageTableImpl<pdpt32pae_t>;
+using PageTableLongMode = PageTableImpl<pml4_t>;
+using PageTableLongMode57 = PageTableImpl<pml5_t>;
 
 
 template <class V, class P>
@@ -538,13 +550,15 @@ public:
 
     V map(V, int, P table_physical_addr) const noexcept
     {
-        return static_cast<V>(table_physical_addr);
+        return static_cast<V>(table_physical_addr - offset);
     }
 
     V rootTableAddress(P root) const noexcept
     {
-        return static_cast<V>(root);
+        return static_cast<V>(root - offset);
     }
+
+    std::uint64_t offset = 0;
 };
 
 
@@ -603,4 +617,4 @@ public:
 } // namespace System::Kernel::X86::MMU
 
 
-#endif /* ifndef __SYSTEM_KERNEL_ARCH_X86_MMU_PAGETABLE_H */
+#endif /* ifndef __SYSTEM_KERNEL_ARCH_X86_MMU_PAGETABLEIMPL_H */

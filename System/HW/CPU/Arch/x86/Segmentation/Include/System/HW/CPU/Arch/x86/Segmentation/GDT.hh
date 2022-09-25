@@ -38,13 +38,13 @@ public:
     }
 
     // Makes this global descriptor table active on the executing CPU.
-    void activate() const
+    void activate(std::uintptr_t virtual_to_physical_adjustment = 0) const
     {
 #if __x86_64__
         gdt_pointer descriptor =
         {
             .limit = getLimit(),
-            .base = getBaseAddress()
+            .base = getBaseAddress() + virtual_to_physical_adjustment
         };
         asm volatile
         (
@@ -57,7 +57,7 @@ public:
         gdt_pointer descriptor =
         {
             .limit = getLimit(),
-            .base = getBaseAddress()
+            .base = getBaseAddress() + virtual_to_physical_adjustment
         };
         asm volatile
         (

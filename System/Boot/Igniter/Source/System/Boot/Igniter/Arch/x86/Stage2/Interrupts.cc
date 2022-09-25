@@ -158,18 +158,22 @@ void handleInterrupt(interrupt_context* context)
 
 void configureInterruptTable()
 {
+    // Were we loaded to the expected address?
+    if (g_loadOffset != 0)
+        log(priority::debug, "GDT: offset between link addresses and load addresses: {:#10x}", g_loadOffset);
+
     // Create the entries that are needed in the GDT.
     auto gdt = getGDT();
     gdt.writeEntry(Selector::CodeFlat.getIndex(), SegmentDescriptor::createUser(SegmentType::RX, 32, 0, 0));
     gdt.writeEntry(Selector::DataFlat.getIndex(), SegmentDescriptor::createUser(SegmentType::RW, 32, 0, 0));
     gdt.writeEntry(Selector::Code.getIndex(), SegmentDescriptor::createUser(SegmentType::RX, 32, 0, g_loadOffset));
     gdt.writeEntry(Selector::Data.getIndex(), SegmentDescriptor::createUser(SegmentType::RW, 32, 0, g_loadOffset));
-    gdt.writeEntry(Selector::Tss.getIndex(), s_TSS.createDescriptor());
+    gdt.writeEntry(Selector::Tss.getIndex(), s_TSS.createDescriptor(g_loadOffset));
 
     // Activate the GDT and reload the segment descriptors.
-    log(priority::debug, "GDT: activating {} entries at {} (code={:#04x} data={:#04x} flat={:#04x})", 
+    log(priority::debug, "GDT: activating {} entries at {} (code={:#06x} data={:#06x} flat={:#06x})", 
         g_GDT.size(), static_cast<void*>(g_GDT.data()), Selector::Code.getValue(), Selector::Data.getValue(), Selector::DataFlat.getValue());
-    gdt.activate();
+    gdt.activate(g_loadOffset);
     SegmentSelector::setCS(Selector::Code);
     SegmentSelector::setDS(Selector::Data);
     SegmentSelector::setES(Selector::Data);
@@ -189,7 +193,7 @@ void configureInterruptTable()
     s_TSS.tss().ss0 = Selector::Data;
 
     // Activate the TSS.
-    log(priority::debug, "TSS: activating {} bytes at {} (selector={:#4x})", s_TSS.size(), static_cast<void*>(&s_TSS.tss()), Selector::Tss.getValue());
+    log(priority::debug, "TSS: activating {} bytes at {} (selector={:#06x})", s_TSS.size(), static_cast<void*>(&s_TSS.tss()), Selector::Tss.getValue());
     SegmentSelector::setTR(Selector::Tss);
 
     // Configure all of the IDT entries to point to the appropriate entry points.
@@ -204,9 +208,28 @@ void configureInterruptTable()
 
     log(priority::debug, "IDT: activating 256 entries at {}", static_cast<void*>(s_IDT.data()));
 
-    idt.activate();
+    idt.activate(g_loadOffset);
 }
 
+
+void reconfigureInterruptTableForPaging()
+{
+    // Reload all of the tables now that paging is enabled, using the linear (not physical) addresses.
+    auto gdt = getGDT();
+    gdt.writeEntry(Selector::Code.getIndex(), SegmentDescriptor::createUser(SegmentType::RX, 32, 0, 0));
+    gdt.writeEntry(Selector::Data.getIndex(), SegmentDescriptor::createUser(SegmentType::RW, 32, 0, 0));
+    gdt.writeEntry(Selector::Tss.getIndex(), s_TSS.createDescriptor());
+    gdt.activate();
+    SegmentSelector::setCS(Selector::Code);
+    SegmentSelector::setDS(Selector::Data);
+    SegmentSelector::setES(Selector::Data);
+    SegmentSelector::setSS(Selector::Data);
+
+    SegmentSelector::setTR(Selector::Tss);
+
+    auto idt = getIDT();
+    idt.activate();
+}
 
 
 System::HW::CPU::X86::tss32_t& tss()

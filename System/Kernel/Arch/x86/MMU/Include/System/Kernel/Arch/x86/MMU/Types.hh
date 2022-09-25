@@ -10,6 +10,15 @@ namespace System::Kernel::X86::MMU
 {
 
 
+using vaddr_t = std::uintptr_t;
+using vsize_t = std::size_t;
+using vdiff_t = std::ptrdiff_t;
+
+using paddr_t = std::uint64_t;
+using psize_t = std::uint64_t;
+using pdiff_t = std::int64_t;
+
+
 enum class PagingMode
 {
     Disabled        = 0,    // Paging is disabled.
@@ -40,10 +49,13 @@ using page_flags = std::uint8_t;
 
 namespace PageFlag
 {
-    constexpr page_flags    W       = 0x01;
-    constexpr page_flags    X       = 0x02;
-    constexpr page_flags    U       = 0x04;
-    constexpr page_flags    G       = 0x08;
+    constexpr page_flags    P       = 0x01;     // Present.
+    constexpr page_flags    W       = 0x02;     // Writeable.
+    constexpr page_flags    X       = 0x04;     // Executable.
+    constexpr page_flags    U       = 0x08;     // User.
+    constexpr page_flags    G       = 0x10;     // Global.
+    constexpr page_flags    A       = 0x20;     // Accessed.
+    constexpr page_flags    D       = 0x40;     // Dirty.
 }
 
 
@@ -65,6 +77,16 @@ struct mtrr_variable
 {
     std::uint64_t       base;
     std::uint64_t       mask;
+};
+
+
+struct mapping_info
+{
+    vaddr_t             address;
+    vsize_t             size;
+    paddr_t             physical;
+    page_flags          flags;
+    cache_type          caching;
 };
 
 
