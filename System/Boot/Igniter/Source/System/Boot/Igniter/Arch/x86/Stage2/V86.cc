@@ -5,6 +5,7 @@
 #include <System/ABI/ExecContext/ExecContext.h>
 #include <System/HW/CPU/Arch/x86/Segmentation/RealMode.hh>
 #include <System/HW/CPU/Arch/x86/VM86/Monitor.hh>
+#include <System/Kernel/Arch/x86/MMU/UserCopy.hh>
 
 #include <System/Boot/Igniter/Arch/x86/Stage2/Logging.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage2/Probe.hh>
@@ -77,7 +78,7 @@ void prepareV86Mode()
     // Allocate some real-mode memory and copy our helper functions there.
     s_realModeHelperPage = allocateEarlyRealModePage();
     log(priority::debug, "V86: copying real-mode helpers to {:#07x}", s_realModeHelperPage);
-    std::memcpy(reinterpret_cast<void*>(s_realModeHelperPage), &_REALMODE_TEXT_START, &_REALMODE_TEXT_END-&_REALMODE_TEXT_START);
+    Kernel::X86::MMU::copyToUserUnchecked(&_REALMODE_TEXT_START, &_REALMODE_TEXT_END-&_REALMODE_TEXT_START, s_realModeHelperPage);
 
     // Allocate a real-mode stack too.
     s_realModeStackPage = allocateEarlyRealModePage();
@@ -102,6 +103,9 @@ void v86CallBIOS(std::uint8_t vector, bios_call_params& params)
     }
     else
     {
+        // If using SMAP, enable access to user-mode while we're filling out the stack.
+        enableUserMemoryAccess();
+
         // We'll push a fake real-mode interrupt frame into the real-mode stack so that when the BIOS does an iret at the
         // end of the interrupt, it'll return to our VM86Exit stub.
         X86::realmode_ptr<X86::realmode_interrupt_frame_t> stack {s_realModeStackPage >> 4, 4096};
@@ -128,6 +132,9 @@ void v86CallBIOS(std::uint8_t vector, bios_call_params& params)
         s_v86Frame.v86.sp = stack.offset();
         s_v86Frame.v86.cs = dest.segment();
         s_v86Frame.v86.ip = dest.offset();
+
+        // User memory access no longer needed.
+        disableUserMemoryAccess();
 
         // "Return" to VM86 mode and execute the call we've just set up.
         asm volatile
@@ -162,13 +169,19 @@ bool v86HandleInterrupt(interrupt_context* context)
     //    context->vector, context->v86.cs, context->v86.ip
     //);
 
+    // Enable user memory access while handling the interrupt.
+    enableUserMemoryAccess();
+
     // Pass the interrupt off to the monitor.
+    bool result = false;
     if (context->vector == 6)
-        return v86HandleUndefinedOpcode(context);
+        result = v86HandleUndefinedOpcode(context);
     if (context->vector == 13)
-        return s_monitor->handleGeneralProtectionFault(&context->v86, &context->general_regs);
-    else
-        return false;
+        result = s_monitor->handleGeneralProtectionFault(&context->v86, &context->general_regs);
+    
+    disableUserMemoryAccess();
+
+    return result;
 }
 
 

@@ -2,6 +2,9 @@
 #define __SYSTEM_KERNEL_RUNPATCH_ARCH_X86_RUNPATCH_H
 
 
+#include <string_view>
+
+
 #define RUNPATCH_STATIC_IF(key, then, default) \
     asm goto inline \
     ( \
@@ -171,7 +174,7 @@ R"(
 #include <cstdint>
 
 
-namespace System::Kernel::Runpatch
+namespace System::Kernel::Runpatch::X86
 {
 
 
@@ -192,6 +195,9 @@ struct control
     alternative_info        original;
     std::uintptr_t          flags;
 };
+
+
+void applyRunpatch(std::string_view key, unsigned int alternative);
 
 
 } // namespace System::Kernel::Runpatch

@@ -3,6 +3,7 @@
 #include <array>
 
 #include <System/HW/CPU/CPUID/Arch/x86/CPUID.hh>
+#include <System/Kernel/Runpatch/Arch/x86/Runpatch.hh>
 
 #include <System/Kernel/Arch/x86/MMU/InitPageTable.hh>
 #include <System/Kernel/Arch/x86/MMU/PageTableImpl.hh>
@@ -29,7 +30,7 @@ MMU::MMU()
         // All CPUs that support CPUID implement supervisor-mode write protection.
         m_supervisorWriteProtect = true;
 
-        // All CPUs that support CPUID implement alignment checking.
+        // All CPUs that support CPUID implement alignment checking (user-mode only).
         m_alignmentChecking = true;
 
         // Which extended paging modes are available?
@@ -175,6 +176,15 @@ MMU::MMU()
         //
         // If this value is changed, the mapCacheType method needs to be adjusted to match.
         m_patValue = 0x0000010500070406;
+    }
+
+    // With all the features detected, apply any runtime patching needed to handle the features properly.
+    {
+        using Kernel::Runpatch::X86::applyRunpatch;
+
+        // With SMAP, we need to use the new "stac" and "clac" instructions around accesses to user-mode memory.
+        if (m_supervisorAccessProtection)
+            applyRunpatch("x86.SMAP", 1);
     }
 }
 

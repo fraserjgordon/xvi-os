@@ -20,6 +20,7 @@ library("MMU")
         "Ops.hh",
         "PageTable.hh",
         "Types.hh",
+        "UserCopy.hh",
     ]
 
     sources =
@@ -32,5 +33,6 @@ library("MMU")
         "InitPageTable.cc",
         "MMU.cc",
         "PageTable.cc",
+        "UserCopy.cc",
     ]
 }

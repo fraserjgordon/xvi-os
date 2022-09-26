@@ -2,6 +2,8 @@
 #define __SYSTEM_BOOT_IGNITER_ARCH_X86_STAGE2_V86_H
 
 
+#include <System/Kernel/Runpatch/Arch/x86/Runpatch.hh>
+
 #include <System/Boot/Igniter/Arch/x86/Stage2/Interrupts.hh>
 
 
@@ -28,6 +30,27 @@ void v86CallBIOS(std::uint8_t vector, bios_call_params& params);
 
 
 bool v86HandleInterrupt(interrupt_context* context);
+
+
+// Utility methods for enabling access to user-mode memory.
+//! @todo wrap these in an RAII object.
+inline void enableUserMemoryAccess()
+{
+    asm volatile
+    (
+        RUNPATCH_IF_ENABLED("x86.SMAP", "stac")
+        ::: "memory"
+    );
+}
+
+inline void disableUserMemoryAccess()
+{
+    asm volatile
+    (
+        RUNPATCH_IF_ENABLED("x86.SMAP", "clac")
+        ::: "memory"
+    );
+}
 
 
 } // namespace System::Boot::Igniter

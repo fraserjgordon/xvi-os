@@ -348,8 +348,11 @@ static bool memoryProbeE820()
     while (true)
     {
         // Set the output buffer to a known state as the BIOS may not write all of it (e.g. the flags field).
+        //! @todo use the MMU usercopy functions instead of toggling access directly.
         auto ptr = out.linear_ptr();
+        enableUserMemoryAccess();
         *ptr = {};
+        disableUserMemoryAccess();
 
         // Set up the parameters for the call.
         bios_call_params params;
@@ -368,9 +371,14 @@ static bool memoryProbeE820()
             break;
         
         success = true;
+
+        enableUserMemoryAccess();
+
         log(priority::debug, "E820: {:#018x}+{:016x} {:>8} {:#010x}",
             ptr->base, ptr->length, ptr->type, ptr->flags
         );
+
+        disableUserMemoryAccess();
 
         // Are we done?
         if (params.ebx == 0)
