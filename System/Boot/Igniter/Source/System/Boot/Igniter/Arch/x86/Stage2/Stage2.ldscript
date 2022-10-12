@@ -37,8 +37,8 @@ SECTIONS
         KEEP (*(realmode.text))
     } 
 
-    PROVIDE_HIDDEN (_REALMODE_TEXT_START = LOADADDR(realmode.text));
-    PROVIDE_HIDDEN (_REALMODE_TEXT_END = LOADADDR(realmode.text) + SIZEOF(realmode.text));
+    PROVIDE_HIDDEN (_REALMODE_TEXT_START = LOADADDR(realmode.text) - _IMAGE_ADJUST + _IMAGE_OFFSET);
+    PROVIDE_HIDDEN (_REALMODE_TEXT_END = _REALMODE_TEXT_START + SIZEOF(realmode.text));
 
     # Get the location counter back to something sensible.
     . = .Lrealmode.text.vma + SIZEOF(realmode.text);

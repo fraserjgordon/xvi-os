@@ -103,9 +103,10 @@ R"(
 
     .Lrp\idx\()_alt_count = 0
     .Lrp\idx\()_alt_max = 0
+    .Lrp\idx\()_ip = .
 .endm
 
-.macro runpatch_finish idx:req
+.macro runpatch_finish idx:req flags=0
     # Write out the control information for the patch and all alternatives.
     .pushsection runpatch.control, "aR", @progbits
         .long   .Lrp\idx\()_key
@@ -115,7 +116,7 @@ R"(
         .long   .Lrp\idx\()_alt_count
         .long   .Lrp\idx\()_default
         .long   .Lrp\idx\()_default_size
-        .long   0
+        .long   \flags
     .popsection
 .endm
 
@@ -125,8 +126,14 @@ R"(
 );
 
 
+#define RUNPATCH_FLAG_JUMP  0x00000001
+
+
+#define RUNPATCH_START_(key) \
+    "runpatch_start %=, " key " \n\t"
+
 #define RUNPATCH_START(key) \
-    "runpatch_start %=, " #key " \n\t"
+    RUNPATCH_START_(#key)
 
 #define RUNPATCH_DEFINE_ALTERNATIVE(code) \
     "runpatch_emit_alternative %=, " #code " \n\t"
@@ -144,6 +151,19 @@ R"(
 
 #define RUNPATCH_FINISH() \
     "runpatch_finish %= \n\t"
+
+
+#define RUNPATCH_START_JUMP(key) \
+    RUNPATCH_START(key)
+
+#define RUNPATCH_DEFAULT_JUMP(target) \
+    "runpatch_emit_default %=, \".byte 0xe9 ; .long %l[" #target "] - (.Lrp%=_ip + 5)\" \n\t"
+
+#define RUNPATCH_ALTERNATIVE_JUMP(target) \
+    "runpatch_emit_alternative %=, \".byte 0xe9 ; .long %l[" #target "] - (.Lrp%=_ip + 5)\" \n\t"
+
+#define RUNPATCH_FINISH_JUMP() \
+    "runpatch_finish %=, 0x00000001 \n\t"
 
 
 // Convenience macro for simple two-alternative cases.

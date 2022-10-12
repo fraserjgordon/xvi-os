@@ -76,6 +76,9 @@ public:
     // Creates an initial page table for the given paging mode.
     InitPageTable createInitPageTable(paging_mode, std::uint64_t self_map_address, std::uint64_t virtual_to_physical_adjust);
 
+    // Converts the given initial page table into a page table object, for use after paging is enabled.
+    MappedPageTable convertInitPageTable(InitPageTable);
+
     // Indicates whether the MMU supports the given page size in the current/target paging mode.
     bool supports2MPages() const noexcept;
     bool supports4MPages() const noexcept;
@@ -158,6 +161,20 @@ private:
     bool            m_supervisorExecProtection = false;
     bool            m_supervisorAccessProtection = false;
     bool            m_protectionKeys = false;
+    bool            m_supervisorProtectionKeys = false;
+    bool            m_shadowStacks = false;
+    bool            m_longModeSegmentLimit = false;
+    bool            m_translationCacheExtensions = false;
+
+    // Cache management instructions.
+    bool            m_cldemote = false;
+    bool            m_clflush = false;
+    bool            m_clflushopt = false;
+    bool            m_clzero = false;
+    bool            m_invlpg = false;
+    bool            m_invlpgb = false;
+    bool            m_mcommit = false;
+    bool            m_wbnoinvd = false;
 
     // Allocator object.
     std::unique_ptr<TablePageAllocator> m_allocator = {};

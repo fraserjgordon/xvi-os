@@ -292,6 +292,7 @@ static constexpr feature_flag_t SoftwareGuard      = {.leaf = 7, .subleaf = 0, .
 static constexpr feature_flag_t BitManipulation1   = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EBX, .mask = (1<<3)};
 static constexpr feature_flag_t TransactionalHLE   = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EBX, .mask = (1<<4)};
 static constexpr feature_flag_t AVX2               = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EBX, .mask = (1<<5)};
+static constexpr feature_flag_t FPUDPExceptionOnly = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EBX, .mask = (1<<6)};
 static constexpr feature_flag_t SvExecProtection   = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EBX, .mask = (1<<7)};
 static constexpr feature_flag_t BitManipulation2   = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EBX, .mask = (1<<8)};
 static constexpr feature_flag_t EnhancedRepMovsb   = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EBX, .mask = (1<<9)};
@@ -324,6 +325,7 @@ static constexpr feature_flag_t Avx512VBMI         = {.leaf = 7, .subleaf = 0, .
 static constexpr feature_flag_t Umip               = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<2)};
 static constexpr feature_flag_t UserMemoryKeys     = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<3)};
 static constexpr feature_flag_t UserMemoryKeysOS   = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<4)};
+static constexpr feature_flag_t Waitpkg            = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<5)};
 static constexpr feature_flag_t Avx512VBMI2        = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<6)};
 static constexpr feature_flag_t CetSS              = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<7)};
 static constexpr feature_flag_t GaloisField        = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<8)};
@@ -331,19 +333,33 @@ static constexpr feature_flag_t VectorAes          = {.leaf = 7, .subleaf = 0, .
 static constexpr feature_flag_t Vpclmulqdq         = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<10)};
 static constexpr feature_flag_t Avx512VNNI         = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<11)};
 static constexpr feature_flag_t Avx512BitAlg       = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<12)};
+static constexpr feature_flag_t Tme                = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<13)};
 static constexpr feature_flag_t Avx512PopcountDQ   = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<14)};
 static constexpr feature_flag_t LA57               = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<16)};
 static constexpr feature_flag_t MpxWidthAdjust     = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = 0x003e0000, .shift = 17};
 static constexpr feature_flag_t Rdpid              = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<22)};
+static constexpr feature_flag_t KeyLocker          = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<23)};
+static constexpr feature_flag_t Cldemote           = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<25)};
+static constexpr feature_flag_t Movdiri            = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<27)};
+static constexpr feature_flag_t Movdir64b          = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<28)};
 static constexpr feature_flag_t SgxLaunchConfig    = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<30)};
+static constexpr feature_flag_t SvMemoryKeys       = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1U<<31)};
 
 // EDX for EAX=7,ECX=0
 static constexpr feature_flag_t Avx512VNNIW4       = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EDX, .mask = (1<<2)};
 static constexpr feature_flag_t Avx512Fmaps4       = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EDX, .mask = (1<<3)};
+static constexpr feature_flag_t FastShortRepMov    = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::ECX, .mask = (1<<4)};
+static constexpr feature_flag_t Avx512Vp2intersect = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EDX, .mask = (1<<8)};
+static constexpr feature_flag_t MdClear            = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EDX, .mask = (1<<10)};
+static constexpr feature_flag_t Serialize          = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EDX, .mask = (1<<14)};
+static constexpr feature_flag_t Hybrid             = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EDX, .mask = (1<<15)};
 static constexpr feature_flag_t PlatformConfig     = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EDX, .mask = (1<<18)};
+static constexpr feature_flag_t CetIbt             = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EDX, .mask = (1<<20)};
 static constexpr feature_flag_t IbrsIbpbControl    = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EDX, .mask = (1<<26)};
 static constexpr feature_flag_t StibpControl       = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EDX, .mask = (1<<27)};
+static constexpr feature_flag_t L1DFlush           = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EDX, .mask = (1<<28)};
 static constexpr feature_flag_t Ia32ArchCapsMsr    = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EDX, .mask = (1<<29)};
+static constexpr feature_flag_t Ia32CoreCapsMsr    = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EDX, .mask = (1<<30)};
 static constexpr feature_flag_t Ssbd               = {.leaf = 7, .subleaf = 0, .use_subleaf = true, .where = Register::EDX, .mask = (1U<<31)};
 
 // Registers for EAX=0x0D,ECX=0
@@ -474,6 +490,24 @@ static constexpr feature_flag_t GuestPhysicalAddrBits = {.leaf = 0x80000008, .wh
 static constexpr feature_flag_t Clzero             = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<0)};
 static constexpr feature_flag_t InsnRetiredMSR     = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<1)};
 static constexpr feature_flag_t FPErrorPtrXrstor   = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<2)};
+static constexpr feature_flag_t Invlpgb            = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<3)};
+static constexpr feature_flag_t Rdpru              = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<4)};
+static constexpr feature_flag_t Mcommit            = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<8)};
+static constexpr feature_flag_t Wbnoinvd           = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<9)};
+static constexpr feature_flag_t IBPB               = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<12)};
+static constexpr feature_flag_t InterruptWbinvd    = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<13)};
+static constexpr feature_flag_t IBRS               = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<14)};
+static constexpr feature_flag_t STIBP              = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<15)};
+static constexpr feature_flag_t IbrsAlwaysOn       = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<16)};
+static constexpr feature_flag_t StibpAlwaysOn      = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<17)};
+static constexpr feature_flag_t IbrsPreferred      = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<18)};
+static constexpr feature_flag_t IbrsSameMode       = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<19)};
+static constexpr feature_flag_t NoLmsle            = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<20)};
+static constexpr feature_flag_t InvlpgbNestedPages = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<21)};
+static constexpr feature_flag_t SSBD               = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<24)};
+static constexpr feature_flag_t SsbdVirtSpecCtrl   = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<25)};
+static constexpr feature_flag_t SsbdNotRequired    = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<26)};
+static constexpr feature_flag_t PSFD               = {.leaf = 0x80000008, .where = Register::EBX, .mask = (1<<28)};
 
 // ECX for EAX=0x80000008
 static constexpr feature_flag_t PhysicalCoreCount  = {.leaf = 0x80000008, .where = Register::ECX, .mask = 0x000000ff, .shift = 0}; // Number of cores minus 1.
@@ -654,6 +688,12 @@ inline unsigned int GetFeature(feature_flag_t feature)
 inline bool HasFeature(feature_flag_t feature)
 {
     return GetFeature(feature) != 0;
+}
+
+[[gnu::const]]
+inline Vendor GetVendor()
+{
+    return DecodeVendor(GetLeaf(LeafManufacturer));
 }
 
 

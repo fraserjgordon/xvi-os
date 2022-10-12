@@ -8,6 +8,7 @@
 #include <System/Kernel/Arch/x86/MMU/UserCopy.hh>
 
 #include <System/Boot/Igniter/Arch/x86/Stage2/Logging.hh>
+#include <System/Boot/Igniter/Arch/x86/Stage2/MMU.hh>
 #include <System/Boot/Igniter/Arch/x86/Stage2/Probe.hh>
 
 
@@ -39,6 +40,11 @@ static System::ABI::ExecContext::frame_t s_frame = {};
 // Fake interrupt frame that we'll use to "return" to VM86 mode. We define this first as it'll also store the results
 // when CaptureContext returns for the second time.
 static interrupt_context s_v86Frame = {};
+
+// Identity mappings for the memory that can be reached from real mode.
+static AutoMap s_v86RAM {};
+static AutoMap s_v86ROM {};
+static AutoMap s_v86A20 {};
 
 
 static bool v86HandleUndefinedOpcode(interrupt_context* context)
@@ -72,6 +78,11 @@ void prepareV86Mode()
 {
     log(priority::debug, "Preparing V86 supervisor");
 
+    // Map in the real-mode memory.
+    s_v86RAM = AutoMap{0x00000, 0xA0000, PageFlag::U|PageFlag::X|PageFlag::W, CacheType::WriteBack, 0x00000};
+    s_v86ROM = AutoMap{0xC0000, 0x40000, PageFlag::U|PageFlag::X, CacheType::WriteProtect, 0xC0000};
+    s_v86A20 = AutoMap{0x00000, 0x10000, PageFlag::U|PageFlag::X|PageFlag::W, CacheType::WriteBack, 0x100000};
+
     // Create the monitor.
     s_monitor = std::make_unique<X86::VM86Monitor>();
 
@@ -83,6 +94,23 @@ void prepareV86Mode()
     // Allocate a real-mode stack too.
     s_realModeStackPage = allocateEarlyRealModePage();
     log(priority::debug, "V86: real-mode stack at {:#07x}+{:x}", s_realModeStackPage, 4096);
+}
+
+
+void unprepareV86Mode()
+{
+    log(priority::debug, "Shutting down V86 supervisor");
+
+    s_v86RAM = {};
+    s_v86ROM = {};
+    s_v86A20 = {};
+    s_monitor = nullptr;
+    
+    freeEarlyPage(s_realModeHelperPage);
+    freeEarlyPage(s_realModeStackPage);
+
+    s_realModeHelperPage = 0;
+    s_realModeStackPage = 0;
 }
 
 

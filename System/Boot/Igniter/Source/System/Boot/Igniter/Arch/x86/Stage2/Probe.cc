@@ -348,11 +348,8 @@ static bool memoryProbeE820()
     while (true)
     {
         // Set the output buffer to a known state as the BIOS may not write all of it (e.g. the flags field).
-        //! @todo use the MMU usercopy functions instead of toggling access directly.
-        auto ptr = out.linear_ptr();
-        enableUserMemoryAccess();
-        *ptr = {};
-        disableUserMemoryAccess();
+        entry_t entry = {};
+        copyToUserUnchecked(&entry, sizeof(entry), out.linear());
 
         // Set up the parameters for the call.
         bios_call_params params;
@@ -372,13 +369,11 @@ static bool memoryProbeE820()
         
         success = true;
 
-        enableUserMemoryAccess();
+        copyFromUserUnchecked(out.linear(), sizeof(entry), &entry);
 
         log(priority::debug, "E820: {:#018x}+{:016x} {:>8} {:#010x}",
-            ptr->base, ptr->length, ptr->type, ptr->flags
+            entry.base, entry.length, entry.type, entry.flags
         );
-
-        disableUserMemoryAccess();
 
         // Are we done?
         if (params.ebx == 0)
@@ -518,23 +513,18 @@ static void probeACPI()
 
 void mapEarlyMemory()
 {
-    // Map the areas we discovered during the early memory probe.
-    // Note that the low area is mapped with user permissions so we can use it with V86 mode.
-    addEarlyMap(0x00000000, s_probeInfo.low_memory, EarlyMapFlag::RWXUC);
-    addEarlyMap(0x00100000, s_probeInfo.mid_memory, EarlyMapFlag::RWXC);
-    addEarlyMap(0x01000000, s_probeInfo.high_memory, EarlyMapFlag::RWXC);
-
-    // Map the VGA memory area.
-    addEarlyMap(0x000A0000, 0x00020000, EarlyMapFlag::RW);
-
-    // Map the BIOS ROM area. Like the low area, it needs to be usable in V86 mode.
-    addEarlyMap(0x000C0000, 0x00040000, EarlyMapFlag::RXUC);
 }
 
 
 void hardwareProbe()
 {
+    // Now that we have some memory, set up the V86 supervisor so we can begin probing the BIOS.
+    prepareV86Mode();
+
     memoryProbeE820();
+
+    // We're done with V86 mode.
+    unprepareV86Mode();
 
     // Search for ACPI.
     s_probeInfo.acpi_rsdp = findACPI();

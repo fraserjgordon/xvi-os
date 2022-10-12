@@ -26,9 +26,10 @@ public:
     constexpr InitPageTable() = default;
     constexpr InitPageTable(const InitPageTable&) = default;
 
-    constexpr InitPageTable(MMU& mmu, std::uint64_t root, std::uint64_t self_map_address, std::uint64_t virtual_to_physical_adjust) :
+    constexpr InitPageTable(MMU& mmu, std::uint64_t root, std::uint64_t self_map_address, std::size_t self_map_index, std::uint64_t virtual_to_physical_adjust) :
         m_root{root},
         m_selfMap{self_map_address},
+        m_selfMapIndex{self_map_index},
         m_mmu{&mmu},
         m_offset{virtual_to_physical_adjust}
     {
@@ -46,6 +47,16 @@ public:
         return m_root;
     }
 
+    std::uint64_t selfMapAddress() const noexcept
+    {
+        return m_selfMap;
+    }
+
+    std::size_t selfMapIndex() const noexcept
+    {
+        return m_selfMapIndex;
+    }
+
     MMU* mmu() const noexcept
     {
         return m_mmu;
@@ -55,6 +66,7 @@ private:
 
     std::uint64_t       m_root = 0;
     std::uint64_t       m_selfMap = 0;
+    std::size_t         m_selfMapIndex = 0;
     MMU*                m_mmu = nullptr;
     std::uint64_t       m_offset = 0;
 };

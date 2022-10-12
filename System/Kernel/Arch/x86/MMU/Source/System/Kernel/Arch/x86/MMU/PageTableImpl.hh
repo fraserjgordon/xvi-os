@@ -9,6 +9,7 @@
 #include <type_traits>
 
 #include <System/Kernel/Arch/x86/MMU/MMU.hh>
+#include <System/Kernel/Arch/x86/MMU/Ops.hh>
 #include <System/Kernel/Arch/x86/MMU/Types.hh>
 
 
@@ -182,16 +183,24 @@ struct entry_t
 };
 
 
+//! @todo RAII wrappers for locking.
 template <class T>
-void lockEntry(T* entry)
+T lockEntry(std::atomic<T>* entry)
+{
+    //! @todo implement
+    return entry->load(std::memory_order_acquire);
+}
+
+template <class T>
+void unlockEntry(T* /*entry*/)
 {
     //! @todo implement
 }
 
 template <class T>
-void unlockEntry(T* entry)
+void writeAndUnlockEntry(std::atomic<T>* entry, T value)
 {
-    //! @todo implement
+    entry->store(value, std::memory_order_release);
 }
 
 template <class T>
@@ -238,6 +247,17 @@ struct pml5e_t : entry_t<T, PML5E>
 using pml5e64_t = pml5e_t<std::uint64_t>;
 
 
+struct table_walk_info
+{
+    vaddr_t     address = 0;
+    paddr_t     physical = 0;
+    int         level = 0;
+    vsize_t     size = 0;
+    bool        present = false;
+    bool        is_table = false;
+};
+
+
 template <class T, class PtrT, int Level>
 struct table_t
 {
@@ -257,8 +277,9 @@ struct table_t
     static constexpr std::size_t TableSize          = LegacyPDPT ? 32 : LeafPageSize;
     static constexpr std::size_t EntryCount         = TableSize / sizeof(T);
     static constexpr std::size_t FullEntryCount     = LeafPageSize / sizeof(T);
+    static constexpr std::size_t IndexMask          = (EntryCount - 1);
 
-    static constexpr std::size_t PtrBits            = std::numeric_limits<PtrT>::digits();
+    static constexpr std::size_t PtrBits            = std::numeric_limits<PtrT>::digits;
     static constexpr std::size_t DecodedBits        = std::bit_width(EntryCount) - 1;
     static constexpr std::size_t FullDecodedBits    = std::bit_width(LeafPageSize / sizeof(T)) - 1;
     static constexpr std::size_t OffsetBits         = 12 + (Level * FullDecodedBits);
@@ -308,10 +329,9 @@ struct table_t
         }
 
         // Update the applicable entry to point to the new subtable.
+        auto index = indexForAddress(address);
         const entry_t entry {page | flags | extra_flags};
-        entry_t expected {0};
-        if (!entries[indexForAddress(address)].compare_exchange_strong(expected, entry, std::memory_order::relaxed))
-            return false;
+        writeAndUnlockEntry(&entries[index], entry);
 
         // No TLB flushing is needed as there was no previous entry.
         return true;
@@ -345,7 +365,7 @@ struct table_t
             auto index = indexForAddress(address);
             entry_t entry {entry_flags};
             entry.setAddress(page);
-            entries[index].store(entry, std::memory_order_relaxed);
+            writeAndUnlockEntry(&entries[index], entry);
 
             return true;
         }
@@ -357,7 +377,7 @@ struct table_t
 
             // We need to recurse into a lower-level table. Does it exist yet?
             auto index = indexForAddress(address);
-            auto entry = entries[index].load(std::memory_order::relaxed);
+            auto entry = lockEntry(&entries[index]);
            
             // Attempt to allocate a sub-table if needed.
             paddr_t subtable_addr = entry.isPresent() ? entry.address() : 0;
@@ -368,11 +388,16 @@ struct table_t
                 if (subtable_addr == 0)
                 {
                     subtable_addr = page_allocator.allocate();
-                    subtable_ptr = next_t::mapFrom(address, subtable_addr, page_mapper);
+
+                    if (subtable_addr == 0)
+                        return false;
+
+                    if constexpr (Mapper::DependsOnPhysicalAddress)
+                        subtable_ptr = next_t::mapFrom(address, subtable_addr, page_mapper);
                 }
 
                 // Calculate flags to add to the subtable.
-                auto subtable_flags = 0;
+                paddr_t subtable_flags = 0;
                 if (flags & PageFlag::U)
                     subtable_flags |= next_t::entry_t::User;
 
@@ -392,7 +417,7 @@ struct table_t
             //
             // After locking, we release the lock on the parent entry so that independent parts of the page tables can
             // be modified in parallel.
-            lockEntry(&raw_entries[index]);
+            lockEntry(&entries[index]);
             if (parent_entry)
                 unlockEntry(parent_entry);
 
@@ -403,10 +428,125 @@ struct table_t
         return false;
     }
 
+    template <class Mapper, class Callback>
+        requires std::invocable<const Callback&, const table_walk_info&>
+    bool walk(vaddr_t address, vsize_t size, const Mapper& page_mapper, const Callback& callback)
+    {
+        // This check is needed to prevent overflow when calculating the end.
+        if (size == 0)
+            return true;
+
+        // Minus one here to allow walking the page table right up to the maximum address.
+        auto end = address + size - 1;
+        while (address < end)
+        {
+            // Find and lock the entry corresponding to this address.
+            auto index = indexForAddress(address);
+            auto entry = lockEntry(&entries[index]);
+
+            // Extract the entry information.
+            table_walk_info info {};
+            info.address = address;
+            info.physical = entry.address();
+            info.size = PageSize;
+            info.level = TableLevel;
+            info.present = entry.isPresent();
+            info.is_table = info.present && !Leaf && !entry.isLargePage();
+
+            // Pass it to the callback.
+            bool more = callback(info);
+            if (more)
+            {
+                // If this entry points into a sub-table, recurse into it.
+                if constexpr (!Leaf)
+                {
+                    if (info.is_table)
+                    {
+                        auto subtable = next_t::mapFrom(address, info.physical, page_mapper);
+                        more = subtable->walk(address, std::min(PageSize, size), callback);
+                    }
+                }
+            }
+
+            unlockEntry(&entries[index]);
+
+            if (!more)
+                return false;
+
+            address += PageSize;
+            size -= PageSize;
+        }
+
+        return true;
+    }
+
+
+    template <class Mapper>
+    bool removeMapping(vaddr_t address, vsize_t size, const Mapper& page_mapper)
+    {
+        // Get and lock the entry for this address.
+        auto index = indexForAddress(address);
+        auto entry = lockEntry(&entries[index]);
+
+        // Do we have a valid entry?
+        if (entry.isPresent())
+        {
+            // Does this entry describe a page or a sub-table?
+            if constexpr (!Leaf)
+            {
+                if (entry.isLargePage())
+                {
+                    // Check that we're removing the entire large page.
+                    if (size != PageSize)
+                    {
+                        // We were expecting to remove a page from a sub-table but we have a large page instead. This
+                        // method doesn't support implicit splitting of large pages (as that requires allocating a new
+                        // page to act as the sub-table) so treat this as a failure.
+                        unlockEntry(&entries[index]);
+                        return false;
+                    }
+
+                    // Clear the entry. This will implicitly unlock it.
+                    writeAndUnlockEntry(&entries[index], entry_t{0});
+                    return true;
+                }
+
+                // We found a sub-table. Pass the removal request on to it.
+                auto subtable = next_t::mapFrom(address, entry.address(), page_mapper);
+                auto result = subtable->removeMappings(address, size, page_mapper);
+                unlockEntry(&entries[index]);
+                return result;
+            }
+
+            // Clear the entry. This will implicitly unlock it.
+            writeAndUnlockEntry(&entries[index], entry_t{0});
+        }
+
+        return true;
+    }
+
+    template <class Mapper>
+    bool removeMappings(vaddr_t address, vsize_t size, const Mapper& mapper)
+    {
+        // Loop over the requested mappings until all have been unmapped.
+        vsize_t done = 0;
+        while (done < size)
+        {
+            if (!removeMapping(address, std::min<vsize_t>(PageSize, size - done), mapper))
+                return false;
+
+            done += PageSize;
+            address += PageSize;
+        }
+
+        return true;
+    }
+
 
     template <class Mapper>
     static table_t* mapFrom(vaddr_t address, paddr_t page, const Mapper& page_mapper)
     {
+        address &= ~(EntryCount*PageSize - 1);
         return reinterpret_cast<table_t*>(page_mapper.map(address, TableLevel, page));
     }
 
@@ -491,6 +631,10 @@ public:
 
     static constexpr auto Levels = root_t::TableLevel + 1;
 
+    //! @todo this class needs to make sure no mapping requests cross the canonical addressing boundary.
+    static constexpr bool CanonicalAddressing = Root::OffsetBits < Root::PtrBits;
+    static constexpr auto CanonicalBoundary = CanonicalAddressing ? (vaddr_t(1) << (Root::OffsetBits - 1)) : 0;
+
 
     paddr_t root() const noexcept
     {
@@ -504,11 +648,26 @@ public:
         return table->addMapping(address, to, page_size, flags, pat, page_allocator, page_mapper, nullptr);
     }
 
+    template <class Mapper>
+    bool unmapPages(vaddr_t address, vsize_t size, const Mapper& page_mapper)
+    {
+        auto table = rootTable(page_mapper);
+        return table->removeMappings(address, size, page_mapper);
+    }
+
 
     static PageTableImpl fromRoot(paddr_t root)
     {
         return PageTableImpl{root};
     }
+
+    /*static constexpr bool isCanonical(vaddr_t address)
+    {
+        if constexpr (!CanonicalAddressing)
+            return true;
+
+        
+    }*/
 
 private:
 
@@ -548,7 +707,10 @@ class IdentityMapper
 {
 public:
 
-    V map(V, int, P table_physical_addr) const noexcept
+    static constexpr bool DependsOnPhysicalAddress = true;
+    static constexpr bool TlbFlushMap = false;
+
+    V map(V, unsigned int, P table_physical_addr) const noexcept
     {
         return static_cast<V>(table_physical_addr - offset);
     }
@@ -573,31 +735,153 @@ public:
     using root_t = typename Table::root_t;
 
 
-    V map(V address, int level, P) const noexcept
+    static constexpr bool DependsOnPhysicalAddress = false;
+    static constexpr bool TlbFlushMap = true;
+
+
+    V map(V address, unsigned int level, P) const noexcept
     {
         constexpr auto LeafBits = root_t::LeafPageBits;
         constexpr auto IndexBits = root_t::FullDecodedBits;
 
         // Which bits from the address are we going to use to index into the recursive map? The higher the level of the
         // page table, the fewer bits we use because we will recurse more.
-        auto offset = address >> (LeafBits + level * IndexBits);
+        auto offset = address >> ((level + 1) * IndexBits);
 
-        // Which bits come from the recursion?
-        static_assert(IndexBits == 9 || IndexBits == 10);
-        if constexpr (IndexBits == 10)
+        // What kind of page table are we dealing with?
+        if constexpr (std::is_same_v<Table, PageTableLegacy>)
         {
             // Classic paging; level will be either 0 or 1.
             if (level > 0)
-                offset | (recurse_index << IndexBits);
+                offset |= (recurse_index << LeafBits);
+        }
+        else if constexpr (std::is_same_v<Table, PageTablePAE>)
+        {
+            // We treat PAE page tables in a bit of an odd way here.
+            //
+            // See the note at the end of the long comment for long mode paging for the explanation of why we treat PAE
+            // paging this way.
+
+            // The root table for PAE needs special handling. What we return as the "root" is actually the set of four
+            // self-map entries in one of the four page directories, which are not necessarily the same physical memory
+            // as the PDPT itself, due to restrictions on the flags that are settable in PAE PDPTEs (setting the dirty
+            // or accessed flags is invalid and the CPU can raise an exception). However, another CPU quirk comes into
+            // play: older CPUs load all 4 PDPTEs into an internal cache when %cr3 is written so updating them requires
+            // writing to %cr3 again (and therefore flushing the TLBs).
+            //
+            // To avoid this, this MMU library pre-allocates all four page directories and doesn't modify the PDPTEs
+            // afterwards. As long as the four self-map entries are set up to match, we can pretend they are the real
+            // PDPTEs without any ill effects (so long as we don't modify them).
+            if (level == pdpt32pae_t::TableLevel)
+            {
+                // For a 13-bit recurse index (incorporating both the PDPT and PD bits) of 0b'abcdefghijk, the offset of
+                // our pretend PDPT is:
+                //  0b00'0000000ab'cdefghi(j+a)(k+b)'cdefghi00000
+                offset = (recurse_index << LeafBits) + ((recurse_index << 3) & 0x3FE0);
+            }
+            else if (level == pd32pae_t::TableLevel)
+            {
+                // Pretend the 11-bit recurse index is simply an index into a 16kB / 2048 entry page directory.
+                //
+                // We need to add (rather than or) the offset here as the recursive index might not be on an 8MB address
+                // space boundary.
+                offset = (address >> 18) & 0x0000'3FFF; 
+                offset += (recurse_index << LeafBits) & 0x007F'F000;
+            }
+            else
+            {
+                // No recurse offset for page tables.
+            }
+        }
+        else if constexpr (std::is_same_v<Table, PageTableLongMode> || std::is_same_v<Table, PageTableLongMode57>)
+        {
+            // Magic constant with a bit set every 9 bits. If we multiply the recurse index by this, it'll supply the
+            // repeated recurse index bits to reach the desired table, as explained below.
+            //
+            // In particular, remembering that the base address already represents a single level of recursion, we need
+            // to apply this many additional recursions for each type of table:
+            //  - page table: 0 recursions
+            //  - page directory: 1 recursion
+            //  - PDPT: 2 recursions
+            //  - PML4: 3 recursions
+            //  - PML5: 4 recursions
+            //
+            // We'll start off by thinking about 5-level page tables only, then generalise that to fewer levels.
+            //
+            // These recursions start at the high bits and work downwards, giving us the following bitpatterns (given
+            // the recursion index is abcdefghi):
+            //  - page table: 0b?????????'?????????'?????????'?????????'?????????'000000000000
+            //  - page dir  : 0b?????????'abcdefghi'?????????'?????????'?????????'000000000000
+            //  - PDPT      : 0b?????????'abcdefghi'abcdefghi'?????????'?????????'000000000000
+            //  - PML4      : 0b?????????'abcdefghi'abcdefghi'abcdefghi'?????????'000000000000
+            //  - PML5      : 0b?????????'abcdefghi'abcdefghi'abcdefghi'abcdefghi'000000000000
+            //  - self map  : 0b?????????'abcdefghi'abcdefghi'abcdefghi'abcdefghi'abcdefghi000
+            //
+            // To generate these bit patterns, we can see that they would be formed by multiplying abcdefghi by:
+            //  - page table: all zeroes
+            //  - page dir  : 0b000000000'000000001'000000000'000000000'000000000'000000000000
+            //  - PDPT      : 0b000000000'000000001'000000001'000000000'000000000'000000000000
+            //  - PML4      : 0b000000000'000000001'000000001'000000001'000000000'000000000000
+            //  - PML5      : 0b000000000'000000001'000000001'000000001'000000001'000000000000
+            //
+            // Because the multipliers are similar in form, we can store a single one (for the PML5) and generate the
+            // rest from that (expressed here in octal to save space -- one of the few times octal is useful!):
+            //  - PML5      : 0o000'001'001'001'001'0000 (or 0x0080'4020'1000 in hex)
+            //
+            // The bottom 12 bits (the page offset) are always zero so we can remove those as a common factor:
+            //  - PML5      : 0o001'001'001'001 (0r 0x0'0804'0201 in hex)
+            //
+            // From this constant K, we can generate the constants for the other levels at runtime fairly cheaply:
+            //  - page table: (K >> 36) << 36 (which will equal zero)
+            //  - page dir  : (K >> 27) << 27
+            //  - PDPT      : (K >> 18) << 18
+            //  - PML4      : (K >>  9) <<  9
+            //
+            // Or, more generally, ((K >> x) << x) where x is (9 * (5 - TableLevel)).
+            //
+            // To generalise this further, let's consider the patterns for page directories in each type of paging:
+            // - LM57  : 0b?????????'abcdefghi'?????????'?????????'?????????'000000000000
+            // - LM48  : 0b          ?????????'abcdefghi'?????????'?????????'000000000000
+            // - PAE   : 0b                           ??'abcdefghi'?????????'000000000000 (*see note below)
+            //
+            // If we strip off the 12 trailing zeroes, we can see that the pattern is rightshifted by 9 bits for every
+            // one fewer level of page tables. Rewriting our shift, we have:
+            //
+            //      k(n; L) = (K >> (9 * (5 - n))) << (9 * (L - n))
+            //
+            //      where:
+            //          n   is the page table level (PML5 = 5, PML4 = 4, PDPT = 3, PD = 2, PT = 1)
+            //          L   is the number of paging levels (5 for LM57, 4 for LM48, 3 for PAE).
+            //
+            // Note on PAE:
+            //
+            //      We don't actually use this form of recursive mapping for PAE because it would consume a quarter of
+            //      the 32-bit address space (30 bits) despite only having 12+9+2=23 bits of page tables (the difference
+            //      is because the PDPT only decodes 2 bits, not 9 bits, giving us the 7 bit difference). Instead, we
+            //      pretend (for the purposes of recursive mapping only!) that 4 page directories referenced by the PDPT
+            //      are actually one big page directory that decodes 11 bits (with a 16kB table). So our pattern is:
+            //          - page table: 0b?????????'???????????'000000000000
+            //          - page dir  : 0b?????????'abcdefghijk'000000000000
+            //          - self map 0: 0b?????????'abcdefghijk'cdefghi00000
+            //          - self map 1: 0b?????????'abcdefghijk'cdefghi01000
+            //          - self map 2: 0b?????????'abcdefghijk'cdefghi10000
+            //          - self map 3: 0b?????????'abcdefghijk'cdefghi11000
+            //
+            //      As such, we handle PAE paging as being a bit more like 2-level legacy paging than the deeply-
+            //      recusive long mode paging.
+            constexpr auto K = P(0x0804'0201);
+
+            constexpr auto L = root_t::TableLevel;
+
+            auto rshift = IndexBits * (5 - (level + 1));
+            auto lshift = IndexBits * (L - (level + 1));
+            auto k = (K >> rshift) << lshift;
+            offset |= (k * recurse_index) << LeafBits;
         }
         else
         {
-            // Constant with a bit set every 9 bits. If we multiply the base index by this, it'll supply the repeated
-            // base index bits for the recursion.
-            constexpr auto RecurseMultiplier = P(0x00002010'08040200);
-
-            auto multiplier_mask = (P(1) << ((level + 1) * IndexBits)) - 1;
-            offset |= (RecurseMultiplier & multiplier_mask) * recurse_index;
+            // Oops - something has gone wrong.
+            static_assert(!std::is_same_v<Table, Table>, "unimplemented page table type");
         }
 
         return base + offset;
@@ -605,7 +889,7 @@ public:
 
     V rootTableAddress(P) const noexcept
     {
-        return map(base, root_t::PageSize);
+        return map(base, root_t::TableLevel, 0);
     }
 
 

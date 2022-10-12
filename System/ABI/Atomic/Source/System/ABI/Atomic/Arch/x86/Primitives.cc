@@ -430,7 +430,7 @@ uint64_t __Atomic_load_8(const volatile void* ptr, int)
     // Emulate the load using a compare-exchange. This is technically not valid as it may cause an extraneous write but
     // it is the only way to atomically load a 64-bit quantity on x86 without using locks (assuming the cmpxchg8b
     // opcode exists... if not, it'll end up using a lock anyway).
-    uint64_t value;
+    uint64_t value = 0;
     __Atomic_compare_exchange_8(const_cast<volatile void*>(ptr), &value, 0, 0, 0);
     return value;
 }

@@ -73,6 +73,13 @@ inline void lfence()
     asm volatile ("lfence" ::: "memory");
 }
 
+inline bool mcommit()
+{
+    bool result;
+    asm volatile ("mcommit" : "=@ccc" (result) :: "memory");
+    return result; 
+}
+
 inline void mfence()
 {
     asm volatile ("mfence" ::: "memory");
@@ -114,4 +121,4 @@ inline void wrpkru(std::uint32_t keys)
 } // namespace System::Kernel::X86::MMU
 
 
-#endif /* ifndef __SYSTEM_KERNEL_ARCH_X86_MMU_OPS_H *?
+#endif /* ifndef __SYSTEM_KERNEL_ARCH_X86_MMU_OPS_H */

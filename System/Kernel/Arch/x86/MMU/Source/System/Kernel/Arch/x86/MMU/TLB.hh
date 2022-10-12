@@ -4,23 +4,43 @@
 
 #include <cstdint>
 
-#include <System/Kernel/Runpatch/Arch/x86/Runpatch.hh>
+#include <System/Kernel/Arch/x86/MMU/Runpatch.hh>
+#include <System/Kernel/Arch/x86/MMU/Types.hh>
 
 
 namespace System::Kernel::X86::MMU
 {
 
 
-inline void tlbInvalidatePage(std::uintptr_t address);
+inline void tlbInvalidatePage(vaddr_t address)
+{
+    asm volatile
+    (
+        RUNPATCH_START(PATCH_TLBINVALIDATEPAGE_METHOD)
 
-inline void tlbInvalidatePageAndTables(std::uintptr_t address);
+        // 1: invlpg instruction
+        RUNPATCH_DEFINE_ALTERNATIVE(
+            "invlpg (%0)"
+        )
+
+        // Base case: write to %cr3 to flush entire TLB.
+        RUNPATCH_DEFINE_DEFAULT(
+            "mov    %%cr3, %0 ; \
+             mov    %0, %%cr3 "
+        )
+
+        : "=r" (address)
+        : "0" (address)
+        : "memory"
+    );
+}
 
 inline void tlbFlushAll()
 {
     std::uintptr_t temp;
     asm volatile
     (
-        RUNPATCH_START("x86.tlbFlushAll")
+        RUNPATCH_START(PATCH_TLBFLUSHALL_METHOD)
 
         // 1: global pages are enabled.
         // Simply writing %cr3 is not enough; we need to toggle the PGE bit in %cr4.
@@ -78,7 +98,7 @@ inline void tlbFlushNonGlobal()
     std::uintptr_t temp;
     asm volatile
     (
-        RUNPATCH_START("x86.tlbFlush")
+        RUNPATCH_START(PATCH_TLBFLUSHNONGLOBAL_METHOD)
 
         // 1: invpcid is available and PCID is enabled.
         // We can use invpcid to flush all non-global TLB entries by using the right op.
@@ -111,7 +131,7 @@ inline void tlbFlushPCID(std::uint32_t pcid)
     std::uintptr_t temp;
     asm volatile
     (
-        RUNPATCH_START("x86.tlbFlushPCID")
+        RUNPATCH_START(PATCH_TLBFLUSHPCID_METHOD)
 
         // 1: invpcid is available and PCID is enabled.
         // We can flush all TLB entries corresponding to the given PCID.

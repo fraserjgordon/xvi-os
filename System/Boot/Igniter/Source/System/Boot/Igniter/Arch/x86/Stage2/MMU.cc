@@ -13,6 +13,8 @@
 extern std::uint32_t g_loadOffset;
 
 // Symbols defining the limits of the in-memory image.
+extern const std::byte _REALMODE_TEXT_START asm("_REALMODE_TEXT_START");
+extern const std::byte _REALMODE_TEXT_END asm("_REALMODE_TEXT_END");
 extern const std::byte _TEXT_START asm("_TEXT_START");
 extern const std::byte _TEXT_END asm("_TEXT_END");
 extern const std::byte _RODATA_START asm("_RODATA_START");
@@ -33,6 +35,8 @@ namespace X86 = HW::CPU::X86;
 
 static Kernel::X86::MMU::MMU* s_mmu = nullptr;
 static std::uint64_t  s_pagingRoot = 0;
+static Kernel::X86::MMU::InitPageTable s_initPageTable = {};
+static Kernel::X86::MMU::MappedPageTable s_pageTable = {};
 
 
 // The initial page table will be recursive. Use the highest possible address in the lower half of the 32-bit address
@@ -82,8 +86,8 @@ void enablePaging()
         mode = Kernel::X86::MMU::PagingMode::PAE;
 
     // Create the initial page table.
-    auto init_pt = s_mmu->createInitPageTable(mode, SelfMapAddress, g_loadOffset);
-    s_pagingRoot = init_pt.root();
+    s_initPageTable = s_mmu->createInitPageTable(mode, SelfMapAddress, g_loadOffset);
+    s_pagingRoot = s_initPageTable.root();
     log(priority::debug, "MMU: creating initial page table at {:#010x}", s_pagingRoot);
 
     // Request that the probe code adds mappings for the memory it has detected so far.
@@ -101,19 +105,23 @@ void enablePaging()
 
         log(priority::debug, "MMU: mapping loader {:#010x}+{:08x} -> {:#010x}", v, s, p);
 
-        init_pt.addMapping(v, s, p, flags, WB);
+        s_initPageTable.addMapping(v, s, p, flags, WB);
+
+        // Also identity-map the physical addresses of the loader as we'll need it while enabling paging.
+        s_initPageTable.addMapping(p, s, p, flags, WB);
     };
 
+    map(_REALMODE_TEXT_START, _REALMODE_TEXT_END, 0);
     map(_TEXT_START, _TEXT_END, F::X);
     map(_RODATA_START, _RODATA_END, 0);
     map(_DATA_START, _BSS_END, F::W);
 
     // Also map in the VGA memory.
     //! @todo find a better way to do this; this is hacky.
-    init_pt.addMapping(0xA0000 - g_loadOffset, 0x20000, 0xA0000, F::W, Kernel::X86::MMU::CacheType::Uncached);
+    s_initPageTable.addMapping(0xA0000 - g_loadOffset, 0x20000, 0xA0000, F::W, Kernel::X86::MMU::CacheType::Uncached);
 
     // Write the address of the root of the page tables to %cr3.
-    X86::CR3::write(static_cast<std::uintptr_t>(init_pt.root()));
+    X86::CR3::write(static_cast<std::uintptr_t>(s_initPageTable.root()));
 
     // Configure the other MMU control registers as required.
     auto cr0 = X86::CR0::read();
@@ -171,15 +179,15 @@ void enablePaging()
     log(priority::debug, "MMU: paging enabled");
 
     reconfigureInterruptTableForPaging();
+
+    // We now have a page table object to use for further mappings.
+    s_pageTable = s_mmu->convertInitPageTable(s_initPageTable);
 }
 #endif /* if !defined(__x86_64__) */
 
 
 void addEarlyMap(std::uint32_t address, std::uint32_t size, early_map_flag_t flags)
 {
-    // Re-create the page table object.
-    Kernel::X86::MMU::InitPageTable init_pt {*s_mmu, s_pagingRoot, SelfMapAddress, g_loadOffset};
-
     // Calculate the flags for the mapping.
     Kernel::X86::MMU::page_flags page_flags = {};
     if (flags & EarlyMapFlag::W)
@@ -195,7 +203,54 @@ void addEarlyMap(std::uint32_t address, std::uint32_t size, early_map_flag_t fla
         cache_type = Kernel::X86::MMU::CacheType::WriteBack;
 
     // Add the map as requested.
-    init_pt.addMapping(address, size, address, page_flags, cache_type);
+    s_initPageTable.addMapping(address, size, address, page_flags, cache_type);
+}
+
+
+AutoMap::AutoMap(paddr_t physical, vsize_t size, page_flags flags, cache_type cache, vaddr_t where) :
+    m_physical{physical},
+    m_virtual{where},
+    m_size{size},
+    m_offset{0}
+{
+    s_pageTable.add({m_virtual, m_size, m_physical, flags, cache});
+}
+
+
+AutoMap::AutoMap(AutoMap&& other) :
+    AutoMap{}
+{
+    operator=(std::move(other));
+}
+
+
+AutoMap& AutoMap::operator=(AutoMap&& other)
+{
+    if (&other == this) [[unlikely]]
+        return *this;
+
+    reset();
+
+    m_physical = std::exchange(other.m_physical, 0);
+    m_virtual = std::exchange(other.m_virtual, 0);
+    m_size = std::exchange(other.m_size, 0);
+    m_offset = std::exchange(other.m_offset, 0);
+
+    return *this;
+}
+
+
+void AutoMap::reset()
+{
+    if (m_size != 0)
+    {
+        s_pageTable.remove(m_virtual, m_size);
+    }
+
+    m_physical = 0;
+    m_virtual = 0;
+    m_size = 0;
+    m_offset = 0;
 }
 
 

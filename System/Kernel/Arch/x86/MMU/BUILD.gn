@@ -28,6 +28,7 @@ library("MMU")
         "Cache.hh",
         "MTRR.hh",
         "PageTableImpl.hh",
+        "Runpatch.hh",
         "TLB.hh",
 
         "InitPageTable.cc",

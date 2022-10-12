@@ -119,6 +119,7 @@ public:
     constexpr unique_ptr& operator=(nullptr_t) noexcept
     {
         reset();
+        return *this;
     }
 
     constexpr add_lvalue_reference_t<_T> operator*() const noexcept(noexcept(*declval<pointer>()))

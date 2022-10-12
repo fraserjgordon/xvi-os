@@ -3,10 +3,10 @@
 #include <array>
 
 #include <System/HW/CPU/CPUID/Arch/x86/CPUID.hh>
-#include <System/Kernel/Runpatch/Arch/x86/Runpatch.hh>
 
 #include <System/Kernel/Arch/x86/MMU/InitPageTable.hh>
 #include <System/Kernel/Arch/x86/MMU/PageTableImpl.hh>
+#include <System/Kernel/Arch/x86/MMU/Runpatch.hh>
 #include <System/Kernel/Arch/x86/MMU/TLB.hh>
 
 
@@ -27,11 +27,17 @@ MMU::MMU()
     m_pageSizes = (4U<<10);
     if (CPUID::SupportsCPUID())
     {
+        // Some features are specific to certain manufacturers.
+        bool isAMD = CPUID::GetVendor() == CPUID::Vendor::AMD;
+
         // All CPUs that support CPUID implement supervisor-mode write protection.
         m_supervisorWriteProtect = true;
 
         // All CPUs that support CPUID implement alignment checking (user-mode only).
         m_alignmentChecking = true;
+
+        // All CPUs that support CPUID implement the invlpg instruction.
+        m_invlpg = true;
 
         // Which extended paging modes are available?
         if (CPUID::HasFeature(CPUID::Feature::LA57))
@@ -94,6 +100,39 @@ MMU::MMU()
         // Are protection keys supported?
         if (CPUID::HasFeature(CPUID::Feature::UserMemoryKeys))
             m_protectionKeys = true;
+        if (CPUID::HasFeature(CPUID::Feature::SvMemoryKeys))
+            m_supervisorProtectionKeys = true;
+
+        // Are shadow stacks / CET supported?
+        if (CPUID::HasFeature(CPUID::Feature::CetSS))
+            m_shadowStacks = true;
+
+        // Can we configure segment limits to be honoured in long lode?
+        // Note: this feature is deprecated. Removal of support is indicated by a CPUID bit but presence of support
+        //       isn't definitively identified.
+        if (isAMD && m_maxPagingMode >= PagingMode::LongMode && !CPUID::HasFeature(CPUID::Feature::NoLmsle))
+            m_longModeSegmentLimit = true;
+
+        // Are the translation cache extensions supported? (more accurate TLB invalidation)
+        //! @bug causes Bochs to panic...
+        //if (CPUID::HasFeature(CPUID::Feature::XlateCacheExt))
+        //    m_translationCacheExtensions = true;
+
+        // Are any additional memory management opcodes supported?
+        if (CPUID::HasFeature(CPUID::Feature::Cldemote))
+            m_cldemote = true;
+        if (CPUID::HasFeature(CPUID::Feature::Clflush))
+            m_clflush = true;
+        if (CPUID::HasFeature(CPUID::Feature::Clflushopt))
+            m_clflushopt = true;
+        if (CPUID::HasFeature(CPUID::Feature::Clzero))
+            m_clzero = true;
+        if (CPUID::HasFeature(CPUID::Feature::Invlpgb))
+            m_invlpgb = true;
+        if (CPUID::HasFeature(CPUID::Feature::Mcommit))
+            m_mcommit = true;
+        if (CPUID::HasFeature(CPUID::Feature::Wbnoinvd))
+            m_wbnoinvd = true;
     }
 
     // Based on the features we've detected, configure the MMU control registers.
@@ -127,6 +166,9 @@ MMU::MMU()
 
     if (m_noExecute)
         m_eferSet |= Creg::EFER::NXE;
+
+    if (m_translationCacheExtensions)
+        m_eferSet |= Creg::EFER::TCE;
 
     // The code below accesses CPU MSRs (model-specific registers) that are associated with the MMU. Because the x86
     // architecture requires that the MTRRs and PAT are configured identically on all CPUs within the system, it is safe
@@ -174,17 +216,45 @@ MMU::MMU()
         // allows the page table code to configure non-leaf entries as cached without knowing about PAT. The cache types
         // that are not covered by that are then added to the additional slots.
         //
+        // The value here is carefully constructed to maintain the following invariants:
+        //  1. the lower four entries match the interpretation of the caching control bits if the PAT feature wasn't
+        //     available (this keeps the page table traversal code independent of PAT support; in particular, it can
+        //     set the caching entries to 0/write-back for sub-tables in all cases).
+        //  2. the first of the entries added by PAT (0b100) is interpreted in the same way as 0b000. The reason for
+        //     this is that the PAT bit in PTEs is in the same position as the page size bit in PDEs/PDPTEs/PML4Es etc.
+        //     As such, the page size flag will be interpreted as a PAT bit when using recursive page tables and will be
+        //     set to 1 for large pages. Mapping pages multiple times with different cache types is generally not a good
+        //     idea so keeping these two PAT entries the same ensures that page tables are consistently mapped with
+        //     write-back caching.
+        //
         // If this value is changed, the mapCacheType method needs to be adjusted to match.
-        m_patValue = 0x0000010500070406;
+        m_patValue = 0x00'01'05'06'00'07'04'06;
     }
 
     // With all the features detected, apply any runtime patching needed to handle the features properly.
     {
         using Kernel::Runpatch::X86::applyRunpatch;
 
+        // TLB management instructions vary a lot with processor features.
+        if (m_processContextID)
+        {
+            applyRunpatch(PATCH_TLBFLUSHALL_METHOD, TLBFLUSHALL_INVPCID);
+            applyRunpatch(PATCH_TLBFLUSHNONGLOBAL_METHOD, TLBFLUSHNONGLOBAL_INVPCID);
+            applyRunpatch(PATCH_TLBFLUSHPCID_METHOD, TLBFLUSHPCID_INVPCID);
+        }
+        else if (m_globalPages)
+        {
+            applyRunpatch(PATCH_TLBFLUSHALL_METHOD, TLBFLUSHALL_TOGGLE_PGE);
+        }
+
+        if (m_invlpg)
+        {
+            applyRunpatch(PATCH_TLBINVALIDATEPAGE_METHOD, TLBINVALIDATEPAGE_INVLPG);
+        }
+
         // With SMAP, we need to use the new "stac" and "clac" instructions around accesses to user-mode memory.
         if (m_supervisorAccessProtection)
-            applyRunpatch("x86.SMAP", 1);
+            applyRunpatch(PATCH_SMAP_SUPPORT, SMAP_ENABLED);
     }
 }
 
@@ -268,8 +338,34 @@ InitPageTable MMU::createInitPageTable(paging_mode target_mode, std::uint64_t se
     if (m_targetPagingMode >= PagingMode::LongMode5Level)
         m_cr4Set |= Creg::CR4::LA57;
 
+    // Make any runtime patches to support the selected paging mode.
+    switch (m_targetPagingMode)
+    {
+    #if !defined(__x86_64__)
+        case PagingMode::Legacy:
+            Kernel::Runpatch::X86::applyRunpatch(PATCH_PAGING_MODE, PAGING_LEGACY);
+            break;
+
+        case PagingMode::PAE:
+            Kernel::Runpatch::X86::applyRunpatch(PATCH_PAGING_MODE, PAGING_PAE);
+            break;
+    #endif
+
+        case PagingMode::LongMode:
+            Kernel::Runpatch::X86::applyRunpatch(PATCH_PAGING_MODE, PAGING_LM);
+            break;
+
+        case PagingMode::LongMode5Level:
+            Kernel::Runpatch::X86::applyRunpatch(PATCH_PAGING_MODE, PAGING_LM57);
+            break;
+
+        default:
+            return {};
+    }
+
     // Root table address.
     std::uint64_t root;
+    std::size_t self_map_index;
 
     // PAE mode needs special handling as the top-level page table is only 4 entries and (because we're making it
     // recursive) is embedded as four consecutive entries within one of the next-level tables.
@@ -278,7 +374,8 @@ InitPageTable MMU::createInitPageTable(paging_mode target_mode, std::uint64_t se
         //! @todo is embedding these entries workable? Will the CPU object when it loads them and sees that the dirty or
         //        accessed bits have been set? (the Intel docs seem to imply so...)
 
-        // Allocate the four page directory tables.
+        // Allocate the PDPT and four page directory tables.
+        root = m_allocator->allocate();
         auto pd0 = m_allocator->allocate();
         auto pd1 = m_allocator->allocate();
         auto pd2 = m_allocator->allocate();
@@ -287,8 +384,7 @@ InitPageTable MMU::createInitPageTable(paging_mode target_mode, std::uint64_t se
 
         // Which one are we embedding in?
         auto which_pd = (self_map_address >> 30);
-        auto index = (self_map_address >> 21) & 0x1FF;
-        root = pds[which_pd] + (index * sizeof(std::uint64_t));
+        self_map_index = (self_map_address >> 21) & 0x7FF;
 
         // We set the pinning bit in PDPT entries due to the way in which CPUs load the entries. It isn't possible to
         // set the NoExecute flag on these entries, unfortunately, as the PDPTEs require that particular bit to be
@@ -303,6 +399,17 @@ InitPageTable MMU::createInitPageTable(paging_mode target_mode, std::uint64_t se
         pdpt->addSubTable(0x40000000, pd1, Flags);
         pdpt->addSubTable(0x80000000, pd2, Flags);
         pdpt->addSubTable(0xC0000000, pd3, Flags);
+
+        auto flags = Flags;
+        if (m_noExecute)
+            flags |= pde32_t::NoExecute;
+
+        // And write the four self-map entries to the appropriate page directory.
+        auto* pd = reinterpret_cast<pd32pae_t*>(pds[which_pd] - adjust);
+        pd->addSubTable(self_map_address + (0<<21), pd0, flags);
+        pd->addSubTable(self_map_address + (1<<21), pd1, flags);
+        pd->addSubTable(self_map_address + (2<<21), pd2, flags);
+        pd->addSubTable(self_map_address + (3<<21), pd3, flags);
     }
     else
     {
@@ -322,25 +429,35 @@ InitPageTable MMU::createInitPageTable(paging_mode target_mode, std::uint64_t se
         {
             case PagingMode::Legacy:
                 reinterpret_cast<pd32_t*>(root - adjust)->addSubTable(self_map_address, root, flags);
+                self_map_index = (self_map_address >> pd32_t::OffsetBits) & pd32_t::IndexMask;
                 break;
 
             case PagingMode::PAE:
+                __builtin_unreachable();
                 break;
 
             case PagingMode::LongMode:
                 reinterpret_cast<pml4_t*>(root - adjust)->addSubTable(self_map_address, root, flags);
+                self_map_index = (self_map_address >> pml4_t::OffsetBits) & pml4_t::IndexMask;
                 break;
 
             case PagingMode::LongMode5Level:
                 reinterpret_cast<pml5_t*>(root - adjust)->addSubTable(self_map_address, root, flags);
+                self_map_index = (self_map_address >> pml5_t::OffsetBits) & pml5_t::IndexMask;
                 break;
         }
     }
 
     // Create the root table object.
-    InitPageTable init_pt{*this, root, self_map_address, adjust};
+    InitPageTable init_pt{*this, root, self_map_address, self_map_index, adjust};
 
     return init_pt;
+}
+
+
+MappedPageTable MMU::convertInitPageTable(InitPageTable ipt)
+{
+    return MappedPageTable{PageTable{*this, ipt.root(), ipt.selfMapIndex()}, ipt.selfMapAddress()};
 }
 
 
@@ -376,7 +493,7 @@ unsigned int MMU::mapCacheType(cache_type type) const
             case CacheType::WriteCombine:
                 // This cache type is not supported on all processors.
                 if (m_writeCombine)
-                    return 0b101;
+                    return 0b110;
                 else
                     return 0b011;   // Uncached.
 
@@ -384,7 +501,7 @@ unsigned int MMU::mapCacheType(cache_type type) const
                 return 0b001;
 
             case CacheType::WriteProtect:
-                return 0b100;
+                return 0b101;
 
             case CacheType::WriteBack:
                 return 0b000;

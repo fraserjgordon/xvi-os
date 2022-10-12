@@ -172,9 +172,6 @@ void run()
     // Now that we have some memory we can use, we can create the page tables and enable paging.
     enablePaging();
 
-    // Now that we have some memory, set up the V86 supervisor so we can begin probing the BIOS.
-    prepareV86Mode();
-
     // With both memory and V86 mode available, we can properly probe the BIOS for memory and, from there, probe the
     // rest of the hardware that we need to known about.
     hardwareProbe();

@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-#include <System/Kernel/Runpatch/Arch/x86/Runpatch.hh>
+#include <System/Kernel/Arch/x86/MMU/Runpatch.hh>
 
 
 namespace System::Kernel::X86::MMU
@@ -13,7 +13,7 @@ static inline void enableAccessToUserMemory()
 {
     asm volatile
     (
-        RUNPATCH_IF_ENABLED("x86.SMAP", "stac")
+        RUNPATCH_IF_ENABLED(PATCH_SMAP_SUPPORT, "stac")
         ::: "memory"
     );
 }
@@ -22,7 +22,7 @@ static inline void disableAccessToUserMemory()
 {
     asm volatile
     (
-        RUNPATCH_IF_ENABLED("x86.SMAP", "clac")
+        RUNPATCH_IF_ENABLED(PATCH_SMAP_SUPPORT, "clac")
         ::: "memory"
     );
 }

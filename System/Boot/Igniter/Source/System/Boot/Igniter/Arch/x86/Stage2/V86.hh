@@ -26,6 +26,9 @@ struct bios_call_params :
 void prepareV86Mode();
 
 
+void unprepareV86Mode();
+
+
 void v86CallBIOS(std::uint8_t vector, bios_call_params& params);
 
 
@@ -38,7 +41,7 @@ inline void enableUserMemoryAccess()
 {
     asm volatile
     (
-        RUNPATCH_IF_ENABLED("x86.SMAP", "stac")
+        RUNPATCH_IF_ENABLED("x86.mmu.smap", "stac")
         ::: "memory"
     );
 }
@@ -47,7 +50,7 @@ inline void disableUserMemoryAccess()
 {
     asm volatile
     (
-        RUNPATCH_IF_ENABLED("x86.SMAP", "clac")
+        RUNPATCH_IF_ENABLED("x86.mmu.smap", "clac")
         ::: "memory"
     );
 }
