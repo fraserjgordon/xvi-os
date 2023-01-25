@@ -969,15 +969,6 @@ typename list<_T, _Allocator>::size_type erase_if(list<_T, _Allocator>& __c, _Pr
 }
 
 
-namespace pmr
-{
-
-template <class _T>
-using list = __XVI_STD_CONTAINERS_NS::list<_T, pmr::polymorphic_allocator<_T>>;
-
-} // namespace pmr
-
-
 } // namespace __XVI_STD_CONTAINERS_NS
 
 

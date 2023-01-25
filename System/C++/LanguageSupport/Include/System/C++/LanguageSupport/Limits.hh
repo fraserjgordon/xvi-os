@@ -119,7 +119,7 @@ template <class _T> struct __float_limits
 
 };
 
-}
+} // namespace __detail
 
 
 template <class _T> struct numeric_limits

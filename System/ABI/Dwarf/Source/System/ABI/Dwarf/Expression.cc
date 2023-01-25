@@ -46,7 +46,7 @@ bool DwarfExpressionDecode(const byte* ptr, size_t len, bool (*callback)(void*, 
 
             case dwarf_op::const1s:
                 op.opcode = opcode;
-                op.op1 = UnalignedRead<int8_t>(ptr);
+                op.op1 = static_cast<std::uintptr_t>(std::intptr_t{UnalignedRead<int8_t>(ptr)});
                 ptr += sizeof(int8_t);
                 break;
 
@@ -58,7 +58,7 @@ bool DwarfExpressionDecode(const byte* ptr, size_t len, bool (*callback)(void*, 
 
             case dwarf_op::const2s:
                 op.opcode = opcode;
-                op.op1 = UnalignedRead<int16_t>(ptr);
+                op.op1 = static_cast<std::uintptr_t>(std::intptr_t{UnalignedRead<int16_t>(ptr)});
                 ptr += sizeof(int16_t);
                 break;
 
@@ -70,7 +70,7 @@ bool DwarfExpressionDecode(const byte* ptr, size_t len, bool (*callback)(void*, 
 
             case dwarf_op::const4s:
                 op.opcode = opcode;
-                op.op1 = UnalignedRead<int32_t>(ptr);
+                op.op1 = static_cast<std::uintptr_t>(std::intptr_t{UnalignedRead<int32_t>(ptr)});
                 ptr += sizeof(int32_t);
                 break;
 
@@ -82,7 +82,7 @@ bool DwarfExpressionDecode(const byte* ptr, size_t len, bool (*callback)(void*, 
 
             case dwarf_op::const8s:
                 op.opcode = opcode;
-                op.op1 = UnalignedRead<int64_t>(ptr);
+                op.op1 = static_cast<std::uintptr_t>(std::intptr_t{UnalignedRead<int64_t>(ptr)});
                 ptr += sizeof(int64_t);
                 break;
 
@@ -93,7 +93,7 @@ bool DwarfExpressionDecode(const byte* ptr, size_t len, bool (*callback)(void*, 
 
             case dwarf_op::consts:
                 op.opcode = opcode;
-                op.op1 = DecodeSLEB128(ptr);
+                op.op1 = static_cast<std::uintptr_t>(std::intptr_t{DecodeSLEB128(ptr)});
                 break;
 
             case dwarf_op::dup:
@@ -257,7 +257,7 @@ bool DwarfExpressionDecode(const byte* ptr, size_t len, bool (*callback)(void*, 
                 // These are all reduced to a bregx opcode with a register number equal stored as the operand.
                 op.opcode = dwarf_op::bregx;
                 op.op1 = uint8_t(opcode) - uint8_t(dwarf_op::breg0);
-                op.op2 = DecodeSLEB128(ptr);
+                op.op2 = static_cast<std::uintptr_t>(std::intptr_t{DecodeSLEB128(ptr)});
                 break;
 
             case dwarf_op::regx:
@@ -267,13 +267,13 @@ bool DwarfExpressionDecode(const byte* ptr, size_t len, bool (*callback)(void*, 
 
             case dwarf_op::fbreg:
                 op.opcode = opcode;
-                op.op1 = DecodeSLEB128(ptr);
+                op.op1 = static_cast<std::uintptr_t>(std::intptr_t{DecodeSLEB128(ptr)});
                 break;
 
             case dwarf_op::bregx:
                 op.opcode = opcode;
                 op.op1 = DecodeULEB128(ptr);
-                op.op2 = DecodeSLEB128(ptr);
+                op.op2 = static_cast<std::uintptr_t>(std::intptr_t{DecodeSLEB128(ptr)});
                 break;
 
             case dwarf_op::piece:
@@ -315,10 +315,10 @@ bool DwarfExpressionDecode(const byte* ptr, size_t len, bool (*callback)(void*, 
             case dwarf_op::implicit_value:
             {
                 op.opcode = opcode;
-                auto len = DecodeULEB128(ptr);
+                auto length = DecodeULEB128(ptr);
                 op.op1 = uintptr_t(ptr);
-                op.op2 = len;
-                ptr += len;
+                op.op2 = length;
+                ptr += length;
                 break;
             }
 
@@ -328,7 +328,7 @@ bool DwarfExpressionDecode(const byte* ptr, size_t len, bool (*callback)(void*, 
         }
 
         // Update the raw pointer and length fields.
-        size_t length = ptr - original_ptr;
+        auto length = static_cast<size_t>(ptr - original_ptr);
         op.raw = original_ptr;
         op.raw_length = length;
 

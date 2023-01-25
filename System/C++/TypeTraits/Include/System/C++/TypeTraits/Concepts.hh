@@ -136,6 +136,18 @@ concept __boolean_testable = __boolean_testable_impl<_T>
         { !std::forward<_T>(__t) } -> __boolean_testable_impl;
     };
 
+template <class _T, class _U, class _C = common_reference_t<const _T&, const _U&>>
+concept __comparison_common_type_with_impl =
+    same_as<common_reference_t<const _T&, const _U&>, common_reference_t<const _U&, const _T&>> &&
+    requires
+    {
+        requires convertible_to<const _T&, const _C&> || convertible_to<_T, const _C&>;
+        requires convertible_to<const _U&, const _C&> || convertible_to<_U, const _C&>;
+    };
+
+template <class _T, class _U>
+concept __comparison_common_type_with = __comparison_common_type_with_impl<remove_cvref_t<_T>, remove_cvref_t<_U>>;
+
 template <class _T, class _U>
 concept __weakly_equality_comparable_with =
     requires(const remove_reference_t<_T>& __t, const remove_reference_t<_U>& __u)
@@ -166,7 +178,7 @@ concept equality_comparable = __detail::__weakly_equality_comparable_with<_T, _T
 
 template <class _T, class _U>
 concept equality_comparable_with = equality_comparable<_T> && equality_comparable<_U>
-    && common_reference_with<const remove_reference_t<_T>&, const remove_reference_t<_U>&>
+    && __detail::__comparison_common_type_with<_T, _U>
     && equality_comparable<common_reference_t<const remove_reference_t<_T>&,
                                               const remove_reference_t<_U>&>>
     && __detail::__weakly_equality_comparable_with<_T, _U>;
@@ -194,11 +206,7 @@ template <class _T>
 concept regular = semiregular<_T> && equality_comparable<_T>;
 
 template <class _F, class... _Args>
-concept invocable =
-    requires(_F&& __f, _Args&&... __args)
-    {
-        invoke(std::forward<_F>(__f), std::forward<_Args>(__args)...);
-    };
+concept invocable = is_invocable_v<_F, _Args...>;
 
 template <class _F, class... _Args>
 concept regular_invocable = invocable<_F, _Args...>;

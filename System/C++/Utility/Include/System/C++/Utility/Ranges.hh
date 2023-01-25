@@ -512,6 +512,17 @@ auto __container_inserter(_C& __c)
 } // namespace __detail
 
 
+template <range _R, class _Allocator = allocator<byte>>
+struct elements_of
+{
+    [[no_unique_address]] _R range;
+    [[no_unique_address]] _Allocator allocator = _Allocator();
+};
+
+template <class _R, class _Allocator = allocator<byte>>
+elements_of(_R&&, _Allocator = _Allocator()) -> elements_of<_R&&, _Allocator>;
+
+
 } // namespace ranges
 
 

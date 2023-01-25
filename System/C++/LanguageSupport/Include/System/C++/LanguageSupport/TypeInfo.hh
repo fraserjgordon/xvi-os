@@ -3,7 +3,12 @@
 #define __SYSTEM_CXX_LANGUAGESUPPORT_TYPEINFO_H
 
 
-#include <System/ABI/C++/TypeInfo.hh>
+#if defined(__XVI_HOSTED) && __has_include(<typeinfo>)
+#  define __XVI_USING_HOST_TYPEINFO
+#  include <typeinfo>
+#else
+#  include <System/ABI/C++/TypeInfo.hh>
+#endif
 
 #include <System/C++/LanguageSupport/Exception.hh>
 #include <System/C++/LanguageSupport/Private/Namespace.hh>
@@ -13,8 +18,8 @@ namespace __XVI_STD_LANGSUPPORT_NS
 {
 
 
-#if !__XVI_FOREIGN_HOSTED
-using std::type_info;
+#if defined(__XVI_USING_HOST_TYPEINFO)
+using type_info = std::type_info;
 #endif
 
 

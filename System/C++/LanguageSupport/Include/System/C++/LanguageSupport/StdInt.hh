@@ -9,6 +9,7 @@
 #include <System/C++/LanguageSupport/Private/Namespace.hh>
 
 
+#if !defined(INT8_MIN)
 #define INT8_MIN    __INT8_MIN
 #define INT8_MAX    __INT8_MAX
 #define UINT8_MAX   __UINT8_MAX
@@ -52,6 +53,7 @@
 
 #define WINT_MIN            __WINT_MIN
 #define WINT_MAX            __WINT_MAX
+#endif // if !defined(INT8_MIN)
 
 
 namespace __XVI_STD_LANGSUPPORT_NS

@@ -41,9 +41,10 @@ static constexpr T* memory_copy_until(T* __restrict dest, const T* __restrict so
 {
     for (std::size_t i = 0; i < count; ++i)
     {
-        dest[i] = source[i];
         if (TV(source[i]) == terminator)
-            return &dest[i + 1];
+            return &dest[i];
+
+        dest[i] = source[i];
     }
 
     return nullptr;
@@ -115,25 +116,21 @@ template <class T, class U>
 static constexpr T* memory_search_horspool(T* string, std::size_t string_len, const U* pattern, std::size_t pattern_len)
 {
     // Preprocess the pattern string.
-    constexpr std::size_t TableSize = (std::size_t(1) << (sizeof(U) * __CHAR_BIT__)) - 1;
+    constexpr std::size_t TableSize = std::size_t(1) << ((sizeof(U) * __CHAR_BIT__) - 1);
     std::size_t table[TableSize];
     for (std::size_t i = 0; i < TableSize; ++i)
         table[i] = pattern_len;
-    for (std::size_t i = 0; i < pattern_len; ++i)
+    for (std::size_t i = 0; i < (pattern_len-1); ++i)
         table[std::size_t(pattern[i])] = pattern_len - i - 1;
 
     // Perform the search.
     std::size_t offset = 0;
-    while ((string_len - offset) > pattern_len)
+    while ((string_len - offset) >= pattern_len)
     {
-        std::size_t i = pattern_len - 1;
-        while (string[offset + i] == pattern[i])
-        {
-            if (i == 0)
-                return string + offset;
-            --i;
-        }
-        offset = offset + table[std::size_t(string[offset + pattern_len - 1])];
+        if (memory_compare(string + offset, pattern, pattern_len) == 0)
+            return string + offset;
+
+        offset += table[std::size_t(string[offset + pattern_len - 1])];
     }
 
     return nullptr;
@@ -169,8 +166,12 @@ template <class C, C Nul = C(0)>
 static constexpr C* string_copy_n(C* __restrict dest, const C* __restrict source, std::size_t n)
 {
     // Same semantics as strncpy: nul-fill and leave unterminated on overflow.
-    while (n-- > 0 && *source != Nul)
+    while (n > 0 && *source != Nul)
+    {
         *dest++ = *source++;
+        --n;
+    }
+
     memory_set(dest, Nul, n);
     return dest;
 }
@@ -207,17 +208,18 @@ static constexpr auto string_compare(const C* one, const C* two)
 {
     C one_current;
     C two_current;
+    I diff;
     do
     {
         one_current = *one++;
         two_current = *two++;
-        I diff = I(one_current) - I(two_current);
+        diff = I(one_current) - I(two_current);
         if (diff != 0)
             return diff;
     }
     while (one_current != Nul && two_current != Nul);
 
-    return one_current - two_current;
+    return diff;
 }
 
 template <class C, class I = int, C Nul = C(0)>
@@ -290,15 +292,19 @@ template <class C, C Nul = C(0)>
 static constexpr std::size_t string_concatenate_l(C* __restrict dest, const char* __restrict source, std::size_t n)
 {
     auto dest_len = string_length(dest, n);
+
+    if (dest_len >= n)
+        return n;
+
     return dest_len + string_copy_l(dest + dest_len, source, n - dest_len);
 }
 
 template <class C, class C2, C Nul = C(0)>
-static constexpr C* string_search_naive(C* string, const C2* pattern)
+static constexpr C* string_search_naive(C* string, const C2* pattern, std::size_t pattern_len)
 {
     while (*string != Nul)
     {
-        if (string_compare(string, pattern) == 0)
+        if (string_compare(string, pattern, pattern_len) == 0)
             return string;
         ++string;
     }
@@ -308,30 +314,25 @@ static constexpr C* string_search_naive(C* string, const C2* pattern)
 
 // Bayer-Moore-Horspool string search algorithm.
 template <class C, class C2, C Nul = C(0)>
-static constexpr C* string_search_horspool(C* string, const C2* pattern)
+static constexpr C* string_search_horspool(C* string, const C2* pattern, std::size_t pattern_len)
 {
     // Preprocess the pattern string.
-    constexpr std::size_t TableSize = (std::size_t(1) << (sizeof(C) * __CHAR_BIT__)) - 1;
-    std::size_t pattern_len = string_length(pattern);
+    constexpr std::size_t TableSize = std::size_t(1) << ((sizeof(C) * __CHAR_BIT__) - 1);
     std::size_t table[TableSize];
     for (std::size_t i = 0; i < TableSize; ++i)
         table[i] = pattern_len;
-    for (std::size_t i = 0; i < pattern_len; ++i)
-        table[std::size_t(pattern[i])] = pattern_len - i - 1;
+    for (std::size_t i = 0; i < (pattern_len-1); ++i)
+        table[std::make_unsigned_t<C>(pattern[i])] = pattern_len - i - 1;
 
     // Perform the search.
     std::size_t string_len = string_length(string);
     std::size_t offset = 0;
-    while ((string_len - offset) > pattern_len)
+    while ((string_len - offset) >= pattern_len)
     {
-        std::size_t i = pattern_len - 1;
-        while (string[offset + i] == pattern[i])
-        {
-            if (i == 0)
-                return string + offset;
-            --i;
-        }
-        offset = offset + table[std::size_t(string[offset + pattern_len - 1])];
+        if (memory_compare(string + offset, pattern, pattern_len) == 0)
+            return string + offset;
+
+        offset += table[std::make_unsigned_t<C>(string[offset + pattern_len - 1])];
     }
 
     return nullptr;
@@ -345,9 +346,9 @@ static constexpr C* string_search(C* string, const C2* pattern)
     if (pattern_len == 0)
         return string;
     else if (pattern_len < 8)
-        return string_search_naive(string, pattern);
+        return string_search_naive(string, pattern, pattern_len);
     else
-        return string_search_horspool(string, pattern);
+        return string_search_horspool(string, pattern, pattern_len);
 }
 
 

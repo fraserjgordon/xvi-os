@@ -8,6 +8,7 @@ library("Containers")
     public_deps =
     [
         "../LanguageSupport:LanguageSupport_headers",
+        "../PMR:PMR_headers",
         "../Utility:Utility_headers",
     ]
 

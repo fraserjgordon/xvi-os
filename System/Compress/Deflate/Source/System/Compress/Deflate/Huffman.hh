@@ -165,10 +165,10 @@ public:
     }
 #endif
 
-    /*static constexpr HuffmanTree makeStaticTree() noexcept
+    static constexpr HuffmanTree makeStaticTree() noexcept
     {
         return buildStaticTree();
-    }*/
+    }
 
 
 private:

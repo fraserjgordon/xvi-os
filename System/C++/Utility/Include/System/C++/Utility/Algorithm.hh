@@ -1109,7 +1109,7 @@ constexpr _BidirectionalIterator stable_partition(_BidirectionalIterator __first
         size_t __size = static_cast<size_t>(__n) * sizeof(_T);
         while (__size >= 4 * sizeof(_T))
         {
-            void* __ptr = new (__XVI_STD_NS::nothrow) __XVI_STD_NS::byte[__size];
+            void* __ptr = new (std::nothrow) __XVI_STD_NS::byte[__size];
             if (__ptr)
             {
                 __buffer.first = __ptr;
@@ -1195,7 +1195,7 @@ constexpr void inplace_merge(_BidirectionalIterator __first, _BidirectionalItera
         size_t __size = static_cast<size_t>(__n) * sizeof(_T);
         while (__size >= 4 * sizeof(_T))
         {
-            void* __ptr = new (__XVI_STD_NS::nothrow) __XVI_STD_NS::byte[__size];
+            void* __ptr = new (std::nothrow) __XVI_STD_NS::byte[__size];
             if (__ptr)
             {
                 __buffer.first = __ptr;

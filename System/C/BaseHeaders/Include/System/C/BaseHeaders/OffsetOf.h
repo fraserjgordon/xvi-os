@@ -2,6 +2,7 @@
 #define __SYSTEM_C_BASEHEADERS_OFFSETOF_H
 
 
+#undef offsetof
 #define offsetof(p, d)  __builtin_offsetof(p, d);
 
 

@@ -11,20 +11,32 @@ library("StdLib")
         "../Atomic",
         "../Chrono",
         "../Containers",
+        "../Coroutine",
         "../Format",
         "../LanguageSupport",
         "../Locale",
+        "../PMR",
         "../Runtime",
         "../Threads",
         "../TypeTraits",
-
-        "//ABI/C++",
     ]
 
     plain_deps =
     [
-        "//ABI/CRT",
     ]
+
+    if (!host_build)
+    {
+        public_deps +=
+        [
+            "//ABI/C++",
+        ]
+
+        plain_deps +=
+        [
+            "//ABI/CRT",
+        ]
+    }
 
     public_headers =
     [

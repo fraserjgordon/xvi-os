@@ -31,7 +31,7 @@ namespace __detail
 
 template <class> struct __is_optional : false_type {};
 template <class _T> struct __is_optional<optional<_T>> : true_type {};
-template <class _T> inline constexpr bool __is_optional_v = __is_optional<std::remove_cvref_t<_T>>::value;
+template <class _T> inline constexpr bool __is_optional_v = __is_optional<__XVI_STD_NS::remove_cvref_t<_T>>::value;
 
 template <class _T>
 struct __optional_storage
@@ -45,27 +45,27 @@ struct __optional_storage
         constexpr __storage_t() : __raw() {}
 
         template <class... _Args>
-        constexpr __storage_t(in_place_t, _Args&&... __args) : __val(std::forward<_Args>(__args)...) {};
+        constexpr __storage_t(in_place_t, _Args&&... __args) : __val(__XVI_STD_NS::forward<_Args>(__args)...) {};
 
-        constexpr __storage_t(const __storage_t&) requires (std::is_trivially_copy_constructible_v<_T>) = default;
+        constexpr __storage_t(const __storage_t&) requires (__XVI_STD_NS::is_trivially_copy_constructible_v<_T>) = default;
 
-        constexpr __storage_t(const __storage_t&) requires (!std::is_trivially_copy_constructible_v<_T>) {};
+        constexpr __storage_t(const __storage_t&) requires (!__XVI_STD_NS::is_trivially_copy_constructible_v<_T>) {};
 
-        constexpr __storage_t(__storage_t&&) requires (std::is_trivially_move_constructible_v<_T>) = default;
+        constexpr __storage_t(__storage_t&&) requires (__XVI_STD_NS::is_trivially_move_constructible_v<_T>) = default;
 
-        constexpr __storage_t(__storage_t&&) requires (!std::is_trivially_move_constructible_v<_T>) {};
+        constexpr __storage_t(__storage_t&&) requires (!__XVI_STD_NS::is_trivially_move_constructible_v<_T>) {};
 
-        constexpr __storage_t& operator=(const __storage_t&) requires (std::is_trivially_copy_assignable_v<_T>) = default;
+        constexpr __storage_t& operator=(const __storage_t&) requires (__XVI_STD_NS::is_trivially_copy_assignable_v<_T>) = default;
 
-        constexpr __storage_t& operator=(const __storage_t&) requires (!std::is_trivially_copy_assignable_v<_T>) { return *this; }
+        constexpr __storage_t& operator=(const __storage_t&) requires (!__XVI_STD_NS::is_trivially_copy_assignable_v<_T>) { return *this; }
 
-        constexpr __storage_t& operator=(__storage_t&&) requires (std::is_trivially_move_assignable_v<_T>) = default;
+        constexpr __storage_t& operator=(__storage_t&&) requires (__XVI_STD_NS::is_trivially_move_assignable_v<_T>) = default;
 
-        constexpr __storage_t& operator=(__storage_t&&) requires (!std::is_trivially_move_assignable_v<_T>) { return *this; }
+        constexpr __storage_t& operator=(__storage_t&&) requires (!__XVI_STD_NS::is_trivially_move_assignable_v<_T>) { return *this; }
 
-        constexpr ~__storage_t() requires (std::is_trivially_destructible_v<_T>) = default;
+        constexpr ~__storage_t() requires (__XVI_STD_NS::is_trivially_destructible_v<_T>) = default;
 
-        constexpr ~__storage_t() requires (!std::is_trivially_destructible_v<_T>) {}
+        constexpr ~__storage_t() requires (!__XVI_STD_NS::is_trivially_destructible_v<_T>) {}
     };
 
 
@@ -77,40 +77,40 @@ struct __optional_storage
 
     template <class... _Args>
     constexpr __optional_storage(in_place_t, _Args&&... __args) :
-        _M_storage(in_place, std::forward<_Args>(__args)...),
+        _M_storage(in_place, __XVI_STD_NS::forward<_Args>(__args)...),
         _M_armed(true)
     {
     }
 
     constexpr __optional_storage(const __optional_storage&)
-        requires (std::is_trivially_copy_constructible_v<_T>) = default;
+        requires (__XVI_STD_NS::is_trivially_copy_constructible_v<_T>) = default;
 
     constexpr __optional_storage(const __optional_storage& __o)
-        requires (!std::is_trivially_copy_constructible_v<_T>) :
+        requires (!__XVI_STD_NS::is_trivially_copy_constructible_v<_T>) :
         _M_armed(__o._M_armed)
     {
         if (_M_armed)
-            ::new (std::addressof(_M_storage.__val)) _T(__o._M_storage.__val);
+            ::new (__XVI_STD_NS::addressof(_M_storage.__val)) _T(__o._M_storage.__val);
     }
 
     constexpr __optional_storage(__optional_storage&&)
-        requires (std::is_trivially_move_constructible_v<_T>)= default;
+        requires (__XVI_STD_NS::is_trivially_move_constructible_v<_T>)= default;
 
     constexpr __optional_storage(__optional_storage&& __o)
-        requires (!std::is_trivially_move_constructible_v<_T>) :
+        requires (!__XVI_STD_NS::is_trivially_move_constructible_v<_T>) :
         _M_armed(__o._M_armed)
     {
         if (_M_armed)
-            ::new (std::addressof(_M_storage.__val)) _T(std::move(__o._M_storage.__val));
+            ::new (__XVI_STD_NS::addressof(_M_storage.__val)) _T(__XVI_STD_NS::move(__o._M_storage.__val));
     }
 
     template <class _Arg>
     constexpr __optional_storage& operator=(_Arg&& __arg)
     {
         if (_M_armed)
-            _M_storage.__val = std::forward<_Arg>(__arg);
+            _M_storage.__val = __XVI_STD_NS::forward<_Arg>(__arg);
         else
-            new (std::addressof(_M_storage.__val)) _T(std::forward<_Arg>(__arg));
+            new (__XVI_STD_NS::addressof(_M_storage.__val)) _T(__XVI_STD_NS::forward<_Arg>(__arg));
 
         _M_armed = true;
 
@@ -118,10 +118,10 @@ struct __optional_storage
     }
 
     constexpr __optional_storage& operator=(const __optional_storage&)
-        requires (std::is_trivially_copy_assignable_v<_T> && std::is_trivially_copy_constructible_v<_T> && std::is_trivially_destructible_v<_T>) = default;
+        requires (__XVI_STD_NS::is_trivially_copy_assignable_v<_T> && __XVI_STD_NS::is_trivially_copy_constructible_v<_T> && __XVI_STD_NS::is_trivially_destructible_v<_T>) = default;
 
     constexpr __optional_storage& operator=(const __optional_storage& __o)
-        requires (!(std::is_trivially_copy_assignable_v<_T> && std::is_trivially_copy_constructible_v<_T> && std::is_trivially_destructible_v<_T>))
+        requires (!(__XVI_STD_NS::is_trivially_copy_assignable_v<_T> && __XVI_STD_NS::is_trivially_copy_constructible_v<_T> && __XVI_STD_NS::is_trivially_destructible_v<_T>))
     {
         if (&__o == this) [[unlikely]]
             return *this;
@@ -131,7 +131,7 @@ struct __optional_storage
             if (_M_armed)
                 _M_storage.__val = __o._M_storage.__val;
             else
-                ::new (std::addressof(_M_storage.__val)) _T(__o._M_storage.__val);
+                ::new (__XVI_STD_NS::addressof(_M_storage.__val)) _T(__o._M_storage.__val);
 
             _M_armed = true;
         }
@@ -147,10 +147,10 @@ struct __optional_storage
     }
 
     constexpr __optional_storage& operator=(__optional_storage&&)
-        requires (std::is_trivially_move_assignable_v<_T> && std::is_trivially_move_constructible_v<_T> && std::is_trivially_destructible_v<_T>)= default;
+        requires (__XVI_STD_NS::is_trivially_move_assignable_v<_T> && __XVI_STD_NS::is_trivially_move_constructible_v<_T> && __XVI_STD_NS::is_trivially_destructible_v<_T>)= default;
 
     constexpr __optional_storage& operator=(__optional_storage&& __o)
-        requires (!(std::is_trivially_move_assignable_v<_T> && std::is_trivially_move_constructible_v<_T> && std::is_trivially_destructible_v<_T>))
+        requires (!(__XVI_STD_NS::is_trivially_move_assignable_v<_T> && __XVI_STD_NS::is_trivially_move_constructible_v<_T> && __XVI_STD_NS::is_trivially_destructible_v<_T>))
     {
         if (&__o == this) [[unlikely]]
             return *this;
@@ -158,9 +158,9 @@ struct __optional_storage
         if (__o._M_armed)
         {
             if (_M_armed)
-                _M_storage.__val = std::move(__o._M_storage.__val);
+                _M_storage.__val = __XVI_STD_NS::move(__o._M_storage.__val);
             else
-                new (std::addressof(_M_storage.__val)) _T(std::move(__o._M_storage.__val));
+                new (__XVI_STD_NS::addressof(_M_storage.__val)) _T(__XVI_STD_NS::move(__o._M_storage.__val));
 
             _M_armed = true;
         }
@@ -176,10 +176,10 @@ struct __optional_storage
     }
 
     constexpr ~__optional_storage()
-        requires (std::is_trivially_destructible_v<_T>) = default;
+        requires (__XVI_STD_NS::is_trivially_destructible_v<_T>) = default;
 
     constexpr ~__optional_storage()
-        requires (!std::is_trivially_destructible_v<_T>)
+        requires (!__XVI_STD_NS::is_trivially_destructible_v<_T>)
     {
         if (_M_armed)
             _M_storage.__val.~_T();
@@ -187,7 +187,7 @@ struct __optional_storage
 
     constexpr void swap(__storage_t& __rhs)
     {
-        using std::swap;
+        using __XVI_STD_NS::swap;
 
         if (_M_armed)
         {
@@ -197,7 +197,7 @@ struct __optional_storage
             }
             else
             {
-                ::new (std::addressof(__rhs._M_storage.__val)) _T(std::move(_M_storage.__val));
+                ::new (__XVI_STD_NS::addressof(__rhs._M_storage.__val)) _T(__XVI_STD_NS::move(_M_storage.__val));
                 _M_storage.__val.~_T();
                 __rhs._M_armed = true;
                 _M_armed = false;
@@ -207,7 +207,7 @@ struct __optional_storage
         {
             if (__rhs._M_armed)
             {
-                ::new (std::addressof(_M_storage.__val)) _T(std::move(__rhs._M_storage.__val));
+                ::new (__XVI_STD_NS::addressof(_M_storage.__val)) _T(__XVI_STD_NS::move(__rhs._M_storage.__val));
                 __rhs._M_storage.__val.~_T();
                 _M_armed = true;
                 __rhs._M_armed = false;
@@ -231,19 +231,19 @@ struct __optional_storage
 
         _M_armed = false;
 
-        ::new (std::addressof(_M_storage.__val)) _T(std::forward<_Args>(__args)...);
+        ::new (__XVI_STD_NS::addressof(_M_storage.__val)) _T(__XVI_STD_NS::forward<_Args>(__args)...);
 
         _M_armed = true;
     }
 
     constexpr const _T* __ptr() const noexcept
     {
-        return std::addressof(_M_storage.__val);
+        return __XVI_STD_NS::addressof(_M_storage.__val);
     }
 
     constexpr _T* __ptr() noexcept
     {
-        return std::addressof(_M_storage.__val);
+        return __XVI_STD_NS::addressof(_M_storage.__val);
     }
 };
 
@@ -284,47 +284,47 @@ public:
     constexpr optional(nullopt_t) noexcept : optional() {}
 
     constexpr optional(const optional&)
-        requires std::is_copy_constructible_v<_T> = default;
+        requires __XVI_STD_NS::is_copy_constructible_v<_T> = default;
 
     constexpr optional(const optional&)
-        requires (!std::is_copy_constructible_v<_T>) = delete;
+        requires (!__XVI_STD_NS::is_copy_constructible_v<_T>) = delete;
 
     constexpr optional(optional&&) noexcept(is_nothrow_move_constructible_v<_T>)
-        requires std::is_move_constructible_v<_T> = default;
+        requires __XVI_STD_NS::is_move_constructible_v<_T> = default;
 
     template <class... _Args>
-        requires std::is_constructible_v<_T, _Args...>
+        requires __XVI_STD_NS::is_constructible_v<_T, _Args...>
     constexpr explicit optional(in_place_t, _Args&&... __args)
-        : _M_storage(in_place, std::forward<_Args>(__args)...)
+        : _M_storage(in_place, __XVI_STD_NS::forward<_Args>(__args)...)
     {
     }
 
     template <class _U, class... _Args>
-        requires std::is_constructible_v<_T, std::initializer_list<_U>&, _Args...>
+        requires __XVI_STD_NS::is_constructible_v<_T, __XVI_STD_NS::initializer_list<_U>&, _Args...>
     constexpr explicit optional(in_place_t, initializer_list<_U> __il, _Args&&... __args)
-        : _M_storage(in_place, __il, std::forward<_Args>(__args)...)
+        : _M_storage(in_place, __il, __XVI_STD_NS::forward<_Args>(__args)...)
     {
     }
 
     template <class _U = _T>
-        requires std::is_constructible_v<_T, _U>
-            && (!std::is_same_v<std::remove_cvref_t<_U>, in_place_t>)
-            && (!std::is_same_v<std::remove_cvref_t<_U>, optional>)
+        requires __XVI_STD_NS::is_constructible_v<_T, _U>
+            && (!__XVI_STD_NS::is_same_v<__XVI_STD_NS::remove_cvref_t<_U>, in_place_t>)
+            && (!__XVI_STD_NS::is_same_v<__XVI_STD_NS::remove_cvref_t<_U>, optional>)
     explicit(!is_convertible_v<_U, _T>) constexpr optional(_U&& __v)
-        : _M_storage(in_place, std::forward<_U>(__v))
+        : _M_storage(in_place, __XVI_STD_NS::forward<_U>(__v))
     {
     }
 
     template <class _U>
-        requires std::is_constructible_v<_T, const _U&>
-            && (!std::is_constructible_v<_T, optional<_U>&>)
-            && (!std::is_constructible_v<_T, optional<_U>&&>)
-            && (!std::is_constructible_v<_T, const optional<_U>&>)
-            && (!std::is_constructible_v<_T, const optional<_U>&&>)
-            && (!std::is_convertible_v<optional<_U>&, _T>)
-            && (!std::is_convertible_v<optional<_U>&&, _T>)
-            && (!std::is_convertible_v<const optional<_U>&, _T>)
-            && (!std::is_convertible_v<const optional<_U>&&, _T>)
+        requires __XVI_STD_NS::is_constructible_v<_T, const _U&>
+            && (!__XVI_STD_NS::is_constructible_v<_T, optional<_U>&>)
+            && (!__XVI_STD_NS::is_constructible_v<_T, optional<_U>&&>)
+            && (!__XVI_STD_NS::is_constructible_v<_T, const optional<_U>&>)
+            && (!__XVI_STD_NS::is_constructible_v<_T, const optional<_U>&&>)
+            && (!__XVI_STD_NS::is_convertible_v<optional<_U>&, _T>)
+            && (!__XVI_STD_NS::is_convertible_v<optional<_U>&&, _T>)
+            && (!__XVI_STD_NS::is_convertible_v<const optional<_U>&, _T>)
+            && (!__XVI_STD_NS::is_convertible_v<const optional<_U>&&, _T>)
     explicit(!is_convertible_v<const _U&, _T>) constexpr optional(const optional<_U>& __u)
         : optional()
     {
@@ -334,21 +334,21 @@ public:
     }
 
     template <class _U>
-        requires std::is_constructible_v<_T, _U>
-            && (!std::is_constructible_v<_T, optional<_U>&>)
-            && (!std::is_constructible_v<_T, optional<_U>&&>)
-            && (!std::is_constructible_v<_T, const optional<_U>&>)
-            && (!std::is_constructible_v<_T, const optional<_U>&&>)
-            && (!std::is_convertible_v<optional<_U>&, _T>)
-            && (!std::is_convertible_v<optional<_U>&&, _T>)
-            && (!std::is_convertible_v<const optional<_U>&, _T>)
-            && (!std::is_convertible_v<const optional<_U>&&, _T>)
+        requires __XVI_STD_NS::is_constructible_v<_T, _U>
+            && (!__XVI_STD_NS::is_constructible_v<_T, optional<_U>&>)
+            && (!__XVI_STD_NS::is_constructible_v<_T, optional<_U>&&>)
+            && (!__XVI_STD_NS::is_constructible_v<_T, const optional<_U>&>)
+            && (!__XVI_STD_NS::is_constructible_v<_T, const optional<_U>&&>)
+            && (!__XVI_STD_NS::is_convertible_v<optional<_U>&, _T>)
+            && (!__XVI_STD_NS::is_convertible_v<optional<_U>&&, _T>)
+            && (!__XVI_STD_NS::is_convertible_v<const optional<_U>&, _T>)
+            && (!__XVI_STD_NS::is_convertible_v<const optional<_U>&&, _T>)
     explicit(!is_convertible_v<_U&&, _T>) constexpr optional(optional<_U>&& __u)
         : optional()
     {
         // Will perform a move-construct despite looking like assignment.
         if (__u._M_armed)
-            _M_storage = std::move(__u._M_storage.__val);
+            _M_storage = __XVI_STD_NS::move(__u._M_storage.__val);
     }
 
     constexpr ~optional() = default;
@@ -360,39 +360,39 @@ public:
     }
 
     constexpr optional& operator=(const optional&)
-        requires std::is_copy_constructible_v<_T> && std::is_copy_assignable_v<_T> = default;
+        requires __XVI_STD_NS::is_copy_constructible_v<_T> && __XVI_STD_NS::is_copy_assignable_v<_T> = default;
 
     constexpr optional& operator=(const optional&)
-        requires (!(std::is_copy_constructible_v<_T> && std::is_copy_assignable_v<_T>)) = delete;
+        requires (!(__XVI_STD_NS::is_copy_constructible_v<_T> && __XVI_STD_NS::is_copy_assignable_v<_T>)) = delete;
 
     constexpr optional& operator=(optional&&) noexcept (is_nothrow_move_constructible_v<_T> && is_nothrow_move_assignable_v<_T>)
-        requires std::is_move_constructible_v<_T> && std::is_move_assignable_v<_T> = default;
+        requires __XVI_STD_NS::is_move_constructible_v<_T> && __XVI_STD_NS::is_move_assignable_v<_T> = default;
 
     template <class _U = _T>
-        requires (!std::is_same_v<std::remove_cvref_t<_U>, optional>)
-            && (!std::conjunction_v<std::is_scalar<_T>, std::is_same<_T, std::decay_t<_U>>>)
-            && std::is_assignable_v<_T&, _U>
+        requires (!__XVI_STD_NS::is_same_v<__XVI_STD_NS::remove_cvref_t<_U>, optional>)
+            && (!__XVI_STD_NS::conjunction_v<__XVI_STD_NS::is_scalar<_T>, __XVI_STD_NS::is_same<_T, __XVI_STD_NS::decay_t<_U>>>)
+            && __XVI_STD_NS::is_assignable_v<_T&, _U>
     constexpr optional& operator=(_U&& __v)
     {
-        _M_storage = std::forward<_U>(__v);
+        _M_storage = __XVI_STD_NS::forward<_U>(__v);
 
         return *this;
     }
 
     template <class _U>
-        requires std::is_constructible_v<_T, const _U&>
-            && (!std::is_constructible_v<_T, optional<_U>&>)
-            && (!std::is_constructible_v<_T, optional<_U>&&>)
-            && (!std::is_constructible_v<_T, const optional<_U>&>)
-            && (!std::is_constructible_v<_T, const optional<_U>&&>)
-            && (!std::is_convertible_v<optional<_U>&, _T>)
-            && (!std::is_convertible_v<optional<_U>&&, _T>)
-            && (!std::is_convertible_v<const optional<_U>&, _T>)
-            && (!std::is_convertible_v<const optional<_U>&&, _T>)
-            && (!std::is_assignable_v<_T&, optional<_U>&>)
-            && (!std::is_assignable_v<_T&, optional<_U>&&>)
-            && (!std::is_assignable_v<_T&, const optional<_U>&>)
-            && (!std::is_assignable_v<_T&, const optional<_U>&&>)
+        requires __XVI_STD_NS::is_constructible_v<_T, const _U&>
+            && (!__XVI_STD_NS::is_constructible_v<_T, optional<_U>&>)
+            && (!__XVI_STD_NS::is_constructible_v<_T, optional<_U>&&>)
+            && (!__XVI_STD_NS::is_constructible_v<_T, const optional<_U>&>)
+            && (!__XVI_STD_NS::is_constructible_v<_T, const optional<_U>&&>)
+            && (!__XVI_STD_NS::is_convertible_v<optional<_U>&, _T>)
+            && (!__XVI_STD_NS::is_convertible_v<optional<_U>&&, _T>)
+            && (!__XVI_STD_NS::is_convertible_v<const optional<_U>&, _T>)
+            && (!__XVI_STD_NS::is_convertible_v<const optional<_U>&&, _T>)
+            && (!__XVI_STD_NS::is_assignable_v<_T&, optional<_U>&>)
+            && (!__XVI_STD_NS::is_assignable_v<_T&, optional<_U>&&>)
+            && (!__XVI_STD_NS::is_assignable_v<_T&, const optional<_U>&>)
+            && (!__XVI_STD_NS::is_assignable_v<_T&, const optional<_U>&&>)
     constexpr optional& operator=(const optional<_U>& __rhs)
     {
         if (__rhs._M_armed)
@@ -404,19 +404,19 @@ public:
     }
 
     template <class _U>
-        requires std::is_constructible_v<_T, _U>
-            && (!std::is_constructible_v<_T, optional<_U>&>)
-            && (!std::is_constructible_v<_T, optional<_U>&&>)
-            && (!std::is_constructible_v<_T, const optional<_U>&>)
-            && (!std::is_constructible_v<_T, const optional<_U>&&>)
-            && (!std::is_convertible_v<optional<_U>&, _T>)
-            && (!std::is_convertible_v<optional<_U>&&, _T>)
-            && (!std::is_convertible_v<const optional<_U>&, _T>)
-            && (!std::is_convertible_v<const optional<_U>&&, _T>)
+        requires __XVI_STD_NS::is_constructible_v<_T, _U>
+            && (!__XVI_STD_NS::is_constructible_v<_T, optional<_U>&>)
+            && (!__XVI_STD_NS::is_constructible_v<_T, optional<_U>&&>)
+            && (!__XVI_STD_NS::is_constructible_v<_T, const optional<_U>&>)
+            && (!__XVI_STD_NS::is_constructible_v<_T, const optional<_U>&&>)
+            && (!__XVI_STD_NS::is_convertible_v<optional<_U>&, _T>)
+            && (!__XVI_STD_NS::is_convertible_v<optional<_U>&&, _T>)
+            && (!__XVI_STD_NS::is_convertible_v<const optional<_U>&, _T>)
+            && (!__XVI_STD_NS::is_convertible_v<const optional<_U>&&, _T>)
     constexpr optional& operator=(optional<_U>&& __rhs)
     {
         if (__rhs._M_armed)
-            _M_storage = std::move(__rhs._M_storage.__val);
+            _M_storage = __XVI_STD_NS::move(__rhs._M_storage.__val);
         else
             reset();
 
@@ -427,16 +427,16 @@ public:
     template <class... _Args>
     constexpr _T& emplace(_Args&&... __args)
     {
-        _M_storage.emplace(std::forward<_Args>(__args)...);
+        _M_storage.emplace(__XVI_STD_NS::forward<_Args>(__args)...);
 
         return *this;
     }
 
     template <class _U, class... _Args>
-        requires std::is_constructible_v<_T, std::initializer_list<_U>&, _Args...>
+        requires __XVI_STD_NS::is_constructible_v<_T, __XVI_STD_NS::initializer_list<_U>&, _Args...>
     constexpr _T& emplace(initializer_list<_U> __il, _Args&&... __args)
     {
-        _M_storage.emplace(__il, std::forward<_Args>(__args)...);
+        _M_storage.emplace(__il, __XVI_STD_NS::forward<_Args>(__args)...);
 
         return *this;
     }
@@ -470,12 +470,12 @@ public:
 
     constexpr const _T&& operator*() const &&
     {
-        return std::move(*_M_storage.__ptr());
+        return __XVI_STD_NS::move(*_M_storage.__ptr());
     }
 
     constexpr _T&& operator*() &&
     {
-        return std::move(*_M_storage.__ptr());
+        return __XVI_STD_NS::move(*_M_storage.__ptr());
     }
 
     constexpr explicit operator bool() const noexcept
@@ -506,26 +506,26 @@ public:
     {
         if (!has_value())
             __invalid_access();
-        return std::move(**this);
+        return __XVI_STD_NS::move(**this);
     }
 
     constexpr _T&& value() &&
     {
         if (!has_value())
             __invalid_access();
-        return std::move(**this);
+        return __XVI_STD_NS::move(**this);
     }
 
     template <class _U>
     constexpr _T value_or(_U&& __v) const &
     {
-        return has_value() ? **this : static_cast<_T>(std::forward<_U>(__v));
+        return has_value() ? **this : static_cast<_T>(__XVI_STD_NS::forward<_U>(__v));
     }
 
     template <class _U>
     constexpr _T value_or(_U&& __v) &&
     {
-        return has_value() ? std::move(**this) : static_cast<_T>(std::forward<_U>(__v));
+        return has_value() ? __XVI_STD_NS::move(**this) : static_cast<_T>(__XVI_STD_NS::forward<_U>(__v));
     }
 
     constexpr void reset() noexcept
@@ -537,45 +537,45 @@ public:
     constexpr auto and_then(_F&& __f) &
     {
         if (*this)
-            return std::invoke(std::forward<_F>(__f), value());
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), value());
         else
-            return std::remove_cvref_t<std::invoke_result_t<_F, decltype(value())>>();
+            return __XVI_STD_NS::remove_cvref_t<__XVI_STD_NS::invoke_result_t<_F, decltype(value())>>();
     }
 
     template <class _F>
     constexpr auto and_then(_F&& __f) const &
     {
         if (*this)
-            return std::invoke(std::forward<_F>(__f), value());
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), value());
         else
-            return std::remove_cvref_t<std::invoke_result_t<_F, decltype(value())>>();
+            return __XVI_STD_NS::remove_cvref_t<__XVI_STD_NS::invoke_result_t<_F, decltype(value())>>();
     }
 
     template <class _F>
     constexpr auto and_then(_F&& __f) &&
     {
         if (*this)
-            return std::invoke(std::forward<_F>(__f), std::move(value()));
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(value()));
         else
-            return std::remove_cvref_t<std::invoke_result_t<_F, decltype(std::move(value()))>>();
+            return __XVI_STD_NS::remove_cvref_t<__XVI_STD_NS::invoke_result_t<_F, decltype(__XVI_STD_NS::move(value()))>>();
     }
 
     template <class _F>
     constexpr auto and_then(_F&& __f) const &&
     {
         if (*this)
-            return std::invoke(std::forward<_F>(__f), std::move(value()));
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(value()));
         else
-            return std::remove_cvref_t<std::invoke_result_t<_F, decltype(std::move(value()))>>();
+            return __XVI_STD_NS::remove_cvref_t<__XVI_STD_NS::invoke_result_t<_F, decltype(__XVI_STD_NS::move(value()))>>();
     }
 
     template <class _F>
     constexpr auto transform(_F&& __f) &
     {
-        using _U = std::remove_cv_t<std::invoke_result_t<_F, decltype(value())>>;
+        using _U = __XVI_STD_NS::remove_cv_t<__XVI_STD_NS::invoke_result_t<_F, decltype(value())>>;
 
         if (*this)
-            return optional<_U>(in_place, std::invoke(std::forward<_F>(__f), value()));
+            return optional<_U>(in_place, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), value()));
         else
             return optional<_U>();
     }
@@ -583,10 +583,10 @@ public:
     template <class _F>
     constexpr auto transform(_F&& __f) const &
     {
-        using _U = std::remove_cv_t<std::invoke_result_t<_F, decltype(value())>>;
+        using _U = __XVI_STD_NS::remove_cv_t<__XVI_STD_NS::invoke_result_t<_F, decltype(value())>>;
 
         if (*this)
-            return optional<_U>(in_place, std::invoke(std::forward<_F>(__f), value()));
+            return optional<_U>(in_place, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), value()));
         else
             return optional<_U>();
     }
@@ -594,10 +594,10 @@ public:
     template <class _F>
     constexpr auto transform(_F&& __f) &&
     {
-        using _U = std::remove_cv_t<std::invoke_result_t<_F, decltype(std::move(value()))>>;
+        using _U = __XVI_STD_NS::remove_cv_t<__XVI_STD_NS::invoke_result_t<_F, decltype(__XVI_STD_NS::move(value()))>>;
 
         if (*this)
-            return optional<_U>(in_place, std::invoke(std::forward<_F>(__f), std::move(value())));
+            return optional<_U>(in_place, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(value())));
         else
             return optional<_U>();
     }
@@ -605,34 +605,34 @@ public:
     template <class _F>
     constexpr auto transform(_F&& __f) const &&
     {
-        using _U = std::remove_cv_t<std::invoke_result_t<_F, decltype(std::move(value()))>>;
+        using _U = __XVI_STD_NS::remove_cv_t<__XVI_STD_NS::invoke_result_t<_F, decltype(__XVI_STD_NS::move(value()))>>;
 
         if (*this)
-            return optional<_U>(in_place, std::invoke(std::forward<_F>(__f), std::move(value())));
+            return optional<_U>(in_place, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(value())));
         else
             return optional<_U>();
     }
 
     template <class _F>
-        requires std::invocable<_F>
-            && std::copy_constructible<_T>
+        requires __XVI_STD_NS::invocable<_F>
+            && __XVI_STD_NS::copy_constructible<_T>
     constexpr auto or_else(_F&& __f) const &
     {
         if (*this)
             return *this;
         else
-            return std::forward<_F>(__f)();
+            return __XVI_STD_NS::forward<_F>(__f)();
     }
 
     template <class _F>
-        requires std::invocable<_F>
-            && std::move_constructible<_T>
+        requires __XVI_STD_NS::invocable<_F>
+            && __XVI_STD_NS::move_constructible<_T>
     constexpr auto or_else(_F&& __f) &&
     {
         if (*this)
-            return std::move(*this);
+            return __XVI_STD_NS::move(*this);
         else
-            return std::forward<_F>(__f)();
+            return __XVI_STD_NS::forward<_F>(__f)();
     }
 
 private:
@@ -724,8 +724,8 @@ constexpr bool operator>=(const optional<_T>& __x, const optional<_U>& __y)
         return *__x >= *__y;
 }
 
-template <class _T, std::three_way_comparable_with<_T> _U>
-constexpr std::compare_three_way_result_t<_T, _U>
+template <class _T, __XVI_STD_NS::three_way_comparable_with<_T> _U>
+constexpr __XVI_STD_NS::compare_three_way_result_t<_T, _U>
 operator<=>(const optional<_T>& __x, const optional<_T>& __y)
 {
     if (__x && __y)
@@ -741,7 +741,7 @@ constexpr bool operator==(const optional<_T>& __x, nullopt_t) noexcept
 }
 
 template <class _T>
-constexpr std::strong_ordering operator<=>(const optional<_T>& __x, nullopt_t) noexcept
+constexpr __XVI_STD_NS::strong_ordering operator<=>(const optional<_T>& __x, nullopt_t) noexcept
 {
     return __x.has_value <=> false;
 }
@@ -820,16 +820,16 @@ constexpr bool operator>=(const _U& __v, const optional<_T>& __x)
 
 template <class _T, class _U>
     requires (!__detail::__is_optional_v<_U>)
-        && std::three_way_comparable_with<_T, _U>
-constexpr std::compare_three_way_result_t<_T, _U>
+        && __XVI_STD_NS::three_way_comparable_with<_T, _U>
+constexpr __XVI_STD_NS::compare_three_way_result_t<_T, _U>
 operator<=>(const optional<_T>& __x, const _U& __v)
 {
-    return __x.has_value() ? *__x <=> __v : std::strong_ordering::less;
+    return __x.has_value() ? *__x <=> __v : __XVI_STD_NS::strong_ordering::less;
 }
 
 
 template <class _T>
-    requires std::is_move_constructible_v<_T> && std::is_swappable_v<_T>
+    requires __XVI_STD_NS::is_move_constructible_v<_T> && __XVI_STD_NS::is_swappable_v<_T>
 void swap(optional<_T>& __x, optional<_T>& __y) noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
@@ -839,19 +839,19 @@ void swap(optional<_T>& __x, optional<_T>& __y) noexcept(noexcept(__x.swap(__y))
 template <class _T>
 constexpr optional<decay_t<_T>> make_optional(_T&& __t)
 {
-    return optional<decay_t<_T>>(std::forward<_T>(__t));
+    return optional<decay_t<_T>>(__XVI_STD_NS::forward<_T>(__t));
 }
 
 template <class _T, class... _Args>
 constexpr optional<_T> make_optional(_Args&&... __args)
 {
-    return optional<_T>(in_place, std::forward<_Args>(__args)...);
+    return optional<_T>(in_place, __XVI_STD_NS::forward<_Args>(__args)...);
 }
 
 template <class _T, class _U, class... _Args>
 constexpr optional<_T> make_optional(initializer_list<_U> __il, _Args&&... __args)
 {
-    return optional<_T>(in_place, __il, std::forward<_Args>(__args)...);
+    return optional<_T>(in_place, __il, __XVI_STD_NS::forward<_Args>(__args)...);
 }
 
 

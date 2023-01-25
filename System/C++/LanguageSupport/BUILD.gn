@@ -18,13 +18,24 @@ library("LanguageSupport")
 
     deps =
     [
-        "//ABI/Atomic",
     ]
 
     deps_shared =
     [
-        "//ABI/C++:C++__shared",
     ]
+
+    if (!host_build)
+    {
+        deps +=
+        [
+            "//ABI/Atomic",
+        ]
+
+        deps_shared +=
+        [
+            "//ABI/C++:C++__shared",
+        ]
+    }
 
     public_headers =
     [

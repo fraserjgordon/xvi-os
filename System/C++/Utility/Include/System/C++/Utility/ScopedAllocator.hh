@@ -3,21 +3,42 @@
 #define __SYSTEM_CXX_UTILITY_SCOPEDALLOCATOR_H
 
 
-#include <System/C++/Utility/AllocatorTraits.hh>
+#include <System/C++/TypeTraits/TypeTraits.hh>
+
 #include <System/C++/Utility/Private/Config.hh>
+#include <System/C++/Utility/AllocatorTraits.hh>
+
 
 
 namespace __XVI_STD_UTILITY_NS
 {
 
 
+// Forward declarations.
+template <class, class...> class scoped_allocator_adaptor;
+
+
 namespace __detail
 {
 
-template <class _X>
-using __outer_allocator_detector = decltype(declval<_X&>().outer_allocator());
+
+struct __no_inner_allocator_t
+{
+    __no_inner_allocator_t select_on_container_copy_construction() const noexcept
+    {
+        return {};
+    }
+};
+
+template <class... _Allocs>
+struct __inner_allocator { using __type = scoped_allocator_adaptor<_Allocs...>; };
+
+template <>
+struct __inner_allocator<> { using __type = __no_inner_allocator_t; };
+
 
 } // namespace __detail
+
 
 template <class _OuterAlloc, class... _InnerAllocs>
 class scoped_allocator_adaptor
@@ -32,7 +53,7 @@ public:
     using outer_allocator_type = _OuterAlloc;
     using inner_allocator_type = conditional_t<sizeof...(_InnerAllocs) == 0,
                                                scoped_allocator_adaptor<_OuterAlloc>,
-                                               scoped_allocator_adaptor<_InnerAllocs...>>;
+                                               typename __detail::__inner_allocator<_InnerAllocs...>::__type>;
 
     using value_type            = typename _OuterTraits::value_type;
     using size_type             = typename _OuterTraits::size_type;
@@ -161,7 +182,7 @@ public:
         (
             [__p, this](auto&&... __newargs)
             {
-                _OUTERMOST_ALLOC_TRAITS<_OuterAlloc>::construct
+                _OUTERMOST_ALLOC_TRAITS<scoped_allocator_adaptor>::construct
                 (
                     _OUTERMOST(*this),
                     __p,
@@ -175,7 +196,7 @@ public:
     template <class _T>
     void destroy(_T* __p)
     {
-        _OUTERMOST_ALLOC_TRAITS<_OuterAlloc>::destroy(_OUTERMOST(*this), __p);
+        _OUTERMOST_ALLOC_TRAITS<scoped_allocator_adaptor>::destroy(_OUTERMOST(*this), __p);
     }
 
     scoped_allocator_adaptor select_on_container_copy_construction() const
@@ -185,13 +206,14 @@ public:
 
 private:
 
-    //! @todo: this won't work when sizeof...(_InnerAllocs) == 0.
-    scoped_allocator_adaptor<_InnerAllocs...> _M_inner;
+    using __inner_t = typename __detail::__inner_allocator<_InnerAllocs...>::__type;
+
+    [[no_unique_address]] __inner_t _M_inner {};
 
     template <class _X>
-    static auto& _OUTERMOST(_X& __x)
+    static auto& _OUTERMOST(_X& __x) noexcept
     {
-        if constexpr (__detail::is_detected_v<__detail::__outer_allocator_detector, _X>)
+        if constexpr (requires(_X& __x) { __x.outer_allocator(); })
             return _OUTERMOST(__x.outer_allocator());
         else
             return __x;
@@ -200,8 +222,8 @@ private:
     template <class _X>
     using _OUTERMOST_ALLOC_TRAITS = allocator_traits<remove_reference_t<decltype(_OUTERMOST(declval<_X&>()))>>;
 
-
-    scoped_allocator_adaptor(_OuterAlloc __a, decltype(_M_inner) __inner) :
+    // Used by select_on_container_copy_construction().
+    scoped_allocator_adaptor(_OuterAlloc __a, __inner_t __inner) :
         _OuterAlloc(std::move(__a)),
         _M_inner(std::move(__inner))
     {

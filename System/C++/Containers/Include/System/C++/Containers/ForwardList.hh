@@ -810,15 +810,6 @@ typename forward_list<_T, _Allocator>::size_type erase_if(forward_list<_T, _Allo
 }
 
 
-namespace pmr
-{
-
-template <class _T>
-using forward_list = __XVI_STD_CONTAINERS_NS::forward_list<_T, pmr::polymorphic_allocator<_T>>;
-
-} // namespace pmr
-
-
 } // namespace __XVI_STD_CONTAINERS_NS
 
 

@@ -17,11 +17,12 @@ namespace __XVI_STD_UTILITY_NS
 namespace __detail
 {
 
-template <class _T, class _Alloc, class = void_t<>>
+template <class _T, class _Alloc>
 struct __uses_allocator : false_type {};
 
 template <class _T, class _Alloc>
-struct __uses_allocator<_T, _Alloc, void_t<typename _T::allocator_type>>
+    requires requires { typename _T::allocator_type; }
+struct __uses_allocator<_T, _Alloc>
     : is_convertible<_Alloc, typename _T::allocator_type> {};
 
 template <class _T>
@@ -147,7 +148,7 @@ constexpr _T make_obj_using_allocator(const _Alloc& __alloc, _Args&&... __args)
 
 
 template <class _T, class _Alloc, class _U>
-    requires (__detail::__is_pair_specialization_v<_T> && !__detail::__uaca_test_fun_valid<_T>)
+    requires (__detail::__is_pair_specialization_v<_T> && !__detail::__uaca_test_fun_valid<_U>)
 constexpr auto uses_allocator_construction_args(const _Alloc& __alloc, _U&& __u) noexcept
 {
     class __pair_constructor

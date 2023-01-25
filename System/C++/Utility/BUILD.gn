@@ -44,7 +44,6 @@ library("Utility")
         "MBState.hh",
         "Memory.hh",
         "MemoryAlgorithms.hh",
-        "MemoryResource.hh",
         "Numeric.hh",
         "Optional.hh",
         "OutPtr.hh",
@@ -56,6 +55,7 @@ library("Utility")
         "RangesViews.hh",
         "Ratio.hh",
         "ReferenceWrapper.hh",
+        "Scope.hh",
         "ScopedAllocator.hh",
         "StdLib.hh",
         "SharedPtr.hh",
@@ -77,5 +77,9 @@ library("Utility")
         "Private/InPlace.hh",
         "Private/Namespace.hh",
         "Private/TupleTraits.hh",
+    ]
+
+    test_sources =
+    [
     ]
 }

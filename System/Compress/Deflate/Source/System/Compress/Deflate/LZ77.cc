@@ -54,7 +54,7 @@ unsigned int LZ77Decoder::lengthCodeBaseLength(Symbol s) noexcept
     // l_G_2, l_G_3, l_G_4 respectively.
     unsigned int n = static_cast<std::uint16_t>(s) - static_cast<std::uint16_t>(Symbol::FirstLengthCode);
     if (n < 4)
-        return n;
+        return n + 3;
 
     auto g = n / 4;
     auto topBits = 0b100 | (n & 3);

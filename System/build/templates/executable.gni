@@ -27,6 +27,18 @@ template("xvi_executable")
 
         not_needed(["source_prefix"])
     }
+    else if (defined(invoker.test_sources))
+    {
+        sources = []
+        source_prefix = "Test/${include_prefix}/"
+
+        foreach(source, invoker.test_sources)
+        {
+            sources += [ source_prefix + "${source}" ]
+        }
+
+        not_needed(["source_prefix"])
+    }
 
     if (defined(invoker.inputs))
     {
@@ -56,7 +68,14 @@ template("xvi_executable")
     forward_variables_from(invoker, ["cflags", "cflags_c", "cflags_cc", "asmflags", "ldflags", "rustflags"])
 
     # Other compile information.
-    forward_variables_from(invoker, ["crate_name", "include_dirs", "lib_dirs"])
+    forward_variables_from(invoker, ["crate_name", "lib_dirs", "libs", "testonly"])
+
+    # Metadata
+    meta = {}
+    if (defined(invoker.metadata))
+    {
+        meta = invoker.metadata
+    }
 
     if (defined(invoker.configs))
     {
@@ -83,6 +102,11 @@ template("xvi_executable")
         public_deps += invoker.public_deps
     }
 
+    if (defined(invoker.include_dirs))
+    {
+        include_dirs += invoker.include_dirs
+    }
+
     if (host_build)
     {
         # No special config.
@@ -100,6 +124,11 @@ template("xvi_executable")
 
     # Include paths.
     include_dirs    += ["Source"]
+
+    if (defined(invoker.test_sources))
+    {
+        include_dirs += ["Test"]
+    }
 
     link_style = "shared"
     static_link = defined(invoker.static_link) && invoker.static_link
@@ -147,6 +176,6 @@ template("xvi_executable")
 
     executable(target_name)
     {
-
+        metadata = meta
     }
 }

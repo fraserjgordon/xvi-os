@@ -44,11 +44,8 @@ public:
 namespace __detail
 {
 
-template <class> struct __is_enable_shared_from_this_specialization : false_type {};
-template <class _T> struct __is_enable_shared_from_this_specialization<enable_shared_from_this<_T>> : true_type {};
 
-template <class _T> inline constexpr bool __is_enable_shared_from_this_specialization_v
-    = __is_enable_shared_from_this_specialization<remove_cv_t<_T>>::value;
+class __enable_shared_from_this_base {};
 
 
 class __shared_ptr_owner_base
@@ -115,7 +112,7 @@ public:
         return false;
     }
 
-    void operator delete(__shared_ptr_owner_base* __ptr, destroying_delete_t)
+    void operator delete(__shared_ptr_owner_base* __ptr, std::destroying_delete_t)
     {
         __ptr->__delete_this_owner();
     }
@@ -129,6 +126,13 @@ public:
     _D* __get_deleter() noexcept
     {
         return static_cast<_D*>(__get_deleter_by_type_info(typeid(remove_cv_t<_D>)));
+    }
+
+    // Used by the out_ptr_t code when preallocating control blocks.
+    void __set(void* __obj, size_t __extent)
+    {
+        _M_object = __obj;
+        _M_extent = __extent;
     }
 
 private:
@@ -152,6 +156,10 @@ template <bool _OneAllocation, class _T, class _D = __default_delete_for<_T>, cl
 class __shared_ptr_owner final : public __shared_ptr_owner_base
 {
 public:
+
+    // Single allocation and custom deleters are mutually-exclusive.
+    static constexpr bool __using_default_delete = std::same_as<_D, __default_delete_for<_T>>;
+    static_assert(!_OneAllocation || __using_default_delete, "internal library error");
 
     using _U = conditional_t<is_array_v<_T>, remove_extent_t<_T>, remove_cv_t<_T>>;
 
@@ -199,16 +207,26 @@ public:
         
         if constexpr (!_OneAllocation)
         {
-            //! @TODO: destroy arrays.
+            // The deleter is expected to handle element-by-element destruction, if needed (for array types). It also
+            // frees the memory.
             _M_delete(static_cast<_U*>(__ptr));
         }
         else
         {
-            // Objects created by allocate_shared need to be destroyed via their allocator.
-            //! @TODO: destroy arrays.
+            // Note: this method does not free any memory in this case -- it stays allocated until __delete_this_owner
+            //       is called. It only calls the destructor(s).
+
+            // Objects created by allocate_shared need to be destroyed via their allocator. Objects created by
+            // make_shared act as if they were created by allocate_shared using std::allocator.
             using __alloc_t = typename allocator_traits<_A>::template rebind_alloc<_U>;
             __alloc_t __alloc(_M_allocate);
-            allocator_traits<__alloc_t>::destroy(__alloc, static_cast<_U*>(__ptr));
+
+            // Unlike for the separate control & object allocation case, the memory for arrays was allocated as a void*
+            // (because the control data is prefixed) so default_delete (the only supported deleter for this case!)
+            // won't automatically destroy each element.
+            auto __count = __get_elem_count();
+            for (size_t __i = 0; __i < __count; ++__i)
+                allocator_traits<__alloc_t>::destroy(__alloc, static_cast<_U*>(__ptr) + __i);
         }
     }
 
@@ -216,8 +234,9 @@ public:
     {
         __allocation_alloc_t __a(_M_allocate);
         auto __ptr = reinterpret_cast<__allocation_t*>(this);
+        auto __count = __get_elem_count();
         this->~__shared_ptr_owner();
-        __deallocate(__a, __ptr, __get_elem_count());
+        __deallocate(__a, __ptr, __count);
     }
 
     void* __get_deleter_by_type_info(const type_info& __ti) noexcept final
@@ -292,7 +311,7 @@ private:
     template <class _Y>
     void __enables_shared_from_this(_Y* __p)
     {
-        if constexpr (__detail::__is_enable_shared_from_this_specialization_v<_Y>)
+        if constexpr (__XVI_STD_NS::derived_from<_Y, __detail::__enable_shared_from_this_base>)
         {
             if (__p != nullptr && __p->weak_this.expired())
                 __p->weak_this = shared_ptr<remove_cv_t<_Y>>(*this, const_cast<remove_cv_t<_Y>*>(__p));
@@ -302,7 +321,7 @@ private:
     }
 
     template <class _Y, class _D>
-    static constexpr bool __valid_ptr_type()
+    static consteval bool __valid_ptr_type()
     {
         if constexpr (is_array_v<_T>)
         {
@@ -323,6 +342,7 @@ private:
 
 public:
 
+    using __pointer_to = _T;
     using element_type = remove_extent_t<_T>;
     using weak_type = weak_ptr<_T>;
 
@@ -378,7 +398,7 @@ public:
         using __owner_t = __detail::__shared_ptr_owner<false, _Y, _D, _A>;
         _M_owner = static_cast<__owner_t*>(__alloc.allocate(sizeof(__owner_t)));
         __XVI_CXX_UTILITY_CHECK_NEW_RESULT(_M_owner);
-        new (_M_owner) __owner_t(__p, __XVI_STD_NS::move(__d), __XVI_STD_NS::move(__alloc));
+        new (_M_owner) __owner_t(__p, 1, __XVI_STD_NS::move(__d), __XVI_STD_NS::move(__alloc));
 
         if constexpr (!is_array_v<_T>)
             __enables_shared_from_this(__p);
@@ -393,7 +413,7 @@ public:
         requires std::is_move_constructible_v<_D> && __detail::__shared_ptr_valid_deleter<std::nullptr_t, _D>
     shared_ptr(nullptr_t, _D __d) __XVI_CXX_UTILITY_FN_TRY
         : _M_ptr(nullptr),
-          _M_owner(new __detail::__shared_ptr_owner<false, _T, _D>(nullptr, __XVI_STD_NS::move(__d)))
+          _M_owner(new __detail::__shared_ptr_owner<false, _T, _D>(nullptr, 0, __XVI_STD_NS::move(__d)))
     {
         __XVI_CXX_UTILITY_CHECK_NEW_RESULT(_M_owner);
     }
@@ -494,8 +514,9 @@ public:
         if (__r.get() == nullptr)
             return;
 
+        //! @todo: this ctor should have no effect if an exception is thrown.
         if constexpr (!is_reference_v<_D>)
-            new (this) shared_ptr(__r.release(), __r.get_deleter());
+            new (this) shared_ptr(__r.release(), std::move(__r.get_deleter()));
         else
             new (this) shared_ptr(__r.release(), ref(__r.get_deleter()));
     }
@@ -619,7 +640,7 @@ public:
 
     conditional_t<std::is_void_v<_T>, void, _T&>
     operator*() const noexcept
-        requires (!std::is_void_v<_T>)
+        requires (!std::is_void_v<_T> && !std::is_array_v<_T>)
     {
             return *get();
     }
@@ -666,7 +687,7 @@ public:
         return _M_owner->template __get_deleter<remove_cv_t<_D>>();
     }
 
-    static shared_ptr __make(element_type* __p, __detail::__shared_ptr_owner_base* __o)
+    static shared_ptr __make(element_type* __p, __detail::__shared_ptr_owner_base* __o) noexcept
     {
         shared_ptr __ret;
         __ret._M_ptr = __p;
@@ -1481,7 +1502,8 @@ struct owner_less<void>
 
 
 template <class _T>
-class enable_shared_from_this
+class enable_shared_from_this :
+    public __detail::__enable_shared_from_this_base
 {
 protected:
 

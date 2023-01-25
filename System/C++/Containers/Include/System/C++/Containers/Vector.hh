@@ -11,9 +11,9 @@
 #include <System/C++/Utility/Algorithm.hh>
 #include <System/C++/Utility/Allocator.hh>
 #include <System/C++/Utility/Iterator.hh>
-#include <System/C++/Utility/MemoryResource.hh>
 #include <System/C++/Utility/Pair.hh>
 #include <System/C++/Utility/Span.hh>
+#include <System/C++/Utility/StdExcept.hh>
 
 
 namespace __XVI_STD_CONTAINERS_NS
@@ -691,17 +691,6 @@ class vector<bool, _Allocator>;
 template <class _T> struct hash;
 template <class _Allocator>
 struct hash<vector<bool, _Allocator>>;
-
-
-namespace pmr
-{
-
-
-template <class _T>
-using vector = __XVI_STD_CONTAINERS_NS::vector<_T, pmr::polymorphic_allocator<_T>>;
-
-
-} // namespace pmr
 
 
 } // namespace __XVI_STD_CONTAINERS_NS

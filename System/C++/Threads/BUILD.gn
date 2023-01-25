@@ -13,14 +13,25 @@ library("Threads")
         "../LanguageSupport",
         "../Utility",
 
-        "//ABI/Atomic",
         "//C/LanguageSupport",
     ]
 
     deps =
     [
-        "//ABI/C++",
     ]
+
+    if (!host_build)
+    {
+        public_deps +=
+        [
+            "//ABI/Atomic",
+        ]
+
+        deps +=
+        [
+            "//ABI/C++",
+        ]
+    }
 
     public_headers =
     [

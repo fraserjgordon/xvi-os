@@ -78,7 +78,7 @@ constexpr void HuffmanTree::buildTreeInternal(std::span<const std::uint8_t> symb
 
     // Now that we know the value for each symbol, we can build the tree.
     //
-    // The first entry in the table are reserved for the root node.
+    // The first entry in the table is reserved for the root node.
     //
     // Next come the leaf nodes that represent complete symbols.
     //
@@ -158,34 +158,3 @@ constexpr HuffmanTree HuffmanTree::buildStaticTree()
 
 
 } // namespace System::Compress::Deflate
-
-
-/*
-#include <string_view>
-
-
-static consteval auto test(std::string_view bits)
-{
-    auto tree = System::Compress::Deflate::HuffmanTree::makeStaticTree();
-    auto node = tree.root();
-    for (auto b : bits)
-    {
-        if (b == '0')
-            node = node->zero();
-        else
-            node = node->one();
-    }
-
-    return static_cast<std::uint16_t>(node->value());
-}
-
-
-static_assert(test("00110000") == 0);
-static_assert(test("10111111") == 143);
-static_assert(test("110010000") == 144);
-static_assert(test("111111111") == 255);
-static_assert(test("0000000") == 256);
-static_assert(test("0010111") == 279);
-static_assert(test("11000000") == 280);
-static_assert(test("11000111") == 287);
-*/

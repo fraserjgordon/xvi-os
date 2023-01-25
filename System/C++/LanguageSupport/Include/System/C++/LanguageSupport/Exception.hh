@@ -23,18 +23,18 @@ template <class _T> constexpr _T* addressof(_T&);
 
 
 using terminate_handler = void (*)();
-terminate_handler set_terminate(terminate_handler) noexcept;
-terminate_handler get_terminate() noexcept;
+__SYSTEM_CXX_LANGUAGESUPPORT_EXPORT terminate_handler set_terminate(terminate_handler) noexcept;
+__SYSTEM_CXX_LANGUAGESUPPORT_EXPORT terminate_handler get_terminate() noexcept;
 
 __SYSTEM_CXX_LANGUAGESUPPORT_EXPORT [[noreturn]] void terminate();
 
 
 // The following are deprecated (along with exception specifications).
 using unexpected_handler = void (*)();
-[[deprecated]] unexpected_handler set_unexpected(unexpected_handler) noexcept;
-[[deprecated]] unexpected_handler get_unexpected() noexcept;
+__SYSTEM_CXX_LANGUAGESUPPORT_EXPORT [[deprecated]] unexpected_handler set_unexpected(unexpected_handler) noexcept;
+__SYSTEM_CXX_LANGUAGESUPPORT_EXPORT [[deprecated]] unexpected_handler get_unexpected() noexcept;
 
-int uncaught_exceptions() noexcept;
+__SYSTEM_CXX_LANGUAGESUPPORT_EXPORT int uncaught_exceptions() noexcept;
 
 [[deprecated]]
 inline bool uncaught_exception() noexcept
@@ -43,20 +43,19 @@ inline bool uncaught_exception() noexcept
 }
 
 
-class exception
+__SYSTEM_CXX_LANGUAGESUPPORT_EXPORT class exception
 {
 public:
 
     exception() noexcept = default;
     exception(const exception&) noexcept = default;
     exception& operator= (const exception&) noexcept = default;
-    virtual ~exception() = default;
+    virtual ~exception();
 
-    virtual const char* what() const noexcept
-        { return "unknown exception"; }
+    virtual const char* what() const noexcept;
 };
 
-class bad_exception : public exception
+__SYSTEM_CXX_LANGUAGESUPPORT_EXPORT class bad_exception : public exception
 {
 public:
 
@@ -64,11 +63,10 @@ public:
     bad_exception(const bad_exception&) = default;
     bad_exception& operator= (const bad_exception&) noexcept = default;
     
-    const char* what() const noexcept override
-        { return "bad exception"; }
+    const char* what() const noexcept override;
 };
 
-class bad_alloc : public exception
+__SYSTEM_CXX_LANGUAGESUPPORT_EXPORT class bad_alloc : public exception
 {
 public:
 
@@ -76,11 +74,10 @@ public:
     bad_alloc(const bad_alloc&) = default;
     bad_alloc& operator=(const bad_alloc&) noexcept = default;
 
-    const char* what() const noexcept override
-        { return "allocation failure"; }
+    const char* what() const noexcept override;
 };
 
-class bad_array_new_length : public exception
+__SYSTEM_CXX_LANGUAGESUPPORT_EXPORT class bad_array_new_length : public exception
 {
 public:
 
@@ -88,8 +85,7 @@ public:
     bad_array_new_length(const bad_array_new_length&) = default;
     bad_array_new_length& operator=(const bad_array_new_length&) noexcept = default;
 
-    const char* what() const noexcept override
-        { return "invalid length for array new"; }
+    const char* what() const noexcept override;
 };
 
 
@@ -167,15 +163,15 @@ public:
         return !__l;
     }
 
-    void __ref() const noexcept;
-    void __unref() const noexcept;
+    __SYSTEM_CXX_LANGUAGESUPPORT_EXPORT void __ref() const noexcept;
+    __SYSTEM_CXX_LANGUAGESUPPORT_EXPORT void __unref() const noexcept;
 
 
     // Creates an exception by copying the given object.
-    static exception_ptr __make(void* obj, size_t obj_size, const std::type_info*, void (*destructor)(void*), void (*copy)(void* dest, const void* src));
+    __SYSTEM_CXX_LANGUAGESUPPORT_EXPORT static exception_ptr __make(void* obj, size_t obj_size, const std::type_info*, void (*destructor)(void*), void (*copy)(void* dest, const void* src));
 
     // Creates from an existing exception object.
-    static exception_ptr __wrap(void* obj);
+    __SYSTEM_CXX_LANGUAGESUPPORT_EXPORT static exception_ptr __wrap(void* obj);
 
 private:
 
@@ -183,8 +179,8 @@ private:
 };
 
 
-exception_ptr current_exception() noexcept;
-[[noreturn]] void rethrow_exception(exception_ptr);
+__SYSTEM_CXX_LANGUAGESUPPORT_EXPORT exception_ptr current_exception() noexcept;
+__SYSTEM_CXX_LANGUAGESUPPORT_EXPORT [[noreturn]] void rethrow_exception(exception_ptr);
 
 template <class _E> exception_ptr make_exception_ptr(_E __e) noexcept
 {
@@ -237,7 +233,7 @@ private:
 template <class _T> [[noreturn]] void throw_with_nested(_T&& __t)
 {
     using _U = decay_t<_T>;
-    if constexpr (is_class_v<_U> && !is_final_v<_U> && !is_base_of_v<nested_exception, _U>)
+    if constexpr (__XVI_STD_NS::is_class_v<_U> && !__XVI_STD_NS::is_final_v<_U> && !__XVI_STD_NS::is_base_of_v<nested_exception, _U>)
     {
         class _E : public _U, public nested_exception
         {
@@ -246,22 +242,22 @@ template <class _T> [[noreturn]] void throw_with_nested(_T&& __t)
             _E(const _E&) = default;
             _E(_E&&) = default;
             constexpr _E(const _U& __u) : _U(__u) {}
-            constexpr _E(_U&& __u) : _U(forward<_U&&>(__u)) {}
+            constexpr _E(_U&& __u) : _U(__XVI_STD_NS::forward<_U&&>(__u)) {}
             ~_E() override = default;
             _E& operator=(const _E&) = default;
             _E& operator=(_E&&) = default;
         };
-        throw _E(forward<_T>(__t));
+        throw _E(__XVI_STD_NS::forward<_T>(__t));
     }
     else
     {
-        throw forward<_T>(__t);
+        throw __XVI_STD_NS::forward<_T>(__t);
     }
 }
 
 template <class _E> void rethrow_if_nested(const _E& __e)
 {
-    if constexpr (!is_class_v<_E> || !is_polymorphic_v<_E> || !derived_from<_E, nested_exception>)
+    if constexpr (!__XVI_STD_NS::is_class_v<_E> || !__XVI_STD_NS::is_polymorphic_v<_E> || !__XVI_STD_NS::derived_from<_E, nested_exception>)
         return;
 
     if (auto __p = dynamic_cast<nested_exception*>(addressof(__e)))

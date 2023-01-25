@@ -47,13 +47,6 @@ template <class _T, class _Alloc> struct __allocator_traits_rebind
                     __allocator_traits_rebind_detected<_T, _Alloc>,
                     __allocator_traits_rebind_helper<_T, _Alloc>> {};
 
-template <class _A, class _ST, class _CVP> using __allocate_hint_detector = decltype(declval<_A>().allocate(declval<_ST>(), declval<_CVP>()));
-template <class _A, class _T, class... _Args> using __construct_detector = decltype(declval<_A>().construct(declval<_T*>(), declval<_Args>()...));
-template <class _A, class _T> using __destroy_detector = decltype(declval<_A>().destroy(declval<_T*>()));
-
-template <class _A> using __max_size_detector = decltype(declval<_A>().max_size());
-template <class _A> using __select_on_copy_construct_detector = decltype(declval<_A>().select_on_container_copy_construction());
-
 template <class _T> using __difference_type_detector = typename _T::difference_type;
 
 } // namespace __detail
@@ -92,7 +85,7 @@ struct allocator_traits
 
     [[nodiscard]] static constexpr pointer allocate(_Alloc& __a, size_type __n, const_void_pointer __hint)
     {
-        if constexpr (__detail::is_detected_v<__detail::__allocate_hint_detector, _Alloc, size_type, const_void_pointer>)
+        if constexpr (requires(_Alloc& __a, size_type __n, const_void_pointer __hint) { __a.allocate(__n, __hint); })
             return __a.allocate(__n, __hint);
         else
             return __a.allocate(__n);
@@ -106,7 +99,7 @@ struct allocator_traits
     template <class _T, class... _Args>
     static constexpr void construct(_Alloc& __a, _T* __p, _Args&&... __args)
     {
-        if constexpr (__detail::is_detected_v<__detail::__construct_detector, _Alloc, _T, _Args...>)
+        if constexpr (requires(_Alloc& __a, _T* __p, _Args&&... __args) { __a.construct(__p, std::forward<_Args>(__args)...); })
             __a.construct(__p, std::forward<_Args>(__args)...);
         else
             construct_at(__p, std::forward<_Args>(__args)...);
@@ -115,7 +108,7 @@ struct allocator_traits
     template <class _T>
     static constexpr void destroy(_Alloc& __a, _T* __p)
     {
-        if constexpr (__detail::is_detected_v<__detail::__destroy_detector, _Alloc, _T>)
+        if constexpr (requires(_Alloc& __a, _T* __p) { __a.destroy(__p); })
             __a.destroy(__p);
         else
             destroy_at(__p);
@@ -123,7 +116,7 @@ struct allocator_traits
 
     static constexpr size_type max_size(const _Alloc& __a) noexcept
     {
-        if constexpr (__detail::is_detected_v<__detail::__max_size_detector, _Alloc>)
+        if constexpr (requires(_Alloc& __a) { __a.max_size(); })
             return __a.max_size();
         else
             return numeric_limits<size_type>::max() / sizeof(value_type);
@@ -131,7 +124,7 @@ struct allocator_traits
 
     static constexpr _Alloc select_on_container_copy_construction(const _Alloc& __a)
     {
-        if constexpr (__detail::is_detected_v<__detail::__select_on_copy_construct_detector, _Alloc>)
+        if constexpr (requires(_Alloc& __a) { __a.select_on_container_copy_construction(); })
             return __a.select_on_container_copy_construction();
         else
             return __a;

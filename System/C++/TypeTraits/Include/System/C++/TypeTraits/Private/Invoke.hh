@@ -1,4 +1,3 @@
-#pragma once
 #ifndef __SYSTEM_CXX_TYPETRAITS_PRIVATE_INVOKE_H
 #define __SYSTEM_CXX_TYPETRAITS_PRIVATE_INVOKE_H
 
@@ -23,6 +22,7 @@ template <class> struct remove_cv;
 template <class> struct add_rvalue_reference;
 template <class, class> struct is_convertible;
 template <class, class> struct is_nothrow_convertible;
+template <class, class> struct reference_converts_from_temporary;
 template <class _T> typename add_rvalue_reference<_T>::type declval() noexcept;
 template <class _T> constexpr _T&& forward(typename remove_reference<_T>::type&) noexcept;
 template <class _T> constexpr _T&& forward(typename remove_reference<_T>::type&&) noexcept;
@@ -42,44 +42,66 @@ template <class _R, class _C, class... _Params> struct __mem_fn_ptr_class<_R (_C
 template <class _F> struct __mem_obj_ptr_class;
 template <class _T, class _C> struct __mem_obj_ptr_class<_T _C::*> { using type = _C; };
 
+
 template <class _F, class _T1, class... _Tn>
-constexpr bool __is_invoke_noexcept()
+    requires requires(_F&& __f, _T1&& __t1, _Tn&&... __tn) { (__XVI_STD_NS::forward<_T1>(__t1).*__f)(__XVI_STD_NS::forward<_Tn>(__tn)...); }
+constexpr decltype(auto) __invoke_memfn_ref(_F&& __f, _T1&& __t1, _Tn&&... __tn)
+    noexcept(noexcept((__XVI_STD_NS::forward<_T1>(__t1).*__f)(__XVI_STD_NS::forward<_Tn>(__tn)...)))
 {
-    if constexpr (is_member_function_pointer<_F>::value)
-    {
-        using _C = typename __mem_fn_ptr_class<typename __strip_memfn_qualifiers<_F>::type>::type;
+    return (__XVI_STD_NS::forward<_T1>(__t1).*__f)(__XVI_STD_NS::forward<_Tn>(__tn)...);
+}
 
-        if constexpr (is_base_of<_C, typename remove_reference<_T1>::type>::value)
-            return noexcept((declval<_T1>().*declval<_F>())(declval<_Tn>()...));
+template <class _F, class _T1, class... _Tn>
+    requires requires(_F&& __f, _T1&& __t1, _Tn&&... __tn) { (__XVI_STD_NS::forward<_T1>(__t1).get().*__f)(__XVI_STD_NS::forward<_Tn>(__tn)...); }
+constexpr decltype(auto) __invoke_memfn_refwrapper(_F&& __f, _T1&& __t1, _Tn&&... __tn)
+    noexcept(noexcept((__XVI_STD_NS::forward<_T1>(__t1).get().*__f)(__XVI_STD_NS::forward<_Tn>(__tn)...)))
+{
+    return (__XVI_STD_NS::forward<_T1>(__t1).get().*__f)(__XVI_STD_NS::forward<_Tn>(__tn)...);
+}
 
-        else if constexpr (__is_reference_wrapper_specialization<typename remove_cvref<_T1>::type>::value)
-            return noexcept((declval<_T1>().get().*declval<_F>())(declval<_Tn>()...));
+template <class _F, class _T1, class... _Tn>
+    requires requires(_F&& __f, _T1&& __t1, _Tn&&... __tn) { ((*__XVI_STD_NS::forward<_T1>(__t1)).*__f)(__XVI_STD_NS::forward<_Tn>(__tn)...); }
+constexpr decltype(auto) __invoke_memfn(_F&& __f, _T1&& __t1, _Tn&&... __tn)
+    noexcept(noexcept(((*__XVI_STD_NS::forward<_T1>(__t1)).*__f)(__XVI_STD_NS::forward<_Tn>(__tn)...)))
+{
+    return ((*__XVI_STD_NS::forward<_T1>(__t1)).*__f)(__XVI_STD_NS::forward<_Tn>(__tn)...);
+}
 
-        else
-            return noexcept(((*declval<_T1>()).*declval<_F>())(declval<_Tn>()...));
-    }
+template <class _F, class _T1>
+    requires requires(_F&& __f, _T1&& __t1) { __XVI_STD_NS::forward<_T1>(__t1).*__f; }
+constexpr decltype(auto) __invoke_memvar_ref(_F&& __f, _T1&& __t1)
+    noexcept(noexcept(__XVI_STD_NS::forward<_T1>(__t1).*__f))
+{
+    return __XVI_STD_NS::forward<_T1>(__t1).*__f;
+}
 
-    else if constexpr (is_member_object_pointer<_F>::value && sizeof...(_Tn) == 0)
-    {
-        using _C = typename __mem_obj_ptr_class<_F>::type;
+template <class _F, class _T1>
+    requires requires(_F&& __f, _T1&& __t1) { __XVI_STD_NS::forward<_T1>(__t1).get().*__f; }
+constexpr decltype(auto) __invoke_memvar_refwrapper(_F&& __f, _T1&& __t1)
+    noexcept(noexcept(__XVI_STD_NS::forward<_T1>(__t1).get().*__f))
+{
+    return __XVI_STD_NS::forward<_T1>(__t1).get().*__f;
+}
 
-        if constexpr (is_base_of<_C, typename remove_reference<_T1>::type>::value)
-            return noexcept(declval<_T1>().*declval<_F>());
+template <class _F, class _T1>
+    requires requires(_F&& __f, _T1&& __t1) { (*__XVI_STD_NS::forward<_T1>(__t1)).*__f; }
+constexpr decltype(auto) __invoke_memvar(_F&& __f, _T1&& __t1)
+    noexcept(noexcept((*__XVI_STD_NS::forward<_T1>(__t1)).*__f))
+{
+    return (*__XVI_STD_NS::forward<_T1>(__t1)).*__f;
+}
 
-        else if constexpr (__is_reference_wrapper_specialization<typename remove_cvref<_T1>::type>::value)
-            return noexcept(declval<_T1>().get().*declval<_F>());
-
-        else
-            return noexcept((*declval<_T1>()).*declval<_F>());
-    }
-
-    else
-        return noexcept(declval<_F>()(declval<_T1>(), declval<_Tn>()...));
+template <class _F, class... _Tn>
+    requires requires(_F&& __f, _Tn&&... __tn) { __XVI_STD_NS::forward<_F>(__f)(__XVI_STD_NS::forward<_Tn>(__tn)...); }
+constexpr decltype(auto) __invoke_other(_F&& __f, _Tn&&... __tn)
+    noexcept(noexcept(__XVI_STD_NS::forward<_F>(__f)(__XVI_STD_NS::forward<_Tn>(__tn)...)))
+{
+    return __XVI_STD_NS::forward<_F>(__f)(__XVI_STD_NS::forward<_Tn>(__tn)...);
 }
 
 
 template <class _F, class _T1, class... _Tn>
-constexpr int __invoke_type_id_impl()
+consteval int __invoke_select_impl()
 {
     if constexpr (is_member_function_pointer<_F>::value)
     {
@@ -87,177 +109,199 @@ constexpr int __invoke_type_id_impl()
 
         if constexpr (is_base_of<_C, typename remove_reference<_T1>::type>::value)
             return 1;
-
         else if constexpr (__is_reference_wrapper_specialization<typename remove_cvref<_T1>::type>::value)
             return 2;
-
         else
             return 3;
     }
-
     else if constexpr (is_member_object_pointer<_F>::value && sizeof...(_Tn) == 0)
     {
         using _C = typename __mem_obj_ptr_class<_F>::type;
 
         if constexpr (is_base_of<_C, typename remove_reference<_T1>::type>::value)
             return 4;
-
         else if constexpr (__is_reference_wrapper_specialization<typename remove_cvref<_T1>::type>::value)
             return 5;
-
         else
             return 6;
     }
-
     else
+    {
         return 7;
+    }
 }
 
 template <class _F, class... _Tn>
-constexpr int __invoke_type_id()
+consteval int __invoke_select()
 {
     if constexpr (sizeof...(_Tn) == 0)
         return 7;
     else
-        return __invoke_type_id_impl<_F, _Tn...>();
+        return __invoke_select_impl<_F, _Tn...>();
 }
 
 
-template <int _InvokeType, class _Fn, class... Args>
-struct __invoke_type;
-
-template <class _F, class _T1, class... _Tn>
-struct __invoke_type<1, _F, _T1, _Tn...>
+template <class... _Args>
+    requires (__invoke_select<_Args...>() == 1)
+    && requires(_Args&&... __args) { __invoke_memfn_ref(__XVI_STD_NS::forward<_Args>(__args)...); }
+constexpr decltype(auto) __invoke(_Args&&... __args)
+    noexcept(noexcept(__invoke_memfn_ref(__XVI_STD_NS::forward<_Args>(__args)...)))
 {
-    template <class _G, class...>
-    using __detector = decltype((declval<_T1>().*declval<_G>())(declval<_Tn>()...));
-};
+    return __invoke_memfn_ref(__XVI_STD_NS::forward<_Args>(__args)...);
+}
 
-template <class _F, class _T1, class... _Tn>
-struct __invoke_type<2, _F, _T1, _Tn...>
+template <class... _Args>
+    requires (__invoke_select<_Args...>() == 2)
+    && requires(_Args&&... __args) { __invoke_memfn_refwrapper(__XVI_STD_NS::forward<_Args>(__args)...); }
+constexpr decltype(auto) __invoke(_Args&&... __args)
+    noexcept(noexcept(__invoke_memfn_refwrapper(__XVI_STD_NS::forward<_Args>(__args)...)))
 {
-    template <class _G, class...>
-    using __detector = decltype((declval<_T1>().get().*declval<_G>())(declval<_Tn>()...));
-};
+    return __invoke_memfn_refwrapper(__XVI_STD_NS::forward<_Args>(__args)...);
+}
 
-template <class _F, class _T1, class... _Tn>
-struct __invoke_type<3, _F, _T1, _Tn...>
+template <class... _Args>
+    requires (__invoke_select<_Args...>() == 3)
+    && requires(_Args&&... __args) { __invoke_memfn(__XVI_STD_NS::forward<_Args>(__args)...); }
+constexpr decltype(auto) __invoke(_Args&&... __args)
+    noexcept(noexcept(__invoke_memfn(__XVI_STD_NS::forward<_Args>(__args)...)))
 {
-    template <class _G, class _U1, class... _Un>
-    using __detector = decltype(((*declval<_U1>()).*declval<_G>())(declval<_Un>()...));
-};
+    return __invoke_memfn(__XVI_STD_NS::forward<_Args>(__args)...);
+}
 
-template <class _F, class _T1>
-struct __invoke_type<4, _F, _T1>
+template <class... _Args>
+    requires (__invoke_select<_Args...>() == 4)
+    && requires(_Args&&... __args) { __invoke_memvar_ref(__XVI_STD_NS::forward<_Args>(__args)...); }
+constexpr decltype(auto) __invoke(_Args&&... __args)
+    noexcept(noexcept(__invoke_memvar_ref(__XVI_STD_NS::forward<_Args>(__args)...)))
 {
-    template <class _G, class...>
-    using __detector = decltype(declval<_T1>().*declval<_G>());
-};
+    return __invoke_memvar_ref(__XVI_STD_NS::forward<_Args>(__args)...);
+}
 
-template <class _F, class _T1>
-struct __invoke_type<5, _F, _T1>
+template <class... _Args>
+    requires (__invoke_select<_Args...>() == 5)
+    && requires(_Args&&... __args) { __invoke_memvar_refwrapper(__XVI_STD_NS::forward<_Args>(__args)...); }
+constexpr decltype(auto) __invoke(_Args&&... __args)
+    noexcept(noexcept(__invoke_memvar_refwrapper(__XVI_STD_NS::forward<_Args>(__args)...)))
 {
-    template <class _G, class...>
-    using __detector = decltype(declval<_T1>().get().*declval<_G>());
-};
+    return __invoke_memvar_refwrapper(__XVI_STD_NS::forward<_Args>(__args)...);
+}
 
-template <class _F, class _T1>
-struct __invoke_type<6, _F, _T1>
+template <class... _Args>
+    requires (__invoke_select<_Args...>() == 6)
+    && requires(_Args&&... __args) { __invoke_memvar(__XVI_STD_NS::forward<_Args>(__args)...); }
+constexpr decltype(auto) __invoke(_Args&&... __args)
+    noexcept(noexcept(__invoke_memvar(__XVI_STD_NS::forward<_Args>(__args)...)))
 {
-    template <class _G, class...>
-    using __detector = decltype((*declval<_T1>()).*declval<_G>());
-};
+    return __invoke_memvar(__XVI_STD_NS::forward<_Args>(__args)...);
+}
 
-template <class _F, class... _Tn>
-struct __invoke_type<7, _F, _Tn...>
+template <class... _Args>
+    requires (__invoke_select<_Args...>() == 7)
+    && requires(_Args&&... __args) { __invoke_other(__XVI_STD_NS::forward<_Args>(__args)...); }
+constexpr decltype(auto) __invoke(_Args&&... __args)
+    noexcept(noexcept(__invoke_other(__XVI_STD_NS::forward<_Args>(__args)...)))
 {
-    template <class _G, class...>
-    using __detector = decltype(declval<_G>()(declval<_Tn>()...));
-};
+    return __invoke_other(__XVI_STD_NS::forward<_Args>(__args)...);
+}
 
 
-template <class _Fn, class... _Args>
-struct __invoke_helper : __invoke_type<__invoke_type_id<_Fn, _Args...>(), _Fn, _Args...>
+template <class... _Args>
+    requires requires(_Args&&... __args) { __invoke(__XVI_STD_NS::forward<_Args>(__args)...); }
+constexpr decltype(auto) _INVOKE(_Args&&... __args)
+    noexcept(noexcept(__invoke(__XVI_STD_NS::forward<_Args>(__args)...)))
 {
-};
+    return __invoke(__XVI_STD_NS::forward<_Args>(__args)...);
+}
 
-template <class _F, class _T1, class... _Tn>
-constexpr decltype(auto) _INVOKE(_F&& __f, _T1&& __t1, _Tn&&... __tn) noexcept(__is_invoke_noexcept<_F, _T1, _Tn...>())
-{
-    if constexpr (is_member_function_pointer<_F>::value)
+template <class _R, class... _Args>
+concept __invoke_r_implicit_conv = is_void<_R>::value || requires { [](_Args&&... __args) -> _R { return _INVOKE(__XVI_STD_NS::forward<_Args>(__args)...); }; };
+
+template <class _R, class... _Args>
+concept __invoke_r_implicit_conv_nothrow = __invoke_r_implicit_conv<_R, _Args...> && noexcept(_R{_INVOKE(declval<_Args>()...)});
+
+template <class _R, class... _Args>
+    requires requires(_Args&&... __args)
     {
-        using _C = typename __mem_fn_ptr_class<typename __strip_memfn_qualifiers<_F>::type>::type;
-
-        if constexpr (is_base_of<_C, typename remove_reference<_T1>::type>::value)
-            return (std::forward<_T1>(__t1).*__f)(std::forward<_Tn>(__tn)...);
-
-        else if constexpr (__is_reference_wrapper_specialization<typename remove_cvref<_T1>::type>::value)
-            return (std::forward<_T1>(__t1).get().*__f)(std::forward<_Tn>(__tn)...);
-
-        else
-            return ((*std::forward<_T1>(__t1)).*__f)(std::forward<_Tn>(__tn)...);
-    }
-
-    else if constexpr (is_member_object_pointer<_F>::value && sizeof...(_Tn) == 0)
+        _INVOKE(__XVI_STD_NS::forward<_Args>(__args)...);
+    } && __invoke_r_implicit_conv<_R, _Args...>
+constexpr _R _INVOKE_R(_Args&&... __args)
+    noexcept
+    (
+        noexcept(_INVOKE(__XVI_STD_NS::forward<_Args>(__args)...))
+        && __invoke_r_implicit_conv_nothrow<_R, _Args...>
+    )
+{
+    if constexpr (is_void<_R>::value)
     {
-        using _C = typename __mem_obj_ptr_class<_F>::type;
-
-        if constexpr (is_base_of<_C, typename remove_reference<_T1>::type>::value)
-            return std::forward<_T1>(__t1).*__f;
-
-        else if constexpr (__is_reference_wrapper_specialization<typename remove_cvref<_T1>::type>::value)
-            return std::forward<_T1>(__t1).get().*__f;
-
-        else
-            return (*std::forward<_T1>(__t1)).*__f;
+        static_cast<void>(_INVOKE(__XVI_STD_NS::forward<_Args>(__args)...));
     }
-
     else
-        return std::forward<_F>(__f)(std::forward<_T1>(__t1), std::forward<_Tn>(__tn)...);
-}
-
-template <class _F>
-constexpr auto _INVOKE(_F&& __f) noexcept(noexcept(declval<_F>()()))
-{
-    return std::forward<_F>(__f)();
-}
-
-template <bool, class _R, class... _Args>
-struct __invoke_r_helper
-{
-    constexpr _R operator()(_Args&&... __args)
-        noexcept(noexcept(_INVOKE(declval<_Args>()...)) && is_nothrow_convertible<decltype(_INVOKE(declval<_Args>()...)), _R>::value)
     {
-        static_assert(!reference_converts_from_temporary<_R, decltype(_INVOKE(declval<_Args>()...))>::value);
-        return _INVOKE(std::forward<_Args>(__args)...);
+        static_assert(!reference_converts_from_temporary<_R, decltype(_INVOKE(__XVI_STD_NS::forward<_Args>(__args)...))>::value);
+        return _INVOKE(__XVI_STD_NS::forward<_Args>(__args)...);
     }
-};
-
-template <class _R, class... _Args>
-struct __invoke_r_helper<true, _R, _Args...>
-{
-    constexpr void operator()(_Args&&... __args)
-        noexcept(noexcept(static_cast<void>(_INVOKE(declval<_Args>()...))))
-    {
-        static_assert(!reference_converts_from_temporary<_R, decltype(_INVOKE(declval<_Args>()...))>::value);
-        static_cast<void>(_INVOKE(std::forward<_Args>(__args)...));
-    }
-};
-
-template <class _R, class... _Args>
-struct __invoke_r_t : __invoke_r_helper<is_void<typename remove_cv<_R>::type>::value, _R, _Args...> {};
-
-template <class _R, class... _Args>
-constexpr auto _INVOKE_R(_Args&&... __args)
-    noexcept(noexcept(__invoke_r_t<_R, _Args...>()(declval<_Args>()...)))
-{
-    return __invoke_r_t<_R, _Args...>()(std::forward<_Args>(__args)...);
 }
 
+template <class... _Args>
+concept __invocable = requires(_Args&&... __args) { _INVOKE(__XVI_STD_NS::forward<_Args>(__args)...); };
 
-template <class _Fn, class... _Args> using __is_invocable_detector = typename __invoke_helper<_Fn, _Args...>::template __detector<_Fn, _Args...>;
+template <class _R, class... _Args>
+concept __invocable_r = requires(_Args&&... __args) { _INVOKE_R<_R>(__XVI_STD_NS::forward<_Args>(__args)...); };
+
+template <class... _Args>
+concept __nothrow_invocable = __invocable<_Args...> && noexcept(_INVOKE(declval<_Args>()...));
+
+template <class _R, class... _Args>
+concept __nothrow_invocable_r = __invocable_r<_R, _Args...> && noexcept(_INVOKE_R<_R>(declval<_Args>()...));
+
+
+template <class... _Args>
+struct __invoke_result {};
+
+template <class... _Args>
+    requires __invocable<_Args...>
+struct __invoke_result<_Args...>
+    { using type = decltype(_INVOKE(declval<_Args>()...)); };
+
 
 } // namespace __detail
+
+
+template <class... _Args>
+struct is_invocable :
+    public bool_constant<__detail::__invocable<_Args...>> {};
+
+template <class _R, class... _Args>
+struct is_invocable_r :
+    public bool_constant<__detail::__invocable_r<_R, _Args...>> {};
+
+template <class... _Args>
+struct is_nothrow_invocable :
+    public bool_constant<__detail::__nothrow_invocable<_Args...>> {};
+
+template <class _R, class... _Args>
+struct is_nothrow_invocable_r :
+    public bool_constant<__detail::__nothrow_invocable_r<_R, _Args...>> {};
+
+
+template <class... _Args>
+inline constexpr auto is_invocable_v = is_invocable<_Args...>::value;
+
+template <class _R, class... _Args>
+inline constexpr auto is_invocable_r_v = is_invocable_r<_R, _Args...>::value;
+
+template <class... _Args>
+inline constexpr auto is_nothrow_invocable_v = is_nothrow_invocable<_Args...>::value;
+
+template <class _R, class... _Args>
+inline constexpr auto is_nothrow_invocable_r_v = is_nothrow_invocable_r<_R, _Args...>::value;
+
+
+template <class _F, class... _Args>
+struct invoke_result : public __detail::__invoke_result<_F, _Args...> {};
+
+template <class _F, class... _Args>
+using invoke_result_t = typename invoke_result<_F, _Args...>::type;
 
 
 } // namespace __XVI_STD_TYPETRAITS_NS

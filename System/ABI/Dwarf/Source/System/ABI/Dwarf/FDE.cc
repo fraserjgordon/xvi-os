@@ -452,7 +452,7 @@ DwarfFDE DwarfFDE::DecodeFrom(const std::byte*& ptr, std::uintptr_t text_base, s
     fde.m_codeLength = instructionBytes;
     fde.m_lsda = lsda;
     fde.m_instructions = ptr;
-    fde.m_instructionsLength = (fdeStart + fdeLength) - ptr;
+    fde.m_instructionsLength = static_cast<std::size_t>((fdeStart + fdeLength) - ptr);
     ptr = fdeStart + fdeLength;
     return fde;
 }

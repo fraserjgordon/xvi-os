@@ -291,7 +291,7 @@ namespace __detail
 
 //! @TODO: implement
 template <class _T, class _U>
-constexpr bool __builtin_ptr_three_way = false;
+constexpr bool __builtin_ptr_three_way = is_pointer_v<_T> && is_pointer_v<_U>;
 
 } // namespace __detail
 
@@ -359,12 +359,12 @@ struct __strong_order
 {
     template <class _E, class _F>
         requires (!same_as<decay_t<_E>, decay_t<_F>>)
-    constexpr void operator()(_E&&, _F&&) const = delete;
+    static constexpr void operator()(_E&&, _F&&) = delete;
 
     template <class _E, class _F>
         requires (same_as<decay_t<_E>, decay_t<_F>>
          && __has_strong_order<strong_ordering, _E, _F>)
-    constexpr auto operator()(_E&& __e, _F&& __f) const
+    static constexpr auto operator()(_E&& __e, _F&& __f)
     {
         return strong_ordering(strong_order(std::forward<_E>(__e), std::forward<_F>(__f)));
     }
@@ -373,7 +373,7 @@ struct __strong_order
         requires (same_as<decay_t<_E>, decay_t<_F>>
         && !__has_strong_order<strong_ordering, _E, _F>
         && __has_compare_three_way<strong_ordering, _E, _F>)
-    constexpr auto operator()(_E&& __e, _F&& __f) const
+    static constexpr auto operator()(_E&& __e, _F&& __f)
     {
         return strong_ordering(compare_three_way()(std::forward<_E>(__e), std::forward<_F>(__f)));
     }
@@ -382,7 +382,7 @@ struct __strong_order
         requires (same_as<decay_t<_E>, decay_t<_F>>
         && !__has_strong_order<strong_ordering, _E, _F>
         && !__has_compare_three_way<strong_ordering, _E, _F>)
-    constexpr void operator()(_E&&, _F&&) const = delete;
+    static constexpr void operator()(_E&&, _F&&) = delete;
 };
 
 inline constexpr __strong_order strong_order = {};
@@ -391,12 +391,12 @@ struct __weak_order
 {
     template <class _E, class _F>
         requires (!same_as<decay_t<_E>, decay_t<_F>>)
-    constexpr void operator()(_E&& __e, _F&& __f) const = delete;
+    static constexpr void operator()(_E&& __e, _F&& __f) = delete;
 
     template <class _E, class _F>
         requires (same_as<decay_t<_E>, decay_t<_F>>
         && __has_weak_order<weak_ordering, _E, _F>)
-    constexpr auto operator()(_E&& __e, _F&& __f) const
+    static constexpr auto operator()(_E&& __e, _F&& __f)
     {
         return weak_ordering(weak_order(std::forward<_E>(__e), std::forward<_F>(__f)));
     }
@@ -405,7 +405,7 @@ struct __weak_order
         requires (same_as<decay_t<_E>, decay_t<_F>>
         && !__has_weak_order<weak_ordering, _E, _F>
         && __has_compare_three_way<weak_ordering, _E, _F>)
-    constexpr auto operator()(_E&& __e, _F&& __f) const
+    static constexpr auto operator()(_E&& __e, _F&& __f)
     {
         return weak_ordering(compare_three_way()(std::forward<_E>(__e), std::forward<_F>(__f)));
     }
@@ -415,7 +415,7 @@ struct __weak_order
         && !__has_weak_order<weak_ordering, _E, _F>
         && !__has_compare_three_way<weak_ordering, _E, _F>
         && __has_strong_order<weak_ordering, _E, _F>)
-    constexpr auto operator()(_E&& __e, _F&& __f) const
+    static constexpr auto operator()(_E&& __e, _F&& __f)
     {
         return weak_ordering(strong_order(std::forward<_E>(__e), std::forward<_F>(__f)));
     }
@@ -425,7 +425,7 @@ struct __weak_order
         && !__has_weak_order<weak_ordering, _E, _F>
         && !__has_compare_three_way<weak_ordering, _E, _F>
         && !__has_strong_order<weak_ordering, _E, _F>)
-    constexpr void operator()(_E&& __e, _F&& __f) const = delete;
+    static constexpr void operator()(_E&& __e, _F&& __f) = delete;
 };
 
 inline constexpr __weak_order weak_order = {};
@@ -434,12 +434,12 @@ struct __partial_order
 {
     template <class _E, class _F>
         requires (!same_as<decay_t<_E>, decay_t<_F>>)
-    constexpr void operator()(_E&& __e, _F&& __f) const = delete;
+    static constexpr void operator()(_E&& __e, _F&& __f) = delete;
 
     template <class _E, class _F>
         requires (same_as<decay_t<_E>, decay_t<_F>>
         && __has_partial_order<partial_ordering, _E, _F>)
-    constexpr auto operator()(_E&& __e, _F&& __f) const
+    static constexpr auto operator()(_E&& __e, _F&& __f)
     {
         return partial_ordering(partial_order(std::forward<_E>(__e), std::forward<_F>(__f)));
     }
@@ -448,7 +448,7 @@ struct __partial_order
         requires (same_as<decay_t<_E>, decay_t<_F>>
         && !__has_partial_order<partial_ordering, _E, _F>
         && __has_compare_three_way<partial_ordering, _E, _F>)
-    constexpr auto operator()(_E&& __e, _F&& __f) const
+    static constexpr auto operator()(_E&& __e, _F&& __f)
     {
         return partial_ordering(compare_three_way()(std::forward<_E>(__e), std::forward<_F>(__f)));
     }
@@ -458,7 +458,7 @@ struct __partial_order
         && !__has_partial_order<partial_ordering, _E, _F>
         && !__has_compare_three_way<partial_ordering, _E, _F>
         && __has_weak_order<partial_ordering, _E, _F>)
-    constexpr auto operator()(_E&& __e, _F&& __f) const
+    static constexpr auto operator()(_E&& __e, _F&& __f)
     {
         return partial_ordering(weak_order(std::forward<_E>(__e), std::forward<_F>(__f)));
     }
@@ -468,7 +468,7 @@ struct __partial_order
         && !__has_partial_order<partial_ordering, _E, _F>
         && !__has_compare_three_way<partial_ordering, _E, _F>
         && !__has_weak_order<partial_ordering, _E, _F>)
-    constexpr void operator()(_E&& __e, _F&& __f) const = delete;
+    static constexpr void operator()(_E&& __e, _F&& __f) = delete;
 };
 
 inline constexpr __partial_order partial_order = {};
@@ -477,12 +477,12 @@ struct __compare_strong_order_fallback
 {
     template <class _E, class _F>
         requires (!same_as<decay_t<_E>, decay_t<_F>>)
-    constexpr void operator()(_E&& __E, _F&& __f) const = delete;
+    static constexpr void operator()(_E&& __E, _F&& __f) = delete;
 
     template <class _E, class _F>
         requires (same_as<decay_t<_E>, decay_t<_F>>
         && __has_strong_order<void, _E, _F>)
-    constexpr auto operator()(_E&& __e, _F&& __f) const
+    static constexpr auto operator()(_E&& __e, _F&& __f)
     {
         return strong_order(std::forward<_E>(__e), std::forward<_F>(__f));
     }
@@ -491,7 +491,7 @@ struct __compare_strong_order_fallback
         requires (same_as<decay_t<_E>, decay_t<_F>>
         && !__has_strong_order<void, _E, _F>
         && __has_eq_and_lt<_E, _F>)
-    constexpr auto operator()(_E&& __e, _F&& __f) const
+    static constexpr auto operator()(_E&& __e, _F&& __f)
     {
         return (__e == __f) ? strong_ordering::equal :
                (__e <  __f) ? strong_ordering::less  :
@@ -502,7 +502,7 @@ struct __compare_strong_order_fallback
         requires (same_as<decay_t<_E>, decay_t<_F>>
         && !__has_strong_order<void, _E, _F>
         && !__has_eq_and_lt<_E, _F>)
-    constexpr void operator()(_E&& __e, _F&& __f) const = delete;
+    static constexpr void operator()(_E&& __e, _F&& __f) = delete;
 };
 
 inline constexpr __compare_strong_order_fallback compare_strong_order_fallback = {};
@@ -511,12 +511,12 @@ struct __compare_weak_order_fallback
 {
     template <class _E, class _F>
         requires (!same_as<decay_t<_E>, decay_t<_F>>)
-    constexpr void operator()(_E&& __E, _F&& __f) const = delete;
+    static constexpr void operator()(_E&& __E, _F&& __f) = delete;
 
     template <class _E, class _F>
         requires (same_as<decay_t<_E>, decay_t<_F>>
         && __has_weak_order<void, _E, _F>)
-    constexpr auto operator()(_E&& __e, _F&& __f) const
+    static constexpr auto operator()(_E&& __e, _F&& __f)
     {
         return weak_order(std::forward<_E>(__e), std::forward<_F>(__f));
     }
@@ -525,7 +525,7 @@ struct __compare_weak_order_fallback
         requires (same_as<decay_t<_E>, decay_t<_F>>
         && !__has_weak_order<void, _E, _F>
         && __has_eq_and_lt<_E, _F>)
-    constexpr auto operator()(_E&& __e, _F&& __f) const
+    static constexpr auto operator()(_E&& __e, _F&& __f)
     {
         return (__e == __f) ? weak_ordering::equivalent :
                (__e <  __f) ? weak_ordering::less       :
@@ -536,7 +536,7 @@ struct __compare_weak_order_fallback
         requires (same_as<decay_t<_E>, decay_t<_F>>
         && !__has_weak_order<void, _E, _F>
         && !__has_eq_and_lt<_E, _F>)
-    constexpr void operator()(_E&& __e, _F&& __f) const = delete;
+    static constexpr void operator()(_E&& __e, _F&& __f) = delete;
 };
 
 inline constexpr __compare_weak_order_fallback compare_weak_order_fallback = {};
@@ -545,12 +545,12 @@ struct __compare_partial_order_fallback
 {
     template <class _E, class _F>
         requires (!same_as<decay_t<_E>, decay_t<_F>>)
-    constexpr void operator()(_E&& __E, _F&& __f) const = delete;
+    static constexpr void operator()(_E&& __E, _F&& __f) = delete;
 
     template <class _E, class _F>
         requires (same_as<decay_t<_E>, decay_t<_F>>
         && __has_partial_order<void, _E, _F>)
-    constexpr auto operator()(_E&& __e, _F&& __f) const
+    static constexpr auto operator()(_E&& __e, _F&& __f)
     {
         return partial_order(std::forward<_E>(__e), std::forward<_F>(__f));
     }
@@ -559,7 +559,7 @@ struct __compare_partial_order_fallback
         requires (same_as<decay_t<_E>, decay_t<_F>>
         && !__has_partial_order<void, _E, _F>
         && __has_eq_and_lt<_E, _F>)
-    constexpr auto operator()(_E&& __e, _F&& __f) const
+    static constexpr auto operator()(_E&& __e, _F&& __f)
     {
         return (__e == __f) ? partial_ordering::equivalent :
                (__e <  __f) ? partial_ordering::less       :
@@ -571,7 +571,7 @@ struct __compare_partial_order_fallback
         requires (same_as<decay_t<_E>, decay_t<_F>>
         && !__has_partial_order<void, _E, _F>
         && !__has_eq_and_lt<_E, _F>)
-    constexpr void operator()(_E&& __e, _F&& __f) const = delete;
+    static constexpr void operator()(_E&& __e, _F&& __f) = delete;
 };
 
 inline constexpr __compare_partial_order_fallback compare_partial_order_fallback = {};

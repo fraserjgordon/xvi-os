@@ -14,6 +14,7 @@ template <class _R, class... _Args> struct coroutine_traits {};
 
 template <class _R, class... _Args>
     requires requires { typename _R::promise_type; }
+struct coroutine_traits<_R, _Args...>
 {
     using promise_type = typename _R::promise_type;
 };
@@ -36,12 +37,12 @@ public:
 
     constexpr ~coroutine_handle() = default;
 
-    constexpr coroutine_handle(std::nullptr_t) noexcept :
+    constexpr coroutine_handle(nullptr_t) noexcept :
         coroutine_handle()
     {
     }
 
-    coroutine_handle& operator=(std::nullptr_t) noexcept
+    coroutine_handle& operator=(nullptr_t) noexcept
     {
         _M_ptr = nullptr;
         return *this;
@@ -104,12 +105,12 @@ public:
 
     constexpr ~coroutine_handle() = default;
 
-    constexpr coroutine_handle(std::nullptr_t) noexcept :
+    constexpr coroutine_handle(nullptr_t) noexcept :
         coroutine_handle()
     {
     }
 
-    coroutine_handle& operator=(std::nullptr_t) noexcept
+    coroutine_handle& operator=(nullptr_t) noexcept
     {
         _M_ptr = nullptr;
         return *this;
@@ -176,12 +177,12 @@ private:
 };
 
 
-constexpr bool operator==(coroutine_handle<> __x, __coroutine_handle<> __y) noexcept
+constexpr bool operator==(coroutine_handle<> __x, coroutine_handle<> __y) noexcept
 {
     return __x.address() == __y.address();
 }
 
-constexpr strong_ordering operator<=>(coroutine_handle<> __x, coroutine_handle<> __y) noexcept
+constexpr std::strong_ordering operator<=>(coroutine_handle<> __x, coroutine_handle<> __y) noexcept
 {
     return compare_three_way()(__x.address(), __y.address());
 }
@@ -230,7 +231,7 @@ struct __noop_coroutine_frame
 
 
 // The standard permits distinct instances of no-op coroutines to share the same frame address.
-inline constexpr __noop_coroutine_frame __noop_coroutine = {};
+inline __noop_coroutine_frame __noop_coroutine = {};
 
 
 } // namespace __detail

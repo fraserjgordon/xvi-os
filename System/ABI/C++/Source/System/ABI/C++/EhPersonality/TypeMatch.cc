@@ -452,7 +452,8 @@ __cxa_type_match_result __cxa_type_match(_Unwind_Control_Block* exception, const
 __cxa_type_match_result __cxa_type_match(void* exception, const std::type_info* catch_type, bool is_reference, void** object_ptr)
 #endif
 {
-    //! @todo: how to use is_reference?
+    // Although specified in the ABI, the is_reference parameter isn't needed for anything
+    (void)is_reference;
 
     // Get the type info for the thrown object.
     const std::type_info* ti = nullptr;
@@ -476,7 +477,7 @@ __cxa_type_match_result __cxa_type_match(void* exception, const std::type_info* 
         return result;
 
     // Adjust the pointer so that it points at the appropriate base object.
-    auto adjusted_ptr = reinterpret_cast<std::uintptr_t>(*object_ptr) + adjustment;
+    auto adjusted_ptr = reinterpret_cast<std::intptr_t>(*object_ptr) + adjustment;
     *object_ptr = reinterpret_cast<void*>(adjusted_ptr);
 
     return result;

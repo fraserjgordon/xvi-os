@@ -23,4 +23,12 @@ library("Deflate")
         "Huffman.cc",
         "LZ77.cc",
     ]
+
+    test_sources =
+    [
+        "TestUtils.hh",
+
+        "TestBitstream.cc",
+        "TestHuffman.cc",
+    ]
 }

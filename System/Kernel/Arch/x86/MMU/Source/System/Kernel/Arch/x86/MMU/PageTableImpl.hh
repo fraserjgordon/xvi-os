@@ -508,6 +508,16 @@ struct table_t
 
                     // Clear the entry. This will implicitly unlock it.
                     writeAndUnlockEntry(&entries[index], entry_t{0});
+                    tlbInvalidatePage(address);
+
+                    // When using a recursively-mapped page table, a large page can be brought into the TLB even though
+                    // we'll never reference it deliberately (e.g. it could happen via speculative execution). Therefore
+                    // we need to invalidate that entry too.
+                    if constexpr (Mapper::TlbFlushMap)
+                    {
+                        tlbInvalidatePage(page_mapper.map(address, TableLevel, 0));
+                    }
+
                     return true;
                 }
 
@@ -520,6 +530,7 @@ struct table_t
 
             // Clear the entry. This will implicitly unlock it.
             writeAndUnlockEntry(&entries[index], entry_t{0});
+            tlbInvalidatePage(address);
         }
 
         return true;

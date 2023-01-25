@@ -7,8 +7,15 @@ library("Chrono")
 
     public_deps =
     [
-        "//ABI/C++",
     ]
+
+    if (!host_build)
+    {
+        public_deps +=
+        [
+            "//ABI/C++",
+        ]
+    }
 
     public_headers =
     [

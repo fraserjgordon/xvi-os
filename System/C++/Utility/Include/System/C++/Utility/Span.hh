@@ -24,16 +24,16 @@ template <class, size_t> class span;
 namespace __detail
 {
 
-template <class> struct __is_span_specialization : std::false_type {};
-template <class _Elem, size_t _Ext> struct __is_span_specialization<span<_Elem, _Ext>> : std::true_type {};
+template <class> struct __is_span_specialization : __XVI_STD_NS::false_type {};
+template <class _Elem, size_t _Ext> struct __is_span_specialization<span<_Elem, _Ext>> : __XVI_STD_NS::true_type {};
 
-template <class> struct __is_array_specialization : std::false_type {};
-template <class _Elem, size_t _Ext> struct __is_array_specialization<array<_Elem, _Ext>> : std::true_type {};
+template <class> struct __is_array_specialization : __XVI_STD_NS::false_type {};
+template <class _Elem, size_t _Ext> struct __is_array_specialization<array<_Elem, _Ext>> : __XVI_STD_NS::true_type {};
 
 } // namespace __detail
 
 
-inline constexpr size_t dynamic_extent = std::numeric_limits<size_t>::max();
+inline constexpr size_t dynamic_extent = __XVI_STD_NS::numeric_limits<size_t>::max();
 
 template <class _ElementType, size_t _Extent = dynamic_extent>
 class span
@@ -41,9 +41,9 @@ class span
 public:
 
     using element_type          = _ElementType;
-    using value_type            = std::remove_cv_t<_ElementType>;
-    using size_type             = std::size_t;
-    using difference_type       = std::ptrdiff_t;
+    using value_type            = __XVI_STD_NS::remove_cv_t<_ElementType>;
+    using size_type             = __XVI_STD_NS::size_t;
+    using difference_type       = __XVI_STD_NS::ptrdiff_t;
     using pointer               = element_type*;
     using const_pointer         = const element_type*;
     using reference             = element_type&;
@@ -62,7 +62,7 @@ public:
 
     template <class _It>
         requires contiguous_iterator<_It>
-            && std::is_convertible_v<std::remove_reference_t<iter_reference_t<_It>>(*)[], element_type(*)[]>
+            && __XVI_STD_NS::is_convertible_v<__XVI_STD_NS::remove_reference_t<iter_reference_t<_It>>(*)[], element_type(*)[]>
     constexpr explicit(extent != dynamic_extent) span(_It __first, size_type __count)
         : _M_data(to_address(__first)),
           _M_size(__count)
@@ -70,39 +70,39 @@ public:
     }
 
     template <class _It, class _End>
-        requires std::is_convertible_v<std::remove_reference_t<iter_reference_t<_It>>(*)[], element_type(*)[]>
+        requires __XVI_STD_NS::is_convertible_v<__XVI_STD_NS::remove_reference_t<iter_reference_t<_It>>(*)[], element_type(*)[]>
                  && contiguous_iterator<_It>
                  && sized_sentinel_for<_End, _It>
-                 && (!std::is_convertible_v<_End, std::size_t>)
+                 && (!__XVI_STD_NS::is_convertible_v<_End, __XVI_STD_NS::size_t>)
     constexpr explicit(extent != dynamic_extent) span(_It __first, _End __last)
         : _M_data(to_address(__first)),
-          _M_size(static_cast<std::size_t>(__last - __first))
+          _M_size(static_cast<__XVI_STD_NS::size_t>(__last - __first))
     {
     }
 
     template <size_t _N>
-    constexpr span(std::type_identity_t<element_type> (&__arr)[_N]) noexcept
+    constexpr span(__XVI_STD_NS::type_identity_t<element_type> (&__arr)[_N]) noexcept
         requires (extent == dynamic_extent || extent == _N)
-                  && std::is_convertible_v<std::remove_pointer_t<decltype(data(__arr))>(*)[], element_type(*)[]>
-        : _M_data(std::addressof(__arr)),
+                  && __XVI_STD_NS::is_convertible_v<__XVI_STD_NS::remove_pointer_t<decltype(data(__arr))>(*)[], element_type(*)[]>
+        : _M_data(__XVI_STD_NS::addressof(__arr)),
           _M_size(_N)
     {
     }
 
     template <class _T, size_t _N>
-    constexpr span(std::array<_T, _N>& __arr) noexcept
+    constexpr span(__XVI_STD_NS::array<_T, _N>& __arr) noexcept
         requires (extent == dynamic_extent || extent == _N)
-                  && std::is_convertible_v<std::remove_pointer_t<decltype(data(__arr))>(*)[], element_type(*)[]>
-        : _M_data(std::data(__arr)),
+                  && __XVI_STD_NS::is_convertible_v<__XVI_STD_NS::remove_pointer_t<decltype(data(__arr))>(*)[], element_type(*)[]>
+        : _M_data(__XVI_STD_NS::data(__arr)),
           _M_size(_N)
     {
     }
 
     template <class _T, size_t _N>
-    constexpr span(const std::array<_T, _N>& __arr) noexcept
+    constexpr span(const __XVI_STD_NS::array<_T, _N>& __arr) noexcept
         requires (extent == dynamic_extent || extent == _N)
-                 && std::is_convertible_v<std::remove_pointer_t<decltype(data(__arr))>(*)[], element_type(*)[]>
-        : _M_data(std::data(__arr)),
+                 && __XVI_STD_NS::is_convertible_v<__XVI_STD_NS::remove_pointer_t<decltype(data(__arr))>(*)[], element_type(*)[]>
+        : _M_data(__XVI_STD_NS::data(__arr)),
           _M_size(_N)
     {
     }
@@ -110,11 +110,11 @@ public:
     template <class _R>
         requires ranges::contiguous_range<_R>
                  && ranges::sized_range<_R>
-                 && (ranges::borrowed_range<_R> || std::is_const_v<element_type>)
-                 && (!__detail::__is_span_specialization<std::remove_cvref_t<_R>>::value)
-                 && (!__detail::__is_array_specialization<std::remove_cvref_t<_R>>::value)
-                 && (!std::is_array_v<std::remove_cvref_t<_R>>)
-                 && std::is_convertible_v<std::remove_reference_t<ranges::range_reference_t<_R>>(*)[], element_type(*)[]>
+                 && (ranges::borrowed_range<_R> || __XVI_STD_NS::is_const_v<element_type>)
+                 && (!__detail::__is_span_specialization<__XVI_STD_NS::remove_cvref_t<_R>>::value)
+                 && (!__detail::__is_array_specialization<__XVI_STD_NS::remove_cvref_t<_R>>::value)
+                 && (!__XVI_STD_NS::is_array_v<__XVI_STD_NS::remove_cvref_t<_R>>)
+                 && __XVI_STD_NS::is_convertible_v<__XVI_STD_NS::remove_reference_t<ranges::range_reference_t<_R>>(*)[], element_type(*)[]>
     constexpr explicit(extent != dynamic_extent) span(_R&& __r)
         : _M_data(ranges::data(__r)),
           _M_size(ranges::size(__r))
@@ -125,7 +125,7 @@ public:
 
     template <class _OtherElementType, size_t _OtherExtent>
         requires (extent == dynamic_extent || _OtherExtent == dynamic_extent || extent == _OtherExtent)
-                 && std::is_convertible_v<_OtherElementType(*)[], element_type(*)[]>
+                 && __XVI_STD_NS::is_convertible_v<_OtherElementType(*)[], element_type(*)[]>
     constexpr explicit(extent != dynamic_extent && _OtherExtent == dynamic_extent)
     span(const span<_OtherElementType, _OtherExtent>& __s) noexcept
         : _M_data(__s.data()),
@@ -246,7 +246,7 @@ private:
 
 template <class _It, class _EndOrSize>
     requires contiguous_iterator<_It>
-span(_It, _EndOrSize) -> span<std::remove_reference_t<iter_reference_t<_It>>>;
+span(_It, _EndOrSize) -> span<__XVI_STD_NS::remove_reference_t<iter_reference_t<_It>>>;
 
 template <class _T, size_t _N>
 span(_T (&)[_N]) -> span<_T, _N>;
@@ -259,7 +259,7 @@ span(const array<_T, _N>&) -> span<const _T, _N>;
 
 template <class _R>
     requires ranges::contiguous_range<_R>
-span(_R&&) -> span<std::remove_reference_t<ranges::range_reference_t<_R>>>;
+span(_R&&) -> span<__XVI_STD_NS::remove_reference_t<ranges::range_reference_t<_R>>>;
 
 
 template <class _ElementType, size_t _Extent>

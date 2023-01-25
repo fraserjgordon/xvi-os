@@ -9,9 +9,17 @@
 #include <System/C++/LanguageSupport/StdInt.hh>
 
 
+#if !defined(__XVI_HOSTED) || !__has_include(<typeinfo>)
+#  define __ABI_TI_NS std
+#else
+#  define __ABI_TS_NS __XVI_STD_NS
+#endif
+
+
 // Note: the definition of type_info *must* be in the `std` namespace. If not placed here, compilers won't recognise it
 //       and won't give it the special semanics that it requires.
-namespace std
+//! @todo: should have its own header to avoid pollution.
+namespace __ABI_TI_NS
 {
 
 
@@ -39,7 +47,7 @@ protected:
 };
 
 
-constexpr bool std::type_info::operator==(const type_info& other) const noexcept
+constexpr bool type_info::operator==(const type_info& other) const noexcept
 {
     // The ABI requires each type has only one, global string for its name, even if multiple type_info objects refer to
     // the type (e.g. a complete class type_info and an incomplete class type_info). This means that the type_info
@@ -48,7 +56,7 @@ constexpr bool std::type_info::operator==(const type_info& other) const noexcept
 }
 
 
-} // namespace std
+} // namespace __ABI_TI_NS
 
 
 namespace __cxxabiv1
@@ -56,7 +64,7 @@ namespace __cxxabiv1
 
 
 class __SYSTEM_ABI_CXX_RTTI_EXPORT __fundamental_type_info :
-    public std::type_info
+    public __ABI_TI_NS::type_info
 {
 public:
 
@@ -64,7 +72,7 @@ public:
 };
 
 class __SYSTEM_ABI_CXX_RTTI_EXPORT __array_type_info :
-    public std::type_info
+    public __ABI_TI_NS::type_info
 {
 public:
 
@@ -72,7 +80,7 @@ public:
 };
 
 class __SYSTEM_ABI_CXX_RTTI_EXPORT __function_type_info :
-    public std::type_info
+    public __ABI_TI_NS::type_info
 {
 public:
 
@@ -80,7 +88,7 @@ public:
 };
 
 class __SYSTEM_ABI_CXX_RTTI_EXPORT __enum_type_info :
-    public std::type_info
+    public __ABI_TI_NS::type_info
 {
 public:
 
@@ -88,7 +96,7 @@ public:
 };
 
 class __SYSTEM_ABI_CXX_RTTI_EXPORT __class_type_info :
-    public std::type_info
+    public __ABI_TI_NS::type_info
 {
 public:
 
@@ -147,12 +155,12 @@ public:
 };
 
 class __SYSTEM_ABI_CXX_RTTI_EXPORT __pbase_type_info :
-    public std::type_info
+    public __ABI_TI_NS::type_info
 {
 public:
 
-    unsigned int            __flags;
-    const std::type_info*   __pointee;
+    unsigned int                    __flags;
+    const __ABI_TI_NS::type_info*   __pointee;
 
     enum __masks : unsigned int
     {
@@ -214,23 +222,23 @@ class VTable
 {
 public:
 
-    const std::type_info* typeInfo() const
+    const __ABI_TI_NS::type_info* typeInfo() const
     {
         // The ABI places the type_info pointer at offset -1 from the vtable centre.
-        return slotAs<const std::type_info*>(-1);
+        return slotAs<const __ABI_TI_NS::type_info*>(-1);
     }
 
-    std::ptrdiff_t offsetToTop() const
+    __XVI_STD_NS::ptrdiff_t offsetToTop() const
     {
         // The ABI places the offset-to-top at offset -2 from the vtable centre.
-        return static_cast<std::ptrdiff_t>(slot(-2));
+        return static_cast<__XVI_STD_NS::ptrdiff_t>(slot(-2));
     }
 
-    std::ptrdiff_t virtualBaseOffset(std::ptrdiff_t offset_in_vtable) const
+    __XVI_STD_NS::ptrdiff_t virtualBaseOffset(__XVI_STD_NS::ptrdiff_t offset_in_vtable) const
     {
-        auto address = reinterpret_cast<std::intptr_t>(this);
+        auto address = reinterpret_cast<__XVI_STD_NS::intptr_t>(this);
         address += offset_in_vtable;
-        return *reinterpret_cast<const std::ptrdiff_t*>(address);
+        return *reinterpret_cast<const __XVI_STD_NS::ptrdiff_t*>(address);
     }
 
 
@@ -241,13 +249,13 @@ public:
 
 private:
 
-    std::uintptr_t slot(std::ptrdiff_t n) const
+    __XVI_STD_NS::uintptr_t slot(__XVI_STD_NS::ptrdiff_t n) const
     {
-        return reinterpret_cast<const std::uintptr_t*>(this)[n];
+        return reinterpret_cast<const __XVI_STD_NS::uintptr_t*>(this)[n];
     }
 
     template <class T>
-    T slotAs(std::ptrdiff_t n) const
+    T slotAs(__XVI_STD_NS::ptrdiff_t n) const
     {
         return reinterpret_cast<T>(slot(n));
     }
@@ -258,7 +266,7 @@ private:
 //
 // This is a bit meta as it looks at the type_info of the type_info object - because type_info has a vtable, this is
 // possible and is sufficient to determine the type of the type_info object.
-constexpr TypeInfoType getTypeInfoType(const std::type_info& ti)
+constexpr TypeInfoType getTypeInfoType(const __ABI_TI_NS::type_info& ti)
 {
     const auto& meta_ti = typeid(ti);
     auto ptr = &meta_ti;
@@ -287,7 +295,7 @@ constexpr TypeInfoType getTypeInfoType(const std::type_info& ti)
 
 
 // Given an object pointer, returns the dynamic type_info object.
-inline const std::type_info& dynamicTypeInfo(const void* obj)
+inline const __ABI_TI_NS::type_info& dynamicTypeInfo(const void* obj)
 {
     return *VTable::fromObject(obj)->typeInfo();
 }
@@ -295,7 +303,7 @@ inline const std::type_info& dynamicTypeInfo(const void* obj)
 // Given an object pointer, returns the pointer to the most-derived object (equivalent to dynamic_cast<void*>).
 inline const void* wholeObjectPointer(const void* obj)
 {
-    auto address = reinterpret_cast<std::intptr_t>(obj);
+    auto address = reinterpret_cast<__XVI_STD_NS::intptr_t>(obj);
     auto vtbl = VTable::fromObject(obj);
 
     address += vtbl->offsetToTop();
@@ -317,7 +325,7 @@ inline const void* adjustToBase(const void* obj, const __cxxabiv1::__base_class_
     }
 
     // Return the adjusted pointer.
-    auto address = reinterpret_cast<std::intptr_t>(obj);
+    auto address = reinterpret_cast<__XVI_STD_NS::intptr_t>(obj);
     address += offset;
     return reinterpret_cast<const void*>(address);
 }
@@ -332,7 +340,7 @@ enum class TypeInfoWalkResult
 };
 
 template <class Callback, class State>
-TypeInfoWalkResult walkTypeInfoTree(const std::type_info& root, Callback&& cb, State in_state, const std::type_info* parent = nullptr, unsigned int index = 0)
+TypeInfoWalkResult walkTypeInfoTree(const __ABI_TI_NS::type_info& root, Callback&& cb, State in_state, const __ABI_TI_NS::type_info* parent = nullptr, unsigned int index = 0)
 {
     // As we recurse, the state object gets copied so callers can use it to accumulate state on the way down the tree
     // that gets reverted on the way back up (for example, used to track the most restrictive access control on this

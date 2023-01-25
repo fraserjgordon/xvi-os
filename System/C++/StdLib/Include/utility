@@ -6,3 +6,5 @@
 #include <System/C++/Utility/IntegerSequence.hh>
 #include <System/C++/Utility/Pair.hh>
 #include <System/C++/Utility/Swap.hh>
+
+namespace std {}

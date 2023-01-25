@@ -157,21 +157,21 @@ public:
                 break;
 
             case dw_ptr_type::sleb128:
-                ptr = DecodeSLEB128(loc);
+                ptr = static_cast<UintPtrT>(std::make_signed_t<UintPtrT>{DecodeSLEB128(loc)});
                 break;
 
             case dw_ptr_type::sdata2:
-                ptr = UnalignedRead<std::int16_t>(loc);
+                ptr = static_cast<UintPtrT>(std::make_signed_t<UintPtrT>{UnalignedRead<std::int16_t>(loc)});
                 loc += sizeof(std::int16_t);
                 break;
 
             case dw_ptr_type::sdata4:
-                ptr = UnalignedRead<std::int32_t>(loc);
+                ptr = static_cast<UintPtrT>(std::make_signed_t<UintPtrT>{UnalignedRead<std::int32_t>(loc)});
                 loc += sizeof(std::int32_t);
                 break;
 
             case dw_ptr_type::sdata8:
-                ptr = UnalignedRead<std::int64_t>(loc);
+                ptr = static_cast<UintPtrT>(std::make_signed_t<UintPtrT>{UnalignedRead<std::int64_t>(loc)});
                 loc += sizeof(std::int64_t);
                 break;
 

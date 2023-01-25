@@ -20,11 +20,11 @@ struct default_delete
 
     template <class _U>
         requires std::convertible_to<_U*, _T*>
-    default_delete(const default_delete<_U&>) noexcept
+    constexpr default_delete(const default_delete<_U&>) noexcept
     {
     }
 
-    void operator()(_T* __ptr) const
+    constexpr void operator()(_T* __ptr) const
     {
         delete __ptr;
     }
@@ -37,13 +37,13 @@ struct default_delete<_T[]>
 
     template <class _U>
         requires std::convertible_to<_U(*)[], _T(*)[]>
-    default_delete(const default_delete<_U[]>&) noexcept
+    constexpr default_delete(const default_delete<_U[]>&) noexcept
     {
     }
 
     template <class _U>
         requires std::convertible_to<_U(*)[], _T(*)[]>
-    void operator()(_U* __ptr) const
+    constexpr void operator()(_U* __ptr) const
     {
         delete[] __ptr;
     }

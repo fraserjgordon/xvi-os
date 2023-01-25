@@ -174,6 +174,7 @@ public:
     [[noreturn]] void resume()
     {
         context()->unwinder()->resume(this);
+        __builtin_unreachable();
     }
 
 

@@ -50,7 +50,7 @@ constexpr const __search& __make_search();
 
 
 template <class _T>
-    requires std::is_object_v<_T>
+    requires __XVI_STD_NS::is_object_v<_T>
 class empty_view
     : public view_interface<empty_view<_T>>
 {
@@ -89,16 +89,16 @@ inline constexpr empty_view<_T> empty {};
 namespace __detail
 {
 
-template <template <class> class _Template, class _T> struct __is_specialization_of : std::false_type {};
+template <template <class> class _Template, class _T> struct __is_specialization_of : __XVI_STD_NS::false_type {};
 
-template <template <class> class _Template, class... _T> struct __is_specialization_of<_Template, _Template<_T...>> : std::true_type {};
+template <template <class> class _Template, class... _T> struct __is_specialization_of<_Template, _Template<_T...>> : __XVI_STD_NS::true_type {};
 
 template <template <class> class _Template, class _T>
 inline constexpr bool __is_specialization_of_v = __is_specialization_of<_Template, _T>::value;
 
 
 template <class _T>
-    requires std::copy_constructible<_T> && std::is_object_v<_T>
+    requires __XVI_STD_NS::copy_constructible<_T> && __XVI_STD_NS::is_object_v<_T>
 class __copyable_box
     : public optional<_T>
 {
@@ -107,15 +107,15 @@ public:
     using optional<_T>::optional;
 
     constexpr __copyable_box()
-        noexcept(std::is_nothrow_default_constructible_v<_T>)
-        requires std::default_initializable<_T>
+        noexcept(__XVI_STD_NS::is_nothrow_default_constructible_v<_T>)
+        requires __XVI_STD_NS::default_initializable<_T>
         : __copyable_box{in_place}
     {
     }
 
     __copyable_box& operator=(const __copyable_box& __that)
-        noexcept(std::is_nothrow_copy_constructible_v<_T>)
-        requires (!std::copyable<_T>)
+        noexcept(__XVI_STD_NS::is_nothrow_copy_constructible_v<_T>)
+        requires (!__XVI_STD_NS::copyable<_T>)
     {
         if (__that)
             optional<_T>::emplace(*__that);
@@ -125,11 +125,11 @@ public:
     }
 
     __copyable_box& operator=(__copyable_box&& __that)
-        noexcept(std::is_nothrow_move_constructible_v<_T>)
-        requires (std::movable<_T>)
+        noexcept(__XVI_STD_NS::is_nothrow_move_constructible_v<_T>)
+        requires (__XVI_STD_NS::movable<_T>)
     {
         if (__that)
-            optional<_T>::emplace(std::move(*__that));
+            optional<_T>::emplace(__XVI_STD_NS::move(*__that));
         else
             optional<_T>::reset();
         return *this;
@@ -137,7 +137,7 @@ public:
 };
 
 template <class _T>
-    requires std::is_object_v<_T>
+    requires __XVI_STD_NS::is_object_v<_T>
 class __non_propagating_cache
     : public optional<_T>
 {
@@ -178,15 +178,15 @@ public:
 } // namespace __detail
 
 
-template <std::copy_constructible _T>
-    requires std::is_object_v<_T>
+template <__XVI_STD_NS::copy_constructible _T>
+    requires __XVI_STD_NS::is_object_v<_T>
 class single_view
     : public view_interface<single_view<_T>>
 {
 public:
 
     single_view()
-        requires std::default_initializable<_T> = default;
+        requires __XVI_STD_NS::default_initializable<_T> = default;
 
     constexpr explicit single_view(const _T& __t)
         : _M_value(__t)
@@ -199,9 +199,9 @@ public:
     }
 
     template <class... _Args>
-        requires std::constructible_from<_T, _Args...>
+        requires __XVI_STD_NS::constructible_from<_T, _Args...>
     constexpr single_view(in_place_t, _Args&&... __args)
-        : _M_value{in_place, std::forward<_Args>(__args)...}
+        : _M_value{in_place, __XVI_STD_NS::forward<_Args>(__args)...}
     {
     }
 
@@ -278,28 +278,28 @@ template <class _I>
 concept __decrementable = incrementable<_I>
     && requires (_I __i)
     {
-        { --__i } -> std::same_as<_I&>;
-        { __i-- } -> std::same_as<_I>;
+        { --__i } -> __XVI_STD_NS::same_as<_I&>;
+        { __i-- } -> __XVI_STD_NS::same_as<_I>;
     };
 
 template <class _I>
 concept __advanceable = __decrementable<_I>
-    && std::totally_ordered<_I>
+    && __XVI_STD_NS::totally_ordered<_I>
     && requires (_I __i, const _I __j, const __iota_diff_t<_I> __n)
     {
-        { __i += __n } -> std::same_as<_I&>;
-        { __i -= __n } -> std::same_as<_I&>;
+        { __i += __n } -> __XVI_STD_NS::same_as<_I&>;
+        { __i -= __n } -> __XVI_STD_NS::same_as<_I&>;
         _I(__j + __n);
         _I(__n + __j);
         _I(__j - __n);
-        { __j -  __j } -> std::convertible_to<__iota_diff_t<_I>>;
+        { __j -  __j } -> __XVI_STD_NS::convertible_to<__iota_diff_t<_I>>;
     };
 
 } // namespace __detail
 
 template <weakly_incrementable _W, semiregular _Bound = unreachable_sentinel_t>
-    requires std::__detail::__weakly_equality_comparable_with<_W, _Bound>
-        && std::copyable<_W>
+    requires __XVI_STD_NS::__detail::__weakly_equality_comparable_with<_W, _Bound>
+        && __XVI_STD_NS::copyable<_W>
 class iota_view
     : public view_interface<iota_view<_W, _Bound>>
 {
@@ -326,7 +326,7 @@ private:
             requires default_initializable<_W> = default;
 
         constexpr explicit __iterator(_W __value)
-            : _M_value(std::move(__value))
+            : _M_value(__XVI_STD_NS::move(__value))
         {
         }
 
@@ -533,15 +533,15 @@ private:
 public:
 
     iota_view()
-        requires std::default_initializable<_W> = default;
+        requires __XVI_STD_NS::default_initializable<_W> = default;
 
     constexpr explicit iota_view(_W __value)
-        : _M_value(std::move(__value))
+        : _M_value(__XVI_STD_NS::move(__value))
     {
     }
 
     constexpr iota_view(type_identity_t<_W> __value, type_identity_t<_Bound> __bound)
-        : _M_value(std::move(__value)), _M_bound(std::move(__bound))
+        : _M_value(__XVI_STD_NS::move(__value)), _M_bound(__XVI_STD_NS::move(__bound))
     {
     }
 
@@ -571,21 +571,21 @@ public:
 
     constexpr auto end() const
     {
-        if constexpr (std::same_as<_Bound, unreachable_sentinel_t>)
+        if constexpr (__XVI_STD_NS::same_as<_Bound, unreachable_sentinel_t>)
             return unreachable_sentinel;
         else
             return __sentinel{_M_bound};
     }
 
     constexpr __iterator end() const
-        requires std::same_as<_W, _Bound>
+        requires __XVI_STD_NS::same_as<_W, _Bound>
     {
         return __iterator{_M_bound};
     }
 
     constexpr auto size() const
-        requires (std::same_as<_W, _Bound> && __detail::__advanceable<_W>)
-            || (std::integral<_W> && std::integral<_Bound>)
+        requires (__XVI_STD_NS::same_as<_W, _Bound> && __detail::__advanceable<_W>)
+            || (__XVI_STD_NS::integral<_W> && __XVI_STD_NS::integral<_Bound>)
             || sized_sentinel_for<_Bound, _W>
     {
         using _MUT = make_unsigned_t<_W>;
@@ -608,9 +608,9 @@ private:
 };
 
 template <class _W, class _Bound>
-    requires (!std::__detail::__is_integer_like<_W>
-              || !std::__detail::__is_integer_like<_Bound>
-              || (std::__detail::__is_signed_integer_like<_W> == std::__detail::__is_signed_integer_like<_Bound>))
+    requires (!__XVI_STD_NS::__detail::__is_integer_like<_W>
+              || !__XVI_STD_NS::__detail::__is_integer_like<_Bound>
+              || (__XVI_STD_NS::__detail::__is_signed_integer_like<_W> == __XVI_STD_NS::__detail::__is_signed_integer_like<_Bound>))
 iota_view(_W, _Bound) -> iota_view<_W, _Bound>;
 
 
@@ -626,13 +626,13 @@ struct __iota_t
     template <class _E>
     constexpr auto operator()(_E&& __e) const
     {
-        return iota_view{std::forward<_E>(__e)};
+        return iota_view{__XVI_STD_NS::forward<_E>(__e)};
     }
 
     template <class _E, class _F>
     constexpr auto operator()(_E&& __e, _F&& __f) const
     {
-        return iota_view{std::forward<_E>(__e), std::forward<_F>(__f)};
+        return iota_view{__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f)};
     }
 };
 
@@ -742,7 +742,7 @@ using wistream_view = basic_istream_view<_Val, wchar_t>;
 
 
 template <range _R>
-    requires std::is_object_v<_R>
+    requires __XVI_STD_NS::is_object_v<_R>
 class ref_view :
     public view_interface<ref_view<_R>>
 {
@@ -753,10 +753,10 @@ public:
     static void __fun(_R&&) = delete;
 
     template <__detail::__different_from<ref_view> _T>
-        requires (std::convertible_to<_T, _R&>
+        requires (__XVI_STD_NS::convertible_to<_T, _R&>
             && requires { __fun(declval<_T>()); })
     constexpr ref_view(_T&& __t) :
-        _M_r(addressof(static_cast<_R&>(std::forward<_T>(__t))))
+        _M_r(addressof(static_cast<_R&>(__XVI_STD_NS::forward<_T>(__t))))
     {
     }
 
@@ -807,7 +807,7 @@ inline constexpr bool enable_borrowed_range<ref_view<_T>> = true;
 
 
 template <range _R>
-    requires std::movable<_R> && (!__detail::__is_initializer_list_v<_R>)
+    requires __XVI_STD_NS::movable<_R> && (!__detail::__is_initializer_list_v<_R>)
 class owning_view :
     public view_interface<owning_view<_R>>
 {
@@ -818,10 +818,10 @@ private:
 public:
 
     owning_view()
-        requires std::default_initializable<_R> = default;
+        requires __XVI_STD_NS::default_initializable<_R> = default;
 
     constexpr owning_view(_R&& __t) :
-        _M_r(std::move(__t))
+        _M_r(__XVI_STD_NS::move(__t))
     {
     }
 
@@ -835,10 +835,10 @@ public:
         { return _M_r; }
 
     constexpr _R&& base() && noexcept
-        { return std::move(_M_r); }
+        { return __XVI_STD_NS::move(_M_r); }
     
     constexpr const _R&& base() const && noexcept
-        { return std::move(_M_r); }
+        { return __XVI_STD_NS::move(_M_r); }
 
     constexpr iterator_t<_R> begin()
         { return ranges::begin(_M_r); }
@@ -879,14 +879,14 @@ struct __range_adaptor_closure_base {};
 
 // False if there are multiple paths to __range_adaptor_closure_base.
 template <class _T>
-concept __uniquely_derived_from_range_adaptor_closure = std::derived_from<_T, __range_adaptor_closure_base>;
+concept __uniquely_derived_from_range_adaptor_closure = __XVI_STD_NS::derived_from<_T, __range_adaptor_closure_base>;
 
 } // namespace __detail
 
 
 template <class _D>
-    requires std::is_class_v<_D>
-        && std::same_as<_D, std::remove_cv_t<_D>>
+    requires __XVI_STD_NS::is_class_v<_D>
+        && __XVI_STD_NS::same_as<_D, __XVI_STD_NS::remove_cv_t<_D>>
 class range_adaptor_closure : public __detail::__range_adaptor_closure_base {};
 
 
@@ -909,13 +909,13 @@ constexpr auto __range_adaptor_arg(const _T& __t)
 template <class _T>
 constexpr decltype(auto) __range_adaptor_arg(_T&& __t)
 {
-    return std::forward<_T>(__t);
+    return __XVI_STD_NS::forward<_T>(__t);
 }
 
 template <class _T>
 constexpr decltype(auto) __range_adaptor_arg_unwrap(_T&& __t)
 {
-    return std::forward<_T>(__t);
+    return __XVI_STD_NS::forward<_T>(__t);
 }
 
 template <class _T>
@@ -933,13 +933,13 @@ class __range_adaptor
 public:
 
     __range_adaptor()
-        requires std::default_initializable<_Callable> = default;
+        requires __XVI_STD_NS::default_initializable<_Callable> = default;
 
     constexpr __range_adaptor(const _Callable& __c) :
         _M_callable(__c) {}
 
     constexpr __range_adaptor(_Callable&& __c) :
-        _M_callable(std::move(__c)) {}
+        _M_callable(__XVI_STD_NS::move(__c)) {}
 
     template <class... _Args>
         requires (sizeof...(_Args) > 0)
@@ -949,21 +949,21 @@ public:
         // a closure that takes that range as its only argument.
         //
         // Otherwise, it can be invoked so the range is already present.
-        if constexpr (std::is_invocable_v<_Callable, _Args...>)
+        if constexpr (__XVI_STD_NS::is_invocable_v<_Callable, _Args...>)
         {
             // Arguments are complete - invoke the callable.
-            return _M_callable(std::forward<_Args>(__args)...);
+            return _M_callable(__XVI_STD_NS::forward<_Args>(__args)...);
         }
         else
         {
             // Arguments are incomplete - return a closure. Because that closure only takes a single argument, it is a
             // valid range adaptor closure object.
-            auto __closure = [__callable = _M_callable, ...__args(__range_adaptor_arg(std::forward<_Args>(__args)))]<class _Range>(_Range&& __r)
+            auto __closure = [__callable = _M_callable, ...__args(__range_adaptor_arg(__XVI_STD_NS::forward<_Args>(__args)))]<class _Range>(_Range&& __r)
             {
-                return __callable(std::forward<_Range>(__r), __range_adaptor_arg_unwrap(__args)...);
+                return __callable(__XVI_STD_NS::forward<_Range>(__r), __range_adaptor_arg_unwrap(__args)...);
             };
 
-            return __range_adaptor_closure<decltype(__closure)>(std::move(__closure));
+            return __range_adaptor_closure<decltype(__closure)>(__XVI_STD_NS::move(__closure));
         }
     }
 
@@ -990,7 +990,7 @@ public:
         requires requires { declval<_Callable>()(declval<_R>()); }
     constexpr auto operator()(_R&& __r) const
     {
-        return __range_adaptor<_Callable>::_M_callable(std::forward<_R>(__r));
+        return __range_adaptor<_Callable>::_M_callable(__XVI_STD_NS::forward<_R>(__r));
     }
 };
 
@@ -1001,16 +1001,16 @@ __range_adaptor_closure(_Callable) -> __range_adaptor_closure<_Callable>;
 
 
 template <viewable_range _R, class _T>
-    requires std::derived_from<_T, range_adaptor_closure<_T>>
+    requires __XVI_STD_NS::derived_from<_T, range_adaptor_closure<_T>>
         && __detail::__uniquely_derived_from_range_adaptor_closure<_T>
 constexpr auto operator|(_R&& __r, const _T& __adaptor)
 {
-    return __adaptor(std::forward<_R>(__r));
+    return __adaptor(__XVI_STD_NS::forward<_R>(__r));
 }
 
 template <class _T, class _U>
-    requires std::derived_from<_T, range_adaptor_closure<_T>>
-        && std::derived_from<_U, range_adaptor_closure<_U>>
+    requires __XVI_STD_NS::derived_from<_T, range_adaptor_closure<_T>>
+        && __XVI_STD_NS::derived_from<_U, range_adaptor_closure<_U>>
         && __detail::__uniquely_derived_from_range_adaptor_closure<_T>
         && __detail::__uniquely_derived_from_range_adaptor_closure<_U>
 constexpr auto operator|(const _T& __first, const _U& __second)
@@ -1018,10 +1018,10 @@ constexpr auto operator|(const _T& __first, const _U& __second)
     // Return a new range adaptor closure object.
     auto __closure = [__first, __second]<class _R>(_R&& __r)
     {
-        return std::forward<_R>(__r) | __first | __second;
+        return __XVI_STD_NS::forward<_R>(__r) | __first | __second;
     };
 
-    return __detail::__range_adaptor_closure<decltype(__closure)>(std::move(__closure));
+    return __detail::__range_adaptor_closure<decltype(__closure)>(__XVI_STD_NS::move(__closure));
 }
 
 
@@ -1030,12 +1030,12 @@ namespace views
 
 inline constexpr __detail::__range_adaptor_closure all = []<class _T>(_T&& __t)
 {
-    if constexpr (view<std::decay_t<_T>>)
-        return __DECAY(std::forward<_T>(__t));
-    else if constexpr (requires { ref_view{std::forward<_T>(__t)}; })
-        return ref_view{std::forward<_T>(__t)};
+    if constexpr (view<__XVI_STD_NS::decay_t<_T>>)
+        return __DECAY(__XVI_STD_NS::forward<_T>(__t));
+    else if constexpr (requires { ref_view{__XVI_STD_NS::forward<_T>(__t)}; })
+        return ref_view{__XVI_STD_NS::forward<_T>(__t)};
     else
-        return owning_view{std::forward<_T>(__t)};
+        return owning_view{__XVI_STD_NS::forward<_T>(__t)};
 };
 
 template <viewable_range _R>
@@ -1045,7 +1045,7 @@ using all_t = decltype(views::all(declval<_R>()));
 
 
 template <input_range _V, indirect_unary_predicate<iterator_t<_V>> _Pred>
-    requires view<_V> && std::is_object_v<_Pred>
+    requires view<_V> && __XVI_STD_NS::is_object_v<_Pred>
 class filter_view :
     public view_interface<filter_view<_V, _Pred>>
 {
@@ -1079,7 +1079,7 @@ private:
         using difference_type       = range_difference_t<_V>;
 
         __iterator()
-            requires std::default_initializable<iterator_t<_V>> = default;
+            requires __XVI_STD_NS::default_initializable<iterator_t<_V>> = default;
 
         constexpr __iterator(filter_view& __parent, iterator_t<_V> __current) :
             _M_current(__current),
@@ -1094,7 +1094,7 @@ private:
 
         constexpr iterator_t<_V> base() &&
         {
-            return std::move(_M_current);
+            return __XVI_STD_NS::move(_M_current);
         }
 
         constexpr range_reference_t<_V> operator*() const
@@ -1103,7 +1103,7 @@ private:
         }
 
         constexpr iterator_t<_V> operator->() const
-            requires __detail::__has_arrow<iterator_t<_V>> && std::copyable<iterator_t<_V>>
+            requires __detail::__has_arrow<iterator_t<_V>> && __XVI_STD_NS::copyable<iterator_t<_V>>
         {
             return _M_current;
         }
@@ -1193,23 +1193,23 @@ private:
 public:
 
     filter_view()
-        requires std::default_initializable<_V> && std::default_initializable<_Pred> = default;
+        requires __XVI_STD_NS::default_initializable<_V> && __XVI_STD_NS::default_initializable<_Pred> = default;
 
     constexpr filter_view(_V __base, _Pred __pred) :
-        _M_base(std::move(__base)),
-        _M_pred(std::move(__pred))
+        _M_base(__XVI_STD_NS::move(__base)),
+        _M_pred(__XVI_STD_NS::move(__pred))
     {
     }
 
     constexpr _V base() const
-        requires std::copy_constructible<_V>
+        requires __XVI_STD_NS::copy_constructible<_V>
     {
         return _M_base;
     }
 
     constexpr _V base() &&
     {
-        return std::move(_M_base);
+        return __XVI_STD_NS::move(_M_base);
     }
 
     constexpr const _Pred& pred() const
@@ -1241,17 +1241,17 @@ namespace views
 
 inline constexpr __detail::__range_adaptor_closure filter = []<class _E, class _P>(_E&& __e, _P&& __p)
 {
-    return filter_view{std::forward<_E>(__e), std::forward<_P>(__p)};
+    return filter_view{__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_P>(__p)};
 };
 
 } // namespace views
 
 
-template <input_range _V, std::copy_constructible _F>
+template <input_range _V, __XVI_STD_NS::copy_constructible _F>
     requires view<_V>
-        && std::is_object_v<_F>
-        && std::regular_invocable<_F&, range_reference_t<_V>>
-        && __XVI_STD_UTILITY_NS::__detail::__can_reference<std::invoke_result_t<_F, range_reference_t<_V>>>
+        && __XVI_STD_NS::is_object_v<_F>
+        && __XVI_STD_NS::regular_invocable<_F&, range_reference_t<_V>>
+        && __XVI_STD_UTILITY_NS::__detail::__can_reference<__XVI_STD_NS::invoke_result_t<_F, range_reference_t<_V>>>
 class transform_view :
     public view_interface<transform_view<_V, _F>>
 {
@@ -1286,14 +1286,14 @@ private:
         __iterator() = default;
 
         constexpr __iterator(_Parent& __parent, iterator_t<_Base> __current) :
-            _M_current(std::move(__current)),
+            _M_current(__XVI_STD_NS::move(__current)),
             _M_parent(addressof(__parent))
         {
         }
 
         constexpr __iterator(__iterator<!_Const> __i)
             requires _Const && convertible_to<iterator_t<_V>, iterator_t<_Base>> :
-            _M_current(std::move(__i._M_current)),
+            _M_current(__XVI_STD_NS::move(__i._M_current)),
             _M_parent(__i._M_parent)
         {
         }
@@ -1306,7 +1306,7 @@ private:
 
         constexpr iterator_t<_Base> base() &&
         {
-            return std::move(_M_current);
+            return __XVI_STD_NS::move(_M_current);
         }
 
         constexpr decltype(auto) operator*() const
@@ -1432,7 +1432,7 @@ private:
             noexcept(noexcept(invoke(declval<_F>(), *__i._M_current)))
         {
             if constexpr (is_lvalue_reference_v<decltype(*__i)>)
-                return std::move(*__i);
+                return __XVI_STD_NS::move(*__i);
             else
                 return *__i;
         }
@@ -1465,7 +1465,7 @@ private:
 
         constexpr __sentinel(__sentinel<!_Const> __s)
             requires _Const && convertible_to<sentinel_t<_V>, sentinel_t<_Base>> :
-            _M_end(std::move(__s._M_end))
+            _M_end(__XVI_STD_NS::move(__s._M_end))
         {
         }
 
@@ -1495,23 +1495,23 @@ private:
 public:
 
     transform_view()
-        requires std::default_initializable<_V> && std::default_initializable<_F> = default;
+        requires __XVI_STD_NS::default_initializable<_V> && __XVI_STD_NS::default_initializable<_F> = default;
 
     constexpr transform_view(_V __base, _F __fun) :
-        _M_base(std::move(__base)),
-        _M_fun(std::move(__fun))
+        _M_base(__XVI_STD_NS::move(__base)),
+        _M_fun(__XVI_STD_NS::move(__fun))
     {
     }
 
     constexpr _V base() const &
-        requires std::copy_constructible<_V>
+        requires __XVI_STD_NS::copy_constructible<_V>
     {
         return _M_base;
     }
 
     constexpr _V base() &&
     {
-        return std::move(_M_base);
+        return __XVI_STD_NS::move(_M_base);
     }
 
     constexpr __iterator<false> begin()
@@ -1575,7 +1575,7 @@ namespace views
 
 inline constexpr __detail::__range_adaptor_closure transform = []<class _E, class _F>(_E&& __e, _F&& __f)
 {
-    return transform_view{std::forward<_E>(__e), std::forward<_F>(__f)};
+    return transform_view{__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f)};
 };
 
 } // namespace views
@@ -1592,10 +1592,10 @@ private:
     {
     private:
 
-        using _Base     = std::conditional_t<_Const, const _V, _V>;
+        using _Base     = __XVI_STD_NS::conditional_t<_Const, const _V, _V>;
 
         template <bool _OtherConst>
-        using _CI       = counted_iterator<iterator_t<std::conditional_t<_Const, const _V, _V>>>;
+        using _CI       = counted_iterator<iterator_t<__XVI_STD_NS::conditional_t<_Const, const _V, _V>>>;
 
         sentinel_t<_Base> _M_end = sentinel_t<_Base>();
 
@@ -1610,7 +1610,7 @@ private:
 
         constexpr __sentinel(__sentinel<!_Const> __s)
             requires _Const && convertible_to<sentinel_t<_V>, sentinel_t<_Base>> :
-            _M_end(std::move(__s._M_end))
+            _M_end(__XVI_STD_NS::move(__s._M_end))
         {
         }
 
@@ -1625,7 +1625,7 @@ private:
         }
 
         template <bool _OtherConst = !_Const>
-            requires sentinel_for<sentinel_t<_Base>, iterator_t<std::conditional_t<_OtherConst, const _V, _V>>>
+            requires sentinel_for<sentinel_t<_Base>, iterator_t<__XVI_STD_NS::conditional_t<_OtherConst, const _V, _V>>>
         friend constexpr bool operator==(const _CI<_OtherConst>& __y, const __sentinel& __x)
         {
             return __y.count() == 0 || __y.base() == __x._M_end;
@@ -1635,10 +1635,10 @@ private:
 public:
 
     take_view()
-        requires std::default_initializable<_V> = default;
+        requires __XVI_STD_NS::default_initializable<_V> = default;
 
     constexpr take_view(_V __base, range_difference_t<_V> __count) :
-        _M_base(std::move(__base)),
+        _M_base(__XVI_STD_NS::move(__base)),
         _M_count(__count)
     {
     }
@@ -1651,7 +1651,7 @@ public:
 
     constexpr _V base() &&
     {
-        return std::move(_M_base);
+        return __XVI_STD_NS::move(_M_base);
     }
 
     constexpr auto begin()
@@ -1714,14 +1714,14 @@ public:
         requires sized_range<_V>
     {
         auto __n = ranges::size(_M_base);
-        return std::min(__n, static_cast<decltype(__n)>(_M_count));
+        return __XVI_STD_NS::min(__n, static_cast<decltype(__n)>(_M_count));
     }
 
     constexpr auto size() const
         requires sized_range<const _V>
     {
         auto __n = ranges::size(_M_base);
-        return std::min(__n, static_cast<decltype(__n)>(_M_count));
+        return __XVI_STD_NS::min(__n, static_cast<decltype(__n)>(_M_count));
     }
 
 private:
@@ -1739,12 +1739,12 @@ namespace views
 
 inline constexpr __detail::__range_adaptor_closure take = []<class _E, class _F>(_E&& __e, _F&& __f)
 {
-    using _T = std::remove_cvref_t<_E>;
+    using _T = __XVI_STD_NS::remove_cvref_t<_E>;
     using _D = range_difference_t<_F>;
 
     if constexpr (__detail::__is_specialization_of_v<empty_view, _T>)
     {
-        return ((void) std::forward<_F>(__f), __DECAY(std::forward<_E>(__e)));
+        return ((void) __XVI_STD_NS::forward<_F>(__f), __DECAY(__XVI_STD_NS::forward<_E>(__e)));
     }
     else if constexpr (random_access_range<_T> && sized_range<_T>
         && (__detail::__is_specialization_of_v<span, _T>
@@ -1753,17 +1753,17 @@ inline constexpr __detail::__range_adaptor_closure take = []<class _E, class _F>
             || __detail::__is_specialization_of_v<iota_view, _T>))
     {
         if constexpr (__detail::__is_specialization_of_v<span, _T>)
-            return span<typename _T::element_type>(ranges::begin(std::forward<_E>(__e)), ranges::begin(std::forward<_E>(__e)) + std::min<_D>(ranges::distance(std::forward<_E>(__e)), __f));
+            return span<typename _T::element_type>(ranges::begin(__XVI_STD_NS::forward<_E>(__e)), ranges::begin(__XVI_STD_NS::forward<_E>(__e)) + __XVI_STD_NS::min<_D>(ranges::distance(__XVI_STD_NS::forward<_E>(__e)), __f));
         else if constexpr (__detail::__is_specialization_of_v<basic_string_view, _T>)
-            return _T(ranges::begin(std::forward<_E>(__e)), ranges::begin(std::forward<_E>(__e)) + std::min<_D>(ranges::distance(std::forward<_E>(__e)), __f));
+            return _T(ranges::begin(__XVI_STD_NS::forward<_E>(__e)), ranges::begin(__XVI_STD_NS::forward<_E>(__e)) + __XVI_STD_NS::min<_D>(ranges::distance(__XVI_STD_NS::forward<_E>(__e)), __f));
         else if constexpr (__detail::__is_specialization_of_v<subrange, _T>)
-            return ranges::subrange<iterator_t<_T>>(ranges::begin(std::forward<_E>(__e)), ranges::begin(std::forward<_E>(__e)) + std::min<_D>(ranges::distance(std::forward<_E>(__e)), __f));  
+            return ranges::subrange<iterator_t<_T>>(ranges::begin(__XVI_STD_NS::forward<_E>(__e)), ranges::begin(__XVI_STD_NS::forward<_E>(__e)) + __XVI_STD_NS::min<_D>(ranges::distance(__XVI_STD_NS::forward<_E>(__e)), __f));  
         else
-            return ranges::iota_view(*ranges::begin(std::forward<_E>(__e)), *(ranges::begin(std::forward<_E>(__e)) + std::min<_D>(ranges::distance(std::forward<_E>(__e)), __f))); 
+            return ranges::iota_view(*ranges::begin(__XVI_STD_NS::forward<_E>(__e)), *(ranges::begin(__XVI_STD_NS::forward<_E>(__e)) + __XVI_STD_NS::min<_D>(ranges::distance(__XVI_STD_NS::forward<_E>(__e)), __f))); 
     }
     else
     {
-        return ranges::take_view(std::forward<_E>(__e), std::forward<_F>(__f));
+        return ranges::take_view(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f));
     }
 };
 
@@ -1772,7 +1772,7 @@ inline constexpr __detail::__range_adaptor_closure take = []<class _E, class _F>
 
 template <view _V, class _Pred>
     requires input_range<_V>
-        && std::is_object_v<_Pred>
+        && __XVI_STD_NS::is_object_v<_Pred>
         && indirect_unary_predicate<const _Pred, iterator_t<_V>>
 class take_while_view :
     public view_interface<take_while_view<_V, _Pred>>
@@ -1812,27 +1812,27 @@ private:
 
         friend constexpr bool operator==(const iterator_t<__base_t>& __x, const __sentinel& __y)
         {
-            return __y._M_end == __x || !std::invoke(*__y._M_pred, *__x);
+            return __y._M_end == __x || !__XVI_STD_NS::invoke(*__y._M_pred, *__x);
         }
 
         template <bool _OtherConst = !_Const>
-            requires sentinel_for<sentinel_t<__base_t>, iterator_t<std::conditional<_OtherConst, const _V, _V>>>
-        friend constexpr bool operator==(const iterator_t<std::conditional_t<_OtherConst, const _V, _V>>& __x, const __sentinel& __y)
+            requires sentinel_for<sentinel_t<__base_t>, iterator_t<__XVI_STD_NS::conditional<_OtherConst, const _V, _V>>>
+        friend constexpr bool operator==(const iterator_t<__XVI_STD_NS::conditional_t<_OtherConst, const _V, _V>>& __x, const __sentinel& __y)
         {
-            return __y._M_end == __x || !std::invoke(*__y._M_pred, *__x);
+            return __y._M_end == __x || !__XVI_STD_NS::invoke(*__y._M_pred, *__x);
         }
     };
 
 public:
 
     take_while_view()
-        requires std::default_initializable<_V>
-            && std::default_initializable<_Pred>
+        requires __XVI_STD_NS::default_initializable<_V>
+            && __XVI_STD_NS::default_initializable<_Pred>
         = default;
 
     constexpr take_while_view(_V __base, _Pred __pred) :
-        _M_base(std::move(__base)),
-        _M_pred(std::move(__pred))
+        _M_base(__XVI_STD_NS::move(__base)),
+        _M_pred(__XVI_STD_NS::move(__pred))
     {
     }
 
@@ -1844,7 +1844,7 @@ public:
 
     constexpr _V base() &&
     {
-        return std::move(_M_base);
+        return __XVI_STD_NS::move(_M_base);
     }
 
     constexpr const _Pred& pred() const
@@ -1892,7 +1892,7 @@ namespace views
 
 inline constexpr __detail::__range_adaptor_closure take_while = []<class _E, class _F>(_E&& __e, _F&& __f)
 {
-    return take_while_view(std::forward<_E>(__e), std::forward<_F>(__f));
+    return take_while_view(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f));
 };
 
 } // namespace views
@@ -1905,10 +1905,10 @@ class drop_view :
 public:
 
     drop_view()
-        requires std::default_initializable<_V> = default;
+        requires __XVI_STD_NS::default_initializable<_V> = default;
 
     constexpr drop_view(_V __base, range_difference_t<_V> __count) :
-        _M_base(std::move(__base)),
+        _M_base(__XVI_STD_NS::move(__base)),
         _M_count(__count)
     {
     }
@@ -1921,7 +1921,7 @@ public:
 
     constexpr _V base() &&
     {
-        return std::move(_M_base);
+        return __XVI_STD_NS::move(_M_base);
     }
 
     constexpr auto begin()
@@ -1984,14 +1984,14 @@ namespace views
 
 inline constexpr __detail::__range_adaptor_closure drop = []<class _E, class _F>(_E&& __e, _F&& __f)
 {
-    using _T = std::remove_cvref_t<_E>;
+    using _T = __XVI_STD_NS::remove_cvref_t<_E>;
     using _D = range_difference_t<_E>;
 
-    static_assert(std::convertible_to<_F, _D>);
+    static_assert(__XVI_STD_NS::convertible_to<_F, _D>);
 
     if constexpr (__detail::__is_specialization_of_v<empty_view, _T>)
     {
-        return ((void) std::forward<_F>(__f), __DECAY(std::forward<_E>(__e)));
+        return ((void) __XVI_STD_NS::forward<_F>(__f), __DECAY(__XVI_STD_NS::forward<_E>(__e)));
     }
     else if constexpr (random_access_range<_T> && sized_range<_T>
         && (__detail::__is_specialization_of_v<span, _T>
@@ -2000,15 +2000,15 @@ inline constexpr __detail::__range_adaptor_closure drop = []<class _E, class _F>
             || __detail::__is_specialization_of_v<iota_view, _T>))
     {
         if constexpr (__detail::__is_specialization_of_v<span, _T>)
-            return span<typename _T::element_type>(ranges::begin(std::forward<_E>(__e)) + std::min<_D>(ranges::distance(std::forward<_E>(__e)), __f), ranges::end(std::forward<_E>(__e)));
+            return span<typename _T::element_type>(ranges::begin(__XVI_STD_NS::forward<_E>(__e)) + __XVI_STD_NS::min<_D>(ranges::distance(__XVI_STD_NS::forward<_E>(__e)), __f), ranges::end(__XVI_STD_NS::forward<_E>(__e)));
         else if constexpr (!__detail::__is_specialization_of_v<subrange, _T> || !_T::_StoreSize)
-            return _T(ranges::begin(std::forward<_E>(__e)) + std::min<_D>(ranges::distance(std::forward<_E>(__e)), __f), ranges::end(std::forward<_E>(__e)));
+            return _T(ranges::begin(__XVI_STD_NS::forward<_E>(__e)) + __XVI_STD_NS::min<_D>(ranges::distance(__XVI_STD_NS::forward<_E>(__e)), __f), ranges::end(__XVI_STD_NS::forward<_E>(__e)));
         else
-            return _T(ranges::begin(std::forward<_E>(__e)) + std::min<_D>(ranges::distance(std::forward<_E>(__e)), __f), ranges::end(std::forward<_E>(__e)), __detail::__to_unsigned_like(ranges::distance(std::forward<_E>(__e)) - std::min<_D>(ranges::distance(std::forward<_E>(__e)), __f)));
+            return _T(ranges::begin(__XVI_STD_NS::forward<_E>(__e)) + __XVI_STD_NS::min<_D>(ranges::distance(__XVI_STD_NS::forward<_E>(__e)), __f), ranges::end(__XVI_STD_NS::forward<_E>(__e)), __detail::__to_unsigned_like(ranges::distance(__XVI_STD_NS::forward<_E>(__e)) - __XVI_STD_NS::min<_D>(ranges::distance(__XVI_STD_NS::forward<_E>(__e)), __f)));
     }
     else
     {
-        return ranges::drop_view(std::forward<_E>(__e), std::forward<_F>(__f));
+        return ranges::drop_view(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f));
     }
 };
 
@@ -2017,7 +2017,7 @@ inline constexpr __detail::__range_adaptor_closure drop = []<class _E, class _F>
 
 template <view _V, class _Pred>
     requires input_range<_V>
-        && std::is_object_v<_Pred>
+        && __XVI_STD_NS::is_object_v<_Pred>
         && indirect_unary_predicate<const _Pred, iterator_t<_V>>
 class drop_while_view :
     public view_interface<drop_while_view<_V, _Pred>>
@@ -2025,13 +2025,13 @@ class drop_while_view :
 public:
 
     drop_while_view()
-        requires std::default_initializable<_V>
-            && std::default_initializable<_Pred>
+        requires __XVI_STD_NS::default_initializable<_V>
+            && __XVI_STD_NS::default_initializable<_Pred>
         = default;
 
     constexpr drop_while_view(_V __base, _Pred __pred) :
-        _M_base(std::move(__base)),
-        _M_pred(std::move(__pred))
+        _M_base(__XVI_STD_NS::move(__base)),
+        _M_pred(__XVI_STD_NS::move(__pred))
     {
     }
 
@@ -2043,7 +2043,7 @@ public:
 
     constexpr _V base() &&
     {
-        return std::move(_M_base);
+        return __XVI_STD_NS::move(_M_base);
     }
 
     constexpr const _Pred& pred() const
@@ -2081,7 +2081,7 @@ namespace views
 
 inline constexpr __detail::__range_adaptor_closure drop_while = []<class _E, class _F>(_E&& __e, _F&& __f)
 {
-    return drop_while_view(std::forward<_E>(__e), std::forward<_F>(__f));
+    return drop_while_view(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f));
 };
 
 } // namespace views
@@ -2102,15 +2102,15 @@ private:
     {
     private:
 
-        using _Parent       = std::conditional_t<_Const, const join_view, join_view>;
-        using _Base         = std::conditional_t<_Const, const _V, _V>;
+        using _Parent       = __XVI_STD_NS::conditional_t<_Const, const join_view, join_view>;
+        using _Base         = __XVI_STD_NS::conditional_t<_Const, const _V, _V>;
         using _OuterIter    = iterator_t<_Base>;
         using _InnerIter    = iterator_t<range_reference_t<_Base>>;
 
         using _InnerC       = typename iterator_traits<iterator_t<_Base>>::iterator_category;
         using _OuterC       = typename iterator_traits<iterator_t<range_reference_t<_Base>>>::iterator_category;
 
-        static constexpr bool __ref_is_glvalue = std::is_reference_v<range_reference_t<_Base>>;
+        static constexpr bool __ref_is_glvalue = __XVI_STD_NS::is_reference_v<range_reference_t<_Base>>;
 
         _OuterIter                              _M_outer = _OuterIter();
         _InnerIter                              _M_inner = _InnerIter();
@@ -2157,12 +2157,12 @@ private:
         using difference_type       = common_type_t<range_difference_t<_Base>, range_difference_t<range_reference_t<_Base>>>;
 
         __iterator()
-            requires std::default_initializable<_OuterIter>
-                && std::default_initializable<_InnerIter>
+            requires __XVI_STD_NS::default_initializable<_OuterIter>
+                && __XVI_STD_NS::default_initializable<_InnerIter>
             = default;
 
         constexpr __iterator(_Parent& __parent, iterator_t<_V> __outer) :
-            _M_outer(std::move(__outer)),
+            _M_outer(__XVI_STD_NS::move(__outer)),
             _M_parent(addressof(__parent))
         {
             __satisfy();
@@ -2172,8 +2172,8 @@ private:
             requires _Const
                 && convertible_to<iterator_t<_V>, _OuterIter>
                 && convertible_to<iterator_t<_InnerRange>, _InnerIter> :
-            _M_outer(std::move(__i._M_outer)),
-            _M_inner(std::move(__i._M_inner)),
+            _M_outer(__XVI_STD_NS::move(__i._M_outer)),
+            _M_inner(__XVI_STD_NS::move(__i._M_inner)),
             _M_parent(__i._M_parent)
         {
         }
@@ -2284,7 +2284,7 @@ private:
 
         constexpr explicit __sentinel(__sentinel<!_Const> __s)
             requires _Const && convertible_to<sentinel_t<_V>, sentinel_t<_Base>> :
-            _M_end(std::move(__s._M_end))
+            _M_end(__XVI_STD_NS::move(__s._M_end))
         {
         }
 
@@ -2296,7 +2296,7 @@ private:
 
     struct __empty_inner {};
 
-    using __inner_t = std::conditional<std::is_reference_v<_InnerRange>, __empty_inner, __detail::__non_propagating_cache<std::remove_cv_t<_InnerRange>>>;
+    using __inner_t = __XVI_STD_NS::conditional<__XVI_STD_NS::is_reference_v<_InnerRange>, __empty_inner, __detail::__non_propagating_cache<__XVI_STD_NS::remove_cv_t<_InnerRange>>>;
 
     _V                          _M_base =_V();
     __inner_t                   _M_inner;
@@ -2304,10 +2304,10 @@ private:
 public:
 
     join_view() 
-        requires std::default_initializable<_V> = default;
+        requires __XVI_STD_NS::default_initializable<_V> = default;
 
     constexpr explicit join_view(_V __base) :
-        _M_base(std::move(__base))
+        _M_base(__XVI_STD_NS::move(__base))
     {
     }
 
@@ -2319,12 +2319,12 @@ public:
 
     constexpr _V base() &&
     {
-        return std::move(_M_base);
+        return __XVI_STD_NS::move(_M_base);
     }
 
     constexpr auto begin()
     {
-        constexpr bool _UseConst = __detail::__simple_view<_V> && std::is_reference_v<range_reference_t<_V>>;
+        constexpr bool _UseConst = __detail::__simple_view<_V> && __XVI_STD_NS::is_reference_v<range_reference_t<_V>>;
         return __iterator<_UseConst>{*this, ranges::begin(_M_base)};
     }
 
@@ -2377,7 +2377,7 @@ namespace views
 
 inline constexpr __detail::__range_adaptor_closure join = []<class _E>(_E&& __e)
 {
-    return join_view<views::all_t<_E>>{std::forward<_E>(__e)};
+    return join_view<views::all_t<_E>>{__XVI_STD_NS::forward<_E>(__e)};
 };
 
 } // namespace views
@@ -2413,16 +2413,16 @@ private:
     template <bool _Const>
     struct __iterator
     {
-        using _Parent           = std::conditional_t<_Const, const join_with_view, join_with_view>;
-        using _Base             = std::conditional_t<_Const, const _V, _V>;
+        using _Parent           = __XVI_STD_NS::conditional_t<_Const, const join_with_view, join_with_view>;
+        using _Base             = __XVI_STD_NS::conditional_t<_Const, const _V, _V>;
         using _InnerBase        = range_reference_t<_Base>;
-        using _PatternBase      = std::conditional_t<_Const, const _Pattern, _Pattern>;
+        using _PatternBase      = __XVI_STD_NS::conditional_t<_Const, const _Pattern, _Pattern>;
 
         using _OuterIter        = iterator_t<_Base>;
         using _InnerIter        = iterator_t<_InnerBase>;
         using _PatternIter      = iterator_t<_PatternBase>;
 
-        static constexpr bool __ref_is_glvalue = std::is_reference_v<_InnerBase>;
+        static constexpr bool __ref_is_glvalue = __XVI_STD_NS::is_reference_v<_InnerBase>;
 
 
         _Parent*                            _M_parent = nullptr;
@@ -2432,7 +2432,7 @@ private:
 
         constexpr __iterator(_Parent& __parent, iterator_t<_Base> __outer) :
             _M_parent(addressof(__parent)),
-            _M_outer(std::move(__outer))
+            _M_outer(__XVI_STD_NS::move(__outer))
         {
             if (_M_outer != ranges::end(_M_parent->_M_base))
             {
@@ -2464,7 +2464,7 @@ private:
             {
                 if (_M_inner.index() == 0)
                 {
-                    if (std::get<0>(_M_inner) != ranges::end(_M_parent->_M_pattern))
+                    if (__XVI_STD_NS::get<0>(_M_inner) != ranges::end(_M_parent->_M_pattern))
                         break;
 
                     auto&& __inner = __update_inner(_M_outer);
@@ -2474,7 +2474,7 @@ private:
                 {
                     auto&& __inner = __get_inner(_M_outer);
 
-                    if (std::get<1>(_M_inner) != ranges::end(_M_inner))
+                    if (__XVI_STD_NS::get<1>(_M_inner) != ranges::end(_M_inner))
                         break;
 
                     if (++_M_outer == ranges::end(_M_parent->_M_base))
@@ -2491,35 +2491,35 @@ private:
 
     public:
 
-        using iterator_concept          = std::conditional_t<__ref_is_glvalue && bidirectional_range<_Base> && __detail::__bidirectional_common<_InnerBase> && __detail::__bidirectional_common<_PatternBase>,
+        using iterator_concept          = __XVI_STD_NS::conditional_t<__ref_is_glvalue && bidirectional_range<_Base> && __detail::__bidirectional_common<_InnerBase> && __detail::__bidirectional_common<_PatternBase>,
                                                              bidirectional_iterator_tag,
-                                                             std::conditional_t<__ref_is_glvalue && forward_range<_Base> && forward_range<_InnerBase>,
+                                                             __XVI_STD_NS::conditional_t<__ref_is_glvalue && forward_range<_Base> && forward_range<_InnerBase>,
                                                                                 forward_iterator_tag,
                                                                                 input_iterator_tag>>;
         /*using iterator_category         = ...;*/ //! @todo: define this.
-        using value_type                = std::common_type_t<iter_value_t<_InnerIter>, iter_value_t<_PatternIter>>;
-        using difference_type           = std::common_type_t<iter_difference_t<_OuterIter>, iter_difference_t<_InnerIter>, iter_difference_t<_PatternIter>>;
+        using value_type                = __XVI_STD_NS::common_type_t<iter_value_t<_InnerIter>, iter_value_t<_PatternIter>>;
+        using difference_type           = __XVI_STD_NS::common_type_t<iter_difference_t<_OuterIter>, iter_difference_t<_InnerIter>, iter_difference_t<_PatternIter>>;
 
         __iterator()
-            requires std::default_initializable<_OuterIter> = default;
+            requires __XVI_STD_NS::default_initializable<_OuterIter> = default;
 
         constexpr __iterator(__iterator<!_Const> __i)
             requires _Const
-                && std::convertible_to<iterator_t<_V>, _OuterIter>
-                && std::convertible_to<iterator_t<_InnerRange>, _InnerIter>
-                && std::convertible_to<iterator_t<_Pattern>, _PatternIter> :
+                && __XVI_STD_NS::convertible_to<iterator_t<_V>, _OuterIter>
+                && __XVI_STD_NS::convertible_to<iterator_t<_InnerRange>, _InnerIter>
+                && __XVI_STD_NS::convertible_to<iterator_t<_Pattern>, _PatternIter> :
             _M_parent(__i._M_parent),
-            _M_outer(std::move(__i._M_outer))
+            _M_outer(__XVI_STD_NS::move(__i._M_outer))
         {
             if (__i._M_inner.index() == 0)
-                _M_inner.template emplace<0>(std::get<0>(std::move(__i._M_inner)));
+                _M_inner.template emplace<0>(__XVI_STD_NS::get<0>(__XVI_STD_NS::move(__i._M_inner)));
             else
-                _M_inner.template emplace<1>(std::get<1>(std::move(__i._M_inner)));
+                _M_inner.template emplace<1>(__XVI_STD_NS::get<1>(__XVI_STD_NS::move(__i._M_inner)));
         }
 
         constexpr decltype(auto) operator*() const
         {
-            using __reference = std::common_reference_t<iter_reference_t<_InnerIter>, iter_reference_t<_PatternIter>>;
+            using __reference = __XVI_STD_NS::common_reference_t<iter_reference_t<_InnerIter>, iter_reference_t<_PatternIter>>;
             return visit([](auto& __it) -> __reference { return *__it; }, _M_inner);
         }
 
@@ -2559,7 +2559,7 @@ private:
             {
                 if (_M_inner.index() == 0)
                 {
-                    auto& __it = std::get<0>(_M_inner);
+                    auto& __it = __XVI_STD_NS::get<0>(_M_inner);
                     if (__it = ranges::begin(_M_parent->_M_pattern))
                     {
                         auto&& __inner = *--_M_outer;
@@ -2572,7 +2572,7 @@ private:
                 }
                 else
                 {
-                    auto& __it = std::get<1>(_M_inner);
+                    auto& __it = __XVI_STD_NS::get<1>(_M_inner);
                     auto&& __inner = *_M_outer;
                     if (__it = ranges::begin(__inner))
                     {
@@ -2603,15 +2603,15 @@ private:
 
         friend constexpr bool operator==(const __iterator& __x, const __iterator& __y)
             requires __ref_is_glvalue
-                && std::equality_comparable<_OuterIter>
-                && std::equality_comparable<_InnerIter>
+                && __XVI_STD_NS::equality_comparable<_OuterIter>
+                && __XVI_STD_NS::equality_comparable<_InnerIter>
         {
             return __x._M_outer == __y._M_outer && __x._M_inner == __y._M_inner;
         }
 
         friend constexpr decltype(auto) iter_move(const __iterator& __x)
         {
-            using __rvalue_reference = std::common_reference_t<iter_rvalue_reference_t<_InnerIter>, iter_rvalue_reference_t<_PatternIter>>;
+            using __rvalue_reference = __XVI_STD_NS::common_reference_t<iter_rvalue_reference_t<_InnerIter>, iter_rvalue_reference_t<_PatternIter>>;
 
             return visit<__rvalue_reference>(ranges::iter_move, __x._M_inner);
         }
@@ -2626,8 +2626,8 @@ private:
     template <bool _Const>
     struct __sentinel
     {
-        using _Parent           = std::conditional_t<_Const, const join_with_view, join_with_view>;
-        using _Base             = std::conditional_t<_Const, const _V, _V>;
+        using _Parent           = __XVI_STD_NS::conditional_t<_Const, const join_with_view, join_with_view>;
+        using _Base             = __XVI_STD_NS::conditional_t<_Const, const _V, _V>;
 
         sentinel_t<_Base>   _M_end = sentinel_t<_Base>();
 
@@ -2642,13 +2642,13 @@ private:
 
         constexpr __sentinel(__sentinel<!_Const> __s)
             requires _Const
-                && std::convertible_to<sentinel_t<_V>, sentinel_t<_Base>> :
-            _M_end(std::move(__s._M_end))
+                && __XVI_STD_NS::convertible_to<sentinel_t<_V>, sentinel_t<_Base>> :
+            _M_end(__XVI_STD_NS::move(__s._M_end))
         {
         }
 
         template <bool _OtherConst>
-            requires sentinel_for<sentinel_t<_Base>, iterator_t<std::conditional_t<_OtherConst, const _V, _V>>>
+            requires sentinel_for<sentinel_t<_Base>, iterator_t<__XVI_STD_NS::conditional_t<_OtherConst, const _V, _V>>>
         friend constexpr bool operator==(const __iterator<_OtherConst>& __x, const __sentinel& __y)
         {
             return __x._M_outer == __y._M_end;
@@ -2658,35 +2658,35 @@ private:
 public:
 
     join_with_view()
-        requires std::default_initializable<_V>
-            && std::default_initializable<_Pattern>
+        requires __XVI_STD_NS::default_initializable<_V>
+            && __XVI_STD_NS::default_initializable<_Pattern>
         = default;
 
     constexpr join_with_view(_V __base, _Pattern __pattern) :
-        _M_base(std::move(__base)),
-        _M_pattern(std::move(__pattern))
+        _M_base(__XVI_STD_NS::move(__base)),
+        _M_pattern(__XVI_STD_NS::move(__pattern))
     {
     }
 
     template <input_range _R>
-        requires std::constructible_from<_V, views::all_t<_R>>
-            && std::constructible_from<_Pattern, single_view<range_value_t<_InnerRange>>>
+        requires __XVI_STD_NS::constructible_from<_V, views::all_t<_R>>
+            && __XVI_STD_NS::constructible_from<_Pattern, single_view<range_value_t<_InnerRange>>>
     constexpr join_with_view(_R&& __r, range_value_t<_InnerRange> __e) :
-        _M_base(views::all(std::forward<_R>(__r))),
-        _M_pattern(views::single(std::move(__e)))
+        _M_base(views::all(__XVI_STD_NS::forward<_R>(__r))),
+        _M_pattern(views::single(__XVI_STD_NS::move(__e)))
     {
     }
 
     constexpr auto begin()
     {
-        constexpr bool _UseConst = __detail::__simple_view<_V> && std::is_reference_v<_InnerRange> && __detail::__simple_view<_Pattern>;
+        constexpr bool _UseConst = __detail::__simple_view<_V> && __XVI_STD_NS::is_reference_v<_InnerRange> && __detail::__simple_view<_Pattern>;
         return __iterator<_UseConst>{*this, ranges::begin(_M_base)};
     }
 
     constexpr auto begin() const
         requires input_range<const _V>
             && forward_range<const _Pattern>
-            && std::is_reference_v<range_reference_t<const _V>>
+            && __XVI_STD_NS::is_reference_v<range_reference_t<const _V>>
     {
         return __iterator<true>{*this, ranges::begin(_M_base)};
     }
@@ -2694,7 +2694,7 @@ public:
     constexpr auto end()
     {
         if constexpr (forward_range<_V>
-                      && std::is_reference_v<_InnerRange>
+                      && __XVI_STD_NS::is_reference_v<_InnerRange>
                       && forward_range<_InnerRange>
                       && common_range<_V>
                       && common_range<_InnerRange>)
@@ -2706,7 +2706,7 @@ public:
     constexpr auto end() const
         requires input_range<const _V>
             && forward_range<const _Pattern>
-            && std::is_reference_v<range_reference_t<const _V>>
+            && __XVI_STD_NS::is_reference_v<range_reference_t<const _V>>
     {
         using _InnerConstRange = range_reference_t<const _V>;
 
@@ -2722,7 +2722,7 @@ public:
 private:
 
     _V                                                                  _M_base = _V();
-    __detail::__non_propagating_cache<std::remove_cv_t<_InnerRange>>    _M_inner;
+    __detail::__non_propagating_cache<__XVI_STD_NS::remove_cv_t<_InnerRange>>    _M_inner;
     _Pattern                                                            _M_pattern = _Pattern();
 };
 
@@ -2739,7 +2739,7 @@ namespace views
 
 inline constexpr __detail::__range_adaptor_closure join_with = []<class _E, class _F>(_E&& __e, _F&& __f)
 {
-    return join_with_view(std::forward<_E>(__e), std::forward<_F>(__f));
+    return join_with_view(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f));
 };
 
 } // namespace views
@@ -2777,8 +2777,8 @@ private:
 
         friend class __inner_iter<_Const>;
 
-        using _Parent       = std::conditional_t<_Const, const lazy_split_view, lazy_split_view>;
-        using _Base         = std::conditional_t<_Const, const _V, _V>;
+        using _Parent       = __XVI_STD_NS::conditional_t<_Const, const lazy_split_view, lazy_split_view>;
+        using _Base         = __XVI_STD_NS::conditional_t<_Const, const _V, _V>;
 
         _Parent*            _M_parent = nullptr;
         iterator_t<_Base>   _M_current = iterator_t<_Base>();   //! @todo: shouldn't be present if !forward_range<_V>.
@@ -2786,7 +2786,7 @@ private:
 
     public:
 
-        using iterator_concept = std::conditional_t<forward_range<_Base>, forward_iterator_tag, input_iterator_tag>;
+        using iterator_concept = __XVI_STD_NS::conditional_t<forward_range<_Base>, forward_iterator_tag, input_iterator_tag>;
 
         //! @todo: shouldn't be defined if not a forward range.
         using iterator_category = input_iterator_tag;
@@ -2803,7 +2803,7 @@ private:
             value_type() = default;
 
             constexpr explicit value_type(__outer_iter __i) :
-                _M_i(std::move(__i))
+                _M_i(__XVI_STD_NS::move(__i))
             {
             }
 
@@ -2850,19 +2850,19 @@ private:
             _M_parent(addressof(__parent))
         {
             if constexpr (forward_range<_V>)
-                _M_current = std::move(__current);
+                _M_current = __XVI_STD_NS::move(__current);
             else
-                _M_parent->_M_current = std::move(__current);
+                _M_parent->_M_current = __XVI_STD_NS::move(__current);
         }
 
         constexpr __outer_iter(__outer_iter<!_Const> __i)
-            requires _Const && std::convertible_to<iterator_t<_V>, iterator_t<_Base>> :
+            requires _Const && __XVI_STD_NS::convertible_to<iterator_t<_V>, iterator_t<_Base>> :
             _M_parent(__i._M_parent)
         {
             if constexpr (forward_range<_V>)
-                _M_current = std::move(__i._M_current);
+                _M_current = __XVI_STD_NS::move(__i._M_current);
             else
-                _M_parent->_M_current = std::move(__i._M_current);
+                _M_parent->_M_current = __XVI_STD_NS::move(__i._M_current);
         }
 
         constexpr value_type operator*() const
@@ -2886,7 +2886,7 @@ private:
                 ++__current;
             else if constexpr (__detail::__tiny_range<_Pattern>)
             {
-                __current = ranges::__detail::__make_find()(std::move(__current), __end, __pbegin);
+                __current = ranges::__detail::__make_find()(__XVI_STD_NS::move(__current), __end, __pbegin);
                 if (__current != __end)
                 {
                     ++__current;
@@ -2943,7 +2943,7 @@ private:
     {
     private:
 
-        using _Base     = std::conditional_t<_Const, const _V, _V>;
+        using _Base     = __XVI_STD_NS::conditional_t<_Const, const _V, _V>;
 
         __outer_iter<_Const>        _M_i = {};
         bool                        _M_incremented = false;
@@ -2953,7 +2953,7 @@ private:
         using iterator_concept = typename __outer_iter<_Const>::iterator_concept;
 
         //! @todo: should only be present if forward_range<_Base>.
-        using iterator_category = std::conditional_t<derived_from<typename iterator_traits<iterator_t<_Base>>::iterator_category, forward_iterator_tag>,
+        using iterator_category = __XVI_STD_NS::conditional_t<derived_from<typename iterator_traits<iterator_t<_Base>>::iterator_category, forward_iterator_tag>,
                                                      forward_iterator_tag,
                                                      typename iterator_traits<iterator_t<_Base>>::iterator_category>; 
 
@@ -2963,7 +2963,7 @@ private:
         __inner_iter() = default;
 
         constexpr explicit __inner_iter(__outer_iter<_Const> __i) :
-            _M_i(std::move(__i))
+            _M_i(__XVI_STD_NS::move(__i))
         {
         }
 
@@ -2975,7 +2975,7 @@ private:
         constexpr iterator_t<_Base> base() &&
             requires forward_range<_V>
         {
-            return std::move(_M_i.__get_current());
+            return __XVI_STD_NS::move(_M_i.__get_current());
         }
 
         constexpr decltype(auto) operator*() const
@@ -3068,34 +3068,34 @@ private:
 public:
 
     lazy_split_view()
-        requires std::default_initializable<_V>
-            && std::default_initializable<_Pattern>
+        requires __XVI_STD_NS::default_initializable<_V>
+            && __XVI_STD_NS::default_initializable<_Pattern>
         = default;
 
     constexpr lazy_split_view(_V __base, _Pattern __pattern) :
-        _M_base(std::move(__base)),
-        _M_pattern(std::move(__pattern))
+        _M_base(__XVI_STD_NS::move(__base)),
+        _M_pattern(__XVI_STD_NS::move(__pattern))
     {
     }
 
     template <input_range _R>
-        requires std::constructible_from<_V, views::all_t<_R>>
-            && std::constructible_from<_Pattern, single_view<range_value_t<_R>>>
+        requires __XVI_STD_NS::constructible_from<_V, views::all_t<_R>>
+            && __XVI_STD_NS::constructible_from<_Pattern, single_view<range_value_t<_R>>>
     constexpr lazy_split_view(_R&& __r, range_value_t<_R> __e) :
-        _M_base(views::all(std::forward<_R>(__r))),
-        _M_pattern(views::single(std::move(__e)))
+        _M_base(views::all(__XVI_STD_NS::forward<_R>(__r))),
+        _M_pattern(views::single(__XVI_STD_NS::move(__e)))
     {
     }
 
     constexpr _V base() const &
-        requires std::copy_constructible<_V>
+        requires __XVI_STD_NS::copy_constructible<_V>
     {
         return _M_base;
     }
 
     constexpr _V base() &&
     {
-        return std::move(_M_base);
+        return __XVI_STD_NS::move(_M_base);
     }
 
     constexpr auto begin()
@@ -3152,7 +3152,7 @@ namespace views
 
 inline constexpr __detail::__range_adaptor_closure lazy_split = []<class _E, class _F>(_E&& __e, _F&& __f)
 {
-    return lazy_split_view(std::forward<_E>(__e), std::forward<_F>(__f));
+    return lazy_split_view(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f));
 };
 
 } // namespace views
@@ -3191,8 +3191,8 @@ private:
 
         constexpr __iterator(split_view& __parent, iterator_t<_V> __current, subrange<iterator_t<_V>> __next) :
             _M_parent(addressof(__parent)),
-            _M_cur(std::move(__current)),
-            _M_next(std::move(__next))
+            _M_cur(__XVI_STD_NS::move(__current)),
+            _M_next(__XVI_STD_NS::move(__next))
         {
         }
 
@@ -3274,34 +3274,34 @@ private:
 public:
 
     split_view()
-        requires std::default_initializable<_V>
-            && std::default_initializable<_Pattern>
+        requires __XVI_STD_NS::default_initializable<_V>
+            && __XVI_STD_NS::default_initializable<_Pattern>
         = default;
 
     constexpr split_view(_V __v, _Pattern __pattern) :
-        _M_base(std::move(__v)),
-        _M_pattern(std::move(__pattern))
+        _M_base(__XVI_STD_NS::move(__v)),
+        _M_pattern(__XVI_STD_NS::move(__pattern))
     {
     }
 
     template <forward_range _R>
-        requires std::constructible_from<_V, views::all_t<_R>>
-            && std::constructible_from<_Pattern, single_view<range_value_t<_R>>>
+        requires __XVI_STD_NS::constructible_from<_V, views::all_t<_R>>
+            && __XVI_STD_NS::constructible_from<_Pattern, single_view<range_value_t<_R>>>
     constexpr split_view(_R&& __r, range_value_t<_R> __e) :
-        _M_base(views::all(std::forward<_R>(__r))),
-        _M_pattern(views::single(std::move(__e)))
+        _M_base(views::all(__XVI_STD_NS::forward<_R>(__r))),
+        _M_pattern(views::single(__XVI_STD_NS::move(__e)))
     {
     }
 
     constexpr _V base() const &
-        requires std::copy_constructible<_V>
+        requires __XVI_STD_NS::copy_constructible<_V>
     {
         return _M_base;
     }
 
     constexpr _V base() &&
     {
-        return std::move(_M_base);
+        return __XVI_STD_NS::move(_M_base);
     }
 
     constexpr __iterator begin()
@@ -3345,7 +3345,7 @@ namespace views
 
 inline constexpr __detail::__range_adaptor_closure split = []<class _E, class _F>(_E&& __e, _F&& __f)
 {
-    return split_view(std::forward<_E>(__e), std::forward<_F>(__f));
+    return split_view(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f));
 };
 
 } // namespace views
@@ -3356,17 +3356,17 @@ namespace views
 
 inline constexpr __detail::__range_adaptor_closure counted = []<class _E, class _F>(_E&& __e, _F&& __f)
 {
-    using _T = std::decay_t<_E>;
+    using _T = __XVI_STD_NS::decay_t<_E>;
     using _D = iter_difference_t<_T>;
 
-    static_assert(std::convertible_to<_F, _D>);
+    static_assert(__XVI_STD_NS::convertible_to<_F, _D>);
 
     if constexpr (contiguous_iterator<_T>)
-        return span(to_address(std::forward<_E>(__e)), static_cast<std::size_t>(static_cast<_D>(std::forward<_F>(__f))));
+        return span(to_address(__XVI_STD_NS::forward<_E>(__e)), static_cast<__XVI_STD_NS::size_t>(static_cast<_D>(__XVI_STD_NS::forward<_F>(__f))));
     else if constexpr (random_access_iterator<_T>)
-        return subrange(std::forward<_E>(__e), std::forward<_E>(__e) + static_cast<_D>(std::forward<_F>(__f)));
+        return subrange(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_E>(__e) + static_cast<_D>(__XVI_STD_NS::forward<_F>(__f)));
     else
-        return subrange(counted_iterator(std::forward<_E>(__e), std::forward<_F>(__f)), default_sentinel);
+        return subrange(counted_iterator(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f)), default_sentinel);
 };
 
 } // namespace views
@@ -3384,10 +3384,10 @@ private:
 public:
 
     common_view()
-        requires std::default_initializable<_V> = default;
+        requires __XVI_STD_NS::default_initializable<_V> = default;
 
     constexpr explicit common_view(_V __r) :
-        _M_base(std::move(__r))
+        _M_base(__XVI_STD_NS::move(__r))
     {
     }
 
@@ -3399,7 +3399,7 @@ public:
 
     constexpr _V base() &&
     {
-        return std::move(_M_base);
+        return __XVI_STD_NS::move(_M_base);
     }
 
     constexpr auto size()
@@ -3456,10 +3456,10 @@ namespace views
 
 inline constexpr __detail::__range_adaptor_closure common = []<class _E, class _F>(_E&& __e, _F&& __f)
 {
-    if constexpr (common_range<_E> && requires { views::all(std::forward<_E>(__e)); })
-        return views::all(std::forward<_E>(__e));
+    if constexpr (common_range<_E> && requires { views::all(__XVI_STD_NS::forward<_E>(__e)); })
+        return views::all(__XVI_STD_NS::forward<_E>(__e));
     else
-        return common_view{std::forward<_E>(__e)};
+        return common_view{__XVI_STD_NS::forward<_E>(__e)};
 };
 
 } // namespace views
@@ -3478,10 +3478,10 @@ private:
 public:
 
     reverse_view()
-        requires std::default_initializable<_V> = default;
+        requires __XVI_STD_NS::default_initializable<_V> = default;
 
     constexpr explicit reverse_view(_V __r) :
-        _M_base(std::move(__r))
+        _M_base(__XVI_STD_NS::move(__r))
     {
     }
 
@@ -3493,7 +3493,7 @@ public:
 
     constexpr _V base() &&
     {
-        return std::move(_M_base);
+        return __XVI_STD_NS::move(_M_base);
     }
 
     constexpr reverse_iterator<iterator_t<_V>> begin()
@@ -3547,10 +3547,10 @@ namespace __detail
 {
 
 template <class _T>
-struct __is_reverse_subrange : std::false_type {};
+struct __is_reverse_subrange : __XVI_STD_NS::false_type {};
 
 template <class _I, subrange_kind _K>
-struct __is_reverse_subrange<subrange<reverse_iterator<_I>, reverse_iterator<_I>, _K>> : std::true_type {};
+struct __is_reverse_subrange<subrange<reverse_iterator<_I>, reverse_iterator<_I>, _K>> : __XVI_STD_NS::true_type {};
 
 template <class _T>
 inline constexpr bool __is_reverse_subrange_v = __is_reverse_subrange<_T>::value();
@@ -3562,10 +3562,10 @@ namespace views
 
 inline constexpr __detail::__range_adaptor_closure reverse = []<class _E>(_E&& __e)
 {
-    using _T = std::remove_cvref_t<_E>;
+    using _T = __XVI_STD_NS::remove_cvref_t<_E>;
 
     if constexpr (__detail::__is_specialization_of_v<reverse_view, _T>)
-        return std::forward<_E>(__e).base();
+        return __XVI_STD_NS::forward<_E>(__e).base();
     else if constexpr (__detail::__is_reverse_subrange_v<_T>)
     {
         using _I = typename _T::_Iter;
@@ -3576,7 +3576,7 @@ inline constexpr __detail::__range_adaptor_closure reverse = []<class _E>(_E&& _
             return subrange<_I, _I, _K>(__e.end().base(), __e.begin().base());
     }
     else
-        return reverse_view{std::forward<_E>(__e)};
+        return reverse_view{__XVI_STD_NS::forward<_E>(__e)};
 };
 
 } // namespace views
@@ -3596,14 +3596,14 @@ concept __has_tuple_element = requires(_T __t)
 
 template <class _T, size_t _N>
 concept __returnable_element =
-    std::is_reference_v<_T> || std::move_constructible<tuple_element_t<_N, _T>>;
+    __XVI_STD_NS::is_reference_v<_T> || __XVI_STD_NS::move_constructible<tuple_element_t<_N, _T>>;
 
 } // namespace __detail
 
 template <input_range _V, size_t _N>
     requires view<_V>
         && __detail::__has_tuple_element<range_value_t<_V>, _N>
-        && __detail::__has_tuple_element<std::remove_reference_t<range_reference_t<_V>>, _N>
+        && __detail::__has_tuple_element<__XVI_STD_NS::remove_reference_t<range_reference_t<_V>>, _N>
         && __detail::__returnable_element<range_reference_t<_V>, _N>
 class elements_view :
     public view_interface<elements_view<_V, _N>>
@@ -3619,52 +3619,52 @@ private:
 
         template <bool> friend class __sentinel;
 
-        using _Base = std::conditional_t<_Const, const _V, _V>;
+        using _Base = __XVI_STD_NS::conditional_t<_Const, const _V, _V>;
 
         iterator_t<_Base> _M_current = iterator_t<_Base>();
 
         static constexpr decltype(auto) __get_element(const iterator_t<_Base>& __i)
         {
-            if constexpr (std::is_reference_v<range_reference_t<_Base>>)
-                return std::get<_N>(*__i);
+            if constexpr (__XVI_STD_NS::is_reference_v<range_reference_t<_Base>>)
+                return __XVI_STD_NS::get<_N>(*__i);
             else
             {
-                using _E = std::remove_cv_t<tuple_element_t<_N, range_reference_t<_Base>>>;
-                return static_cast<_E>(std::get<_N>(*__i));
+                using _E = __XVI_STD_NS::remove_cv_t<tuple_element_t<_N, range_reference_t<_Base>>>;
+                return static_cast<_E>(__XVI_STD_NS::get<_N>(*__i));
             }
         }
 
     public:
 
-        using iterator_concept      = std::conditional_t<random_access_range<_Base>,
+        using iterator_concept      = __XVI_STD_NS::conditional_t<random_access_range<_Base>,
                                                          random_access_iterator_tag,
-                                                         std::conditional_t<bidirectional_range<_Base>,
+                                                         __XVI_STD_NS::conditional_t<bidirectional_range<_Base>,
                                                                             bidirectional_iterator_tag,
-                                                                            std::conditional_t<forward_range<_Base>,
+                                                                            __XVI_STD_NS::conditional_t<forward_range<_Base>,
                                                                                                forward_iterator_tag,
                                                                                                input_iterator_tag>>>;
 
         //! @todo: should only be defined if forward_range<_Base>.
-        using iterator_category     = std::conditional_t<std::is_rvalue_reference_v<decltype(std::get<_N>(*declval<iterator_t<_Base>&>()))>,
+        using iterator_category     = __XVI_STD_NS::conditional_t<__XVI_STD_NS::is_rvalue_reference_v<decltype(__XVI_STD_NS::get<_N>(*declval<iterator_t<_Base>&>()))>,
                                                          input_iterator_tag,
-                                                         std::conditional_t<std::derived_from<typename iterator_traits<iterator_t<_Base>>::iterator_category, random_access_iterator_tag>,
+                                                         __XVI_STD_NS::conditional_t<__XVI_STD_NS::derived_from<typename iterator_traits<iterator_t<_Base>>::iterator_category, random_access_iterator_tag>,
                                                                             random_access_iterator_tag,
                                                                             typename iterator_traits<iterator_t<_Base>>::iterator_category>>;
 
-        using value_type            = std::remove_cvref_t<tuple_element_t<_N, range_value_t<_Base>>>;
+        using value_type            = __XVI_STD_NS::remove_cvref_t<tuple_element_t<_N, range_value_t<_Base>>>;
         using difference_type       = range_difference_t<_Base>;
 
         __iterator()
-            requires std::default_initializable<iterator_t<_Base>> = default;
+            requires __XVI_STD_NS::default_initializable<iterator_t<_Base>> = default;
 
         constexpr explicit __iterator(iterator_t<_Base> __current) :
-            _M_current(std::move(__current))
+            _M_current(__XVI_STD_NS::move(__current))
         {
         }
 
         constexpr __iterator(__iterator<!_Const> __i)
             requires _Const && convertible_to<iterator_t<_V>, iterator_t<_Base>> :
-            _M_current(std::move(__i._M_current))
+            _M_current(__XVI_STD_NS::move(__i._M_current))
         {
         }
 
@@ -3676,7 +3676,7 @@ private:
 
         constexpr iterator_t<_Base> base() &&
         {
-            return std::move(_M_current);
+            return __XVI_STD_NS::move(_M_current);
         }
 
         constexpr decltype(auto) operator*() const
@@ -3823,7 +3823,7 @@ private:
     {
     private:
 
-        using _Base     = std::conditional_t<_Const, const _V, _V>;
+        using _Base     = __XVI_STD_NS::conditional_t<_Const, const _V, _V>;
 
         sentinel_t<_Base>   _M_end = sentinel_t<_Base>();
 
@@ -3832,13 +3832,13 @@ private:
         __sentinel() = default;
 
         constexpr explicit __sentinel(sentinel_t<_Base> __end) :
-            _M_end(std::move(__end))
+            _M_end(__XVI_STD_NS::move(__end))
         {
         }
 
         constexpr __sentinel(__sentinel<!_Const> __other)
-            requires _Const && std::convertible_to<sentinel_t<_V>, sentinel_t<_Base>> :
-            _M_end(std::move(__other._M_end))
+            requires _Const && __XVI_STD_NS::convertible_to<sentinel_t<_V>, sentinel_t<_Base>> :
+            _M_end(__XVI_STD_NS::move(__other._M_end))
         {
         }
 
@@ -3848,22 +3848,22 @@ private:
         }
 
         template <bool _OtherConst>
-            requires sentinel_for<sentinel_t<_Base>, iterator_t<std::conditional_t<_OtherConst, const _V, _V>>>
+            requires sentinel_for<sentinel_t<_Base>, iterator_t<__XVI_STD_NS::conditional_t<_OtherConst, const _V, _V>>>
         friend constexpr bool operator==(const __iterator<_OtherConst>& __x, const __sentinel& __y)
         {
             return __x._M_current == __y._M_end;
         }
 
         template <bool _OtherConst>
-            requires sized_sentinel_for<sentinel_t<_Base>, iterator_t<std::conditional_t<_OtherConst, const _V, _V>>>
-        friend constexpr range_difference_t<std::conditional_t<_OtherConst, const _V, _V>> operator-(const __iterator<_OtherConst>& __x, const __sentinel& __y)
+            requires sized_sentinel_for<sentinel_t<_Base>, iterator_t<__XVI_STD_NS::conditional_t<_OtherConst, const _V, _V>>>
+        friend constexpr range_difference_t<__XVI_STD_NS::conditional_t<_OtherConst, const _V, _V>> operator-(const __iterator<_OtherConst>& __x, const __sentinel& __y)
         {
             return __x._M_current - __y._M_end;
         }
 
         template <bool _OtherConst>
-            requires sized_sentinel_for<sentinel_t<_Base>, iterator_t<std::conditional_t<_OtherConst, const _V, _V>>>
-        friend constexpr range_difference_t<std::conditional_t<_OtherConst, const _V, _V>> operator-(const __sentinel& __x, const __iterator<_OtherConst>& __y)
+            requires sized_sentinel_for<sentinel_t<_Base>, iterator_t<__XVI_STD_NS::conditional_t<_OtherConst, const _V, _V>>>
+        friend constexpr range_difference_t<__XVI_STD_NS::conditional_t<_OtherConst, const _V, _V>> operator-(const __sentinel& __x, const __iterator<_OtherConst>& __y)
         {
             return __x._M_end - __y._M_current;
         }
@@ -3874,10 +3874,10 @@ private:
 public:
 
     elements_view()
-        requires std::default_initializable<_V> = default;
+        requires __XVI_STD_NS::default_initializable<_V> = default;
 
     constexpr explicit elements_view(_V __base) :
-        _M_base(std::move(__base))
+        _M_base(__XVI_STD_NS::move(__base))
     {
     }
 
@@ -3889,7 +3889,7 @@ public:
 
     constexpr _V base() &&
     {
-        return std::move(_M_base);
+        return __XVI_STD_NS::move(_M_base);
     }
 
     constexpr auto begin()
@@ -3954,7 +3954,7 @@ namespace views::inline __elements
 template <size_t _N>
 inline constexpr __detail::__range_adaptor_closure elements = []<class _E>(_E&& __e)
 {
-    return elements_view<views::all_t<_E>, _N>{std::forward<_E>(__e)};
+    return elements_view<views::all_t<_E>, _N>{__XVI_STD_NS::forward<_E>(__e)};
 };
 
 inline constexpr auto keys = elements<0>;
@@ -3987,8 +3987,8 @@ constexpr auto __tuple_transform(_F&& __f, _Tuple&& __tuple)
 {
     return apply([&]<class... _Ts>(_Ts&&... __elements)
     {
-        return __tuple_or_pair_t<std::invoke_result_t<_F&, _Ts>...>(std::invoke(__f, std::forward<_Ts>(__elements))...);
-    }, std::forward<_Tuple>(__tuple));
+        return __tuple_or_pair_t<__XVI_STD_NS::invoke_result_t<_F&, _Ts>...>(__XVI_STD_NS::invoke(__f, __XVI_STD_NS::forward<_Ts>(__elements))...);
+    }, __XVI_STD_NS::forward<_Tuple>(__tuple));
 }
 
 template <class _F, class _Tuple>
@@ -3996,18 +3996,18 @@ constexpr void __tuple_for_each(_F&& __f, _Tuple&& __tuple)
 {
     apply([&]<class... _Ts>(_Ts&&... __elements)
     {
-        (std::invoke(__f, std::forward<_Ts>(__elements)), ...);
-    }, std::forward<_Tuple>(__tuple));
+        (__XVI_STD_NS::invoke(__f, __XVI_STD_NS::forward<_Ts>(__elements)), ...);
+    }, __XVI_STD_NS::forward<_Tuple>(__tuple));
 }
 
 template <bool _Const, class... _Views>
-concept __all_random_access = (random_access_range<std::conditional_t<_Const, const _Views, _Views>> && ...);
+concept __all_random_access = (random_access_range<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>> && ...);
 
 template <bool _Const, class... _Views>
-concept __all_bidirectional = (bidirectional_range<std::conditional_t<_Const, const _Views, _Views>> && ...);
+concept __all_bidirectional = (bidirectional_range<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>> && ...);
 
 template <bool _Const, class... _Views>
-concept __all_forward = (forward_range<std::conditional_t<_Const, const _Views, _Views>> && ...);
+concept __all_forward = (forward_range<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>> && ...);
 
 } // namespace __detail
 
@@ -4034,42 +4034,42 @@ private:
 
         //! @todo: should only be present if __detail::__all_forward<_Const, _Views...>
         using iterator_category         = input_iterator_tag;
-        using iterator_concept          = std::conditional_t<__detail::__all_random_access<_Const, _Views...>,
+        using iterator_concept          = __XVI_STD_NS::conditional_t<__detail::__all_random_access<_Const, _Views...>,
                                                              random_access_iterator_tag,
-                                                             std::conditional_t<__detail::__all_bidirectional<_Const, _Views...>,
+                                                             __XVI_STD_NS::conditional_t<__detail::__all_bidirectional<_Const, _Views...>,
                                                                                 bidirectional_iterator_tag,
-                                                                                std::conditional_t<__detail::__all_forward<_Const, _Views...>,
+                                                                                __XVI_STD_NS::conditional_t<__detail::__all_forward<_Const, _Views...>,
                                                                                                    forward_iterator_tag,
                                                                                                    input_iterator_tag>>>;
-        using value_type                = __detail::__tuple_or_pair<range_value_t<std::conditional_t<_Const, const _Views, _Views>>...>;
-        using difference_type           = std::common_type_t<range_difference_t<std::conditional_t<_Const, const _Views, _Views>>...>;
+        using value_type                = __detail::__tuple_or_pair<range_value_t<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>>...>;
+        using difference_type           = __XVI_STD_NS::common_type_t<range_difference_t<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>>...>;
 
     private:
 
-        using __tuple = __detail::__tuple_or_pair<iterator_t<std::conditional_t<_Const, const _Views, _Views>>...>;
+        using __tuple = __detail::__tuple_or_pair<iterator_t<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>>...>;
 
         __tuple _M_current;
 
         constexpr explicit __iterator(__tuple __i);
 
-        template <std::size_t... _Idx>
-        static constexpr bool __any_piecewise_equal(const __tuple& __x, const __tuple& __y, std::index_sequence<_Idx...>)
+        template <__XVI_STD_NS::size_t... _Idx>
+        static constexpr bool __any_piecewise_equal(const __tuple& __x, const __tuple& __y, __XVI_STD_NS::index_sequence<_Idx...>)
         {
-            return (bool(std::get<_Idx>(__x) == std::get<_Idx>(__y)) || ...);
+            return (bool(__XVI_STD_NS::get<_Idx>(__x) == __XVI_STD_NS::get<_Idx>(__y)) || ...);
         }
 
-        template <std::size_t... _Idx>
-        static constexpr difference_type __min_distance(const __tuple& __x, const __tuple& __y, std::index_sequence<_Idx...>)
+        template <__XVI_STD_NS::size_t... _Idx>
+        static constexpr difference_type __min_distance(const __tuple& __x, const __tuple& __y, __XVI_STD_NS::index_sequence<_Idx...>)
         {
             //! @todo: should be the value with the smallest *absolute* value.
-            return ranges::__detail::__make_min()({difference_type(std::get<_Idx>(__x) - std::get<_Idx>(__y))...});
+            return ranges::__detail::__make_min()({difference_type(__XVI_STD_NS::get<_Idx>(__x) - __XVI_STD_NS::get<_Idx>(__y))...});
         }
 
-        template <std::size_t... _Idx>
+        template <__XVI_STD_NS::size_t... _Idx>
         static constexpr void __iter_swap(const __tuple& __x, const __tuple& __y)
-            noexcept(noexcept((ranges::iter_swap(std::get<_Idx>(__x), std::get<_Idx>(__y)), ...)))
+            noexcept(noexcept((ranges::iter_swap(__XVI_STD_NS::get<_Idx>(__x), __XVI_STD_NS::get<_Idx>(__y)), ...)))
         {
-            (ranges::iter_swap(std::get<_Idx>(__x), std::get<_Idx>(__y)), ...);
+            (ranges::iter_swap(__XVI_STD_NS::get<_Idx>(__x), __XVI_STD_NS::get<_Idx>(__y)), ...);
         }
 
     public:
@@ -4079,8 +4079,8 @@ private:
         __iterator() = default;
 
         constexpr __iterator(__iterator<!_Const> __i)
-            requires _Const && (std::convertible_to<iterator_t<_Views>, iterator_t<std::conditional_t<_Const, const _Views, _Views>>> && ...) :
-            _M_current(std::move(__i._M_current))
+            requires _Const && (__XVI_STD_NS::convertible_to<iterator_t<_Views>, iterator_t<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>>> && ...) :
+            _M_current(__XVI_STD_NS::move(__i._M_current))
         {
         }
 
@@ -4156,12 +4156,12 @@ private:
         }
 
         friend constexpr bool operator==(const __iterator& __x, const __iterator& __y)
-            requires (std::equality_comparable<iterator_t<std::conditional_t<_Const, const _Views, _Views>>> && ...)
+            requires (__XVI_STD_NS::equality_comparable<iterator_t<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>>> && ...)
         {
             if constexpr (__detail::__all_bidirectional<_Const, _Views...>)
                 return __x._M_current == __y._M_current;
 
-            return __any_piecewise_equal(__x._M_current, __y._M_current, std::make_index_sequence<sizeof...(_Views)>());
+            return __any_piecewise_equal(__x._M_current, __y._M_current, __XVI_STD_NS::make_index_sequence<sizeof...(_Views)>());
         }
 
         friend constexpr bool operator<(const __iterator& __x, const __iterator& __y)
@@ -4190,7 +4190,7 @@ private:
 
         friend constexpr auto operator<=>(const __iterator& __x, const __iterator& __y)
             requires __detail::__all_random_access<_Const, _Views...>
-                && (std::three_way_comparable<iterator_t<std::conditional_t<_Const, const _Views, _Views>>> && ...)
+                && (__XVI_STD_NS::three_way_comparable<iterator_t<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>>> && ...)
         {
             return __x._M_current <=> __y._M_current;
         }
@@ -4220,21 +4220,21 @@ private:
         }
 
         friend constexpr difference_type operator-(const __iterator& __x, const __iterator& __y)
-            requires (sized_sentinel_for<iterator_t<std::conditional_t<_Const, const _Views, _Views>>, iterator_t<std::conditional_t<_Const, const _Views, _Views>>> && ...)
+            requires (sized_sentinel_for<iterator_t<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>>, iterator_t<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>>> && ...)
         {
-            return __min_distance(__x._M_current, __y._M_current, std::make_index_sequence<sizeof...(_Views)>());
+            return __min_distance(__x._M_current, __y._M_current, __XVI_STD_NS::make_index_sequence<sizeof...(_Views)>());
         }
 
         friend constexpr auto iter_move(const __iterator& __i)
-            noexcept((noexcept(ranges::iter_move(declval<const iterator_t<std::conditional_t<_Const, const _Views, _Views>>&>())) && ...)
-                && (std::is_nothrow_move_constructible_v<range_rvalue_reference_t<std::conditional_t<_Const, const _Views, _Views>>> && ...))
+            noexcept((noexcept(ranges::iter_move(declval<const iterator_t<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>>&>())) && ...)
+                && (__XVI_STD_NS::is_nothrow_move_constructible_v<range_rvalue_reference_t<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>>> && ...))
         {
             return __detail::__tuple_transform(ranges::iter_move, __i._M_current);
         }
 
         friend constexpr void iter_swap(const __iterator& __l, const __iterator& __r)
             noexcept(noexcept(__iter_swap(__l._M_current, __r._M_current)))
-            requires (indirectly_swappable<iterator_t<std::conditional_t<_Const, const _Views, _Views>>> && ...)
+            requires (indirectly_swappable<iterator_t<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>>> && ...)
         {
             __iter_swap(__l._M_current, __r._M_current);
         }
@@ -4247,12 +4247,12 @@ private:
 
     private:
 
-        using __tuple = __detail::__tuple_or_pair_t<sentinel_t<std::conditional_t<_Const, const _Views, _Views>>...>;
+        using __tuple = __detail::__tuple_or_pair_t<sentinel_t<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>>...>;
 
         __tuple _M_end;
 
         constexpr explicit __sentinel(__tuple __i) :
-            _M_end(std::move(__i))
+            _M_end(__XVI_STD_NS::move(__i))
         {
         }
 
@@ -4261,24 +4261,24 @@ private:
         __sentinel() = default;
 
         constexpr __sentinel(__sentinel<!_Const> __i)
-            requires _Const && (std::convertible_to<sentinel_t<_Views>, sentinel_t<std::conditional_t<_Const, const _Views, _Views>>> && ...) :
-            _M_end(std::move(__i._M_end))
+            requires _Const && (__XVI_STD_NS::convertible_to<sentinel_t<_Views>, sentinel_t<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>>> && ...) :
+            _M_end(__XVI_STD_NS::move(__i._M_end))
         {
         }
 
         //! @todo: implement
         template <bool _OtherConst>
-            requires (sentinel_for<sentinel_t<std::conditional_t<_Const, const _Views, _Views>>, iterator_t<std::conditional_t<_OtherConst, const _Views, _Views>>> && ...)
+            requires (sentinel_for<sentinel_t<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>>, iterator_t<__XVI_STD_NS::conditional_t<_OtherConst, const _Views, _Views>>> && ...)
         friend constexpr bool operator==(const __iterator<_OtherConst>& __x, const __sentinel& __y);
 
         //! @todo: implement
         template <bool _OtherConst>
-            requires (sized_sentinel_for<sentinel_t<std::conditional_t<_Const, const _Views, _Views>>, iterator_t<std::conditional_t<_OtherConst, const _Views, _Views>>> && ...)
-        friend constexpr common_type_t<range_difference_t<std::conditional_t<_OtherConst, const _Views, _Views>>...> operator-(const __iterator<_OtherConst>& __x, const __sentinel& __y);
+            requires (sized_sentinel_for<sentinel_t<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>>, iterator_t<__XVI_STD_NS::conditional_t<_OtherConst, const _Views, _Views>>> && ...)
+        friend constexpr common_type_t<range_difference_t<__XVI_STD_NS::conditional_t<_OtherConst, const _Views, _Views>>...> operator-(const __iterator<_OtherConst>& __x, const __sentinel& __y);
 
         template <bool _OtherConst>
-            requires (sized_sentinel_for<sentinel_t<std::conditional_t<_Const, const _Views, _Views>>, iterator_t<std::conditional_t<_OtherConst, const _Views, _Views>>> && ...)
-        friend constexpr common_type_t<range_difference_t<std::conditional_t<_OtherConst, const _Views, _Views>>...> operator-(const __sentinel& __y, const __iterator<_OtherConst>& __x)
+            requires (sized_sentinel_for<sentinel_t<__XVI_STD_NS::conditional_t<_Const, const _Views, _Views>>, iterator_t<__XVI_STD_NS::conditional_t<_OtherConst, const _Views, _Views>>> && ...)
+        friend constexpr common_type_t<range_difference_t<__XVI_STD_NS::conditional_t<_OtherConst, const _Views, _Views>>...> operator-(const __sentinel& __y, const __iterator<_OtherConst>& __x)
         {
             return -(__x - __y);
         }
@@ -4289,7 +4289,7 @@ public:
     zip_view() = default;
 
     constexpr explicit zip_view(_Views... __views) :
-        _M_views(std::move(__views)...)
+        _M_views(__XVI_STD_NS::move(__views)...)
     {
     }
 
@@ -4332,7 +4332,7 @@ public:
     {
         return apply([](auto... __sizes)
         {
-            using _CT = std::make_unsigned_t<std::common_type_t<decltype(__sizes)...>>;
+            using _CT = __XVI_STD_NS::make_unsigned_t<__XVI_STD_NS::common_type_t<decltype(__sizes)...>>;
             return ranges::__detail::__make_min()({_CT(__sizes)...});
         }, __detail::__tuple_transform(ranges::size, _M_views));
     }
@@ -4342,7 +4342,7 @@ public:
     {
         return apply([](auto... __sizes)
         {
-            using _CT = std::make_unsigned_t<std::common_type_t<decltype(__sizes)...>>;
+            using _CT = __XVI_STD_NS::make_unsigned_t<__XVI_STD_NS::common_type_t<decltype(__sizes)...>>;
             return ranges::__detail::__make_min()({_CT(__sizes)...});
         }, __detail::__tuple_transform(ranges::size, _M_views));
     }
@@ -4362,7 +4362,7 @@ inline constexpr __detail::__range_adaptor_closure zip = []<class... _Es>(_Es&&.
     if constexpr (sizeof...(_Es) == 0)
         return __DECAY(views::empty<tuple<>>);
     else
-        return zip_view<views::all_t<_Es>...>(std::forward<_Es>(__es)...);
+        return zip_view<views::all_t<_Es>...>(__XVI_STD_NS::forward<_Es>(__es)...);
 };
 
 } // namespace views
@@ -4372,9 +4372,9 @@ inline constexpr __detail::__range_adaptor_closure zip = []<class... _Es>(_Es&&.
 template <copy_constructible _F, input_range... _Views>
     requires (view<_Views> && ...)
         && (sizeof...(_Views) > 0)
-        && std::is_object_v<_F>
-        && std::regular_invocable<_F&, range_reference_t<_Views>...>
-        && __XVI_STD_UTILITY_NS::__detail::__can_reference<std::invoke_result_t<_F&, range_reference_t<_Views>...>>
+        && __XVI_STD_NS::is_object_v<_F>
+        && __XVI_STD_NS::regular_invocable<_F&, range_reference_t<_Views>...>
+        && __XVI_STD_UTILITY_NS::__detail::__can_reference<__XVI_STD_NS::invoke_result_t<_F&, range_reference_t<_Views>...>>
 class zip_transform_view;
 
 namespace views
@@ -4384,15 +4384,15 @@ inline constexpr __detail::__range_adaptor_closure zip_transform = []<class _F, 
 {
     if constexpr (sizeof...(_Es) == 0)
     {
-        using _FD = std::decay_t<_F>;
+        using _FD = __XVI_STD_NS::decay_t<_F>;
 
-        static_assert(std::copy_constructible<_FD> && std::regular_invocable<_FD&> && std::is_object_v<std::decay_t<std::invoke_result_t<_FD&>>>);
+        static_assert(__XVI_STD_NS::copy_constructible<_FD> && __XVI_STD_NS::regular_invocable<_FD&> && __XVI_STD_NS::is_object_v<__XVI_STD_NS::decay_t<__XVI_STD_NS::invoke_result_t<_FD&>>>);
 
-        ((void)std::forward<_F>(__f), __DECAY(views::empty<std::decay_t<std::invoke_result_t<_FD&>>>));
+        ((void)__XVI_STD_NS::forward<_F>(__f), __DECAY(views::empty<__XVI_STD_NS::decay_t<__XVI_STD_NS::invoke_result_t<_FD&>>>));
     }
     else
     {
-        return zip_transform_view(std::forward<_F>(__f), std::forward<_Es>(__es)...);
+        return zip_transform_view(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::forward<_Es>(__es)...);
     }
 };
 
@@ -4400,24 +4400,24 @@ inline constexpr __detail::__range_adaptor_closure zip_transform = []<class _F, 
 
 
 //! @todo: implement adjacent_view
-template <forward_range _V, std::size_t _N>
+template <forward_range _V, __XVI_STD_NS::size_t _N>
     requires view<_V>
         && (_N > 0)
 class adjacent_view;
 
-template <class _V, std::size_t _N>
+template <class _V, __XVI_STD_NS::size_t _N>
 inline constexpr bool enable_borrowed_range<adjacent_view<_V, _N>> = enable_borrowed_range<_V>;
 
 namespace views
 {
 
-template <std::size_t _N>
+template <__XVI_STD_NS::size_t _N>
 inline constexpr __detail::__range_adaptor_closure adjacent = []<class _E>(_E&& __e)
 {
     if constexpr (_N == 0)
-        ((void)std::forward<_E>(__e), __DECAY(views::empty<tuple<>>));
+        ((void)__XVI_STD_NS::forward<_E>(__e), __DECAY(views::empty<tuple<>>));
     else
-        adjancent_view<views::all_t<_E>, _N>(std::forward<_E>(__e));
+        adjancent_view<views::all_t<_E>, _N>(__XVI_STD_NS::forward<_E>(__e));
 };
 
 inline constexpr auto pairwise = adjacent<2>;
@@ -4426,20 +4426,20 @@ inline constexpr auto pairwise = adjacent<2>;
 
 
 //! @todo: implement adjacent_transform_view
-template <forward_range _V, copy_constructible _F, std::size_t _N>
+template <forward_range _V, copy_constructible _F, __XVI_STD_NS::size_t _N>
     requires (false)
 class adjacent_transform_view;
 
 namespace views
 {
 
-template <std::size_t _N>
+template <__XVI_STD_NS::size_t _N>
 inline constexpr __detail::__range_adaptor_closure adjacent_transform = []<class _E, class _F>(_E&& __e, _F&& __f)
 {
     if constexpr (_N == 0)
-        ((void)std::forward<_E>(__e), views::zip_transform(std::forward<_F>(__f)));
+        ((void)__XVI_STD_NS::forward<_E>(__e), views::zip_transform(__XVI_STD_NS::forward<_F>(__f)));
     else
-        adjacent_transform_view<views::all_t<_E>, std::decay_t<_F>, _N>(std::forward<_E>(__e), std::forward<_F>(__f));
+        adjacent_transform_view<views::all_t<_E>, __XVI_STD_NS::decay_t<_F>, _N>(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f));
 };
 
 inline constexpr auto pairwise_transform = adjacent_transform<2>;
@@ -4464,7 +4464,7 @@ namespace views
 
 inline constexpr __detail::__range_adaptor_closure chunk = []<class _E, class _N>(_E&& __e, _N&& __n)
 {
-    return chunk_view(std::forward<_E>(__e), std::forward<_N>(__n));
+    return chunk_view(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_N>(__n));
 };
 
 } // namespace views
@@ -4483,7 +4483,7 @@ namespace views
 
 inline constexpr __detail::__range_adaptor_closure slide = []<class _E, class _N>(_E&& __e, _N&& __n)
 {
-    return slide_view(std::forward<_E>(__e), std::forward<_N>(__n));
+    return slide_view(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_N>(__n));
 };
 
 } // namespace views
@@ -4492,7 +4492,7 @@ inline constexpr __detail::__range_adaptor_closure slide = []<class _E, class _N
 //! @todo: implement chunk_by_view
 template <forward_range _V, indirect_binary_predicate<iterator_t<_V>, iterator_t<_V>> _Pred>
     requires view<_V>
-        && std::is_object_v<_Pred>
+        && __XVI_STD_NS::is_object_v<_Pred>
 class chunk_by_view;
 
 namespace views
@@ -4500,7 +4500,7 @@ namespace views
 
 inline constexpr __detail::__range_adaptor_closure chunk_by = []<class _E, class _F>(_E&& __e, _F&& __f)
 {
-    return chunk_by_view(std::forward<_E>(__e), std::forward<_F>(__f));
+    return chunk_by_view(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f));
 };
 
 } // namespace views
@@ -4513,10 +4513,10 @@ namespace views = ranges::views;
 
 
 template <class _T> struct tuple_size;
-template <std::size_t _I, class _T> struct tuple_element;
+template <__XVI_STD_NS::size_t _I, class _T> struct tuple_element;
 
 template <class _I, class _S, ranges::subrange_kind _K>
-struct tuple_size<ranges::subrange<_I, _S, _K>> : std::integral_constant<std::size_t, 2> {};
+struct tuple_size<ranges::subrange<_I, _S, _K>> : __XVI_STD_NS::integral_constant<__XVI_STD_NS::size_t, 2> {};
 
 template <class _I, class _S, ranges::subrange_kind _K>
 struct tuple_element<0, ranges::subrange<_I, _S, _K>>

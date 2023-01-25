@@ -16,14 +16,6 @@ namespace __XVI_STD_UTILITY_NS
 {
 
 
-namespace __detail
-{
-
-template <class _A> using __allocate_at_least_detector = decltype(declval<_A>().allocate_at_least(declval<std::size_t>()));
-
-} // namespace __detail
-
-
 template <class _Pointer>
 struct allocation_result
 {
@@ -86,7 +78,7 @@ constexpr bool operator==(const allocator<_T>&, const allocator<_U>&) noexcept
 template <class _Allocator>
 [[nodiscard]] constexpr allocation_result<typename allocator_traits<_Allocator>::pointer> allocate_at_least(_Allocator& __a, std::size_t __n)
 {
-    if constexpr (__detail::is_detected_v<__detail::__allocate_at_least_detector, _Allocator>)
+    if constexpr (requires(_Allocator& __a, std::size_t __n) { __a.allocate_at_least(__n); })
         return __a.allocate_at_least(__n);
     else
         return {__a.allocate(__n), __n};

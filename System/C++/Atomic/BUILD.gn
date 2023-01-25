@@ -8,7 +8,6 @@ library("Atomic")
 
     public_deps =
     [
-        "//ABI/Atomic",
     ]
 
     header_deps =
@@ -21,4 +20,12 @@ library("Atomic")
         "Private/Config.hh",
         "Private/Namespace.hh",
     ]
+
+    if (!host_build)
+    {
+        public_deps +=
+        [
+            "//ABI/Atomic",
+        ]
+    }
 }

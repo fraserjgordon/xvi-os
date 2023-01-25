@@ -23,31 +23,6 @@
 namespace __XVI_STD_UTILITY_NS
 {
 
-enum class pointer_safety
-{
-    relaxed,
-    preferred,
-    strict,
-};
-
-// Only the declarations are present in this library. Implemented elsewhere.
-void declare_reachable(void*);
-void undeclare_reachable(void*);
-
-template <class _T>
-_T* undeclare_reachable(_T* __p)
-{
-    undeclare_reachable(static_cast<void*>(__p));
-    return __p;
-}
-
-// Only the declarations are present in this library. Implemented elsewhere.
-void declare_no_pointers(char*, size_t);
-void undeclare_no_pointers(char*, size_t);
-
-// Only the declaration is present in this library. Implemented elsewhere.
-pointer_safety get_pointer_safety() noexcept;
-
 
 inline void* align(size_t __alignment, size_t __size, void*& __ptr, size_t& __space)
 {
@@ -71,6 +46,23 @@ template <size_t _N, class _T>
 
     return __ptr;
 }
+
+
+template <class _T> _T* start_lifetime_as(void* __p) noexcept;
+
+template <class _T> const _T* start_lifetime_as(const void* __p) noexcept;
+
+template <class _T> volatile _T* start_lifetime_as(volatile void* __p) noexcept;
+
+template <class _T> const volatile _T* start_lifetime_as(const volatile void* __p) noexcept;
+
+template <class _T> _T* start_lifetime_as_array(void* __p, size_t __n) noexcept;
+
+template <class _T> const _T* start_lifetime_as_array(const void* __p, size_t __n) noexcept;
+
+template <class _T> volatile _T* start_lifetime_as_array(volatile void* __p, size_t __n) noexcept;
+
+template <class _T> const volatile _T* start_lifetime_as_array(const volatile void* __p, size_t __n) noexcept;
 
 
 } // namespace __XVI_STD_UTILITY_NS

@@ -58,41 +58,6 @@ struct __is_nothrow_convertible_helper
 template <class _From, class _To> struct is_nothrow_convertible
     : conjunction<is_convertible<_From, _To>, __is_nothrow_convertible_helper<_From, _To>>::type {};
 
-
-template <class _Fn, class... _Args> struct is_invocable : is_detected<__is_invocable_detector, _Fn, _Args...> {};
-
-template <class _R, class _Fn, class... _Args>
-struct __is_invocable_r
-{
-    using type = __is_invocable_detector<_Fn, _Args...>;
-    static constexpr bool value = is_convertible<type, _R>::value;
-};
-
-template <class _R, class _Fn, class... _Args>
-    struct is_invocable_r
-        : bool_constant<conjunction_v<is_invocable<_Fn, _Args...>, __is_invocable_r<_R, _Fn, _Args...>>> {};
-
-template <class _Fn, class... _Args>
-struct __is_nothrow_invocable
-{
-    static constexpr bool value = noexcept(_INVOKE(declval<_Fn>(), declval<_Args>()...));
-};
-
-template <class _Fn, class... _Args>
-    struct is_nothrow_invocable
-        : bool_constant<conjunction_v<is_invocable<_Fn, _Args...>, __is_nothrow_invocable<_Fn, _Args...>>> {};
-
-template <class _R, class _Fn, class... _Args>
-struct __is_nothrow_invocable_r
-{
-    using type = __is_invocable_detector<_Fn, _Args...>;
-    static constexpr bool value = is_nothrow_convertible<type, _R>::value;
-};
-
-template <class _R, class _Fn, class... _Args>
-    struct is_nothrow_invocable_r
-        : bool_constant<conjunction_v<is_nothrow_invocable<_Fn, _Args...>, __is_nothrow_invocable_r<_R, _Fn, _Args...>>> {};
-
 } // namespace __detail
 
 
@@ -113,19 +78,6 @@ template <class _T, class _U> inline constexpr bool is_layout_compatible_v = is_
 
 template <class _Base, class _Derived> struct is_pointer_interconvertible_base_of : __detail::is_pointer_interconvertible_base_of<_Base, _Derived> {};
 template <class _Base, class _Derived> inline constexpr bool is_pointer_interconvertible_base_of_v = is_pointer_interconvertible_base_of<_Base, _Derived>::value;
-
-template <class _Fn, class... _Args> struct is_invocable : __detail::is_invocable<_Fn, _Args...> {};
-template <class _Fn, class... _Args> inline constexpr bool is_invocable_v = is_invocable<_Fn, _Args...>::value;
-
-template <class _R, class _Fn, class... _Args> struct is_invocable_r : __detail::is_invocable_r<_R, _Fn, _Args...> {};
-template <class _R, class _Fn, class... _Args> inline constexpr bool is_invocable_r_v = is_invocable_r<_R, _Fn, _Args...>::value;
-
-template <class _Fn, class... _Args> struct is_nothrow_invocable : __detail::is_nothrow_invocable<_Fn, _Args...> {};
-template <class _Fn, class... _Args> inline constexpr bool is_nothrow_invocable_v = is_nothrow_invocable<_Fn, _Args...>::value;
-
-template <class _R, class _Fn, class... _Args> struct is_nothrow_invocable_r : __detail::is_nothrow_invocable_r<_R, _Fn, _Args...> {};
-template <class _R, class _Fn, class... _Args> inline constexpr bool is_nothrow_invocable_r_v = is_nothrow_invocable_r<_R, _Fn, _Args...>::value;
-
 
 //! @todo: implement
 template <class _S, class _M> constexpr bool is_pointer_interconvertible_with_class(_M _S::*__m) noexcept;

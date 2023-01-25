@@ -26,6 +26,9 @@ declare_args()
 
     # Build all targets, not just the default targets.
     build_all = false
+
+    # Build all tests, not just the default targets.
+    test_all = true
 }
 
 # Compiler arguments

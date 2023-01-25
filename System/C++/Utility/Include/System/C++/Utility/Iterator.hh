@@ -5,6 +5,7 @@
 
 #include <System/C++/LanguageSupport/Compare.hh>
 #include <System/C++/LanguageSupport/InitializerList.hh>
+#include <System/C++/LanguageSupport/Limits.hh>
 #include <System/C++/TypeTraits/Concepts.hh>
 
 #include <System/C++/Utility/Abs.hh>
@@ -3001,8 +3002,8 @@ template <class _T, size_t _N> constexpr size_t size(const _T (&)[_N]) noexcept
     { return _N; }
 template <class _C> constexpr auto ssize(const _C& __c) -> std::common_type_t<std::ptrdiff_t, std::make_signed_t<decltype(__c.size())>>
     { return static_cast<std::common_type_t<std::ptrdiff_t, std::make_signed_t<decltype(__c.size())>>>(__c.size()); }
-template <class _T, std::ptrdiff_t _N> constexpr std::ptrdiff_t ssize(const _T (&__array)[_N]) noexcept
-    { return _N; }
+template <class _T, std::size_t _N> constexpr std::ptrdiff_t ssize(const _T (&__array)[_N]) noexcept
+    { static_assert(_N <= __XVI_STD_NS::numeric_limits<std::ptrdiff_t>::max()); return _N; }
 template <class _C> [[nodiscard]] constexpr auto empty(const _C& __c) -> decltype(__c.empty())
     { return __c.empty();}
 template <class _T, size_t _N> [[nodiscard]] constexpr bool empty(const _T (&)[_N]) noexcept

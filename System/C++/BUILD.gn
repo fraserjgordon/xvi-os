@@ -2,6 +2,22 @@ library_group("C++")
 {
     deps =
     [
-        "StdLib"
+        "Atomic",
+        "Chrono",
+        "Containers",
+        "Coroutine",
+        "Format",
+        #"IO",
+        "LanguageSupport",
+        "Locale",
+        #"Maths",
+        "PMR",
+        #"Regex",
+        "Runtime",
+        #"Stacktrace",
+        "StdLib",
+        "Threads",
+        "TypeTraits",
+        "Utility",
     ]
 }

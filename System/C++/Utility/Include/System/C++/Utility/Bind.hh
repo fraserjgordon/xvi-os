@@ -20,7 +20,7 @@ auto not_fn(_F&& __f)
 {
     return [__f = std::forward<_F>(__f)]<class... _CallArgs>(_CallArgs&&... __call_args) mutable
     {
-        return !invoke(std::forward<_F>(__f), std::forward<_CallArgs>(__call_args)...);
+        return !__XVI_STD_UTILITY_NS::invoke(std::forward<_F>(__f), std::forward<_CallArgs>(__call_args)...);
     };
 }
 
@@ -30,7 +30,7 @@ auto mem_fn(_R _T::* __pm) noexcept
 {
     return [__pm]<class... _CallArgs>(_T* __t, _CallArgs&&... __call_args)
     {
-        return __detail::_INVOKE(__pm, __t, std::forward<_CallArgs>(__call_args)...);
+        return __XVI_STD_UTILITY_NS::invoke(__pm, __t, std::forward<_CallArgs>(__call_args)...);
     };
 }
 
@@ -40,7 +40,7 @@ auto bind_front(_F&& __f, _Args&&... __args)
 {
     return [__f = std::forward<_F>(__f), ...__bound_args = unwrap_ref_decay_t<_Args>(__args)]<class... _CallArgs>(_CallArgs&&... __call_args) mutable
     {
-        return invoke(std::forward<_F>(__f), std::forward<unwrap_ref_decay_t<_Args>>(__bound_args)..., std::forward<_CallArgs>(__call_args)...);
+        return __XVI_STD_UTILITY_NS::invoke(std::forward<_F>(__f), std::forward<unwrap_ref_decay_t<_Args>>(__bound_args)..., std::forward<_CallArgs>(__call_args)...);
     };
 }
 
@@ -50,7 +50,7 @@ auto bind_back(_F&& __f, _Args&&... __args)
 {
     return [__f = std::forward<_F>(__f), ...__bound_args = unwrap_ref_decay_t<_Args>(__args)]<class... _CallArgs>(_CallArgs&&... __call_args) mutable
     {
-        return invoke(std::forward<_F>(__f), std::forward<_CallArgs>(__call_args)..., std::forward<unwrap_ref_decay_t<_Args>>(__bound_args)...);
+        return __XVI_STD_UTILITY_NS::invoke(std::forward<_F>(__f), std::forward<_CallArgs>(__call_args)..., std::forward<unwrap_ref_decay_t<_Args>>(__bound_args)...);
     };
 }
 

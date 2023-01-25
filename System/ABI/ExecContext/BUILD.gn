@@ -18,9 +18,16 @@ library("ExecContext")
 
     deps =
     [
-        "//ABI/String",
-        "//ABI/C++:Guard",
     ]
+
+    if (!host_build)
+    {
+        deps +=
+        [
+            "//ABI/String",
+            "//ABI/C++:Guard",
+        ]
+    }
 
     public_headers =
     [

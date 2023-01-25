@@ -31,7 +31,7 @@ namespace __detail
 template <class _T>
 constexpr _T __rotl(_T __x, int __s) noexcept
 {
-    constexpr auto _N = std::numeric_limits<_T>::digits;
+    constexpr auto _N = __XVI_STD_NS::numeric_limits<_T>::digits;
 
     auto __r = __s % _N;
     return (__x << __r) | (__x >> (_N - __r));
@@ -40,7 +40,7 @@ constexpr _T __rotl(_T __x, int __s) noexcept
 template <class _T>
 constexpr _T __rotr(_T __x, int __s)
 {
-    constexpr auto _N = std::numeric_limits<_T>::digits;
+    constexpr auto _N = __XVI_STD_NS::numeric_limits<_T>::digits;
 
     auto __r = __s % _N;
     return (__x >> __r) | (__x << (_N - __r));
@@ -51,7 +51,7 @@ constexpr _T __rotr(_T __x, int __s)
 
 
 template <class _T>
-    requires std::is_integral_v<_T> && std::is_unsigned_v<_T>
+    requires __XVI_STD_NS::is_integral_v<_T> && __XVI_STD_NS::is_unsigned_v<_T>
 [[nodiscard]] constexpr _T rotl(_T __x, int __s) noexcept
 {
     if (__s < 0)
@@ -61,7 +61,7 @@ template <class _T>
 }
 
 template <class _T>
-    requires std::is_integral_v<_T> && std::is_unsigned_v<_T>
+    requires __XVI_STD_NS::is_integral_v<_T> && __XVI_STD_NS::is_unsigned_v<_T>
 [[nodiscard]] constexpr _T rotr(_T __x, int __s) noexcept
 {
     if (__s < 0)
@@ -72,11 +72,11 @@ template <class _T>
 
 
 template <class _T>
-    requires std::is_integral_v<_T> && std::is_unsigned_v<_T>
+    requires __XVI_STD_NS::is_integral_v<_T> && __XVI_STD_NS::is_unsigned_v<_T>
 constexpr int countl_zero(_T __x) noexcept
 {
-    using std::numeric_limits;
-    constexpr auto _N = numeric_limits<_T>::digits;
+    using __XVI_STD_NS::numeric_limits;
+    constexpr auto _N = __XVI_STD_NS::numeric_limits<_T>::digits;
 
     int __lz = 0;
     int __len = 0;
@@ -100,18 +100,18 @@ constexpr int countl_zero(_T __x) noexcept
 }
 
 template <class _T>
-    requires std::is_integral_v<_T> && std::is_unsigned_v<_T>
+    requires __XVI_STD_NS::is_integral_v<_T> && __XVI_STD_NS::is_unsigned_v<_T>
 constexpr int countl_one(_T __x) noexcept
 {
     return countl_zero(static_cast<_T>(~__x));
 }
 
 template <class _T>
-    requires std::is_integral_v<_T> && std::is_unsigned_v<_T>
+    requires __XVI_STD_NS::is_integral_v<_T> && __XVI_STD_NS::is_unsigned_v<_T>
 constexpr int countr_zero(_T __x) noexcept
 {
-    using std::numeric_limits;
-    constexpr auto _N = numeric_limits<_T>::digits;
+    using __XVI_STD_NS::numeric_limits;
+    constexpr auto _N = __XVI_STD_NS::numeric_limits<_T>::digits;
 
     int __tz = 0;
     if constexpr (sizeof(_T) <= sizeof(unsigned int))
@@ -131,7 +131,7 @@ constexpr int countr_zero(_T __x) noexcept
 }
 
 template <class _T>
-    requires std::is_integral_v<_T> && std::is_unsigned_v<_T>
+    requires __XVI_STD_NS::is_integral_v<_T> && __XVI_STD_NS::is_unsigned_v<_T>
 constexpr int countr_one(_T __x) noexcept
 {
     return countr_zero(static_cast<_T>(~__x));
@@ -139,7 +139,7 @@ constexpr int countr_one(_T __x) noexcept
 
 
 template <class _T>
-    requires std::is_integral_v<_T> && std::is_unsigned_v<_T>
+    requires __XVI_STD_NS::is_integral_v<_T> && __XVI_STD_NS::is_unsigned_v<_T>
 constexpr int popcount(_T __x) noexcept
 {
     if constexpr (sizeof(_T) <= sizeof(unsigned int))
@@ -171,51 +171,51 @@ template <class _T>
     requires std::integral<_T>
 constexpr _T byteswap(_T __value) noexcept
 {
-    if constexpr (sizeof(_T) == sizeof(std::uint8_t))
+    if constexpr (sizeof(_T) == sizeof(__XVI_STD_NS::uint8_t))
         return __value;
-    else if constexpr (sizeof(_T) == sizeof(std::uint16_t))
+    else if constexpr (sizeof(_T) == sizeof(__XVI_STD_NS::uint16_t))
         return __builtin_bswap16(__value);
-    else if constexpr (sizeof(_T) == sizeof(std::uint32_t))
+    else if constexpr (sizeof(_T) == sizeof(__XVI_STD_NS::uint32_t))
         return __builtin_bswap32(__value);
-    else if constexpr (sizeof(_T) == sizeof(std::uint64_t))
+    else if constexpr (sizeof(_T) == sizeof(__XVI_STD_NS::uint64_t))
         return __builtin_bswap64(__value);
 }
 
 
 template <class _T>
-    requires std::is_unsigned_v<_T>
+    requires __XVI_STD_NS::is_unsigned_v<_T>
 constexpr bool has_single_bit(_T __x) noexcept
 {
     return (__x & (__x - 1)) == 0;
 }
 
 template <class _T,
-          class = enable_if_t<is_unsigned_v<_T>, void>>
+          class = __XVI_STD_NS::enable_if_t<__XVI_STD_NS::is_unsigned_v<_T>, void>>
 constexpr _T bit_width(_T __x) noexcept
 {
     if (__x == 0)
         return 0;
 
     if constexpr (sizeof(_T) <= sizeof(int))
-        return static_cast<_T>(static_cast<int>(std::numeric_limits<unsigned int>::digits - __builtin_clz(__x)));
+        return static_cast<_T>(static_cast<int>(__XVI_STD_NS::numeric_limits<unsigned int>::digits - __builtin_clz(__x)));
     else if constexpr (sizeof(_T) <= sizeof(long))
-        return static_cast<_T>(static_cast<long>(std::numeric_limits<unsigned long>::digits - __builtin_clzl(__x)));
+        return static_cast<_T>(static_cast<long>(__XVI_STD_NS::numeric_limits<unsigned long>::digits - __builtin_clzl(__x)));
     else if constexpr (sizeof(_T) <= sizeof(long long))
-        return static_cast<_T>(static_cast<long long>(std::numeric_limits<unsigned long long>::digits - __builtin_clzll(__x)));
+        return static_cast<_T>(static_cast<long long>(__XVI_STD_NS::numeric_limits<unsigned long long>::digits - __builtin_clzll(__x)));
 }
 
 template <class _T>
-    requires std::is_integral_v<_T> && std::is_unsigned_v<_T>
+    requires __XVI_STD_NS::is_integral_v<_T> && __XVI_STD_NS::is_unsigned_v<_T>
 constexpr _T bit_floor(_T __x) noexcept
 {
     if (__x == 0)
         return 0;
 
-    return static_cast<_T>(_T(1) << (std::bit_width(__x) - 1));
+    return static_cast<_T>(_T(1) << (__XVI_STD_NS::bit_width(__x) - 1));
 }
 
 template <class _T>
-    requires std::is_integral_v<_T> && std::is_unsigned_v<_T>
+    requires __XVI_STD_NS::is_integral_v<_T> && __XVI_STD_NS::is_unsigned_v<_T>
 constexpr _T bit_ceil(_T __x) noexcept
 {
     // (x + (x - 1)) increases the bit_width of x by 1 iff x is not already a power of two. Then, the bit_floor of that

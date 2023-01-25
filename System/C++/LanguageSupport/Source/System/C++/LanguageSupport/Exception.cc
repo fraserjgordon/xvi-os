@@ -7,6 +7,29 @@ namespace __XVI_STD_LANGSUPPORT_NS
 {
 
 
+exception::~exception() = default;
+
+const char* exception::what() const noexcept
+{
+    return "unknown exception";
+}
+
+const char* bad_exception::what() const noexcept
+{
+    return "bad exception";
+}
+
+const char* bad_alloc::what() const noexcept
+{
+    return "allocation failure";
+}
+
+const char* bad_array_new_length::what() const noexcept
+{
+    return "invalid length for array new";
+}
+
+
 terminate_handler set_terminate(terminate_handler new_handler) noexcept
 {
     return System::ABI::CXX::setTerminateHandler(new_handler);

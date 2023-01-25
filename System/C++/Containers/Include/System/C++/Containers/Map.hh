@@ -1646,18 +1646,6 @@ typename multimap<_Key, _T, _Compare, _Allocator>::size_type erase_if(multimap<_
 }
 
 
-namespace pmr
-{
-
-template <class _Key, class _T, class _Compare = less<_Key>>
-using map = __XVI_STD_CONTAINERS_NS::map<_Key, _T, _Compare, pmr::polymorphic_allocator<pair<const _Key, _T>>>;
-
-template <class _Key, class _T, class _Compare = less<_Key>>
-using multimap = __XVI_STD_CONTAINERS_NS::multimap<_Key, _T, _Compare, pmr::polymorphic_allocator<pair<const _Key, _T>>>;
-
-} // namespace pmr
-
-
 } // namespace __XVI_STD_CONTAINERS_NS
 
 

@@ -78,7 +78,7 @@ bool Bitstream::canReadBits(unsigned int count)
         return false;
 
     // Check whether we can satisfy the read from the existing buffer.
-    if (count < static_cast<std::ptrdiff_t>(8 * m_buffer.size()) - m_offset)
+    if (count <= static_cast<std::ptrdiff_t>(8 * m_buffer.size()) - m_offset)
         return true;
 
     // We're near the end of the buffer; perform a buffer refill.
@@ -132,13 +132,13 @@ bool Bitstream::refillBuffer(MoreInputFn& more)
     // Copy the last few bytes of the old buffer to an overflow cache as we might still need them. We need to do this
     // before getting the new buffer as the old buffer may be invalidated.
     //
-    // As par of this, we move the offset backwards (making it negative, potentially - which indicates that the next few
-    // bits are to be read from the overflow until it becomes non-negative).
+    // As part of this, we move the offset backwards (making it negative, potentially - which indicates that the next
+    // few bits are to be read from the overflow until it becomes non-negative).
     m_offset -= 8 * m_buffer.size();
     if (m_buffer.size() >= OverflowSize)
     {
         // Normal case - we can just copy the last few bytes directly into the overflow.
-        std::memcpy(m_overflow.data(), m_buffer.end() - OverflowSize, OverflowSize);   
+        std::memcpy(m_overflow.data(), m_buffer.data() + m_buffer.size() - OverflowSize, OverflowSize);   
     }
     else
     {

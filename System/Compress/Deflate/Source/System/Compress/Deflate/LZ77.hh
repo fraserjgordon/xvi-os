@@ -51,12 +51,12 @@ public:
     // Function for the decoder to call when the output buffer has insufficient space remaining.
     using FlushBufferFn = std::function<void(std::span<std::byte> rangeToFlush)>;
 
-    // Maxima for the LZ77 backreferencers.
+    // Maxima for the LZ77 backreferences.
     static constexpr std::size_t MaxBackrefDistance = 32768;
     static constexpr std::size_t MaxBackrefLength = 258;
 
     // The output buffer needs to be large enough to support a backreference of the maximum length (258) at the maximum
-    // backwards distance (32768).
+    // backwards distance (32768). We enforce this to allow backreferences to be resolved by a simple copy.
     static constexpr std::size_t MinOutputBufferSize = MaxBackrefDistance + MaxBackrefLength;
 
 

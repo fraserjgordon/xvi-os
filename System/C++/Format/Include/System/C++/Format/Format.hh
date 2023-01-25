@@ -1779,7 +1779,7 @@ struct __float_formatter : __stdfmt_formatter_base<_CharT>
     {
         //! @todo: implement.
         (void)__t;
-        return std::move(__fc.out());
+        return __fc.out();
     }
 };
 

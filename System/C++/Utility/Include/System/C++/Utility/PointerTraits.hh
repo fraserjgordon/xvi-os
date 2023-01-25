@@ -62,8 +62,6 @@ template <class _T, class _U> struct __pointer_traits_rebind
                     __pointer_traits_rebind_helper<_T, _U>> {};
 
 
-template <class _Ptr> using __to_address_detector = decltype(pointer_traits<_Ptr>::to_address(declval<_Ptr&>()));
-
 } // namespace __detail
 
 
@@ -76,9 +74,8 @@ struct pointer_traits
 
     template <class _U> using rebind = typename __detail::__pointer_traits_rebind<_Ptr, _U>::type;
 
-    template <class _U>
-        requires (!std::is_void_v<element_type> && std::convertible_to<_U&, element_type&>)
-    static pointer pointer_to(_U& __r) noexcept
+    static pointer pointer_to(conditional_t<is_void_v<element_type>, int, element_type>& __r) noexcept
+        requires (!is_void_v<element_type>)
     {
         return _Ptr::pointer_to(__r);
     }
@@ -100,16 +97,15 @@ struct pointer_traits<_T*>
 
     template <class _U> using rebind = _U*;
 
-    template <class _U>
-        requires (!std::is_void_v<element_type> && std::convertible_to<_U&, element_type&>)
-    static constexpr pointer pointer_to(_U& __r) noexcept
+    static constexpr pointer pointer_to(conditional_t<is_void_v<element_type>, int, element_type>& __r) noexcept
+        requires (!is_void_v<element_type>)
     {
         return addressof(__r);
     }
 
     template <class _U>
     static constexpr pointer pointer_to(_U& __r) noexcept
-        requires (std::is_void_v<element_type>)
+        requires is_void_v<element_type>
     {
         return addressof(__r);
     }
@@ -119,7 +115,7 @@ struct pointer_traits<_T*>
 template <class _Ptr>
 auto to_address(const _Ptr& __p) noexcept
 {
-    if constexpr (__detail::is_detected_v<__detail::__to_address_detector, _Ptr>)
+    if constexpr (requires(const _Ptr& __p) { pointer_traits<_Ptr>::to_address(__p); })
         return pointer_traits<_Ptr>::to_address(__p);
     else
         return to_address(__p.operator->());
@@ -128,6 +124,7 @@ auto to_address(const _Ptr& __p) noexcept
 template <class _T>
 constexpr _T* to_address(_T* __p) noexcept
 {
+    static_assert(!is_function_v<_T>, "cannot use to_address on function pointers");
     return __p;
 }
 

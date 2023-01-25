@@ -50,4 +50,31 @@ library("String")
         "strrchr.cc",
         "strstr.cc",
     ]
+
+    test_sources =
+    [
+        "memccpy.cc",
+        "memchr.cc",
+        "memcmp.cc",
+        "memcpy.cc",
+        "memmem.cc",
+        "memmove.cc",
+        "memrchr.cc",
+        "memset.cc",
+        "stpcpy.cc",
+        "stpncpy.cc",
+        "strcat.cc",
+        "strchr.cc",
+        "strcmp.cc",
+        "strcpy.cc",
+        "strlcat.cc",
+        "strlcpy.cc",
+        "strlen.cc",
+        "strncat.cc",
+        "strncmp.cc",
+        "strncpy.cc",
+        "strnlen.cc",
+        "strrchr.cc",
+        "strstr.cc",
+    ]
 }

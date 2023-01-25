@@ -44,6 +44,39 @@ group("host_tools")
     ]
 }
 
+group("test_single_arch")
+{
+    testonly = true
+    deps = []
+    foreach(subfolder, subfolders)
+    {
+        deps += ["${subfolder}/:${subfolder}__test_targets"]
+    }
+
+    if (build_all || test_all)
+    {
+        deps +=
+        [
+            ":all__test_targets",
+        ]
+    }
+}
+
+group("test")
+{
+    testonly = true
+    deps = [":test_single_arch(${host_toolchain})"]
+}
+
+generated_file("test_metadata")
+{
+    testonly = true
+    outputs = [ "${root_build_dir}/test_exes.list" ]
+    data_keys = [ "test_exes" ]
+
+    deps = [ ":test" ]
+}
+
 library_group("all_single_arch")
 {
     deps = subfolders   

@@ -280,7 +280,7 @@ struct FrameTraitsX86_64
 
     static reg_enum_t IndexToRegister(int i)
     {
-        return reg_enum_t(std::size_t(reg_x86_64::rax) + i);
+        return static_cast<reg_enum_t>(static_cast<int>(reg_x86_64::rax) + i);
     }
 
     static std::ptrdiff_t RegisterToIndex(reg_enum_t reg)

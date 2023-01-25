@@ -1,3 +1,5 @@
+import("test.gni")
+
 template("library")
 {
     assert(defined(invoker.library_name), "Library name must be defined")
@@ -234,14 +236,69 @@ template("library")
             sources = []
             inputs = []
         }
+
+        source_set("${headers_name}__host_static")
+        {
+            public = public_headers
+            public_deps += static_deps
+            sources = []
+            inputs = []
+        }
+
+        source_set("${headers_name}__host_shared")
+        {
+            public = public_headers
+            public_deps += shared_deps
+            sources = []
+            inputs = []
+        }
     }
 
     build_static = filter_include(target_types, ["static"]) != []
     build_shared = filter_include(target_types, ["shared"]) != []
     build_kernel = filter_include(target_types, ["kernel"]) != []
     build_static_pic = filter_include(target_types, ["static_pic"]) != []
-    build_host_static = host_build && filter_include(target_types, ["host_static"]) != []
+    build_host_static = host_build && (true || filter_include(target_types, ["host_static"]) != [])
     build_host_shared = host_build && filter_include(target_types, ["host_shared"]) != []
+
+    test_sources = []
+    if (defined(invoker.test_sources))
+    {
+        test_sources = invoker.test_sources
+    }
+
+    # Enable host builds automatically if test sources are defined.
+    if (test_sources != [] && host_build)
+    {
+        # Host shared not implemented yet.
+        if (false && build_shared && !build_host_shared)
+        {
+            build_host_shared = true
+        }
+
+        if (build_static && !build_host_static && !build_host_shared)
+        {
+            build_host_static = true
+        }
+    }
+
+    friend = [ ":${orig_target_name}__test" ]
+
+    test("${orig_target_name}__test")
+    {
+        prefix = library_name
+        output_name = "${library_name}.Test"
+
+        # Host shared not implemented yet.
+        if (false && build_host_shared)
+        {
+            test_library = "${orig_target_name}__host_shared"
+        }
+        else
+        {
+            test_library = "${orig_target_name}__host_static"
+        }
+    }
 
     group("${target_name}__default_build_targets")
     {
@@ -274,10 +331,22 @@ template("library")
                 deps += [":${orig_target_name}__host_static"]
             }
 
-            if (build_host_shared && filder_include(always_build, ["host_shared"]) != [])
+            if (build_host_shared && filter_include(always_build, ["host_shared"]) != [])
             {
                 deps += [":${orig_target_name}__host_shared"]
             }
+        }
+    }
+
+    group("${target_name}__test_targets")
+    {
+        testonly = true
+        if (host_build)
+        {
+            deps =
+            [
+                ":${orig_target_name}__test"
+            ]
         }
     }
 

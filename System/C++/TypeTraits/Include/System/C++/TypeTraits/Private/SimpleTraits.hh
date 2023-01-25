@@ -22,9 +22,6 @@ template <class> class reference_wrapper;
 namespace __detail
 {
 
-#if defined(__clang__)
-//using char8_t = enum class __fake_char8_t : unsigned char {};
-#endif
 
 template <class _T> struct is_void : false_type {};
 template <> struct is_void<void> : true_type {};

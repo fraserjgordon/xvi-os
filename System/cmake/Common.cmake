@@ -1,12 +1,12 @@
 # Language standards required:
 #   C:      C11
-#   C++:    C++20
+#   C++:    C++23
 #set_target_properties(__Xvi
 #    PROPERTIES      INTERFACE_COMPILE_FEATURES  "c_std_11;cxx_std_20"
 #)
 target_compile_options(__Xvi
     INTERFACE   $<$<COMPILE_LANGUAGE:C>:-std=c11>
-                $<$<COMPILE_LANGUAGE:CXX>:-std=c++2a>
+                $<$<COMPILE_LANGUAGE:CXX>:-std=c++2b>
 )
 
 # Enable (nearly) all warnings for C and C++.

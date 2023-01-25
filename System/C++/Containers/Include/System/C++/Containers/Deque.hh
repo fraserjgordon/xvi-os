@@ -9,11 +9,11 @@
 #include <System/C++/LanguageSupport/Compare.hh>
 #include <System/C++/LanguageSupport/InitializerList.hh>
 #include <System/C++/LanguageSupport/Limits.hh>
+#include <System/C++/PMR/MemoryResource.hh>
 #include <System/C++/TypeTraits/TypeTraits.hh>
 #include <System/C++/Utility/Algorithm.hh>
 #include <System/C++/Utility/Allocator.hh>
 #include <System/C++/Utility/Iterator.hh>
-#include <System/C++/Utility/MemoryResource.hh>
 #include <System/C++/Utility/UniquePtr.hh>
 
 
@@ -1094,15 +1094,6 @@ typename deque<_T, _Allocator>::size_type erase_if(deque<_T, _Allocator>& __c, _
 
     return __r;
 }
-
-
-namespace pmr
-{
-
-template <class _T>
-using deque = __XVI_STD_CONTAINERS_NS::deque<_T, pmr::polymorphic_allocator<_T>>;
-
-} // namespace pmr
 
 
 } // namespace __XVI_STD_CONTAINERS_NS

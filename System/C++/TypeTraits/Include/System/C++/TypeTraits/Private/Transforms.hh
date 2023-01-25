@@ -408,13 +408,6 @@ template <class _T0, class _T1> struct common_reference<_T0, _T1> : __common_ref
 template <class... _Types> struct common_reference : __common_reference_multiple<_Types...> {};
 
 
-template <bool, class _Fn, class... _Args> struct __invoke_result {};
-template <class _Fn, class... _Args>
-    struct __invoke_result<true, _Fn, _Args...> { using type = __is_invocable_detector<_Fn, _Args...>; };
-
-template <class _Fn, class... _Args>
-    struct invoke_result : __invoke_result<is_detected_v<__is_invocable_detector, _Fn, _Args...>, _Fn, _Args...> {};
-
 } // namespace __detail
 
 
@@ -490,9 +483,6 @@ template <class... _Types> using common_reference_t = typename common_reference<
 
 template <class _T> struct underlying_type : __detail::underlying_type<_T> {};
 template <class _T> using underlying_type_t = typename underlying_type<_T>::type;
-
-template <class _Fn, class... _Args> struct invoke_result : __detail::invoke_result<_Fn, _Args...> {};
-template <class _Fn, class... _Args> using invoke_result_t = typename invoke_result<_Fn, _Args...>::type;
 
 
 } // namespace __XVI_STD_TYPETRAITS_NS

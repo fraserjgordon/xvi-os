@@ -1,0 +1,49 @@
+template("test")
+{
+    prefix = invoker.prefix
+    test_sources = invoker.test_sources
+
+    forward_variables_from(invoker, ["output_name", "test_library"])
+
+    if (host_build)
+    {
+        prefix = invoker.prefix
+
+        xvi_executable("${target_name}")
+        {
+            testonly = true
+
+            # This is really hacky...
+            sodir = rebase_path("//Test/build", "")
+            lib_dirs = [ sodir ]
+            libs = [ "Development.Test", "Development.Test.Main" ]
+            ldflags = [ "-Wl,--rpath,${sodir}" ]
+            include_dirs = [ rebase_path("//Test/Include", "")]
+
+            configs += [ "//build/config:hosted_test" ]
+
+            defines = [ "TEST_LIB_NAME=\"${prefix}\"" ]
+
+            metadata =
+            {
+                if (defined(output_name) && test_sources != [])
+                {
+                    test_exes = [ rebase_path(output_name, root_build_dir, root_out_dir) ]
+                }
+            }
+
+            if (defined(test_library) && test_sources != [])
+            {
+                deps = [":${test_library}"]
+            }
+            else
+            {
+                not_needed(["test_library"])
+            }
+        }
+    }
+    else
+    {
+        not_needed(["target_name", "prefix", "output_name", "test_sources", "test_library"])
+    }
+}

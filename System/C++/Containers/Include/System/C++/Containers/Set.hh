@@ -1397,20 +1397,6 @@ typename multiset<_Key, _Compare, _Allocator>::size_type erase_if(multiset<_Key,
 }
 
 
-namespace pmr
-{
-
-
-template <class _Key, class _Compare = less<_Key>>
-using set = __XVI_STD_CONTAINERS_NS::set<_Key, _Compare, pmr::polymorphic_allocator<_Key>>;
-
-template<class _Key, class _Compare = less<_Key>>
-using multiset = __XVI_STD_CONTAINERS_NS::multiset<_Key, _Compare, pmr::polymorphic_allocator<_Key>>;
-
-
-} // namespace pmr
-
-
 } // namespace __XVI_STD_CONTAINERS_NS
 
 

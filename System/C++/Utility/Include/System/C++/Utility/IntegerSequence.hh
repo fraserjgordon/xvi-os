@@ -20,20 +20,20 @@ template <class _T, _T... _I> struct integer_sequence
 template <size_t... _I> using index_sequence = integer_sequence<size_t, _I...>;
 
 #ifdef __llvm__
-template <class _T, _T _Remaining, _T... _Nums> struct __make_integer_sequence
+template <class _T, _T _Target, _T... _Nums> struct __make_integer_sequence
 {
     static auto __calc()
     {
-        if constexpr (_Remaining == 0)
-            return integer_sequence<_T, _Nums..., 0>{};
+        if constexpr (sizeof...(_Nums) == _Target)
+            return integer_sequence<_T, _Nums...>{};
         else
-            return typename __make_integer_sequence<_T, _Remaining - 1, _Nums..., _Remaining>::__type {};
+            return typename __make_integer_sequence<_T, _Target, _Nums..., sizeof...(_Nums)>::__type {};
     }
 
     using __type = decltype(__calc());
 };
 
-template <class _T, _T _N> using make_integer_sequence = typename __make_integer_sequence<_T, _N - 1>::__type;
+template <class _T, _T _N> using make_integer_sequence = typename __make_integer_sequence<_T, _N>::__type;
 #else
 // GCC has a special built-in for this.
 template <class _T, _T _N> using make_integer_sequence = integer_sequence<_T, __integer_pack(_N)...>;

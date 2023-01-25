@@ -1443,13 +1443,13 @@ namespace __detail
 template <size_t _M, class _Visitor, class _Variant>
 constexpr auto __dispatch1_fn(_Visitor&& __v, _Variant&& __var)
 { 
-    return __detail::_INVOKE(std::forward<_Visitor>(__v), get<_M>(std::forward<_Variant>(__var)));
+    return __XVI_STD_UTILITY_NS::invoke(std::forward<_Visitor>(__v), get<_M>(std::forward<_Variant>(__var)));
 }
 
 template <size_t _M, class _R, class _Visitor, class _Variant>
 constexpr _R __dispatch1r_fn(_Visitor&& __v, _Variant&& __var)
 {
-    return __detail::_INVOKE_R<_R>(std::forward<_Visitor>(__v), get<_M>(std::forward<_Variant>(__var)));
+    return __XVI_STD_UTILITY_NS::invoke_r<_R>(std::forward<_Visitor>(__v), get<_M>(std::forward<_Variant>(__var)));
 }
 
 template <class _Visitor, class _Variant, size_t... _Idx>
@@ -1479,7 +1479,7 @@ template <class _Visitor, class... _Variants>
 constexpr decltype(auto) visit(_Visitor&& __vis, _Variants&&... __vars)
 {
     if constexpr (sizeof...(_Variants) == 0)
-        return __detail::_INVOKE(std::forward<_Visitor>(__vis));
+        return __XVI_STD_UTILITY_NS::invoke(std::forward<_Visitor>(__vis));
     else if constexpr (sizeof...(_Variants) == 1)
     {
         // Dispatch via a table for constant-time behaviour.
@@ -1502,7 +1502,7 @@ template <class _R, class _Visitor, class... _Variants>
 constexpr _R visit(_Visitor&& __vis, _Variants&&... __vars)
 {
     if constexpr (sizeof...(_Variants) == 0)
-        return __detail::_INVOKE_R<_R>(__XVI_STD_NS::forward<_Visitor>(__vis));
+        return __XVI_STD_UTILITY_NS::invoke_r<_R>(__XVI_STD_NS::forward<_Visitor>(__vis));
     else if constexpr (sizeof...(_Variants) == 1)
     {
         // Dispatch via a table for constant-time behaviour.

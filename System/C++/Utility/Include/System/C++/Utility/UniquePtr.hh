@@ -75,7 +75,7 @@ public:
     constexpr unique_ptr(unique_ptr&& __u) noexcept
         requires std::is_move_constructible_v<_D>
         : _M_ptr(__u._M_ptr),
-          _M_deleter(std::forward<_D>(__u._M_deleter))
+          _M_deleter(std::forward<_D>(std::move(__u)._M_deleter))
     {
         __u._M_ptr = nullptr;
     }
@@ -86,7 +86,7 @@ public:
             && ((std::is_reference_v<_D> && std::is_same_v<_D, _E>) || (!std::is_reference_v<_D> && std::is_convertible_v<_E, _D>))
     constexpr unique_ptr(unique_ptr<_U, _E>&& __u) noexcept
         : _M_ptr(__u._M_ptr),
-          _M_deleter(std::forward<_E>(__u._M_deleter))
+          _M_deleter(std::forward<_E>(std::move(__u)._M_deleter))
     {
         __u._M_ptr = nullptr;
     }
@@ -164,7 +164,7 @@ public:
         pointer __old_p = _M_ptr;
         _M_ptr = __p;
 
-        if (__old_p != nullptr)
+        if (__old_p)
             get_deleter()(__old_p);
     }
 
@@ -180,8 +180,8 @@ public:
 
 private:
 
-    pointer _M_ptr = {};
-    [[no_unique_address]] deleter_type _M_deleter = {};
+    pointer _M_ptr {};
+    [[no_unique_address]] deleter_type _M_deleter {};
 };
 
 
@@ -246,7 +246,7 @@ public:
     constexpr unique_ptr(unique_ptr&& __u) noexcept
         requires std::is_move_constructible_v<_D>
         : _M_ptr(__u._M_ptr),
-          _M_deleter(std::forward<_D>(__u._M_deleter))
+          _M_deleter(std::forward<_D>(std::move(__u)._M_deleter))
     {
         __u._M_ptr = nullptr;
     }
@@ -259,14 +259,14 @@ public:
             && ((std::is_reference_v<_D> && std::is_same_v<_D, _E>) || (!std::is_reference_v<_D> && std::is_convertible_v<_E, _D>))
     constexpr unique_ptr(unique_ptr<_U, _E>&& __u) noexcept
         : _M_ptr(__u._M_ptr),
-          _M_deleter(std::forward<_E>(__u._M_deleter))
+          _M_deleter(std::forward<_E>(std::move(__u)._M_deleter))
     {
         __u._M_ptr = nullptr;
     }
 
     constexpr ~unique_ptr()
     {
-        if (_M_ptr != nullptr)
+        if (get())
             get_deleter()(get());
     }
 
@@ -359,8 +359,8 @@ public:
 
 private:
 
-    pointer _M_ptr = nullptr;
-    [[no_unique_address]] deleter_type _M_deleter = {};
+    pointer _M_ptr {};
+    [[no_unique_address]] deleter_type _M_deleter {};
 };
 
 

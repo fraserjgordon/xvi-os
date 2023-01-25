@@ -1,9 +1,13 @@
-#pragma once
 #ifndef __SYSTEM_ABI_STRING_STRING_H
 #define __SYSTEM_ABI_STRING_STRING_H
 
 
-#include <System/C++/LanguageSupport/StdDef.hh>
+#if __XVI_HOSTED_TEST
+#  include <cstddef>
+#else
+#  define __XVI_STD_NS std
+#  include <System/C++/LanguageSupport/StdDef.hh>
+#endif
 
 
 // Symbols are weak to prevent clashes with C library symbols.

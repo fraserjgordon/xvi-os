@@ -35,3 +35,11 @@ if (werror)
         "//build/config:werror",
     ]
 }
+
+if (host_build)
+{
+    default_configs +=
+    [
+        "//build/config:hosted"
+    ]
+}

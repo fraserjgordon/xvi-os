@@ -877,34 +877,14 @@ constexpr bool operator==(const day& __x, const day& __y) noexcept
     return unsigned{__x} == unsigned{__y};
 }
 
-constexpr bool operator!=(const day& __x, const day& __y) noexcept
+constexpr strong_ordering operator<=>(const day& __x, const day& __y) noexcept
 {
-    return !(__x == __y);
-}
-
-constexpr bool operator<(const day& __x, const day& __y) noexcept
-{
-    return unsigned{__x} < unsigned{__y};
-}
-
-constexpr bool operator>(const day& __x, const day& __y) noexcept
-{
-    return __y < __x;
-}
-
-constexpr bool operator<=(const day& __x, const day& __y) noexcept
-{
-    return !(__y < __x);
-}
-
-constexpr bool operator>=(const day& __x, const day& __y) noexcept
-{
-    return !(__x < __y);
+    return unsigned{__x} <=> unsigned{__y};
 }
 
 constexpr day operator+(const day& __x, const days& __y) noexcept
 {
-    return day(unsigned{__x} +__y.count());
+    return day(static_cast<unsigned>(int(unsigned{__x}) + __y.count()));
 }
 
 constexpr day operator+(const days& __x, const day& __y) noexcept
@@ -1001,29 +981,9 @@ constexpr bool operator==(const month& __x, const month& __y) noexcept
     return unsigned{__x} == unsigned{__y};
 }
 
-constexpr bool operator!=(const month& __x, const month& __y) noexcept
+constexpr strong_ordering operator<=>(const month& __x, const month& __y) noexcept
 {
-    return !(__x == __y);
-}
-
-constexpr bool operator<(const month& __x, const month& __y) noexcept
-{
-    return unsigned{__x} < unsigned{__y};
-}
-
-constexpr bool operator>(const month& __x, const month& __y) noexcept
-{
-    return __y < __x;
-}
-
-constexpr bool operator<=(const month& __x, const month& __y) noexcept
-{
-    return !(__y < __x);
-}
-
-constexpr bool operator>=(const month& __x, const month& __y) noexcept
-{
-    return !(__x < __y);
+    return unsigned{__x} <=> unsigned{__y};
 }
 
 constexpr month operator+(const month& __x, const months& __y) noexcept
@@ -1048,7 +1008,7 @@ constexpr month operator-(const month& __x, const months& __y) noexcept
 
 constexpr months operator-(const month& __x, const month& __y) noexcept
 {
-    int __diff = unsigned{__x} - unsigned{__y};
+    int __diff = int(unsigned{__x}) - int(unsigned{__y});
     return (__diff < 0) ? months{__diff + 12} : months{__diff};
 }
 
@@ -1331,7 +1291,7 @@ constexpr weekday operator-(const weekday& __x, const days& __y) noexcept
 
 constexpr days operator-(const weekday& __x, const weekday& __y) noexcept
 {
-    int __diff = unsigned{__x} - unsigned{__y};
+    int __diff = int(unsigned{__x}) - int(unsigned{__y});
     return (__diff < 0) ? days{__diff + 7} : days{__diff};
 }
 
@@ -2089,7 +2049,7 @@ constexpr days __day_of_year(year __y, month __m, day __d)
             __n += 31;
             [[fallthrough]];
         case 3:
-            __n += (__y.is_leap()) ? 29 : 28;
+            __n += (__y.is_leap()) ? 29U : 28U;
             [[fallthrough]];
         case 2:
             __n += 31;
@@ -2376,18 +2336,18 @@ basic_istream<_CharT, _Traits>& from_stream(basic_istream<_CharT, _Traits>& __is
 
 constexpr unsigned char __day_of_week(const year_month_day& __ymd) noexcept
 {
-    constexpr unsigned char __w[12] =
+    constexpr signed char __w[12] =
         { 0, 3, 3, 6, 1, 4, 6, 2, 5, 0, 3, 5 };
 
     auto __y = int{__ymd.year()};
-    auto __m = unsigned{__ymd.month()};
-    auto __d = unsigned{__ymd.day()};
+    auto __m = int(unsigned{__ymd.month()});
+    auto __d = int(unsigned{__ymd.day()});
 
     if (__ymd.month() < March)
         --__y;
 
     auto __wd = (__y + __y / 4 - __y / 100 + __y / 400 + __w[__m-1] + __d) % 7;
-    return __wd;
+    return static_cast<unsigned char>(__wd);
 }
 
 // Note: epoch date of 1970-01-01 was a Thursday.
@@ -2523,7 +2483,7 @@ private:
         auto __first_wd = chrono::weekday{sys_days{__first_day}};
 
         // Number of days required to get to the correct weekday.
-        unsigned __days = (weekday() - __first_wd).count();
+        auto __days = static_cast<unsigned>((weekday() - __first_wd).count());
         __days += (index() - 1) * 7;
 
         return day{__days + 1};
@@ -2715,7 +2675,7 @@ constexpr year_month operator/(const year& __y, const month& __m) noexcept
 
 constexpr year_month operator/(const year& __y, int __m) noexcept
 {
-    return __y / month(__m);
+    return __y / month(unsigned(__m));
 }
 
 constexpr month_day operator/(const month& __m, const day& __d) noexcept
@@ -2725,12 +2685,12 @@ constexpr month_day operator/(const month& __m, const day& __d) noexcept
 
 constexpr month_day operator/(const month& __m, int __d) noexcept
 {
-    return __m / day(__d);
+    return __m / day(unsigned(__d));
 }
 
 constexpr month_day operator/(int __m, const day& __d) noexcept
 {
-    return month(__m) / __d;
+    return month(unsigned(__m)) / __d;
 }
 
 constexpr month_day operator/(const day& __d, const month& __m) noexcept
@@ -2740,7 +2700,7 @@ constexpr month_day operator/(const day& __d, const month& __m) noexcept
 
 constexpr month_day operator/(const day& __d, int __m) noexcept
 {
-    return month(__m) / __d;
+    return month(unsigned(__m)) / __d;
 }
 
 constexpr month_day_last operator/(const month& __m, last_spec) noexcept
@@ -2750,7 +2710,7 @@ constexpr month_day_last operator/(const month& __m, last_spec) noexcept
 
 constexpr month_day_last operator/(int __m, last_spec) noexcept
 {
-    return month(__m) / last;
+    return month(unsigned(__m)) / last;
 }
 
 constexpr month_day_last operator/(last_spec, const month& __m) noexcept
@@ -2760,7 +2720,7 @@ constexpr month_day_last operator/(last_spec, const month& __m) noexcept
 
 constexpr month_day_last operator/(last_spec, int __m) noexcept
 {
-    return month(__m) / last;
+    return month(unsigned(__m)) / last;
 }
 
 constexpr month_weekday operator/(const month& __m, const weekday_indexed& __wdi) noexcept
@@ -2775,12 +2735,12 @@ constexpr month_weekday operator/(const weekday_indexed& __wdi, const month& __m
 
 constexpr month_weekday operator/(const weekday_indexed& __wdi, int __m) noexcept
 {
-    return month(__m) / __wdi;
+    return month(unsigned(__m)) / __wdi;
 }
 
 constexpr month_weekday operator/(int __m, const weekday_indexed& __wdi) noexcept
 {
-    return month(__m) / __wdi;
+    return month(unsigned(__m)) / __wdi;
 }
 
 constexpr month_weekday_last operator/(const month& __m, const weekday_last& __wdl) noexcept
@@ -2790,7 +2750,7 @@ constexpr month_weekday_last operator/(const month& __m, const weekday_last& __w
 
 constexpr month_weekday_last operator/(int __m, const weekday_last& __wdl) noexcept
 {
-    return month(__m) / __wdl;
+    return month(unsigned(__m)) / __wdl;
 }
 
 constexpr month_weekday_last operator/(const weekday_last& __wdl, const month& __m) noexcept
@@ -2800,7 +2760,7 @@ constexpr month_weekday_last operator/(const weekday_last& __wdl, const month& _
 
 constexpr month_weekday_last operator/(const weekday_last& __wdl, int __m) noexcept
 {
-    return month(__m) / __wdl;
+    return month(unsigned(__m)) / __wdl;
 }
 
 constexpr year_month_day operator/(const year_month& __ym, const day& __d) noexcept
@@ -2810,7 +2770,7 @@ constexpr year_month_day operator/(const year_month& __ym, const day& __d) noexc
 
 constexpr year_month_day operator/(const year_month& __ym, int __d) noexcept
 {
-    return __ym / day(__d);
+    return __ym / day(unsigned(__d));
 }
 
 constexpr year_month_day operator/(const year& __y, const month_day& __md) noexcept

@@ -7,6 +7,7 @@ template("library_group")
     kernel_deps = []
 
     default_build_targets = []
+    test_targets = []
 
     if (defined(invoker.deps))
     {
@@ -33,6 +34,11 @@ template("library_group")
             default_build_targets +=
             [
                 "${dep_label}__default_build_targets(${dep_toolchain})",
+            ]
+
+            test_targets +=
+            [
+                "${dep_label}__test_targets(${dep_toolchain})",
             ]
         }
     }
@@ -62,5 +68,11 @@ template("library_group")
     group("${target_name}__default_build_targets")
     {
         deps = default_build_targets
+    }
+
+    group("${target_name}__test_targets")
+    {
+        deps = test_targets
+        testonly = true
     }
 }

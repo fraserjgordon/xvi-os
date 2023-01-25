@@ -297,3 +297,13 @@ config("kernel")
         cflags = [ "-mgeneral-regs-only" ]
     }
 }
+
+config("hosted")
+{
+    defines = [ "__XVI_HOSTED" ]
+}
+
+config("hosted_test")
+{
+    defines = [ "__XVI_HOSTED_TEST" ]
+}

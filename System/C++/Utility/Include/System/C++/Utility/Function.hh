@@ -200,7 +200,7 @@ public:
 
     _R __call(__function_storage_t& __s, _Args&&... __args) const final
     {
-        return _INVOKE_R<_R>(*reinterpret_cast<_T*>(__ptr(__s)), std::forward<_Args>(__args)...);
+        return __XVI_STD_UTILITY_NS::invoke_r<_R>(*reinterpret_cast<_T*>(__ptr(__s)), std::forward<_Args>(__args)...);
     }
 };
 
@@ -550,7 +550,7 @@ public:
 
     _R __call(__function_storage_t& __s, _Args&&... __args) const final
     {
-        return _INVOKE_R<_R>(*reinterpret_cast<_T*>(__ptr(__s)), std::forward<_Args>(__args)...);
+        return __XVI_STD_UTILITY_NS::invoke_r<_R>(*reinterpret_cast<_T*>(__ptr(__s)), std::forward<_Args>(__args)...);
     }
 };
 

@@ -2,8 +2,19 @@
 #define __SYSTEM_C_BASEHEADERS_TYPES_H
 
 
+// Some hosts define __size_t
+#if __XVI_HOSTED && defined(__size_t)
+#  define __XVI_REDEF_SIZE_T
+#  undef __size_t
+#endif
+
 typedef __PTRDIFF_TYPE__    __ptrdiff_t;
 typedef __SIZE_TYPE__       __size_t;
+
+#ifdef __XVI_REDEF_SIZE_T
+#  undef __XVI_REDEF_SIZE_T
+#  define __size_t
+#endif
 
 #ifdef __cplusplus
 typedef struct { alignas(__BIGGEST_ALIGNMENT__) char __c[1]; } __max_align_t;
