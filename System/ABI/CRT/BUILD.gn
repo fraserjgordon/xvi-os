@@ -1,6 +1,6 @@
 template("crt_file")
 {
-    forward_variables_from(invoker, ["defines"])    
+    forward_variables_from(invoker, ["defines"])
 
     library_name = "System.ABI.CRT.${target_name}"
     library_version = "0.1.0"

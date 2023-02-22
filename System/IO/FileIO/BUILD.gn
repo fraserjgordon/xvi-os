@@ -1,0 +1,48 @@
+library("FileIO")
+{
+    library_name = "System.IO.FileIO"
+    library_version = "0.1.0"
+
+    shared_define = "__SYSTEM_IO_FILEIO_BUILD_SHARED"
+
+    public_deps =
+    [
+    ]
+
+    deps =
+    [
+    ]
+
+    public_headers =
+    [
+        "Private/Config.hh",
+
+        "AbstractHandle.hh",
+        "Handle.hh",
+        "FileHandle.hh",
+        "IOException.hh",
+        "IOHandle.hh",
+        "PathHandle.hh",
+        "Types.hh",
+    ]
+
+    sources =
+    [
+    ]
+
+    test_sources =
+    [
+        "Handle.cc",
+    ]
+
+    if (host_build)
+    {
+        sources +=
+        [
+            "Linux/FileHandle.cc",
+            "Linux/Handle.cc",
+            "Linux/IOHandle.cc",
+            "Linux/PathHandle.cc",
+        ]
+    }
+}

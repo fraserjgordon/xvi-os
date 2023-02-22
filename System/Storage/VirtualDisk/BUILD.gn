@@ -1,0 +1,33 @@
+library("VirtualDisk")
+{
+    library_name = "System.Storage.VirtualDisk"
+    library_version = "0.1.0"
+
+    shared_define = "__SYSTEM_STORAGE_VIRTUALDISK"
+
+    public_deps =
+    [
+        "//IO/FileIO",
+        "//Storage/BlockDevice",
+    ]
+
+    deps =
+    [
+    ]
+
+    public_headers =
+    [
+        "RawVirtualDisk.hh",
+        "VirtualDisk.hh",
+    ]
+
+    sources =
+    [
+        "RawVirtualDisk.cc",
+        "VirtualDisk.cc",
+    ]
+
+    test_sources =
+    [
+    ]
+}

@@ -10,6 +10,7 @@
 
 #include <System/Kernel/Arch/x86/MMU/MMU.hh>
 #include <System/Kernel/Arch/x86/MMU/Ops.hh>
+#include <System/Kernel/Arch/x86/MMU/TLB.hh>
 #include <System/Kernel/Arch/x86/MMU/Types.hh>
 
 

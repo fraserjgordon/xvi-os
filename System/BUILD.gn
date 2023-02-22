@@ -11,6 +11,7 @@ subfolders =
     "Filesystem",
     "Firmware",
     "HW",
+    "IO",
     "Rust",
     "Storage",
     "Unicode",

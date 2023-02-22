@@ -1,0 +1,30 @@
+library("BlockDevice")
+{
+    library_name = "System.Storage.BlockDevice"
+    library_version = "0.1.0"
+
+    shared_define = "__SYSTEM_STORAGE_BLOCKDEVICE"
+
+    public_deps =
+    [
+    ]
+
+    deps =
+    [
+    ]
+
+    public_headers =
+    [
+        "BlockDev.hh",
+        "CHS.hh",
+    ]
+
+    sources =
+    [
+        "CHS.cc",
+    ]
+
+    test_sources =
+    [
+    ]
+}

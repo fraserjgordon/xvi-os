@@ -261,6 +261,8 @@ xvi_executable("IgniterTool")
         ":IgniterUtils",
 
         "//Filesystem/FAT",
+        "//IO/FileIO",
+        "//Storage/VirtualDisk",
         "//Utility/Logger",
     ]
 

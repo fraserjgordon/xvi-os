@@ -8,6 +8,9 @@
 #include <optional>
 #include <span>
 
+#include <System/IO/FileIO/FileHandle.hh>
+#include <System/Storage/VirtualDisk/RawVirtualDisk.hh>
+
 #include <System/Boot/Igniter/CHS.hh>
 
 
@@ -36,8 +39,8 @@ public:
 
 private:
 
-    const std::filesystem::path m_path;
-    mutable std::fstream        m_file;
+    const std::filesystem::path             m_path;
+    Storage::VirtualDisk::RawVirtualDisk    m_virt;
 
     std::size_t                 m_sectorSize;
 

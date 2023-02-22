@@ -1,5 +1,6 @@
 #include <System/Boot/Igniter/Tool/Disk.hh>
 
+#include <System/IO/FileIO/IOException.hh>
 #include <System/Utility/Logger/Logger.hh>
 
 
@@ -11,11 +12,20 @@ using System::Utility::Logger::DefaultFacility;
 using System::Utility::Logger::log;
 using System::Utility::Logger::priority;
 
+namespace FIO = System::IO::FileIO;
+namespace VD = System::Storage::VirtualDisk;
+
 
 Disk::Disk(const std::filesystem::path& path, const options& opt) :
-    m_path(path),
-    m_file(m_path)
+    m_path(path)
 {
+    // Open the named file as a raw disk image.
+    auto handle = FIO::FileHandle::open({}, path, FIO::mode::write, FIO::creation::open_existing, FIO::caching::all);
+    if (!handle)
+        throw FIO::IOException(handle.error());
+
+    m_virt = VD::RawVirtualDisk::createFrom(std::make_unique<FIO::FileHandle>(std::move(*handle)), {.sector_size = 512});
+
     log(DefaultFacility, priority::debug, "opened disk {}", m_path.c_str());
 
     // Attempt to infer the disk geometry from the file size if this is an ordinary file.
@@ -32,14 +42,9 @@ std::size_t Disk::sectorSize() const
 
 void Disk::readSector(std::uint64_t index, std::span<std::byte> out) const
 {
-    if (out.size_bytes() < sectorSize())
-        throw std::logic_error("buffer too small");
-
-    m_file.seekg(index * sectorSize());
-    m_file.read(reinterpret_cast<char*>(out.data()), sectorSize());
-
-    if (!m_file.good())
-        throw std::runtime_error("I/O error");
+    auto res = m_virt.read(index, out);
+    if (!res)
+        throw FIO::IOException(res.error());
 }
 
 
@@ -48,11 +53,9 @@ void Disk::writeSector(std::uint64_t index, std::span<const std::byte> in)
     if (in.size_bytes() != sectorSize())
         throw std::logic_error("invalid buffer size");
 
-    m_file.seekp(index * sectorSize());
-    m_file.write(reinterpret_cast<const char*>(in.data()), sectorSize());
-
-    if (!m_file.good())
-        throw std::runtime_error("I/O error");
+    auto res = m_virt.write(index, in);
+    if (!res)
+        throw FIO::IOException(res.error());
 }
 
 
@@ -66,7 +69,7 @@ void Disk::inferDiskGeometry(const options& opt)
 
     // Next, look at the total size to see if it is any of the standard floppy disk sizes.
     constexpr auto kB = 1024;
-    auto size = std::filesystem::file_size(m_path);
+    auto size = m_virt.sectorCount() * m_virt.sectorSize();
     switch (size)
     {
         case 1440*kB:

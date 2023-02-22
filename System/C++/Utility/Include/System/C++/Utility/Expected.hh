@@ -584,7 +584,7 @@ public:
     }
 
     template <class _G>
-    constexpr explicit(!std::is_convertible_v<const _G&, _E> expected(const unexpected<_G>& __e)
+    constexpr explicit(!std::is_convertible_v<const _G&, _E>) expected(const unexpected<_G>& __e)
         requires std::is_constructible_v<_E, const _G&> :
         _M_storage(unexpect, __e.value())
     {

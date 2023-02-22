@@ -22,6 +22,7 @@
 #endif
 
 #if defined(__SYSTEM_UTILITY_LOGGER_USE_LIBFMT)
+#  define _GLIBCXX_USE_C99_MATH 1
 #  include <fmt/format.h>
 #else
 #  if defined(__XVI_NO_STDLIB)
