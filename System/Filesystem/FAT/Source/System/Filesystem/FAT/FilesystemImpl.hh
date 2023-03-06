@@ -12,12 +12,12 @@ namespace System::Filesystem::FAT
 {
 
 
-class FilesystemImpl
+class FilesystemImpl :
+    public System::Storage::Filesystem::Filesystem
 {
 public:
 
-    using params_t = Filesystem::params_t;
-    using cluster_chain_callback_t = Filesystem::cluster_chain_callback_t;
+    using cluster_chain_callback_t = FAT::Filesystem::cluster_chain_callback_t;
 
     static constexpr std::uint32_t FAT12ClusterMask     = 0x0000'0FFF;
     static constexpr std::uint32_t FAT16ClusterMask     = 0x0000'FFFF;
@@ -32,12 +32,17 @@ public:
     FilesystemImpl(const FilesystemImpl&) = delete;
     FilesystemImpl(FilesystemImpl&&) = delete;
 
-    FilesystemImpl(const params_t& params);
+    FilesystemImpl(std::unique_ptr<BlockDev> device);
 
     ~FilesystemImpl();
 
     FilesystemImpl& operator=(const FilesystemImpl&) = delete;
     FilesystemImpl& operator=(FilesystemImpl&&) = delete;
+
+
+    // Inherited from FS::Filesystem.
+    BlockDev* blockDevice() noexcept override { return m_blockDevice.get(); }
+    const BlockDev* blockDevice() const noexcept override { return m_blockDevice.get(); }
 
 
     bool mount();
@@ -71,9 +76,9 @@ public:
     void writeClusterChain(std::uint32_t from, std::span<std::uint32_t> chain);
     void freeClusterChain(std::uint32_t from);
 
-    std::shared_ptr<const std::byte> readBlock(std::uint32_t lba) const;
-    std::shared_ptr<std::byte> readBlockForUpdate(std::uint32_t lba);
-    bool writeBlock(std::uint32_t lba, std::span<const std::byte>);
+    result_t<BlockHandle> readBlock(std::uint32_t lba) const;
+    result_t<BlockHandle> readBlockForUpdate(std::uint32_t lba);
+    result_t<void> writeBlock(std::uint32_t lba, std::span<const std::byte>);
 
     std::string convertFromFilesystemCharset(std::string_view) const;
     std::string convertToFilesystemCharset(std::string_view) const;
@@ -89,25 +94,25 @@ public:
     static bool isFATFilesystem(const bootsector&);
 
 
-    Filesystem& asFilesystem()
+    FAT::Filesystem& asFilesystem()
     {
-        return reinterpret_cast<Filesystem&>(*this);
+        return reinterpret_cast<FAT::Filesystem&>(*this);
     }
 
-    static FilesystemImpl& from(Filesystem* fs)
+    static FilesystemImpl& from(FAT::Filesystem* fs)
     {
         return reinterpret_cast<FilesystemImpl&>(*fs);
     }
 
-    static const FilesystemImpl& from(const Filesystem* fs)
+    static const FilesystemImpl& from(const FAT::Filesystem* fs)
     {
         return reinterpret_cast<const FilesystemImpl&>(*fs);
     }
 
 private:
 
-    // Parameters for accessing the filesystem.
-    params_t    m_params = {};
+    // Underlying block device.
+    std::unique_ptr<BlockDev>   m_blockDevice = nullptr;
 
     // Values calculated or extracted from the BPB.
     std::uint32_t   m_sectorSize        = 0;    // Size (in bytes) of each sector.
@@ -132,8 +137,6 @@ private:
 
 
     std::string id() const;
-
-    Filesystem::read_for_write_fn makeReadForWriteFunction();
 };
 
 

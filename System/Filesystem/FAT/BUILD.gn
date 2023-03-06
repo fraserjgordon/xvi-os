@@ -7,6 +7,8 @@ library("FAT")
 
     public_deps =
     [
+        "//Storage/BlockDevice",
+        "//Storage/Filesystem",
         "//Utility/Endian",
         "//Utility/Logger",
     ]
@@ -16,8 +18,6 @@ library("FAT")
         "BPB.hh",
         "Directory.hh",
         "DirEnt.hh",
-        "FAT.hh",
-        "FAT12.hh",
         "File.hh",
         "Filesystem.hh",
         "Object.hh",

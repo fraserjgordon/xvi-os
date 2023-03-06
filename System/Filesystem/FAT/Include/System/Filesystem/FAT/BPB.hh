@@ -3,15 +3,9 @@
 #define __SYSTEM_FS_FAT_BPB_H
 
 
-#if !defined(__XVI_NO_STDLIB)
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#else
-#  include <System/C++/LanguageSupport/StdDef.hh>
-#  include <System/C++/LanguageSupport/StdInt.hh>
-#  include <System/C++/Utility/Array.hh>
-#endif
 
 #include <System/Utility/Endian/Unaligned.hh>
 

@@ -7,6 +7,21 @@ namespace System::IO::FileIO
 {
 
 
+FileHandle::result<FileHandle> FileHandle::clone() const noexcept
+{
+    // Clone as the base class.
+    auto handle = IOHandle::clone();
+    if (!handle)
+        return std::unexpected(handle.error());
+
+    // Move the contents of the cloned handle into a FileHandle.
+    FileHandle fh{};
+    fh.m_handle = handle->release();
+
+    return fh;
+}
+
+
 FileHandle::result<FileHandle> FileHandle::open(const PathHandle& at, const path_type& path, mode open_mode, creation create, caching cache) noexcept
 {
     // Flags we're going to pass to the syscall.

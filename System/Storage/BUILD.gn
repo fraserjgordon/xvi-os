@@ -3,6 +3,7 @@ library_group("Storage")
     deps =
     [
         "BlockDevice",
+        "Filesystem",
         "Partition",
         "VirtualDisk",
     ]

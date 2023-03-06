@@ -23,6 +23,11 @@ library("UTF")
     public_headers = miniutf_public_headers
 
     #sources = miniutf_sources
+
+    test_sources =
+    [
+        "UTF-8.cc",
+    ]
 }
 
 config("MiniUTF_Defines")

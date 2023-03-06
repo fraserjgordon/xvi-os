@@ -4,13 +4,8 @@
 
 #include <System/Filesystem/FAT/Object.hh>
 
-#if !defined(__XVI_NO_STDLIB)
-#  include <memory>
-#  include <string>
-#else
-#  include <System/C++/Utility/String.hh>
-#  include <System/C++/Utility/UniquePtr.hh>
-#endif
+#include <memory>
+#include <string>
 
 #include <System/Filesystem/FAT/DirEnt.hh>
 

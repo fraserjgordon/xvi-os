@@ -21,7 +21,7 @@ public:
     PathHandle(const PathHandle&) = delete;
     constexpr PathHandle(PathHandle&&) = default;
 
-    ~PathHandle() = default;
+    ~PathHandle() override = default;
 
     PathHandle& operator=(const PathHandle&) = delete;
     constexpr PathHandle& operator=(PathHandle&&) = default;
@@ -45,6 +45,10 @@ private:
 
     explicit PathHandle(int fd) noexcept;
 };
+
+
+using SharedPathHandle = SharedHandle<PathHandle>;
+using UniquePathHandle = UniqueHandle<PathHandle>;
 
 
 } // namespace System::IO::FileIO

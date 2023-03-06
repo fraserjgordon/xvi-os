@@ -1,15 +1,19 @@
 #include <System/Utility/Logger/Logger.hh>
 
+#include <filesystem>
+#include <fstream>
+#include <string>
 #include <vector>
 
 #include <System/Filesystem/FAT/Directory.hh>
 #include <System/Filesystem/FAT/File.hh>
 #include <System/Filesystem/FAT/Filesystem.hh>
+#include <System/IO/FileIO/FileHandle.hh>
+#include <System/Storage/VirtualDisk/RawVirtualDisk.hh>
 
 #include <System/Boot/Igniter/CHS.hh>
 #include <System/Boot/Igniter/Tool/Blocklist.hh>
 #include <System/Boot/Igniter/Tool/Bootsector.hh>
-#include <System/Boot/Igniter/Tool/Disk.hh>
 
 
 int main(int argc, char** argv)
@@ -22,7 +26,7 @@ int main(int argc, char** argv)
     setMinimumPriority(priority::trace);
 
     //Disk source("igniter-clean.img");
-    Disk dest("igniter.img");
+    //Disk dest("igniter.img");
 
     std::filesystem::path stage0_name = "out/x86/x86/Stage0.bin";
     std::filesystem::path stage1_name = "out/x86/x86/Stage1.bin";
@@ -30,27 +34,12 @@ int main(int argc, char** argv)
 
     std::ifstream stage0(stage0_name.string());
 
-    auto fs = System::Filesystem::FAT::Filesystem::open(
-    {
-        .sectors = 2880,
-        .sectorSize = 512,
+    namespace FIO = System::IO::FileIO;
+    namespace VD = System::Storage::VirtualDisk;
 
-        .read = [&](std::uint64_t lba)
-        {
-            std::shared_ptr<std::byte> ptr(new std::byte[512]);
-            dest.readSector(lba, std::span(ptr.get(), 512));
-            return ptr;
-        },
-
-        .write = [&](std::uint64_t lba, std::size_t count, std::span<const std::byte> buffer)
-        {
-            if (count != 1)
-                return false;
-
-            dest.writeSector(lba, buffer);
-            return true;
-        }
-    });
+    FIO::SharedFileHandle destFile = *FIO::FileHandle::open({}, "igniter.img", FIO::mode::write, FIO::creation::open_existing, FIO::caching::all);
+    auto destDev = std::make_unique<VD::RawVirtualDisk>(VD::RawVirtualDisk::createFrom(destFile, {}));
+    auto fs = System::Filesystem::FAT::Filesystem::open(std::move(destDev));
 
     log(DefaultFacility, priority::trace, "mounting disk...");
     fs->mount();
@@ -66,7 +55,7 @@ int main(int argc, char** argv)
 
     fileStage1Blocklist->truncate();
 
-    auto copy = [&dest](const std::filesystem::path& from, const System::Filesystem::FAT::File::handle_t& to)
+    auto copy = [](const std::filesystem::path& from, const System::Filesystem::FAT::File::handle_t& to)
     {
         char buffer[512];
 
@@ -74,9 +63,7 @@ int main(int argc, char** argv)
 
         to->truncate();
 
-        auto sectorSize = dest.sectorSize();
         auto size = std::filesystem::file_size(from);
-        auto count = ((size + sectorSize - 1) / sectorSize);
         auto offset = 0;
         while (offset < size)
         {
@@ -182,15 +169,15 @@ int main(int argc, char** argv)
 
         if (i == 0)
         {
-            dest.readSector(current_sector, std::as_writable_bytes(std::span{&blheader, 1}));
+            fileStage1Blocklist->readTo(512 * i, 512, std::as_writable_bytes(std::span{&blheader, 1}));
             blheader.next_blocklist = encoded;
-            dest.writeSector(current_sector, std::as_bytes(std::span{&blheader, 1}));
+            fileStage1Blocklist->write(512 * i, std::as_bytes(std::span{&blheader, 1}));
         }
         else
         {
-            dest.readSector(current_sector, std::as_writable_bytes(std::span{&blblock, 1}));
+            fileStage1Blocklist->readTo(512 * i, 512, std::as_writable_bytes(std::span{&blblock, 1}));
             blblock.next_blocklist = encoded;
-            dest.writeSector(current_sector, std::as_bytes(std::span{&blblock, 1}));
+            fileStage1Blocklist->write(512 * i, std::as_bytes(std::span{&blblock, 1}));
         }
 
         current_sector = next_sector;
@@ -200,10 +187,10 @@ int main(int argc, char** argv)
     stage0.read(buffer, sizeof(buffer));
 
     Bootsector bootsector;
-    bootsector.readFromDisk(dest);
+    bootsector.readFromDisk(*fs->blockDevice());
     bootsector.applyStage0(std::as_bytes(std::span{buffer}));
     bootsector.setBlockListBlock(fileStage1Blocklist->info().startSector());
-    bootsector.writeToDisk(dest);
+    bootsector.writeToDisk(*fs->blockDevice());
 
     return 0;
 }

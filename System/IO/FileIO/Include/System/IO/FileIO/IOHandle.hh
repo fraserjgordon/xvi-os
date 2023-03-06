@@ -23,7 +23,7 @@ public:
     {
     }
 
-    virtual ~IOHandle() = default;
+    ~IOHandle() override = default;
 
     void operator=(const IOHandle&) = delete;
     IOHandle& operator=(IOHandle&&) noexcept = default;
@@ -49,6 +49,9 @@ public:
 
     virtual result<offset_t> size() const noexcept;
 };
+
+using SharedIOHandle = SharedHandle<IOHandle>;
+using UniqueIOHandle = UniqueHandle<IOHandle>;
 
 
 } // namespace System::IO::FileIO

@@ -37,6 +37,11 @@ public:
 
     const std::optional<chs_geometry>& geometry() const;
 
+    System::Storage::BlockDevice::BlockDev& blockDevice() noexcept
+    {
+        return m_virt;
+    }
+
 private:
 
     const std::filesystem::path             m_path;

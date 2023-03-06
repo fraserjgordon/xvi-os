@@ -1,13 +1,8 @@
 #include <System/Filesystem/FAT/Directory.hh>
 #include <System/Filesystem/FAT/DirectoryImpl.hh>
 
-#if !defined(__XVI_NO_STDLIB)
-#  include <bit>
-#  include <cstring>
-#else
-#  include <System/C++/Utility/Bit.hh>
-#  include <System/C++/Utility/CString.hh>
-#endif
+#include <bit>
+#include <cstring>
 
 #include <System/Filesystem/FAT/DirEnt.hh>
 #include <System/Filesystem/FAT/FilesystemImpl.hh>

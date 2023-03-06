@@ -3,5 +3,6 @@ library_group("IO")
     deps =
     [
         "FileIO",
+        "Handle",
     ]
 }

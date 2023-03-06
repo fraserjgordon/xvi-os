@@ -1,0 +1,35 @@
+library("Handle")
+{
+    library_name = "System.IO.Handle"
+    library_version = "0.1.0"
+
+    shared_define = "__SYSTEM_IO_HANDLE_BUILD_SHARED"
+
+    public_deps =
+    [
+    ]
+
+    deps =
+    [
+    ]
+
+    public_headers =
+    [
+        "Private/Config.hh",
+    ]
+
+    sources =
+    [
+    ]
+
+    test_sources =
+    [
+    ]
+
+    if (host_build)
+    {
+        sources +=
+        [
+        ]
+    }
+}

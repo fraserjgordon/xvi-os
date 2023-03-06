@@ -667,10 +667,11 @@ public:
     static_assert(is_trivially_copyable_v<_T>);
 
     using value_type = _T;
+    using difference_type = _T;
 
     static constexpr bool is_always_lock_free = __atomic_always_lock_free(sizeof(_T), nullptr);
 
-    __atomic_integer() noexcept = default;
+    constexpr __atomic_integer() noexcept = default;
 
     constexpr __atomic_integer(_T __t) noexcept
         : _M_storage{.__value = static_cast<__type>(__t)}
@@ -1442,54 +1443,54 @@ public:
 
 template <> struct atomic<char>
     : __detail::__atomic_integer<char>
-        { using __detail::__atomic_integer<char>::__atomic_integer; };
+        { using __base = __detail::__atomic_integer<char>; using __base::__base; using __base::operator=; };
 template <> struct atomic<signed char>
     : __detail::__atomic_integer<signed char>
-        { using __detail::__atomic_integer<signed char>::__atomic_integer; };
+        { using __base = __detail::__atomic_integer<signed char>; using __base::__base; using __base::operator=; };
 template <> struct atomic<unsigned char>
     : __detail::__atomic_integer<unsigned char>
-        { using __detail::__atomic_integer<unsigned char>::__atomic_integer; };
+        { using __base = __detail::__atomic_integer<unsigned char>; using __base::__base; using __base::operator=; };
 template <> struct atomic<short>
     : __detail::__atomic_integer<short>
-        { using __detail::__atomic_integer<short>::__atomic_integer; };
+        { using __base = __detail::__atomic_integer<short>; using __base::__base; using __base::operator=; };
 template <> struct atomic<unsigned short>
     : __detail::__atomic_integer<unsigned short>
-        { using __detail::__atomic_integer<unsigned short>::__atomic_integer; };
+        { using __base = __detail::__atomic_integer<unsigned short>; using __base::__base; using __base::operator=; };
 template <> struct atomic<int>
     : __detail::__atomic_integer<int>
-        { using __detail::__atomic_integer<int>::__atomic_integer; };
+        { using __base = __detail::__atomic_integer<int>; using __base::__base; using __base::operator=; };
 template <> struct atomic<unsigned int>
     : __detail::__atomic_integer<unsigned int>
-        { using __detail::__atomic_integer<unsigned int>::__atomic_integer; };
+        { using __base = __detail::__atomic_integer<unsigned int>; using __base::__base; using __base::operator=; };
 template <> struct atomic<long>
     : __detail::__atomic_integer<long>
-        { using __detail::__atomic_integer<long>::__atomic_integer; };
+        { using __base = __detail::__atomic_integer<long>; using __base::__base; using __base::operator=; };
 template <> struct atomic<unsigned long>
     : __detail::__atomic_integer<unsigned long>
-        { using __detail::__atomic_integer<unsigned long>::__atomic_integer; };
+        { using __base = __detail::__atomic_integer<unsigned long>; using __base::__base; using __base::operator=; };
 template <> struct atomic<long long>
     : __detail::__atomic_integer<long long>
-        { using __detail::__atomic_integer<long long>::__atomic_integer; };
+        { using __base = __detail::__atomic_integer<long long>; using __base::__base; using __base::operator=; };
 template <> struct atomic<unsigned long long>
     : __detail::__atomic_integer<unsigned long long>
-        { using __detail::__atomic_integer<unsigned long long>::__atomic_integer; };
+        { using __base = __detail::__atomic_integer<unsigned long long>; using __base::__base; using __base::operator=; };
 template <> struct atomic<char8_t>
     : __detail::__atomic_integer<char8_t>
-        { using __detail::__atomic_integer<char8_t>::__atomic_integer; };
+        { using __base = __detail::__atomic_integer<char8_t>; using __base::__base; using __base::operator=; };
 template <> struct atomic<char16_t>
     : __detail::__atomic_integer<char16_t>
-        { using __detail::__atomic_integer<char16_t>::__atomic_integer; };
+        { using __base = __detail::__atomic_integer<char16_t>; using __base::__base; using __base::operator=; };
 template <> struct atomic<char32_t>
     : __detail::__atomic_integer<char32_t>
-        { using __detail::__atomic_integer<char32_t>::__atomic_integer; };
+        { using __base = __detail::__atomic_integer<char32_t>; using __base::__base; using __base::operator=; };
 template <> struct atomic<wchar_t>
     : __detail::__atomic_integer<wchar_t>
-        { using __detail::__atomic_integer<wchar_t>::__atomic_integer; };
+        { using __base = __detail::__atomic_integer<wchar_t>; using __base::__base; using __base::operator=; };
 
 
 template <class _T> struct atomic<_T*>
     : __detail::__atomic_pointer<_T*>
-        { using __detail::__atomic_pointer<_T*>::__atomic_pointer; };
+        { using __base = __detail::__atomic_pointer<_T*>; using __base::__base; using __base::operator=; };
 
 
 //! @TODO: specialisations of atomic<> for floating-point types.

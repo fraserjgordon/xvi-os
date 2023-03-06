@@ -15,12 +15,18 @@ library("BlockDevice")
 
     public_headers =
     [
+        "BlockCache.hh",
         "BlockDev.hh",
         "CHS.hh",
     ]
 
     sources =
     [
+        "FallbackBlockCache.hh",
+
+        "BlockCache.cc",
+        "BlockDev.cc",
+        "FallbackBlockCache.cc",
         "CHS.cc",
     ]
 

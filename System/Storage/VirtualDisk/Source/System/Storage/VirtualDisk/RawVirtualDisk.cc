@@ -10,7 +10,7 @@ namespace System::Storage::VirtualDisk
 namespace FIO = System::IO::FileIO;
 
 
-RawVirtualDisk::RawVirtualDisk(std::unique_ptr<FIO::IOHandle> io, const disk_params_t& params) noexcept :
+RawVirtualDisk::RawVirtualDisk(FIO::SharedIOHandle io, const disk_params_t& params) noexcept :
     m_io{std::move(io)},
     m_params{params}
 {
@@ -18,7 +18,7 @@ RawVirtualDisk::RawVirtualDisk(std::unique_ptr<FIO::IOHandle> io, const disk_par
 }
 
 
-std::uint32_t RawVirtualDisk::sectorSize() const noexcept
+std::size_t RawVirtualDisk::sectorSize() const noexcept
 {
     return m_params.sector_size;
 }
@@ -30,7 +30,7 @@ RawVirtualDisk::lba_t RawVirtualDisk::sectorCount() const noexcept
 }
 
 
-RawVirtualDisk::result<void> RawVirtualDisk::read(lba_t lba, buffer output) const noexcept
+RawVirtualDisk::result_t<void> RawVirtualDisk::read(lba_t lba, buffer output) const noexcept
 {
     // Partial reads are possible so we need to loop until done.
     auto remaining = output.size();
@@ -73,7 +73,7 @@ RawVirtualDisk::result<void> RawVirtualDisk::read(lba_t lba, buffer output) cons
 }
 
 
-RawVirtualDisk::result<void> RawVirtualDisk::write(lba_t lba, const_buffer input) noexcept
+RawVirtualDisk::result_t<void> RawVirtualDisk::write(lba_t lba, const_buffer input) noexcept
 {
     // Partial writes are possible so we need to loop until done.
     auto remaining = input.size();
@@ -109,7 +109,7 @@ RawVirtualDisk::result<void> RawVirtualDisk::write(lba_t lba, const_buffer input
 }
 
 
-RawVirtualDisk RawVirtualDisk::createFrom(std::unique_ptr<FIO::IOHandle> io, const disk_params_t& params) noexcept
+RawVirtualDisk RawVirtualDisk::createFrom(FIO::SharedIOHandle io, const disk_params_t& params) noexcept
 {
     return RawVirtualDisk(std::move(io), params);
 }

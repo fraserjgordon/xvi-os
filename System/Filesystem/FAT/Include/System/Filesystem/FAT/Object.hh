@@ -2,21 +2,12 @@
 #define __SYSTEM_FILESYSTEM_FAT_OBJECT_H
 
 
-#if !defined(__XVI_NO_STDLIB)
-#  include <cstddef>
-#  include <cstdint>
-#  include <functional>
-#  include <memory>
-#  include <span>
-#  include <string_view>
-#else
-#  include <System/C++/LanguageSupport/StdDef.hh>
-#  include <System/C++/LanguageSupport/StdInt.hh>
-#  include <System/C++/Utility/Function.hh>
-#  include <System/C++/Utility/Span.hh>
-#  include <System/C++/Utility/StringView.hh>
-#  include <System/C++/Utility/UniquePtr.hh>
-#endif
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <span>
+#include <string_view>
 
 
 namespace System::Filesystem::FAT

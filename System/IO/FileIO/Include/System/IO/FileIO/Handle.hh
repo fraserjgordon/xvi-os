@@ -7,6 +7,8 @@
 #include <system_error>
 
 #include <System/IO/FileIO/AbstractHandle.hh>
+#include <System/IO/FileIO/SharedHandle.hh>
+#include <System/IO/FileIO/UniqueHandle.hh>
 
 
 namespace System::IO::FileIO

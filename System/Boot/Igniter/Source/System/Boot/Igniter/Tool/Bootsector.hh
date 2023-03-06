@@ -7,8 +7,7 @@
 #include <span>
 
 #include <System/Filesystem/FAT/BPB.hh>
-
-#include <System/Boot/Igniter/Tool/Disk.hh>
+#include <System/Storage/BlockDevice/BlockDev.hh>
 
 
 namespace System::Boot::Igniter
@@ -19,8 +18,10 @@ class Bootsector
 {
 public:
 
-    void readFromDisk(const Disk&);
-    void writeToDisk(Disk&);
+    using BlockDev = System::Storage::BlockDevice::BlockDev;
+
+    void readFromDisk(const BlockDev&);
+    void writeToDisk(BlockDev&);
 
     void applyStage0(std::span<const std::byte> stage0);
 
@@ -70,7 +71,7 @@ private:
     fat_type    m_fsType = fat_type::Unknown;
 
 
-    void parseCurrentBootsector(const Disk&);
+    void parseCurrentBootsector(const BlockDev&);
 
     bool validateStage0Loader(const layout_t& sector);
 };

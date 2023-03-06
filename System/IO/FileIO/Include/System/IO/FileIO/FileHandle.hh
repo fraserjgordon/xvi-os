@@ -24,7 +24,7 @@ public:
     {
     }
 
-    virtual ~FileHandle() = default;
+    ~FileHandle() override = default;
 
     void operator=(const FileHandle&) = delete;
     FileHandle& operator=(FileHandle&&) = default;
@@ -39,6 +39,9 @@ public:
 
     static result<FileHandle> open(const PathHandle& at, const path_type& path, mode, creation, caching) noexcept;
 };
+
+using SharedFileHandle = SharedHandle<FileHandle>;
+using UniqueFileHandle = UniqueHandle<FileHandle>;
 
 
 } // namespace System::IO::FileIO

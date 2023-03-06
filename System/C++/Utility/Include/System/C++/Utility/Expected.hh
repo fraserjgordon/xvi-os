@@ -26,14 +26,14 @@ public:
     template <class... _Args>
         requires std::is_constructible_v<_E, _Args...>
     constexpr explicit unexpected(in_place_t, _Args&&... __args) :
-        _E(std::forward<_Args>(__args)...)
+        _M_val(std::forward<_Args>(__args)...)
     {
     }
 
-    template <class... _Args>
+    template <class _U, class... _Args>
         requires std::is_constructible_v<_E, std::initializer_list<_U>&, _Args...>
     constexpr explicit unexpected(in_place_t, std::initializer_list<_U> __il, _Args&&... __args) :
-        _E(__il, std:forward<_Args>(__args)...)
+        _M_val(__il, std::forward<_Args>(__args)...)
     {
     }
 
@@ -42,7 +42,7 @@ public:
             && (!std::is_same_v<std::remove_cvref_t<_Err>, in_place_t>)
             && std::is_constructible_v<_E, _Err>
     constexpr explicit unexpected(_Err&& __err) :
-        _E(std::forward<_Err>(__err))
+        _M_val(std::forward<_Err>(__err))
     {
     }
 
@@ -137,7 +137,7 @@ public:
 
     const char* what() const noexcept override
     {
-        "bad expected access: contained error";
+        return "bad expected access: contained error";
     }
 
     _E& error() & noexcept
@@ -172,6 +172,9 @@ struct unexpect_t
 };
 
 inline constexpr unexpect_t unexpect {};
+
+
+template <class _T, class _E> class expected;
 
 
 namespace __detail
@@ -218,6 +221,7 @@ public:
     {
         _T      _M_U_val;
         _E      _M_U_unex;
+        char    _M_U_placeholder = {};
 
         template <class... _Args>
         constexpr __storage_t(in_place_t, _Args&&... __args) :
@@ -306,7 +310,7 @@ public:
     }
 
     template <class _U, class _G>
-    constexpr __expected_storage(__expected_storage<_U, _G>&& other)
+    constexpr __expected_storage(__expected_storage<_U, _G>&& __other)
     {
         _M_has_value = __other._M_has_value;
         if (_M_has_value)
@@ -317,7 +321,7 @@ public:
 
     template <class... _Args>
     constexpr explicit __expected_storage(in_place_t, _Args&&... __args) :
-        _M_storage(in_place, std::forward<_Args>(__args))
+        _M_storage(in_place, std::forward<_Args>(__args)...)
     {
     }
 
@@ -376,7 +380,7 @@ public:
         }
         else if (__other._M_has_value)
         {
-            __reinit_expected(_M_storage._M_U_val, _M_storage._M_U_unex, std::move(__other._M_U_val));
+            __reinit_expected(_M_storage._M_U_val, _M_storage._M_U_unex, std::move(__other._M_storage._M_U_val));
         }
         else
         {
@@ -402,7 +406,7 @@ public:
     }
 
     template <class _G>
-    constexpr expected& operator=(const unexpected<_G>& __u)
+    constexpr __expected_storage& operator=(const unexpected<_G>& __u)
     {
         if (_M_has_value)
             __reinit_expected(_M_storage._M_U_unex, _M_storage._M_U_val, __u.value());
@@ -415,7 +419,7 @@ public:
     }
 
     template <class _G>
-    constexpr expected& operator=(unexpected<_G>&& __u)
+    constexpr __expected_storage& operator=(unexpected<_G>&& __u)
     {
         if (_M_has_value)
             __reinit_expected(_M_storage._M_U_unex, _M_storage._M_U_val, std::move(__u.value()));
@@ -440,7 +444,7 @@ public:
         return _M_storage._M_U_val;
     }
 
-    constexpr void swap(expected& __other)
+    constexpr void swap(__expected_storage& __other)
     {
         if (_M_has_value && __other._M_has_value)
         {
@@ -498,12 +502,12 @@ public:
 };
 
 
-template <class> struct __is_unexpected_specialization : std:false_type {};
+template <class> struct __is_unexpected_specialization : std::false_type {};
 
 template <class _E> struct __is_unexpected_specialization<unexpected<_E>> : std::true_type {};
 
 template <class _T>
-inline constexpr bool __is_unexpected_specialization_v = __is_unexpected_specialization<_T>::value();
+inline constexpr bool __is_unexpected_specialization_v = __is_unexpected_specialization<_T>::value;
 
 
 } // namespace __detail
@@ -535,7 +539,7 @@ public:
 
     template <class _U, class _G>
     constexpr explicit(!std::is_convertible_v<const _U&, _T> || !std::is_convertible_v<const _G&, _E>) expected(const expected<_U, _G>& __e)
-        requires std::is_constructible_v<_T, const _U&>
+        requires (std::is_constructible_v<_T, const _U&>
             && std::is_constructible_v<_E, const _G&>
             && !std::is_constructible_v<_T, expected<_U, _G>&>
             && !std::is_constructible_v<_T, expected<_U, _G>>
@@ -548,14 +552,14 @@ public:
             && !std::is_constructible_v<unexpected<_E>, expected<_U, _G>&>
             && !std::is_constructible_v<unexpected<_E>, expected<_U, _G>>
             && !std::is_constructible_v<unexpected<_E>, const expected<_U, _G>&>
-            && !std::is_constructible_v<unexpected<_E>, const expected<_U, _G>> :
+            && !std::is_constructible_v<unexpected<_E>, const expected<_U, _G>>) :
         _M_storage(__e._M_storage)
     {
     }
 
     template <class _U, class _G>
     constexpr explicit(!std::is_convertible_v<_U, _T> || !std::is_convertible_v<_G, _E>) expected(expected<_U, _G>&& __e)
-        requires std::is_constructible_v<_T, _U>
+        requires (std::is_constructible_v<_T, _U>
             && std::is_constructible_v<_E, _G>
             && !std::is_constructible_v<_T, expected<_U, _G>&>
             && !std::is_constructible_v<_T, expected<_U, _G>>
@@ -568,7 +572,7 @@ public:
             && !std::is_constructible_v<unexpected<_E>, expected<_U, _G>&>
             && !std::is_constructible_v<unexpected<_E>, expected<_U, _G>>
             && !std::is_constructible_v<unexpected<_E>, const expected<_U, _G>&>
-            && !std::is_constructible_v<unexpected<_E>, const expected<_U, _G>> :
+            && !std::is_constructible_v<unexpected<_E>, const expected<_U, _G>>) :
         _M_storage(std::move(__e._M_storage))
     {
     }
@@ -614,14 +618,14 @@ public:
     template <class... _Args>
     constexpr explicit expected(unexpect_t, _Args&&... __args)
         requires std::is_constructible_v<_E, _Args...> :
-        _M_storage(unexpect, std::forward<_Args>(__args))
+        _M_storage(unexpect, std::forward<_Args>(__args)...)
     {
     }
 
     template <class _U, class... _Args>
     constexpr explicit expected(unexpect_t, std::initializer_list<_U> __il, _Args&&... __args)
         requires std::is_constructible_v<_E, std::initializer_list<_U>&, _Args...> :
-        _M_storage(unexpect, __il, std::forward<_Args>(__args))
+        _M_storage(unexpect, __il, std::forward<_Args>(__args)...)
     {
     }
 
@@ -653,11 +657,11 @@ public:
     = default;
 
     template <class _U = _T>
-        requires (!std::is_same_v<expected, std::remove_cvref_t<_U>)
+        requires (!std::is_same_v<expected, std::remove_cvref_t<_U>>
             && !__detail::__is_unexpected_specialization_v<std::remove_cvref_t<_U>>
             && std::is_constructible_v<_T, _U>
             && std::is_assignable_v<_T&, _U>
-            && (std::is_nothrow_constructible_v<_T, _U> || std::is_nothrow_move_constructible_v<_T> || std::is_nothrow_move_constructible_v<_E>)
+            && (std::is_nothrow_constructible_v<_T, _U> || std::is_nothrow_move_constructible_v<_T> || std::is_nothrow_move_constructible_v<_E>))
     constexpr expected& operator=(_U&& __t)
     {
         _M_storage = std::forward<_U>(__t);
@@ -847,7 +851,7 @@ public:
 private:
 
     __detail::__expected_storage<_T, _E>    _M_storage = {};
-}
+};
 
 
 template <class _T, class _E>
@@ -875,24 +879,24 @@ public:
         requires std::is_move_constructible_v<_E> = default;
 
     template <class _U, class _G>
-        requires std::is_void_v<_U>
+        requires (std::is_void_v<_U>
             && std::is_constructible_v<_E, const _G&>
             && !std::is_constructible_v<unexpected<_E>, expected<_U, _G>&>
             && !std::is_constructible_v<unexpected<_E>, const expected<_U, _G>&>
             && !std::is_constructible_v<unexpected<_E>, expected<_U, _G>>
-            && !std::is_constructible_v<unexpected<_E>, const expected<_U, _G>>
+            && !std::is_constructible_v<unexpected<_E>, const expected<_U, _G>>)
     constexpr explicit(!std::is_convertible_v<const _G&, _E>) expected(const expected<_U, _G>& __rhs) :
         _M_storage(__rhs._M_storage)
     {
     }
 
     template <class _U, class _G>
-        requires std::is_void_v<_U>
+        requires (std::is_void_v<_U>
             && std::is_constructible_v<_E, _G>
             && !std::is_constructible_v<unexpected<_E>, expected<_U, _G>&>
             && !std::is_constructible_v<unexpected<_E>, const expected<_U, _G>&>
             && !std::is_constructible_v<unexpected<_E>, expected<_U, _G>>
-            && !std::is_constructible_v<unexpected<_E>, const expected<_U, _G>>
+            && !std::is_constructible_v<unexpected<_E>, const expected<_U, _G>>)
     constexpr explicit(!std::is_convertible_v<_G, _E>) expected(expected<_U, _G>&& __rhs) :
         _M_storage(std::move(__rhs._M_storage))
     {
@@ -931,7 +935,7 @@ public:
     {
     }
 
-    constexpr ~explicit() = default;
+    constexpr ~expected() = default;
 
     constexpr expected& operator=(const expected&)
         requires std::is_copy_assignable_v<_E> && std::is_copy_constructible_v<_E> = default;

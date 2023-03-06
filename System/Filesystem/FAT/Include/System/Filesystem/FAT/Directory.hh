@@ -2,11 +2,7 @@
 #define __SYSTEM_FILESYSTEM_FAT_DIRECTORY_H
 
 
-#if !defined(__XVI_NO_STDLIB)
-#  include <functional>
-#else
-#  include <System/C++/Utility/Function.hh>
-#endif
+#include <functional>
 
 #include <System/Filesystem/FAT/File.hh>
 #include <System/Filesystem/FAT/Object.hh>

@@ -20,20 +20,20 @@ using System::Utility::Logger::log;
 using System::Utility::Logger::priority;
 
 
-void Bootsector::readFromDisk(const Disk& disk)
+void Bootsector::readFromDisk(const BlockDev& disk)
 {
     // Read the first sector of the disk (the bootsector) into our cache.
-    disk.readSector(0, std::as_writable_bytes(std::span{&m_sector, 1}));
+    disk.cachedRead(0, 0, std::as_writable_bytes(std::span{&m_sector, 1}));
 
     // Parse and check the sector that was just read.
     parseCurrentBootsector(disk);
 }
 
 
-void Bootsector::writeToDisk(Disk& disk)
+void Bootsector::writeToDisk(BlockDev& disk)
 {
     // Overwrite the first sector of the disk with the new bootsector.
-    disk.writeSector(0, std::as_bytes(std::span{&m_sector, 1}));
+    disk.cachedWrite(0, 0, std::as_bytes(std::span{&m_sector, 1}));
 }
 
 
@@ -123,7 +123,7 @@ void Bootsector::setBlockListBlock(std::uint32_t lba)
 }
 
 
-void Bootsector::parseCurrentBootsector(const Disk& disk)
+void Bootsector::parseCurrentBootsector(const BlockDev& disk)
 {
     // We need to detect what filesystem (if any) is currently making use of the bootsector.
     if (m_sector.fields.jmp[0] == std::byte{0xEB}

@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <span>
 
-#include <System/IO/FileIO/Types.hh>
 #include <System/Storage/BlockDevice/BlockDev.hh>
 
 
@@ -19,19 +18,8 @@ class VirtualDisk :
 {
 public:
 
-    using buffer = std::span<std::byte>;
-    using const_buffer = std::span<const std::byte>;
-
-    template <class T> using result = System::IO::FileIO::result<T>;
-
-
-    virtual std::uint32_t sectorSize() const noexcept;
-
-    virtual lba_t sectorCount() const noexcept = 0;
-
-    virtual result<void> read(lba_t lba, buffer output) const noexcept = 0;
-
-    virtual result<void> write(lba_t lba, const_buffer input) noexcept = 0;
+    // Inherited from class BlockDev.
+    std::size_t sectorSize() const noexcept override;
 };
 
 

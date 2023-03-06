@@ -24,7 +24,7 @@ Disk::Disk(const std::filesystem::path& path, const options& opt) :
     if (!handle)
         throw FIO::IOException(handle.error());
 
-    m_virt = VD::RawVirtualDisk::createFrom(std::make_unique<FIO::FileHandle>(std::move(*handle)), {.sector_size = 512});
+    m_virt = VD::RawVirtualDisk::createFrom(std::move(*handle), {.sector_size = 512});
 
     log(DefaultFacility, priority::debug, "opened disk {}", m_path.c_str());
 

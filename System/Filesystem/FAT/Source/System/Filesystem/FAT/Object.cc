@@ -1,11 +1,7 @@
 #include <System/Filesystem/FAT/Object.hh>
 #include <System/Filesystem/FAT/ObjectImpl.hh>
 
-#if !defined(__XVI_NO_STDLIB)
-#  include <cstring>
-#else
-#  include <System/C++/Utility/CString.hh>
-#endif
+#include <cstring>
 
 #include <System/Filesystem/FAT/DirectoryImpl.hh>
 #include <System/Filesystem/FAT/FileImpl.hh>
@@ -378,7 +374,7 @@ void ObjectImpl::readBlocks(std::uint32_t offset, std::uint32_t length, read_blo
 
             // Read the sector.
             auto data = fs.readBlock(sector + i);
-            auto result = callback((sector_index + i) * sector_size, std::span{data.get(), sector_size});
+            auto result = callback((sector_index + i) * sector_size, std::span{data->readSpan().data(), sector_size});
             if (!result)
                 return false;
         }
@@ -520,7 +516,7 @@ void ObjectImpl::readRootDirBlocks(std::uint32_t offset, std::uint32_t length, r
     for (std::uint32_t i = 0; i < sector_count; ++i)
     {
         auto data = fs.readBlock(start_sector + i);
-        auto result = callback(offset + (i * sector_size), std::span{data.get(), sector_size});
+        auto result = callback(offset + (i * sector_size), std::span{data->readSpan().data(), sector_size});
         if (!result)
             return;
     }
@@ -674,7 +670,7 @@ bool ObjectImpl::overwritePartialSector(std::uint32_t lba, std::uint32_t offset,
         return false;
 
     // Copy the new data over the old.
-    std::memcpy(contents.get() + offset, data.data(), length);
+    std::memcpy(contents->writeSpan().data() + offset, data.data(), length);
 
     return true;
 }
@@ -688,7 +684,7 @@ bool ObjectImpl::overwriteSector(std::uint32_t lba, std::span<const std::byte> d
     if (data.size_bytes() != fs.sectorSize())
         return false;
 
-    return fs.writeBlock(lba, data);
+    return fs.writeBlock(lba, data).has_value();
 }
 
 

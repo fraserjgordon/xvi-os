@@ -1,17 +1,13 @@
 #include <System/Filesystem/FAT/Filesystem.hh>
 #include <System/Filesystem/FAT/FilesystemImpl.hh>
 
-#if !defined(__XVI_NO_STDLIB)
-#  include <bit>
-#  include <cstring>
-#  if __has_include(<format>)
-#    include <format>
-#  else
-#    include <fmt/format.h>
-#  endif
+#include <bit>
+#include <cstring>
+
+#if __has_include(<format>)
+#  include <format>
 #else
-#  include <System/C++/Format/Format.hh>
-#  include <System/C++/Utility/Bit.hh>
+#  include <fmt/format.h>
 #endif
 
 #include <System/Filesystem/FAT/DirectoryImpl.hh>
@@ -72,9 +68,9 @@ std::uint32_t Filesystem::sectorsPerCluster() const
 }
 
 
-Filesystem* Filesystem::openImpl(const params_t* params)
+Filesystem* Filesystem::openImpl(BlockDev* device)
 {
-    return reinterpret_cast<Filesystem*>(new FilesystemImpl{*params});
+    return reinterpret_cast<Filesystem*>(new FilesystemImpl{std::unique_ptr<BlockDev>(device)});
 }
 
 
@@ -84,12 +80,9 @@ void Filesystem::deleteImpl(Filesystem* fs)
 }
 
 
-FilesystemImpl::FilesystemImpl(const params_t& params) :
-    m_params(params)
+FilesystemImpl::FilesystemImpl(std::unique_ptr<BlockDev> device) :
+    m_blockDevice(std::move(device))
 {
-    // If we weren't given a read-for-write callback, synthesise one.
-    if (!m_params.read_for_write)
-        m_params.read_for_write = makeReadForWriteFunction();
 }
 
 
@@ -101,7 +94,8 @@ FilesystemImpl::~FilesystemImpl()
 bool FilesystemImpl::mount()
 {
     // Read in the BPB of the filesystem.
-    auto bs = std::reinterpret_pointer_cast<const bootsector>(m_params.read(0));
+    auto bootsec = blockDevice()->cachedRead(0);
+    auto bs = reinterpret_cast<const bootsector*>(bootsec->readSpan().data());
     if (!bs)
     {
         log(priority::error, "cannot mount - failed to read bootsector");
@@ -314,8 +308,8 @@ std::uint32_t FilesystemImpl::getFATEntryRaw(std::uint32_t cluster) const
             auto second = readBlock(m_fatStart + sector + 1);
 
             // Read the two bytes of interest in little-endian order.
-            auto low = static_cast<std::uint16_t>(first.get()[m_sectorSize - 1]);
-            auto high = static_cast<std::uint16_t>(second.get()[0]);
+            auto low = static_cast<std::uint16_t>(first->readSpan().data()[m_sectorSize - 1]);
+            auto high = static_cast<std::uint16_t>(second->readSpan().data()[0]);
 
             entry = low | (high << 8);
         }
@@ -326,7 +320,7 @@ std::uint32_t FilesystemImpl::getFATEntryRaw(std::uint32_t cluster) const
 
             // Perform an unaligned 16-bit read to get the two bytes of interest.
             using Utility::Endian::uint16ule_t;
-            entry = *reinterpret_cast<const uint16ule_t*>(&data.get()[offset]);
+            entry = *reinterpret_cast<const uint16ule_t*>(&data->readSpan().data()[offset]);
         }
 
         // Extract the 12 bits of interest (they're the low bits or the high bits, respectively, if the cluster number
@@ -349,7 +343,7 @@ std::uint32_t FilesystemImpl::getFATEntryRaw(std::uint32_t cluster) const
         auto data = readBlock(m_fatStart + fat_sector);
 
         // And then read the entry within that sector.
-        return (reinterpret_cast<const uint16le_t*>(data.get()))[offset];
+        return (reinterpret_cast<const uint16le_t*>(data->readSpan().data()))[offset];
     }
     else // if (m_type == fat_type::FAT32)
     {
@@ -362,7 +356,7 @@ std::uint32_t FilesystemImpl::getFATEntryRaw(std::uint32_t cluster) const
         auto data = readBlock(m_fatStart + fat_sector);
 
         // And then read the entry within that sector.
-        return (reinterpret_cast<const uint32le_t*>(data.get()))[offset];
+        return (reinterpret_cast<const uint32le_t*>(data->readSpan().data()))[offset];
     }
 }
 
@@ -505,8 +499,8 @@ void FilesystemImpl::writeClusterChainLink(std::uint32_t from, std::uint32_t to)
             auto second = readBlockForUpdate(m_fatStart + sector + 1);
 
             // Read the two bytes of interest in little-endian order.
-            auto low = static_cast<std::uint8_t>(first.get()[m_sectorSize - 1]);
-            auto high = static_cast<std::uint8_t>(second.get()[0]);
+            auto low = static_cast<std::uint8_t>(first->readSpan().data()[m_sectorSize - 1]);
+            auto high = static_cast<std::uint8_t>(second->readSpan().data()[0]);
 
             std::uint16_t value = low | (high << 8);
 
@@ -519,8 +513,8 @@ void FilesystemImpl::writeClusterChainLink(std::uint32_t from, std::uint32_t to)
             // Write the value back.
             low = value & 0xFF;
             high = value >> 8;
-            first.get()[m_sectorSize - 1] = static_cast<std::byte>(low);
-            second.get()[0] = static_cast<std::byte>(high);   
+            first->writeSpan().data()[m_sectorSize - 1] = static_cast<std::byte>(low);
+            second->writeSpan().data()[0] = static_cast<std::byte>(high);   
         }
         else
         {
@@ -529,7 +523,7 @@ void FilesystemImpl::writeClusterChainLink(std::uint32_t from, std::uint32_t to)
 
             // Perform an unaligned 16-bit read to get the two bytes of interest.
             using Utility::Endian::uint16ule_t;
-            auto& entry = *reinterpret_cast<uint16ule_t*>(&data.get()[offset]);
+            auto& entry = *reinterpret_cast<uint16ule_t*>(&data->writeSpan().data()[offset]);
             std::uint16_t value = entry;
 
             // Update the appropriate 12 bits of the value.
@@ -553,7 +547,7 @@ void FilesystemImpl::writeClusterChainLink(std::uint32_t from, std::uint32_t to)
         auto data = readBlockForUpdate(m_fatStart + fat_sector);
 
         // And then update the entry within that sector.
-        reinterpret_cast<uint16le_t*>(data.get())[offset] = static_cast<std::uint16_t>(to);
+        reinterpret_cast<uint16le_t*>(data->writeSpan().data())[offset] = static_cast<std::uint16_t>(to);
     }
     else // if (m_type == fat_type::FAT32)
     {
@@ -566,7 +560,7 @@ void FilesystemImpl::writeClusterChainLink(std::uint32_t from, std::uint32_t to)
         auto data = readBlockForUpdate(m_fatStart + fat_sector);
 
         // And then update the entry within that sector. We need to preserve the top bits though.
-        auto& entry = reinterpret_cast<uint32le_t*>(data.get())[offset];
+        auto& entry = reinterpret_cast<uint32le_t*>(data->writeSpan().data())[offset];
         entry = (entry & ~m_clusterMask) | (to & m_clusterMask);
     }
 }
@@ -600,21 +594,21 @@ void FilesystemImpl::freeClusterChain(std::uint32_t from)
 }
 
 
-std::shared_ptr<const std::byte> FilesystemImpl::readBlock(std::uint32_t lba) const
+FilesystemImpl::result_t<FilesystemImpl::BlockHandle> FilesystemImpl::readBlock(std::uint32_t lba) const
 {
-    return m_params.read(lba);
+    return blockDevice()->cachedRead(lba);
 }
 
 
-std::shared_ptr<std::byte> FilesystemImpl::readBlockForUpdate(std::uint32_t lba)
+FilesystemImpl::result_t<FilesystemImpl::BlockHandle> FilesystemImpl::readBlockForUpdate(std::uint32_t lba)
 {
-    return m_params.read_for_write(lba);
+    return blockDevice()->cachedReadForUpdate(lba);
 }
 
 
-bool FilesystemImpl::writeBlock(std::uint32_t lba, std::span<const std::byte> data)
+FilesystemImpl::result_t<void> FilesystemImpl::writeBlock(std::uint32_t lba, std::span<const std::byte> data)
 {
-    return m_params.write(lba, 1, data);
+    return blockDevice()->cachedWrite(lba, 0, data);
 }
 
 
@@ -778,36 +772,6 @@ std::string FilesystemImpl::id() const
         return format("{:X}-{:X}", (m_serial >> 16), (m_serial & 0xFFFF));
 
     return "<no name>";
-}
-
-
-Filesystem::read_for_write_fn FilesystemImpl::makeReadForWriteFunction()
-{
-    return [this](std::uint64_t lba) -> std::shared_ptr<std::byte>
-    {
-        // Read in the existing contents.
-        auto existing = m_params.read(lba);
-        if (!existing)
-            return nullptr;
-
-        // Custom deleter that writes out the sector on destruction.
-        struct deleter_t
-        {
-            void operator()(std::byte* ptr)
-            {
-                fs->m_params.write(lba, 1, std::span(ptr, fs->sectorSize()));
-            }
-
-            FilesystemImpl*     fs = nullptr;
-            std::uint64_t       lba = 0;
-        };
-
-        // Make a copy.
-        std::shared_ptr<std::byte> copy(new std::byte[sectorSize()], deleter_t{.fs = this, .lba = lba});
-        std::memcpy(copy.get(), existing.get(), sectorSize());
-
-        return copy;
-    };
 }
 
 

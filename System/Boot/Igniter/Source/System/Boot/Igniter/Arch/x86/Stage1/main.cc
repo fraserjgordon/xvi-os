@@ -35,22 +35,8 @@ void Stage1(std::uint8_t boot_drive)
 
     Disk boot(boot_drive);
 
-    auto fs = Filesystem::FAT::Filesystem::open(
-    {
-        .sectors = 2880,
-        .sectorSize = 512,
-        .read = [&](std::uint64_t lba) -> std::shared_ptr<const std::byte>
-        {
-            auto [found, data] = BlockCache::instance().findOrAllocate(lba);
-            if (found) [[likely]]
-                return std::static_pointer_cast<const std::byte>(data);
-
-            // Data not in the cache; read it now.
-            boot.read(lba, 1, std::span{data.get(), 512});
-
-            return std::static_pointer_cast<const std::byte>(data);
-        }
-    });
+    //! @todo fixme
+    auto fs = Filesystem::FAT::Filesystem::open(nullptr);
 
     if (!fs->mount())
     {

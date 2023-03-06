@@ -18,12 +18,15 @@ library("FileIO")
         "Private/Config.hh",
 
         "AbstractHandle.hh",
+        "DirectoryHandle.hh",
         "Handle.hh",
         "FileHandle.hh",
         "IOException.hh",
         "IOHandle.hh",
         "PathHandle.hh",
+        "SharedHandle.hh",
         "Types.hh",
+        "UniqueHandle.hh",
     ]
 
     sources =
@@ -39,6 +42,7 @@ library("FileIO")
     {
         sources +=
         [
+            "Linux/DirectoryHandle.cc",
             "Linux/FileHandle.cc",
             "Linux/Handle.cc",
             "Linux/IOHandle.cc",

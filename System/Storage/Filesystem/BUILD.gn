@@ -1,0 +1,33 @@
+library("Filesystem")
+{
+    library_name = "System.Storage.Filesystem"
+    library_version = "0.1.0"
+
+    shared_define = "__SYSTEM_STORAGE_FILESYSTEM"
+
+    public_deps =
+    [
+        "//Storage/BlockDevice",
+    ]
+
+    deps =
+    [
+    ]
+
+    public_headers =
+    [
+        "Directory.hh",
+        "DirectoryEntry.hh",
+        "File.hh",
+        "Filesystem.hh",
+    ]
+
+    sources =
+    [
+        "Filesystem.cc",
+    ]
+
+    test_sources =
+    [
+    ]
+}

@@ -26,31 +26,31 @@ public:
 
     constexpr RawVirtualDisk() noexcept = default;
     RawVirtualDisk(const RawVirtualDisk&) = delete;
-    constexpr RawVirtualDisk(RawVirtualDisk&&) noexcept = default;
+    RawVirtualDisk(RawVirtualDisk&&) noexcept = default;
 
-    constexpr ~RawVirtualDisk() = default;
+    ~RawVirtualDisk() = default;
 
     void operator=(const RawVirtualDisk&) = delete;
-    constexpr RawVirtualDisk& operator=(RawVirtualDisk&&) noexcept = default;
+    RawVirtualDisk& operator=(RawVirtualDisk&&) noexcept = default;
 
 
-    // Inherited from VirtualDisk.
-    std::uint32_t sectorSize() const noexcept override;
+    // Inherited from BlockDev.
+    std::size_t sectorSize() const noexcept override;
     lba_t sectorCount() const noexcept override;
-    result<void> read(lba_t, buffer) const noexcept override;
-    result<void> write(lba_t, const_buffer) noexcept override;
+    result_t<void> read(lba_t, buffer) const noexcept override;
+    result_t<void> write(lba_t, const_buffer) noexcept override;
 
 
-    static RawVirtualDisk createFrom(std::unique_ptr<IO::FileIO::IOHandle>, const disk_params_t&) noexcept;
+    static RawVirtualDisk createFrom(IO::FileIO::SharedIOHandle, const disk_params_t&) noexcept;
 
 private:
 
-    std::unique_ptr<IO::FileIO::IOHandle>   m_io = nullptr;
-    disk_params_t                           m_params = {};
-    lba_t                                   m_length = 0;
+    IO::FileIO::SharedIOHandle  m_io = nullptr;
+    disk_params_t               m_params = {};
+    lba_t                       m_length = 0;
 
 
-    RawVirtualDisk(std::unique_ptr<IO::FileIO::IOHandle>, const disk_params_t&) noexcept;
+    RawVirtualDisk(IO::FileIO::SharedIOHandle, const disk_params_t&) noexcept;
 };
 
 
