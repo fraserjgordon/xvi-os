@@ -9,7 +9,7 @@
 
 // The 'swappable' and 'swappable_with' concepts are not defined here as they depend on ranges::swap.
 
-namespace __XVI_STD_TYPETRAITS_NS
+namespace __XVI_STD_TYPETRAITS_NS_DECL
 {
 
 
@@ -224,7 +224,7 @@ template <class _R, class _T, class _U>
 concept strict_weak_order = relation<_R, _T, _U>;
 
 
-} // namespace __XVI_STD_TYPETRAITS_NS
+} // namespace __XVI_STD_TYPETRAITS_NS_DECL
 
 
 #endif /* ifndef __SYSTEM_CXX_TYPETRAITS_PRIVATE_CONCEPTS_H */

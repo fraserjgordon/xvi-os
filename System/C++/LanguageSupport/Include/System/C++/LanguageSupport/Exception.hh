@@ -14,7 +14,7 @@
 #include <System/ABI/C++/TypeInfo.hh>
 
 
-namespace __XVI_STD_LANGSUPPORT_NS
+namespace __XVI_STD_LANGSUPPORT_NS_DECL
 {
 
 
@@ -265,7 +265,7 @@ template <class _E> void rethrow_if_nested(const _E& __e)
 }
 
 
-} // namespace __XVI_STD_LANGSUPPORT_NS
+} // namespace __XVI_STD_LANGSUPPORT_NS_DECL
 
 
 #endif /* ifndef __SYSTEM_CXX_LANGUAGESUPPORT_EXCEPTION_H */

@@ -7,7 +7,7 @@
 #include <System/C++/TypeTraits/Private/Namespace.hh>
 
 
-namespace __XVI_STD_TYPETRAITS_NS
+namespace __XVI_STD_TYPETRAITS_NS_DECL
 {
 
 
@@ -304,7 +304,7 @@ template <class _F, class... _Args>
 using invoke_result_t = typename invoke_result<_F, _Args...>::type;
 
 
-} // namespace __XVI_STD_TYPETRAITS_NS
+} // namespace __XVI_STD_TYPETRAITS_NS_DECL
 
 
 #endif /* ifndef __SYSTEM_CXX_TYPETRAITS_PRIVATE_INVOKE_H */

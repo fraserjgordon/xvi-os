@@ -526,6 +526,20 @@ elements_of(_R&&, _Allocator = _Allocator()) -> elements_of<_R&&, _Allocator>;
 } // namespace ranges
 
 
+namespace __detail
+{
+
+
+template <input_or_output_iterator _I, sentinel_for<_I> _S, subrange_kind _K>
+struct __is_tuple_like<ranges::subrange<_I, _S, _K>> : true_type {};
+
+template <input_or_output_iterator _I, sentinel_for<_I> _S, subrange_kind _K>
+struct __is_ranges_subrange_specialisation<ranges::subrange<_I, _S, _K>> : true_type {};
+
+
+} // namespace __detail
+
+
 } // namespace __XVI_STD_UTILITY_NS
 
 

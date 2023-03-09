@@ -56,7 +56,7 @@
 #endif // if !defined(INT8_MIN)
 
 
-namespace __XVI_STD_LANGSUPPORT_NS
+namespace __XVI_STD_LANGSUPPORT_NS_DECL
 {
 
 
@@ -97,7 +97,7 @@ using intmax_t = __intmax_t;
 using uintmax_t = __uintmax_t;
 
 
-} // namespace __XVI_STD_LANGSUPPORT_NS
+} // namespace __XVI_STD_LANGSUPPORT_NS_DECL
 
 
 #endif /* ifndef __SYSTEM_CXX_LANGUAGESUPPORT_STDINT_H */

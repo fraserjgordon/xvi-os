@@ -6,7 +6,7 @@
 #include <System/C++/TypeTraits/Private/IntegralConstant.hh>
 
 
-namespace __XVI_STD_TYPETRAITS_NS
+namespace __XVI_STD_TYPETRAITS_NS_DECL
 {
 
 
@@ -63,7 +63,7 @@ template <class _B> struct negation : __detail::negation<_B> {};
 template <class _B> inline constexpr bool negation_v = negation<_B>::value;
 
 
-} // namespace __XVI_STD_TYPETRAITS_NS
+} // namespace __XVI_STD_TYPETRAITS_NS_DECL
 
 
 #endif /* ifndef __SYSTEM_CXX_TYPETRAITS_PRIVATE_CONDITIONAL_H */

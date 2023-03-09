@@ -6,7 +6,7 @@
 #include <System/C++/TypeTraits/Private/Namespace.hh>
 
 
-namespace __XVI_STD_TYPETRAITS_NS
+namespace __XVI_STD_TYPETRAITS_NS_DECL
 {
 
 
@@ -36,7 +36,7 @@ using true_type  = bool_constant<true>;
 using false_type = bool_constant<false>;
 
 
-} // namespace __XVI_STD_TYPETRAITS_NS
+} // namespace __XVI_STD_TYPETRAITS_NS_DECL
 
 
 #endif /* ifndef __SYSTEM_CXX_TYPETRAITS_PRIVATE_INTEGRALCONSTANT_H */

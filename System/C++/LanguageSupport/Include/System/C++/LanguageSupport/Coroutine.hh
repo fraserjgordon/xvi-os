@@ -6,7 +6,7 @@
 #include <System/C++/LanguageSupport/Compare.hh>
 
 
-namespace __XVI_STD_LANGSUPPORT_NS
+namespace __XVI_STD_LANGSUPPORT_NS_DECL
 {
 
 
@@ -334,7 +334,7 @@ struct suspend_always
 };
 
 
-} // namespace __XVI_STD_LANGSUPPORT_NS
+} // namespace __XVI_STD_LANGSUPPORT_NS_DECL
 
 
 #endif /* ifndef __SYSTEM_CXX_LANGUAGESUPPORT_COROUTINE_H */

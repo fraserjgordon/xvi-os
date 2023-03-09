@@ -11,7 +11,7 @@
 #include <System/C++/TypeTraits/Private/Namespace.hh>
 
 
-namespace __XVI_STD_TYPETRAITS_NS
+namespace __XVI_STD_TYPETRAITS_NS_DECL
 {
 
 
@@ -256,14 +256,75 @@ struct __common_type_utils
     template <class _T, class _U> using _XREF_ = typename __copy_ref<_T, typename __copy_cv<_T, _U>::type>::type;
     template <class _T> struct _XREF { template <class _U> using __type = _XREF_<_T, _U>; };
     template <class _From, class _To> using _COPYCV = typename __copy_cv<_From, _To>::type;
-    template <class _T, class _U> using _COND_RES = decltype(false ? declval<_T(&)()>()() : declval<_U(&)()>()());
+    
+    template <class _T, class _U>
+        requires requires { false ? declval<_T(&)()>()() : declval<_U(&)()>()(); }
+    using _COND_RES = decltype(false ? declval<_T(&)()>()() : declval<_U(&)()>()());
+};
 
-    template <template <class...> class _D, class _T, class _U> struct __det
-    {
-        using __d = __detector<void, void, _D, _T, _U>;
-        static constexpr bool value = __d::value_t::value;
-        using type = typename __d::type;
-    };
+
+template <class _A, class _B>
+struct _COMMON_REF : __common_type_utils
+{
+    using _X = typename remove_reference<_A>::type;
+    using _Y = typename remove_reference<_B>::type;
+
+
+    template <class _T, class _U>
+    using __alt0_t = _COND_RES<_COPYCV<_T, _U>&, _COPYCV<_U, _T>&>;
+    
+
+    // Specified as remove_reference_t<typename _COMMON_REF<_T&, _U&>::type>::type&&.
+    // Manually transformed as per the _COMMON_REF spec for (lvalue, lvalue) refs to remove the recursion.
+    template <class _T, class _U>
+    using _C = typename remove_reference<__alt0_t<_T, _U>>::type&&;
+
+    // Specified as typename _COMMON_REF<const _T&, _U&>::type.
+    // Manually transformed as per the _COMMON_REF spec for (lvalue, lvalue) refs to remove the recursion.
+    template <class _T, class _U>
+    using _D = __alt0_t<const _T, _U>;
+
+
+    template <class _T, class _U>
+    using __alt1_t = _C<_T, _U>;
+
+    template <class _T, class _U>
+    using __alt2_t = _D<_T, _U>;
+
+    template <class _T, class _U>
+    using __alt3_t = _D<_U, _T>;
+
+
+    static constexpr bool __use_alt0 = 
+        is_lvalue_reference<_A>::value
+        && is_lvalue_reference<_B>::value
+        && requires { typename __alt0_t<_X, _Y>; requires is_reference<__alt0_t<_X, _Y>>::value; };
+
+    static constexpr bool __use_alt1 =
+        is_rvalue_reference<_A>::value
+        && is_rvalue_reference<_B>::value
+        && requires { typename _C<_X, _Y>; requires is_convertible<_A, _C<_X, _Y>>::value && is_convertible<_B, _C<_X, _Y>>::value; };
+
+    static constexpr bool __use_alt2 =
+        is_rvalue_reference<_A>::value
+        && is_lvalue_reference<_B>::value
+        && requires { typename _D<_X, _Y>; requires is_convertible<_A, _D<_X, _Y>>::value; };
+
+    static constexpr bool __use_alt3 =
+        is_lvalue_reference<_A>::value
+        && is_rvalue_reference<_B>::value
+        && requires { typename _D<_Y, _X>; requires is_convertible<_B, _D<_Y, _X>>::value; };
+
+    static constexpr bool __has_type = __use_alt0 || __use_alt1 || __use_alt2 || __use_alt3;
+
+
+    struct __alt0 { static constexpr bool value = __use_alt0; template <class _T, class _U> using __type = __alt0_t<_T, _U>; };
+    struct __alt1 { static constexpr bool value = __use_alt1; template <class _T, class _U> using __type = __alt1_t<_T, _U>; };
+    struct __alt2 { static constexpr bool value = __use_alt2; template <class _T, class _U> using __type = __alt2_t<_T, _U>; };
+    struct __alt3 { static constexpr bool value = __use_alt3; template <class _T, class _U> using __type = __alt3_t<_T, _U>; };
+    struct __none { static constexpr bool value = false; template <class _T, class _U> using __type = nonesuch; };
+
+    using type = typename disjunction<__alt0, __alt1, __alt2, __alt3, __none>::template __type<_X, _Y>;
 };
 
 
@@ -278,21 +339,24 @@ struct __common_type_dual_helper : __common_type_utils
     using _D1 = typename decay<_T1>::type;
     using _D2 = typename decay<_T2>::type;
 
-    template <class _U, class _V> using __alt0_detector = typename common_type<_U, _V>::type;
-    template <class _U, class _V> using __alt1_detector = typename decay<decltype(false ? declval<_U>() : declval<_V>)>::type;
-    template <class _U, class _V> using __alt2_detector = typename decay<_COND_RES<_CREF<_U>, _CREF<_V>>>::type;
+    template <class _U, class _V> using __alt0_t = typename common_type<_U, _V>::type;
+    template <class _U, class _V> using __alt1_t = typename decay<decltype(false ? declval<_U>() : declval<_V>)>::type;
+    template <class _U, class _V> using __alt2_t = typename decay<_COND_RES<_CREF<_U>, _CREF<_V>>>::type;
 
-    static constexpr bool __use_alt0 = conjunction_v<disjunction<__is_not_same<_T1, _D1>, __is_not_same<_T2, _D2>>, __is_detected_delayed<__alt0_detector, _D1, _D2>>;
-    static constexpr bool __use_alt1 = conjunction_v<bool_constant<!__use_alt0>, is_detected<__alt1_detector, _D1, _D2>>;
-    static constexpr bool __use_alt2 = conjunction_v<bool_constant<!__use_alt0>, bool_constant<!__use_alt1>, is_detected<__alt2_detector, _D1, _D2>>;
-    static constexpr bool __has_type = __use_alt0 || __use_alt1 || __use_alt2;
+    static constexpr bool __use_alt0 = (!is_same<_T1, _D1>::value || !is_same<_T2, _D2>::value);
+    static constexpr bool __use_alt1 = !__use_alt0 && requires { typename __alt1_t<_D1, _D2>; };
+    static constexpr bool __use_alt2 = !__use_alt0 && !__use_alt1 && requires { typename __alt2_t<_D1, _D2>; };
 
-    struct __alt0 { static constexpr bool value = __use_alt0; template <class _U, class _V> using __type = __alt0_detector<_U, _V>; };
-    struct __alt1 { static constexpr bool value = __use_alt1; template <class _U, class _V> using __type = __alt1_detector<_U, _V>; };
-    struct __alt2 { static constexpr bool value = __use_alt2; template <class _U, class _V> using __type = __alt2_detector<_U, _V>; };
+    static constexpr bool __has_type = (__use_alt0 && requires { typename __alt0_t<_D1, _D2>; })
+        || __use_alt1 
+        || __use_alt2;
+
+    struct __alt0 { static constexpr bool value = __use_alt0; template <class _U, class _V> using __type = __alt0_t<_U, _V>; };
+    struct __alt1 { static constexpr bool value = __use_alt1; template <class _U, class _V> using __type = __alt1_t<_U, _V>; };
+    struct __alt2 { static constexpr bool value = __use_alt2; template <class _U, class _V> using __type = __alt2_t<_U, _V>; };
 
     template <class _X = _D1, class _Y = _D2>
-    using __type = typename disjunction<__alt0, __alt1, __alt2, nonesuch>::template __type<_X, _Y>;
+    using __type = typename disjunction<__alt0, __alt1, __alt2>::template __type<_X, _Y>;
 };
 
 template <class _T0, class _T1, bool = __common_type_dual_helper<_T0, _T1>::__has_type>
@@ -324,68 +388,29 @@ template <class...> struct common_reference;
 template <class _A, class _B> struct __common_ref;
 template <class _A, class _B> using __common_ref_t = typename __common_ref<_A, _B>::type;
 
-template <class _A, class _B> struct _COMMON_REF : __common_type_utils
-{
-    using _X = typename remove_reference<_A>::type;
-    using _Y = typename remove_reference<_B>::type;
-
-    template <class _T, class _U> using __alt0_detector = _COND_RES<_COPYCV<_T, _U>&, _COPYCV<_U, _T>&>;
-    template <class _T, class _U> using __alt1_detector = typename remove_reference<typename _COMMON_REF<_T&, _U&>::type>::type&&;
-    template <class _T, class _U> using __alt2_detector = typename _COMMON_REF<const _T&, _U&>::type;
-    template <class _T, class _U> using __alt3_detector = typename _COMMON_REF<_U, _T>::type;
-
-    template <class _T, class _U> struct __alt0_type
-        { using type = __alt0_detector<_T, _U>; static constexpr bool value = is_reference<type>::value; };
-    template <class _T, class _U> struct __alt1_type
-        { using type = __alt1_detector<_T, _U>; static constexpr bool value = is_convertible<_A, type>::value && is_convertible<_B, type>::value; };
-    template <class _T, class _U> struct __alt2_type
-        { using type = __alt2_detector<_T, _U>; static constexpr bool value = is_convertible<_A, type>::value; };
-    template <class _T, class _U> struct __alt3_type
-        { using type = __alt3_detector<_T, _U>; static constexpr bool value = true; };
-
-    static constexpr bool __use_alt0 =
-        conjunction_v<is_lvalue_reference<_A>, is_lvalue_reference<_B>, is_detected<__alt0_detector, _X, _Y>, __alt0_type<_X, _Y>>;
-    static constexpr bool __use_alt1 =
-        conjunction_v<bool_constant<!__use_alt0>, is_rvalue_reference<_A>, is_rvalue_reference<_B>, is_detected<__alt1_detector, _X, _Y>, __alt1_type<_X, _Y>>;
-    static constexpr bool __use_alt2 =
-        conjunction_v<bool_constant<!__use_alt0 && !__use_alt1>, is_rvalue_reference<_A>, is_lvalue_reference<_B>, is_detected<__alt2_detector, _X, _Y>, __alt2_type<_X, _Y>>;
-    static constexpr bool __use_alt3 =
-        conjunction_v<bool_constant<!__use_alt0 && !__use_alt1 && !__use_alt2>, is_lvalue_reference<_A>, is_rvalue_reference<_B>, is_detected<__alt3_detector, _A, _B>, __alt3_type<_A, _B>>;
-    static constexpr bool __has_type = __use_alt0 || __use_alt1 || __use_alt2 || __use_alt3;
-
-    //static_assert(__has_type, "instantiation of __common_ref is ill-formed");
-
-    struct __alt0 { static constexpr bool value = __use_alt0; template <class _T = _X, class _U = _Y> using __type = __alt0_detector<_T, _U>; };
-    struct __alt1 { static constexpr bool value = __use_alt1; template <class _T = _X, class _U = _Y> using __type = __alt1_detector<_T, _U>; };
-    struct __alt2 { static constexpr bool value = __use_alt2; template <class _T = _X, class _U = _Y> using __type = __alt2_detector<_T, _U>; };
-    struct __alt3 { static constexpr bool value = __use_alt3; template <class _T = _A, class _U = _B> using __type = __alt3_detector<_T, _U>; };
-
-    using type = typename disjunction<__alt0, __alt1, __alt2, __alt3>::template __type<>;
-};
-
 template <class... _Types> using __common_reference_detector = typename common_reference<_Types...>::type;
 
 template <class _T0, class _T1>
 struct __common_reference_dual_helper : __common_type_utils
 {
-    template <class _X, class _Y> using __alt0_detector = typename _COMMON_REF<_X, _Y>::type;
-    template <class _X, class _Y> using __alt1_detector = typename basic_common_reference<typename remove_cvref<_X>::type, typename remove_cvref<_Y>::type, _XREF<_X>::template __type, _XREF<_Y>::template __type>::type;
-    template <class _X, class _Y> using __alt2_detector = _COND_RES<_X, _Y>;
-    template <class _X, class _Y> using __alt3_detector = typename common_type<_X, _Y>::type;
+    template <class _X, class _Y> using __alt0_t = typename _COMMON_REF<_X, _Y>::type;
+    template <class _X, class _Y> using __alt1_t = typename basic_common_reference<typename remove_cvref<_X>::type, typename remove_cvref<_Y>::type, _XREF<_X>::template __type, _XREF<_Y>::template __type>::type;
+    template <class _X, class _Y> using __alt2_t = _COND_RES<_X, _Y>;
+    template <class _X, class _Y> using __alt3_t = typename common_type<_X, _Y>::type;
 
-    static constexpr bool __use_alt0 = conjunction_v<is_reference<_T0>, is_reference<_T1>, is_detected<__alt0_detector, _T0, _T1>>;
-    static constexpr bool __use_alt1 = conjunction_v<bool_constant<!__use_alt0>, is_detected<__alt1_detector, _T0, _T1>>;
-    static constexpr bool __use_alt2 = conjunction_v<bool_constant<!__use_alt0 && !__use_alt1>, is_detected<__alt2_detector, _T0, _T1>>;
-    static constexpr bool __use_alt3 = conjunction_v<bool_constant<!__use_alt0 && !__use_alt1 && !__use_alt2>, is_detected<__alt3_detector, _T0, _T1>>;
+    static constexpr bool __use_alt0 = is_reference<_T0>::value && is_reference<_T1>::value && _COMMON_REF<_T0, _T1>::__has_type && requires { typename __alt0_t<_T0, _T1>; };
+    static constexpr bool __use_alt1 = !__use_alt0 && requires { typename __alt1_t<_T0, _T1>; };
+    static constexpr bool __use_alt2 = !__use_alt0 && !__use_alt1 && requires { typename __alt2_t<_T0, _T1>; };
+    static constexpr bool __use_alt3 = !__use_alt0 && !__use_alt1 && !__use_alt2 && requires { typename __alt3_t<_T0, _T1>; };
     static constexpr bool __has_type = __use_alt0 || __use_alt1 || __use_alt2 || __use_alt3;
 
-    struct __alt0 { static constexpr bool value = __use_alt0; template <class _X, class _Y> using __type = __alt0_detector<_X, _Y>; };
-    struct __alt1 { static constexpr bool value = __use_alt1; template <class _X, class _Y> using __type = __alt1_detector<_X, _Y>; };
-    struct __alt2 { static constexpr bool value = __use_alt2; template <class _X, class _Y> using __Type = __alt2_detector<_X, _Y>; };
-    struct __alt3 { static constexpr bool value = __use_alt3; template <class _X, class _Y> using __type = __alt3_detector<_X, _Y>; };
+    struct __alt0 { static constexpr bool value = __use_alt0; template <class _X, class _Y> using __type = __alt0_t<_X, _Y>; };
+    struct __alt1 { static constexpr bool value = __use_alt1; template <class _X, class _Y> using __type = __alt1_t<_X, _Y>; };
+    struct __alt2 { static constexpr bool value = __use_alt2; template <class _X, class _Y> using __Type = __alt2_t<_X, _Y>; };
+    struct __alt3 { static constexpr bool value = __use_alt3; template <class _X, class _Y> using __type = __alt3_t<_X, _Y>; };
 
     template <class _X = _T0, class _Y = _T1>
-    using __type = typename disjunction<__alt0, __alt1, __alt2, __alt3, nonesuch>::template __type<_X, _Y>;
+    using __type = typename disjunction<__alt0, __alt1, __alt2, __alt3>::template __type<_X, _Y>;
 };
 
 template <class _T0, class _T1, bool = __common_reference_dual_helper<_T0, _T1>::__has_type>
@@ -485,7 +510,7 @@ template <class _T> struct underlying_type : __detail::underlying_type<_T> {};
 template <class _T> using underlying_type_t = typename underlying_type<_T>::type;
 
 
-} // namespace __XVI_STD_TYPETRAITS_NS
+} // namespace __XVI_STD_TYPETRAITS_NS_DECL
 
 
 #endif /* ifndef __SYSTEM_CXX_TYPETRAITS_PRIVATE_TRANSFORMS_H */

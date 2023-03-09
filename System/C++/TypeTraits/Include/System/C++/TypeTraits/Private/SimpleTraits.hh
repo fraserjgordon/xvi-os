@@ -10,7 +10,7 @@
 #include <System/C++/TypeTraits/Private/Transforms.hh>
 
 
-namespace __XVI_STD_TYPETRAITS_NS
+namespace __XVI_STD_TYPETRAITS_NS_DECL
 {
 
 
@@ -568,7 +568,7 @@ template <class _T, class _U> struct reference_converts_from_temporary : __detai
 template <class _T, class _U> inline constexpr bool reference_converts_from_temporary_v = reference_converts_from_temporary<_T, _U>::value;
 
 
-} // namespace __XVI_STD_TYPETRAITS_NS
+} // namespace __XVI_STD_TYPETRAITS_NS_DECL
 
 
 #endif /* ifndef __SYSTEM_CXX_TYPETRAITS_PRIVATE_SIMPLETRAITS_H */

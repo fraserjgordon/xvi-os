@@ -9,7 +9,7 @@
 #include <System/C++/TypeTraits/Private/Namespace.hh>
 
 
-namespace __XVI_STD_TYPETRAITS_NS
+namespace __XVI_STD_TYPETRAITS_NS_DECL
 {
 
 
@@ -84,7 +84,7 @@ template <class _S, class _M> constexpr bool is_pointer_interconvertible_with_cl
 template <class _S1, class _S2, class _M1, class _M2> constexpr bool is_corresponding_member(_M1 _S1::*__m1, _M2 _S2::*__m2) noexcept;
 
 
-} // namespace __XVI_STD_TYPETRAITS_NS
+} // namespace __XVI_STD_TYPETRAITS_NS_DECL
 
 
 #endif /* ifndef __SYSTEM_CXX_TYPETRAITS_PRIVATE_RELATIONS_H */

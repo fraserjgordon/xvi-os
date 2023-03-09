@@ -10,7 +10,7 @@
 #include <System/C++/LanguageSupport/Private/Namespace.hh>
 
 
-namespace __XVI_STD_LANGSUPPORT_NS
+namespace __XVI_STD_LANGSUPPORT_NS_DECL
 {
 
 
@@ -608,7 +608,7 @@ using __synth_three_way_result = decltype(__synth_three_way(declval<_T&>(), decl
 } // namespace __detail
 
 
-} // namespace __XVI_STD_LANGSUPPORT_NS
+} // namespace __XVI_STD_LANGSUPPORT_NS_DECL
 
 
 #endif /* ifndef __SYSTEM_CXX_LANGUAGESUPPORT_COMPARE_H */

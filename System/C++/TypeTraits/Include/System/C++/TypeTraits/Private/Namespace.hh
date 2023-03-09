@@ -10,12 +10,24 @@
 
 #if !defined(__XVI_STD_TYPETRAITS_NS)
 #  if defined (__XVI_STD_NS)
-#    define __XVI_STD_TYPETRAITS_NS __XVI_STD_NS
+#   define __XVI_STD_TYPETRAITS_NS      __XVI_STD_NS
 #  else
-#    define __XVI_STD_NS            std/*::inline __xvi_cxx_v0*/
-#    define __XVI_STD_TYPETRAITS_NS __XVI_STD_NS
+#    define __XVI_STD_NS                std
+#    define __XVI_STD_TYPETRAITS_NS     __XVI_STD_NS
 #  endif
 #endif
+
+#define __XVI_STD_TYPETRAITS_NS_CXX_VER __cxx23
+#define __XVI_STD_TYPETRAITS_ABI_TAG    [[gnu::abi_tag("cxx23")]]
+#define __XVI_STD_TYPETRAITS_NS_DECL    __XVI_STD_TYPETRAITS_NS::inline __XVI_STD_TYPETRAITS_NS_CXX_VER
+
+
+namespace __XVI_STD_TYPETRAITS_NS
+{
+
+inline namespace __XVI_STD_TYPETRAITS_ABI_TAG __XVI_STD_TYPETRAITS_NS_CXX_VER {}
+
+}
 
 
 #endif /* ifndef __SYSTEM_CXX_TYPETRAITS_PRIVATE_NAMESPACE_H */

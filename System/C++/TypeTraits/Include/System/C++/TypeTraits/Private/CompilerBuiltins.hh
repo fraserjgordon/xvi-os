@@ -6,7 +6,7 @@
 #include <System/C++/TypeTraits/Private/IntegralConstant.hh>
 
 
-namespace __XVI_STD_TYPETRAITS_NS
+namespace __XVI_STD_TYPETRAITS_NS_DECL
 {
 
 
@@ -109,7 +109,7 @@ constexpr bool is_constant_evaluated() noexcept
 }
 
 
-} // namespace __XVI_STD_TYPETRAITS_NS
+} // namespace __XVI_STD_TYPETRAITS_NS_DECL
 
 
 #endif /* ifndef __SYSTEM_CXX_TYPETRAITS_PRIVATE_COMPILERBUILTINS_H */

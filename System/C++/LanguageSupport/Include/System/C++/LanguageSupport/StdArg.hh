@@ -14,14 +14,14 @@
 #define va_start(va, param)     __varargs_start(va, param)
 
 
-namespace __XVI_STD_LANGSUPPORT_NS
+namespace __XVI_STD_LANGSUPPORT_NS_DECL
 {
 
 
 using va_list = __varargs_va_list;
 
 
-} // namespace __XVI_STD_LANGSUPPORT_NS
+} // namespace __XVI_STD_LANGSUPPORT_NS_DECL
 
 
 #endif /* ifndef __SYSTEM_CXX_LANGUAGESUPPORT_STDARG_H */

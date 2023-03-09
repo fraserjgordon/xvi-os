@@ -7,7 +7,7 @@
 #include <System/C++/TypeTraits/Private/VoidT.hh>
 
 
-namespace __XVI_STD_TYPETRAITS_NS
+namespace __XVI_STD_TYPETRAITS_NS_DECL
 {
 
 
@@ -16,10 +16,10 @@ template <class, class> struct is_same;
 template <class, class> struct is_convertible;
 
 
-} // namespace __XVI_STD_TYPETRAITS_NS
+} // namespace __XVI_STD_TYPETRAITS_NS_DECL
 
 
-namespace __XVI_STD_TYPETRAITS_NS::__detail
+namespace __XVI_STD_TYPETRAITS_NS_DECL::__detail
 {
 
 
@@ -85,10 +85,10 @@ template <class _To, template <class...> class _Op, class... _Args>
 inline constexpr bool is_detected_convertible_v = is_detected_convertible<_To, _Op, _Args...>::value;
 
 
-} // namespace __XVI_STD_TYPETRAITS_NS::__detail
+} // namespace __XVI_STD_TYPETRAITS_NS_DECL::__detail
 
 
-namespace __XVI_STD_TYPETRAITS_NS::experimental
+namespace __XVI_STD_TYPETRAITS_NS_DECL::experimental
 {
 inline namespace fundamentals_v3
 {
@@ -107,7 +107,7 @@ using ::__XVI_STD_TYPETRAITS_NS::__detail::is_detected_convertible_v;
 
 
 } // inline namespace fundamentals_v3
-} // namespace __XVI_STD_TYPETRAITS_NS::experimental
+} // namespace __XVI_STD_TYPETRAITS_NS_DECL::experimental
 
 
 #endif /* ifndef __SYSTEM_CXX_TYPETRAITS_PRIVATE_DETECT_H */

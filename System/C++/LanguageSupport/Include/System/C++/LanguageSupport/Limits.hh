@@ -6,7 +6,7 @@
 #include <System/C++/LanguageSupport/Private/Namespace.hh>
 
 
-namespace __XVI_STD_LANGSUPPORT_NS
+namespace __XVI_STD_LANGSUPPORT_NS_DECL
 {
 
 
@@ -193,7 +193,7 @@ template <class _T> struct numeric_limits<volatile _T> : numeric_limits<_T> {};
 template <class _T> struct numeric_limits<const volatile _T> : numeric_limits<_T> {};
 
 
-} // namespace __XVI_STD_LANGSUPPORT_NS
+} // namespace __XVI_STD_LANGSUPPORT_NS_DECL
 
 
 #endif /* ifndef __SYSTEM_CXX_LANGUAGESUPPORT_LIMITS_H */

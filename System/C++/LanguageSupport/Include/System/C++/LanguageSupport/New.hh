@@ -16,7 +16,7 @@
 #if !__XVI_HOSTED
 namespace std
 #else
-namespace __XVI_STD_LANGSUPPORT_NS
+namespace __XVI_STD_LANGSUPPORT_NS_DECL
 #endif
 {
 
@@ -27,10 +27,10 @@ enum class align_val_t : __XVI_STD_NS::size_t {};
 struct nothrow_t { explicit nothrow_t() = default; };
 
 
-} // namespace std OR namespace __XVI_STD_LANGSUPPORT_NS
+} // namespace std OR namespace __XVI_STD_LANGSUPPORT_NS_DECL
 
 
-namespace __XVI_STD_LANGSUPPORT_NS
+namespace __XVI_STD_LANGSUPPORT_NS_DECL
 {
 
 
@@ -62,7 +62,7 @@ template <class _T>
 //inline constexpr size_t hardware_destructive_interference_size = ?
 
 
-} // namespace __XVI_STD_LANGSUPPORT_NS
+} // namespace __XVI_STD_LANGSUPPORT_NS_DECL
 
 
 #ifndef __XVI_HOSTED

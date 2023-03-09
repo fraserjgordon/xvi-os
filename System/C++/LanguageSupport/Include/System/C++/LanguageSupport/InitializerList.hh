@@ -8,7 +8,7 @@
 
 
 // Note that initializer_list is magic and won't be used if this namespace isn't "std".
-namespace __XVI_STD_LANGSUPPORT_NS
+namespace __XVI_STD_LANGSUPPORT_NS_DECL
 {
 
 
@@ -52,7 +52,7 @@ template <class _E> constexpr const _E* end(initializer_list<_E> __il) noexcept
     { return __il.end(); }
 
 
-} // namespace __XVI_STD_LANGSUPPORT_NS
+} // namespace __XVI_STD_LANGSUPPORT_NS_DECL
 
 
 #endif /* ifndef __SYSTEM_CXX_LANGUAGESUPPORT_INITIALIZERLIST_H */

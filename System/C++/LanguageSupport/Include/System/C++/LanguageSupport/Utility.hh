@@ -8,14 +8,34 @@
 #include <System/C++/LanguageSupport/Private/Namespace.hh>
 
 
-namespace __XVI_STD_LANGSUPPORT_NS
+namespace __XVI_STD_LANGSUPPORT_NS_DECL
 {
+
+
+namespace __detail
+{
+
+
+template <class _A, class _B> using __copy_const = __XVI_STD_NS::conditional_t<__XVI_STD_NS::is_const_v<_A>, const _B, _B>;
+
+template <class _A, class _B> using __override_ref = __XVI_STD_NS::conditional_t<__XVI_STD_NS::is_rvalue_reference_v<_A>, __XVI_STD_NS::remove_reference_t<_B>&&, _B&>;
+
+
+} // namespace __detail
 
 
 template <class _T> constexpr _T&& forward(remove_reference_t<_T>& __t) noexcept
     { return static_cast<_T&&>(__t); }
 template <class _T> constexpr _T&& forward(remove_reference_t<_T>&& __t) noexcept
     { return static_cast<_T&&>(__t); }
+
+template <class _T, class _U>
+[[nodiscard]] constexpr auto forward_like(_U&& __x) noexcept
+{
+    using _V = __detail::__override_ref<_T&&, __detail::__copy_const<__XVI_STD_NS::remove_reference_t<_T>, __XVI_STD_NS::remove_reference_t<_U>>>;
+
+    return static_cast<_V>(__x);
+}
 
 template <class _T> constexpr remove_reference_t<_T>&& move(_T&& __t) noexcept
     { return static_cast<remove_reference_t<_T>&&>(__t); }
@@ -50,7 +70,7 @@ constexpr std::underlying_type_t<_T> to_underlying(_T __value) noexcept
 }
 
 
-} // namespace __XVI_STD_LANGSUPPORT_NS
+} // namespace __XVI_STD_LANGSUPPORT_NS_DECL
 
 
 #endif /* ifndef __SYSTEM_CXX_LANGUAGESUPPORT_UTILITY_H */
