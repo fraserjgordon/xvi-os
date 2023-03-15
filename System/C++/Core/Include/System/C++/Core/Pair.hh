@@ -48,16 +48,14 @@ struct pair
     using first_type = _T1;
     using second_type = _T2;
 
-    _T1 first;
-    _T2 second;
+    _T1 first {};
+    _T2 second {};
 
     constexpr 
     explicit(!__detail::__is_implicit_default_constructible_v<first_type> || !__detail::__is_implicit_default_constructible_v<second_type>)
     pair()
         requires __XVI_STD_NS::is_default_constructible_v<first_type> && __XVI_STD_NS::is_default_constructible_v<second_type>
-        : first{}, second{}
-    {
-    }
+        = default;
 
     pair(const pair&) = default;
     pair(pair&&) = default;

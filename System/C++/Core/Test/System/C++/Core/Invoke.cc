@@ -102,7 +102,9 @@ TEST(Invoke, MemberDataPtrSmartPointer)
 
 TEST(Invoke, FunctionObject)
 {
-    auto lambda = [](int x) { return x; };
+    auto lambda0 = [] { return 7; };
+    auto lambda1 = [](int x) { return x; };
 
-    EXPECT_EQ(invoke(lambda, 42), 42);
+    EXPECT_EQ(invoke(lambda0), 7);
+    EXPECT_EQ(invoke(lambda1, 42), 42);
 }

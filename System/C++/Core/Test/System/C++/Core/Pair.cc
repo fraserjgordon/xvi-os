@@ -446,7 +446,9 @@ TEST(Pair, ConstAssignPairlike)
 
 TEST(Pair, Swap)
 {
+    struct nonmove { void operator=(nonmove&&) = delete; };
     using T = pair<int, int>;
+    using U = pair<int, nonmove>;
 
     T one(1, 2);
     T two(3, 4);
@@ -457,11 +459,14 @@ TEST(Pair, Swap)
     EXPECT_EQ(one.second, 4);
     EXPECT_EQ(two.first, 1);
     EXPECT_EQ(two.second, 2);
+
+    EXPECT(!std::is_swappable_v<U>);
 }
 
 TEST(Pair, ConstSwap)
 {
     using T = pair<int&, int&>;
+    using U = pair<int, int>;
 
     int a = 1;
     int b = 2;
@@ -477,6 +482,8 @@ TEST(Pair, ConstSwap)
     EXPECT_EQ(b, 4);
     EXPECT_EQ(c, 1);
     EXPECT_EQ(d, 2);
+
+    EXPECT(!std::is_swappable_v<const U>);
 }
 
 TEST(Pair, DeductionGuide)
