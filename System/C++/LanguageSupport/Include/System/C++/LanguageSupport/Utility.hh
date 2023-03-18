@@ -47,19 +47,19 @@ move_if_noexcept(_T& __x)
     if constexpr (!is_nothrow_move_constructible_v<_T> && is_copy_constructible_v<_T>)
         return __x;
     else
-        return std::move(__x);
+        return __XVI_STD_NS::move(__x);
 }
 
 template <class _T>
-constexpr std::add_const_t<_T>& as_const(_T& __t) noexcept
+constexpr add_const_t<_T>& as_const(_T& __t) noexcept
 {
     return __t;
 }
 
 template <class _T>
-constexpr std::underlying_type_t<_T> to_underlying(_T __value) noexcept
+constexpr underlying_type_t<_T> to_underlying(_T __value) noexcept
 {
-    return static_cast<std::underlying_type_t<_T>>(__value);
+    return static_cast<underlying_type_t<_T>>(__value);
 }
 
 [[noreturn]] inline void unreachable()

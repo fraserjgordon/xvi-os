@@ -15,14 +15,17 @@ library("Core")
     public_headers =
     [
         "AddressOf.hh",
+        "Any.hh",
         "CtorTags.hh",
         "IntegerSequence.hh",
         "Invoke.hh",
+        "Optional.hh",
         "Pair.hh",
         "ReferenceWrapper.hh",
         "Swap.hh",
         "Tuple.hh",
         "TupleTraits.hh",
+        "Variant.hh",
 
         "Private/Config.hh",
     ]
@@ -30,11 +33,14 @@ library("Core")
     test_sources =
     [
         "AddressOf.cc",
+        "Any.cc",
         "IntegerSequence.cc",
         "Invoke.cc",
+        "Optional.cc",
         "Pair.cc",
         "ReferenceWrapper.cc",
         "Swap.cc",
         "Tuple.cc",
+        "Variant.cc",
     ]
 }

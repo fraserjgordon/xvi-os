@@ -9,7 +9,7 @@ library("Utility")
     header_deps =
     [
         "../Atomic",
-        "../Core",
+        "../Core:Core_headers",
         "../LanguageSupport:LanguageSupport_headers",
         "../TypeTraits",
 

@@ -79,7 +79,7 @@ concept assignable_from = is_lvalue_reference_v<_LHS>
     && common_reference_with<const remove_reference_t<_LHS>&, const remove_reference_t<_RHS>&>
     && requires(_LHS __lhs, _RHS&& __rhs)
     {
-        { __lhs = std::forward<_RHS>(__rhs) } -> same_as<_LHS>;
+        { __lhs = __XVI_STD_NS::forward<_RHS>(__rhs) } -> same_as<_LHS>;
     };
 
 template <class _T>
@@ -133,7 +133,7 @@ template <class _T>
 concept __boolean_testable = __boolean_testable_impl<_T>
     && requires (_T&& __t)
     {
-        { !std::forward<_T>(__t) } -> __boolean_testable_impl;
+        { !__XVI_STD_NS::forward<_T>(__t) } -> __boolean_testable_impl;
     };
 
 template <class _T, class _U, class _C = common_reference_t<const _T&, const _U&>>

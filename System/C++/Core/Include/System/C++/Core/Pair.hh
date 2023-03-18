@@ -27,16 +27,6 @@ template <size_t, class> struct tuple_element;
 namespace __detail
 {
 
-template <class _T> void __implicit_default_construct_detect_fn(const _T&);
-template <class _T> using __implicit_default_construct_detect = decltype(__implicit_default_construct_detect_fn<_T>({}));
-template <class _T> struct __is_implicit_default_constructible : bool_constant<is_detected_v<__implicit_default_construct_detect, _T>> {};
-template <class _T> inline constexpr bool __is_implicit_default_constructible_v = __is_implicit_default_constructible<_T>::value;
-
-template <class _T> void __implicit_construct_detect_fn(const _T&);
-template <class _T, class... _Args> using __implicit_construct_detect = decltype(__implicit_construct_detect_fn<_T>({declval<_Args>()...}));
-template <class _T, class... _Args> struct __is_implicit_constructible : bool_constant<is_detected_v<__implicit_construct_detect, _T, _Args...>> {};
-template <class _T, class... _Args> inline constexpr bool __is_implicit_constructible_v = __is_implicit_constructible<_T, _Args...>::value;
-
 template <class> struct __is_ranges_subrange_specialisation : false_type {};
 
 } // namespace __detail

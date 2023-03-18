@@ -36,6 +36,16 @@ template <size_t _I> inline constexpr in_place_index_t<_I> in_place_index {};
 namespace __detail
 {
 
+template <class _T> void __implicit_default_construct_detect_fn(const _T&);
+template <class _T> using __implicit_default_construct_detect = decltype(__implicit_default_construct_detect_fn<_T>({}));
+template <class _T> struct __is_implicit_default_constructible : bool_constant<is_detected_v<__implicit_default_construct_detect, _T>> {};
+template <class _T> inline constexpr bool __is_implicit_default_constructible_v = __is_implicit_default_constructible<_T>::value;
+
+template <class _T> void __implicit_construct_detect_fn(const _T&);
+template <class _T, class... _Args> using __implicit_construct_detect = decltype(__implicit_construct_detect_fn<_T>({declval<_Args>()...}));
+template <class _T, class... _Args> struct __is_implicit_constructible : bool_constant<is_detected_v<__implicit_construct_detect, _T, _Args...>> {};
+template <class _T, class... _Args> inline constexpr bool __is_implicit_constructible_v = __is_implicit_constructible<_T, _Args...>::value;
+
 template <class _T> struct __is_in_place_type_specialization : false_type {};
 template <class _T> struct __is_in_place_type_specialization<in_place_type_t<_T>> : true_type {};
 template <class _T> inline constexpr bool __is_in_place_type_specialization_v = __is_in_place_type_specialization<_T>::value;
