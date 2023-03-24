@@ -76,6 +76,10 @@ namespace __detail
 {
 
 
+template <class _T> struct __is_pair_specialization : false_type {};
+template <class _T, class _U> struct __is_pair_specialization<pair<_T, _U>> : true_type {};
+template <class _T> inline constexpr bool __is_pair_specialization_v = __is_pair_specialization<_T>::value;
+
 template <class _T> struct __is_tuple_specialisation : false_type {};
 template <class... _Types> struct __is_tuple_specialisation<tuple<_Types...>> : true_type {};
 

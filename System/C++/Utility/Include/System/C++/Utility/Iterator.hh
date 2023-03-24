@@ -3,6 +3,7 @@
 #define __SYSTEM_CXX_UTILITY_ITERATOR_H
 
 
+#include <System/C++/Core/IteratorTraits.hh>
 #include <System/C++/LanguageSupport/Compare.hh>
 #include <System/C++/LanguageSupport/InitializerList.hh>
 #include <System/C++/LanguageSupport/Limits.hh>
@@ -236,14 +237,6 @@ concept __cpp17_random_access_iterator = __cpp17_bidirectional_iterator<_I>
     };
 
 } // namespace __detail
-
-
-struct input_iterator_tag {};
-struct output_iterator_tag {};
-struct forward_iterator_tag : public input_iterator_tag {};
-struct bidirectional_iterator_tag : public forward_iterator_tag {};
-struct random_access_iterator_tag : public bidirectional_iterator_tag {};
-struct contiguous_iterator_tag : public random_access_iterator_tag {};
 
 
 namespace __detail

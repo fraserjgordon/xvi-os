@@ -76,8 +76,8 @@ public:
 
 protected:
 
-    virtual void __prepare(__any_storage_t&) const;
-    virtual void __cleanup(__any_storage_t&) const;
+    virtual void __prepare(__any_storage_t&) const = 0;
+    virtual void __cleanup(__any_storage_t&) const = 0;
 };
 
 template <class _T, 
@@ -303,7 +303,7 @@ public:
         reset();
         __detail::__any_utils<_VT> __utils;
         __utils.template __emplace<_VT>(_M_data_storage, __XVI_STD_NS::forward<_Args>(__args)...);
-        __set_utils<_VT>(_M_utils_storage);
+        __set_utils<_VT>();
         return *reinterpret_cast<_VT*>(__get_utils()->__ptr(_M_data_storage));
     }
 
@@ -316,7 +316,7 @@ public:
         reset();
         __detail::__any_utils<_VT> __utils;
         __utils.template __emplace<_VT>(_M_data_storage, __il, __XVI_STD_NS::forward<_Args>(__args)...);
-        __set_utils<_VT>(_M_utils_storage);
+        __set_utils<_VT>();
         return *reinterpret_cast<_VT*>(__get_utils()->__ptr(_M_data_storage));
     }
 
@@ -335,7 +335,7 @@ public:
 
     bool has_value() const noexcept
     {
-        return type() == typeid(void);
+        return type() != typeid(void);
     }
 
     const type_info& type() const noexcept

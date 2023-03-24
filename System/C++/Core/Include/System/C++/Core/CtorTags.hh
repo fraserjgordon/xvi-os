@@ -3,6 +3,7 @@
 
 
 #include <System/C++/LanguageSupport/StdDef.hh>
+#include <System/C++/TypeTraits/TypeTraits.hh>
 
 #include <System/C++/Core/Private/Config.hh>
 
@@ -55,6 +56,13 @@ template <size_t _I> struct __is_in_place_index_specialization<in_place_index_t<
 template <class _T> inline constexpr bool __is_in_place_index_specialization_v = __is_in_place_index_specialization<_T>::value;
 
 template <class _T> inline constexpr bool __is_in_place_specialization_v = __is_in_place_type_specialization_v<_T> || __is_in_place_index_specialization_v<_T>;
+
+template <class _T, class _W>
+constexpr bool __converts_from_any_cvref = disjunction_v<
+    is_constructible<_T, _W&>, is_convertible<_W&, _T>,
+    is_constructible<_T, _W>, is_convertible<_W, _T>,
+    is_constructible<_T, const _W&>, is_convertible<const _W&, _T>,
+    is_constructible<_T, const _W&&>, is_convertible<const _W, _T>>;
 
 } // namespace __detail
 

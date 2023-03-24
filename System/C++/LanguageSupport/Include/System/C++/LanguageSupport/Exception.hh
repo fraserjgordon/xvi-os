@@ -36,7 +36,7 @@ __SYSTEM_CXX_LANGUAGESUPPORT_EXPORT [[deprecated]] unexpected_handler get_unexpe
 
 __SYSTEM_CXX_LANGUAGESUPPORT_EXPORT int uncaught_exceptions() noexcept;
 
-[[deprecated]]
+[[deprecated("use std::uncaught_exceptions")]]
 inline bool uncaught_exception() noexcept
 {
     return uncaught_exceptions() > 0;
@@ -50,9 +50,10 @@ public:
     exception() noexcept = default;
     exception(const exception&) noexcept = default;
     exception& operator= (const exception&) noexcept = default;
-    virtual ~exception();
+    virtual ~exception() = default;
 
-    virtual const char* what() const noexcept;
+    inline virtual const char* what() const noexcept
+        { return "std::exception"; }
 };
 
 __SYSTEM_CXX_LANGUAGESUPPORT_EXPORT class bad_exception : public exception

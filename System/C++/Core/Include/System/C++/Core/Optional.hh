@@ -33,14 +33,6 @@ concept __is_derived_from_optional = requires (const _T& __t)
     { []<class _U>(const optional<_U>&){}(__t); };
 
 
-template <class _T, class _W>
-constexpr bool __converts_from_any_cvref = disjunction_v<
-    is_constructible<_T, _W&>, is_convertible<_W&, _T>,
-    is_constructible<_T, _W>, is_convertible<_W, _T>,
-    is_constructible<_T, const _W&>, is_convertible<const _W&, _T>,
-    is_constructible<_T, const _W&&>, is_convertible<const _W, _T>>;
-
-
 template <class _T>
 struct __optional_storage
 {
