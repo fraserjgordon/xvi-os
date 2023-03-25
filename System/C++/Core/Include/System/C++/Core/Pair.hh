@@ -142,7 +142,7 @@ struct pair
 
     template <__detail::__pair_like _P>
     constexpr 
-    explicit(!is_convertible_v<decltype(get<0>(declval<_P>())), first_type> || !is_convertible_v<decltype(get<2>(declval<_P>())), second_type>)
+    explicit(!is_convertible_v<decltype(get<0>(declval<_P>())), first_type> || !is_convertible_v<decltype(get<1>(declval<_P>())), second_type>)
     pair(_P&& __p)
         requires (!__detail::__is_ranges_subrange_specialisation<_P>::value)
             && __XVI_STD_NS::is_constructible_v<first_type, decltype(get<0>(static_cast<decltype(__p)>(__p)))>

@@ -14,5 +14,5 @@ if [ ! -z "$1" ] ; then
     ARCHS="${ARCHS}]"
 fi
 
-gn gen --check out-clang --args="cross_toolchain_root=\"${TOOLCHAIN_ROOT}\" enable_archs=${ARCHS} use_clang=true" --export-compile-commands
+gn gen --check out-clang --args="cross_toolchain_root=\"${TOOLCHAIN_ROOT}\" enable_archs=${ARCHS} host_toolchain_root=\"${TOOLCHAIN_ROOT}\" use_clang=true" --export-compile-commands
 

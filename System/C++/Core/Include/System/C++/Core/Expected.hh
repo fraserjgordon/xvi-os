@@ -18,6 +18,27 @@ namespace __XVI_STD_CORE_NS_DECL
 {
 
 
+// Forward declarations.
+template <class, class> class expected;
+
+
+namespace __detail
+{
+
+
+struct __expected_void_value_type {};
+
+
+template <class> struct __is_expected_specialization : false_type {};
+
+template <class _T, class _E> struct __is_expected_specialization<expected<_T, _E>> : true_type {};
+
+template <class _T> concept __expected_specialization = __is_expected_specialization<_T>::value;
+
+
+} // namespace __detail
+
+
 template <class _E>
 class unexpected
 {
@@ -876,10 +897,11 @@ public:
         requires is_copy_constructible_v<_E>
     {
         using _U = remove_cvref_t<invoke_result_t<_F, decltype(value())>>;
+        static_assert(__detail::__expected_specialization<_U>);
         static_assert(is_same_v<typename _U::error_type, _E>);
 
         if (has_value())
-            return invoke(__XVI_STD_NS::forward<_F>(__f), value());
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), value());
         else
             return _U(unexpect, error());
     }
@@ -889,10 +911,11 @@ public:
         requires is_copy_constructible_v<_E>
     {
         using _U = remove_cvref_t<invoke_result_t<_F, decltype(value())>>;
+        static_assert(__detail::__expected_specialization<_U>);
         static_assert(is_same_v<typename _U::error_type, _E>);
 
         if (has_value())
-            return invoke(__XVI_STD_NS::forward<_F>(__f), value());
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), value());
         else
             return _U(unexpect, error());
     }
@@ -902,10 +925,11 @@ public:
         requires is_move_constructible_v<_E>
     {
         using _U = remove_cvref_t<invoke_result_t<_F, decltype(__XVI_STD_NS::move(value()))>>;
+        static_assert(__detail::__expected_specialization<_U>);
         static_assert(is_same_v<typename _U::error_type, _E>);
 
         if (has_value())
-            return invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(value()));
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(value()));
         else
             return _U(unexpect, std::move(error()));
     }
@@ -915,12 +939,197 @@ public:
         requires is_move_constructible_v<_E>
     {
         using _U = remove_cvref_t<invoke_result_t<_F, decltype(__XVI_STD_NS::move(value()))>>;
+        static_assert(__detail::__expected_specialization<_U>);
         static_assert(is_same_v<typename _U::error_type, _E>);
 
         if (has_value())
-            return invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(value()));
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(value()));
         else
             return _U(unexpect, std::move(error()));
+    }
+
+    template <class _F>
+    constexpr auto or_else(_F&& __f) &
+        requires is_copy_constructible_v<_T>
+    {
+        using _G = remove_cvref_t<invoke_result_t<_F, decltype(error())>>;
+        static_assert(__detail::__expected_specialization<_G>);
+        static_assert(is_same_v<typename _G::value_type, _T>);
+
+        if (has_value())
+            return _G(in_place, value());
+        else
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), error());
+    }
+
+    template <class _F>
+    constexpr auto or_else(_F&& __f) const &
+        requires is_copy_constructible_v<_T>
+    {
+        using _G = remove_cvref_t<invoke_result_t<_F, decltype(error())>>;
+        static_assert(__detail::__expected_specialization<_G>);
+        static_assert(is_same_v<typename _G::value_type, _T>);
+
+        if (has_value())
+            return _G(in_place, value());
+        else
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), error());
+    }
+
+    template <class _F>
+    constexpr auto or_else(_F&& __f) &&
+        requires is_move_constructible_v<_T>
+    {
+        using _G = remove_cvref_t<invoke_result_t<_F, decltype(__XVI_STD_NS::move(error()))>>;
+        static_assert(__detail::__expected_specialization<_G>);
+        static_assert(is_same_v<typename _G::value_type, _T>);
+
+        if (has_value())
+            return _G(in_place, __XVI_STD_NS::move(value()));
+        else
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(error()));
+    }
+
+    template <class _F>
+    constexpr auto or_else(_F&& __f) const &&
+        requires is_move_constructible_v<_T>
+    {
+        using _G = remove_cvref_t<invoke_result_t<_F, decltype(__XVI_STD_NS::move(error()))>>;
+        static_assert(__detail::__expected_specialization<_G>);
+        static_assert(is_same_v<typename _G::value_type, _T>);
+
+        if (has_value())
+            return _G(in_place, __XVI_STD_NS::move(value()));
+        else
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(error()));
+    }
+
+    template <class _F>
+    constexpr auto transform(_F&& __f) &
+        requires is_copy_constructible_v<_E>
+    {
+        using _U = remove_cv_t<invoke_result_t<_F, decltype(value())>>;
+
+        if (!has_value())
+            return expected<_U, _E>(unexpect, error());
+
+        if constexpr (!is_void_v<_U>)
+        {
+            return expected<_U, _E>(in_place, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), value()));
+        }
+        else
+        {
+            __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), value());
+            return expected<_U, _E>();
+        }
+    }
+
+    template <class _F>
+    constexpr auto transform(_F&& __f) const &
+        requires is_copy_constructible_v<_E>
+    {
+        using _U = remove_cv_t<invoke_result_t<_F, decltype(value())>>;
+
+        if (!has_value())
+            return expected<_U, _E>(unexpect, error());
+
+        if constexpr (!is_void_v<_U>)
+        {
+            return expected<_U, _E>(in_place, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), value()));
+        }
+        else
+        {
+            __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), value());
+            return expected<_U, _E>();
+        }
+    }
+
+    template <class _F>
+    constexpr auto transform(_F&& __f) &&
+        requires is_move_constructible_v<_E>
+    {
+        using _U = remove_cv_t<invoke_result_t<_F, decltype(__XVI_STD_NS::move(value()))>>;
+
+        if (!has_value())
+            return expected<_U, _E>(unexpect, __XVI_STD_NS::move(error()));
+
+        if constexpr (!is_void_v<_U>)
+        {
+            return expected<_U, _E>(in_place, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(value())));
+        }
+        else
+        {
+            __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(value()));
+            return expected<_U, _E>();
+        }
+    }
+
+    template <class _F>
+    constexpr auto transform(_F&& __f) const &&
+        requires is_move_constructible_v<_E>
+    {
+        using _U = remove_cv_t<invoke_result_t<_F, decltype(__XVI_STD_NS::move(value()))>>;
+
+        if (!has_value())
+            return expected<_U, _E>(unexpect, __XVI_STD_NS::move(error()));
+
+        if constexpr (!is_void_v<_U>)
+        {
+            return expected<_U, _E>(in_place, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(value())));
+        }
+        else
+        {
+            __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(value()));
+            return expected<_U, _E>();
+        }
+    }
+
+    template <class _F>
+    constexpr auto transform_error(_F&& __f) &
+        requires is_copy_constructible_v<_T>
+    {
+        using _G = remove_cv_t<invoke_result_t<_F, decltype(error())>>;
+
+        if (has_value())
+            return expected<_T, _G>(in_place, value());
+        else
+            return expected<_T, _G>(unexpect, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), error()));
+    }
+
+    template <class _F>
+    constexpr auto transform_error(_F&& __f) const &
+        requires is_copy_constructible_v<_T>
+    {
+        using _G = remove_cv_t<invoke_result_t<_F, decltype(error())>>;
+
+        if (has_value())
+            return expected<_T, _G>(in_place, value());
+        else
+            return expected<_T, _G>(unexpect, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), error()));
+    }
+
+    template <class _F>
+    constexpr auto transform_error(_F&& __f) &&
+        requires is_move_constructible_v<_T>
+    {
+        using _G = remove_cv_t<invoke_result_t<_F, decltype(__XVI_STD_NS::move(error()))>>;
+
+        if (has_value())
+            return expected<_T, _G>(in_place, value());
+        else
+            return expected<_T, _G>(unexpect, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(error())));
+    }
+
+    template <class _F>
+    constexpr auto transform_error(_F&& __f) const &&
+        requires is_move_constructible_v<_T>
+    {
+        using _G = remove_cv_t<invoke_result_t<_F, decltype(__XVI_STD_NS::move(error()))>>;
+
+        if (has_value())
+            return expected<_T, _G>(in_place, value());
+        else
+            return expected<_T, _G>(unexpect, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(error())));
     }
 
 
@@ -964,6 +1173,8 @@ template <class _T, class _E>
     requires is_void_v<_T>
 class expected<_T, _E>
 {
+    template <class _U, class _G> friend class expected;
+
 public:
 
     using value_type        = _T;
@@ -1011,14 +1222,14 @@ public:
     template <class _G>
         requires is_constructible_v<_E, const _G&>
     constexpr explicit(!is_convertible_v<const _G&, _E>) expected(const unexpected<_G>& __u) :
-        _M_storage(unexpect, __u.value())
+        _M_storage(unexpect, __u.error())
     {
     }
 
     template <class _G>
         requires is_constructible_v<_E, _G>
     constexpr explicit(!is_convertible_v<_G, _E>) expected(unexpected<_G>&& __u) :
-        _M_storage(unexpect, __XVI_STD_NS::move(__u.value()))
+        _M_storage(unexpect, __XVI_STD_NS::move(__u.error()))
     {
     }
 
@@ -1125,6 +1336,257 @@ public:
         _M_storage.swap(__rhs._M_storage);
     }
 
+    template <class _G = _E>
+    constexpr _E error_or(_G&& __e) const &
+    {
+        if (has_value())
+            return __XVI_STD_NS::forward<_G>(__e);
+        else
+            return error();
+    }
+
+    template <class _G = _E>
+    constexpr _E error_or(_G&& __e) &&
+    {
+        if (has_value())
+            return __XVI_STD_NS::forward<_G>(__e);
+        else
+            return __XVI_STD_NS::move(error());
+    }
+
+    template <class _F>
+    constexpr auto and_then(_F&& __f) &
+        requires is_copy_constructible_v<_E>
+    {
+        using _U = remove_cvref_t<invoke_result_t<_F>>;
+        static_assert(__detail::__expected_specialization<_U>);
+        static_assert(is_same_v<typename _U::error_type, _E>);
+    
+        if (has_value())
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f));
+        else
+            return _U(unexpect, error());
+    }
+
+    template <class _F>
+    constexpr auto and_then(_F&& __f) const &
+        requires is_copy_constructible_v<_E>
+    {
+        using _U = remove_cvref_t<invoke_result_t<_F>>;
+        static_assert(__detail::__expected_specialization<_U>);
+        static_assert(is_same_v<typename _U::error_type, _E>);
+
+        if (has_value())
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f));
+        else
+            return _U(unexpect, error());
+    }
+
+    template <class _F>
+    constexpr auto and_then(_F&& __f) &&
+        requires is_move_constructible_v<_E>
+    {
+        using _U = remove_cvref_t<invoke_result_t<_F>>;
+        static_assert(__detail::__expected_specialization<_U>);
+        static_assert(is_same_v<typename _U::error_type, _E>);
+
+        if (has_value())
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f));
+        else
+            return _U(unexpect, __XVI_STD_NS::move(error()));
+    }
+
+    template <class _F>
+    constexpr auto and_then(_F&& __f) const &&
+        requires is_move_constructible_v<_E>
+    {
+        using _U = remove_cvref_t<invoke_result_t<_F>>;
+        static_assert(__detail::__expected_specialization<_U>);
+        static_assert(is_same_v<typename _U::error_type, _E>);
+
+        if (has_value())
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f));
+        else
+            return _U(unexpect, __XVI_STD_NS::move(error()));
+    }
+
+    template <class _F>
+    constexpr auto or_else(_F&& __f) &
+    {
+        using _G = remove_cvref_t<invoke_result_t<_F, decltype(error())>>;
+        static_assert(__detail::__expected_specialization<_G>);
+        static_assert(is_same_v<typename _G::value_type, _T>);
+
+        if (has_value())
+            return _G();
+        else
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), error());
+    }
+
+    template <class _F>
+    constexpr auto or_else(_F&& __f) const &
+    {
+        using _G = remove_cvref_t<invoke_result_t<_F, decltype(error())>>;
+        static_assert(__detail::__expected_specialization<_G>);
+        static_assert(is_same_v<typename _G::value_type, _T>);
+
+        if (has_value())
+            return _G();
+        else
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), error());
+    }
+
+    template <class _F>
+    constexpr auto or_else(_F&& __f) &&
+    {
+        using _G = remove_cvref_t<invoke_result_t<_F, decltype(__XVI_STD_NS::move(error()))>>;
+        static_assert(__detail::__expected_specialization<_G>);
+        static_assert(is_same_v<typename _G::value_type, _T>);
+
+        if (has_value())
+            return _G();
+        else
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(error()));
+    }
+
+    template <class _F>
+    constexpr auto or_else(_F&& __f) const &&
+    {
+        using _G = remove_cvref_t<invoke_result_t<_F, decltype(__XVI_STD_NS::move(error()))>>;
+        static_assert(__detail::__expected_specialization<_G>);
+        static_assert(is_same_v<typename _G::value_type, _T>);
+
+        if (has_value())
+            return _G();
+        else
+            return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(error()));
+    }
+
+    template <class _F>
+    constexpr auto transform(_F&& __f) &
+        requires is_copy_constructible_v<_E>
+    {
+        using _U = remove_cv_t<invoke_result_t<_F>>;
+
+        if (!has_value())
+            return expected<_U, _E>(unexpect, error());
+
+        if constexpr (!is_void_v<_U>)
+        {
+            return expected<_U, _E>(in_place, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f)));
+        }
+        else
+        {
+            __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f));
+            return expected<_U, _E>();
+        }
+    }
+
+    template <class _F>
+    constexpr auto transform(_F&& __f) const &
+        requires is_copy_constructible_v<_E>
+    {
+        using _U = remove_cv_t<invoke_result_t<_F>>;
+
+        if (!has_value())
+            return expected<_U, _E>(unexpect, error());
+
+        if constexpr (!is_void_v<_U>)
+        {
+            return expected<_U, _E>(in_place, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f)));
+        }
+        else
+        {
+            __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f));
+            return expected<_U, _E>();
+        }
+    }
+
+    template <class _F>
+    constexpr auto transform(_F&& __f) &&
+        requires is_move_constructible_v<_E>
+    {
+        using _U = remove_cv_t<invoke_result_t<_F>>;
+
+        if (!has_value())
+            return expected<_U, _E>(unexpect, __XVI_STD_NS::move(error()));
+
+        if constexpr (!is_void_v<_U>)
+        {
+            return expected<_U, _E>(in_place, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f)));
+        }
+        else
+        {
+            __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f));
+            return expected<_U, _E>();
+        }
+    }
+
+    template <class _F>
+    constexpr auto transform(_F&& __f) const &&
+        requires is_move_constructible_v<_E>
+    {
+        using _U = remove_cv_t<invoke_result_t<_F>>;
+
+        if (!has_value())
+            return expected<_U, _E>(unexpect, __XVI_STD_NS::move(error()));
+
+        if constexpr (!is_void_v<_U>)
+        {
+            return expected<_U, _E>(in_place, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f)));
+        }
+        else
+        {
+            __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f));
+            return expected<_U, _E>();
+        }
+    }
+
+    template <class _F>
+    constexpr auto transform_error(_F&& __f) &
+    {
+        using _G = remove_cv_t<invoke_result_t<_F, decltype(error())>>;
+
+        if (has_value())
+            return expected<_T, _G>();
+        else
+            return expected<_T, _G>(unexpect, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), error()));
+    }
+
+    template <class _F>
+    constexpr auto transform_error(_F&& __f) const &
+    {
+        using _G = remove_cv_t<invoke_result_t<_F, decltype(error())>>;
+
+        if (has_value())
+            return expected<_T, _G>();
+        else
+            return expected<_T, _G>(unexpect, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), error()));
+    }
+
+    template <class _F>
+    constexpr auto transform_error(_F&& __f) &&
+    {
+        using _G = remove_cv_t<invoke_result_t<_F, decltype(__XVI_STD_NS::move(error()))>>;
+
+        if (has_value())
+            return expected<_T, _G>();
+        else
+            return expected<_T, _G>(unexpect, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(error())));
+    }
+
+    template <class _F>
+    constexpr auto transform_error(_F&& __f) const &&
+    {
+        using _G = remove_cv_t<invoke_result_t<_F, decltype(__XVI_STD_NS::move(error()))>>;
+
+        if (has_value())
+            return expected<_T, _G>();
+        else
+            return expected<_T, _G>(unexpect, __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(error())));
+    }
+
+
     friend constexpr void swap(expected& __x, expected& __y) noexcept(noexcept(__x.swap(__y)))
     {
         __x.swap(__y);
@@ -1149,7 +1611,7 @@ public:
 
 private:
 
-    struct __no_value {};
+    using __no_value = __detail::__expected_void_value_type;
 
     __detail::__expected_storage<__no_value, _E>    _M_storage = {};
 };

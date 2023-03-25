@@ -6,6 +6,11 @@
 using namespace __XVI_STD_CORE_NS;
 
 
+//! @todo exception tess
+//! @todo expected<void, T> monadic method tests
+//! @todo relational operator tests
+
+
 TEST(Expected, UnexpectedDefaultConstructor)
 {
     EXPECT(!std::is_default_constructible_v<unexpected<int>>);
@@ -554,6 +559,435 @@ TEST(Expected, ExpectedErrorOr)
     using T = expected<int, char>;
 
     const T a(42);
+    const T b(unexpected('!'));
+
+    EXPECT_EQ(a.error_or('?'), '?');
+    EXPECT_EQ(b.error_or('?'), '!');
+}
+
+TEST(Expected, ExpectedAndThen)
+{
+    using T = expected<int, char>;
+
+    const T a(42);
+    const T b(unexpected('!'));
+
+    auto fn = [](int x) -> expected<int, char> { return x + 1; };
+
+    auto c = a.and_then(fn);
+    auto d = b.and_then(fn);
+
+    EXPECT_SAME_TYPE(decltype(c), T);
+    EXPECT_SAME_TYPE(decltype(d), T);
+
+    EXPECT(c.has_value());
+    EXPECT(!d.has_value());
+
+    EXPECT_EQ(c.value(), 43);
+    EXPECT_EQ(d.error(), '!');
+}
+
+TEST(Expected, ExpectedOrElse)
+{
+    using T = expected<int, char>;
+
+    const T a(42);
+    const T b(unexpected('A'));
+
+    auto fn = [](char x) -> expected<int, char> { return unexpected(x + 0x20); };
+
+    auto c = a.or_else(fn);
+    auto d = b.or_else(fn);
+
+    EXPECT_SAME_TYPE(decltype(c), T);
+    EXPECT_SAME_TYPE(decltype(d), T);
+
+    EXPECT(c.has_value());
+    EXPECT(!d.has_value());
+
+    EXPECT_EQ(c.value(), 42);
+    EXPECT_EQ(d.error(), 'a');
+}
+
+TEST(Expected, ExpectedTransform)
+{
+    using T = expected<int, char>;
+    using U = expected<long, char>;
+
+    const T a(42);
+    const T b(unexpected('!'));
+
+    auto fn = [](int x) -> long { return x + 1L; };
+
+    auto c = a.transform(fn);
+    auto d = b.transform(fn);
+
+    EXPECT_SAME_TYPE(decltype(c), U);
+    EXPECT_SAME_TYPE(decltype(d), U);
+
+    EXPECT(c.has_value());
+    EXPECT(!d.has_value());
+
+    EXPECT_EQ(c.value(), 43L);
+    EXPECT_EQ(d.error(), '!');
+}
+
+TEST(Expected, ExpectedTransformError)
+{
+    using T = expected<int, char>;
+    using U = expected<int, int>;
+
+    const T a(42);
+    const T b(unexpected('!'));
+
+    auto fn = [](char x) -> int { return x + 2; };
+
+    auto c = a.transform_error(fn);
+    auto d = b.transform_error(fn);
+
+    EXPECT_SAME_TYPE(decltype(c), U);
+    EXPECT_SAME_TYPE(decltype(d), U);
+
+    EXPECT(c.has_value());
+    EXPECT(!d.has_value());
+
+    EXPECT_EQ(c.value(), 42);
+    EXPECT_EQ(d.error(), '#');
+}
+
+TEST(Expected, ExpectedVoidTypes)
+{
+    using T = expected<void, char>;
+    using U = expected<int, char>;
+
+    EXPECT_SAME_TYPE(T::value_type, void);
+    EXPECT_SAME_TYPE(T::error_type, char);
+    EXPECT_SAME_TYPE(T::unexpected_type, unexpected<char>);
+
+    EXPECT_SAME_TYPE(typename T::template rebind<int>, U);
+}
+
+TEST(Expected, ExpectedVoidDefaultConstructor)
+{
+    using T = expected<void, int>;
+
+    T t;
+
+    EXPECT(t.has_value());
+}
+
+TEST(Expected, ExpectedVoidCopyConstructor)
+{
+    struct noncopy { noncopy(const noncopy&) = delete; };
+    struct nontrivial { nontrivial(const nontrivial&); };
+
+    using T = expected<void, int>;
+    using U = expected<void, nontrivial>;
+    using V = expected<void, noncopy>;
+
+    const T a;
+    const T b(unexpected(7));
+
+    T c(a);
+    T d(b);
+
+    EXPECT(c.has_value());
+    EXPECT(!d.has_value());
+
+    EXPECT_EQ(d.error(), 7);
+
+    EXPECT(std::is_trivially_copy_constructible_v<T>);
+    EXPECT(!std::is_trivially_copy_constructible_v<U>);
+    EXPECT(std::is_copy_constructible_v<U>);
+    EXPECT(!std::is_copy_constructible_v<V>);
+}
+
+TEST(Expected, ExpectedVoidMoveConstructor)
+{
+    struct nonmove { nonmove(nonmove&&) = delete; };
+    struct nontrivial { nontrivial(nontrivial&&); };
+
+    using T = expected<void, int>;
+    using U = expected<void, nontrivial>;
+    using V = expected<void, nonmove>;
+
+    T a;
+    T b(unexpected(7));
+
+    T c(std::move(a));
+    T d(std::move(b));
+
+    EXPECT(c.has_value());
+    EXPECT(!d.has_value());
+
+    EXPECT_EQ(d.error(), 7);
+
+    EXPECT(std::is_trivially_move_constructible_v<T>);
+    EXPECT(!std::is_trivially_move_constructible_v<U>);
+    EXPECT(std::is_move_constructible_v<U>);
+    EXPECT(!std::is_move_constructible_v<V>);
+}
+
+TEST(Expected, ExpectedVoidConvertingCopyConstructor)
+{
+    using T = expected<void, int>;
+    using U = expected<void, long>;
+    using V = expected<int, char>;
+
+    const T a;
+    const T b(unexpected('!'));
+
+    U c(a);
+    U d(b);
+
+    EXPECT(c.has_value());
+    EXPECT(!d.has_value());
+
+    EXPECT_EQ(d.error(), '!');
+
+    EXPECT(!(std::is_constructible_v<T, const V&>));
+}
+
+TEST(Expected, ExpectedVoidConvertingMoveConstructor)
+{
+    using T = expected<void, int>;
+    using U = expected<void, long>;
+    using V = expected<int, char>;
+
+    T a;
+    T b(unexpected('!'));
+
+    U c(std::move(a));
+    U d(std::move(b));
+
+    EXPECT(c.has_value());
+    EXPECT(!d.has_value());
+
+    EXPECT_EQ(d.error(), '!');
+
+    EXPECT(!(std::is_constructible_v<T, V>));
+}
+
+TEST(Expected, ExpectedVoidUnexpectedCopyConstructor)
+{
+    using T = expected<void, int>;
+
+    const auto a = unexpected('7');
+    const auto b = unexpected(42ULL);
+
+    T c(a);
+    T d(b);
+
+    EXPECT(!c.has_value());
+    EXPECT(!d.has_value());
+
+    EXPECT_EQ(c.error(), '7');
+    EXPECT_EQ(d.error(), 42);
+}
+
+TEST(Expected, ExpectedVoidUnexpectedMoveConstructor)
+{
+    using T = expected<void, int>;
+
+    auto a = unexpected('7');
+    auto b = unexpected(42ULL);
+
+    T c(std::move(a));
+    T d(std::move(b));
+
+    EXPECT(!c.has_value());
+    EXPECT(!d.has_value());
+
+    EXPECT_EQ(c.error(), '7');
+    EXPECT_EQ(d.error(), 42);
+}
+
+TEST(Expected, ExpectedVoidInPlaceConstructor)
+{
+    using T = expected<void, int>;
+
+    T t(in_place);
+
+    EXPECT(t.has_value());
+}
+
+TEST(Expected, ExpectedVoidUnexpectConstructor)
+{
+    struct data { int x; int y; int z; constexpr bool operator==(const data&) const = default; };
+    using T = expected<void, data>;
+
+    T t(unexpect, 1, 2, 3);
+
+    EXPECT(!t.has_value());
+
+    EXPECT_EQ(t.error(), (data{1, 2, 3}));
+}
+
+TEST(Expected, ExpectedVoidDestructor)
+{
+    struct nontrivial { ~nontrivial(); };
+    struct nondestruct { ~nondestruct() = delete; };
+    using T = expected<void, int>;
+    using U = expected<void, nontrivial>;
+
+    EXPECT(std::is_trivially_destructible_v<T>);
+    EXPECT(!std::is_trivially_destructible_v<U>);
+    EXPECT(std::is_destructible_v<U>);
+}
+
+TEST(Expected, ExpectedVoidCopyAssignment)
+{
+    struct nontrivial { nontrivial& operator=(const nontrivial&); };
+    struct noncopy { void operator=(const noncopy&) = delete; };
+
+    using T = expected<void, int>;
+    using U = expected<void, nontrivial>;
+    using V = expected<void, noncopy>;
+
+    const T a;
+    const T b(unexpected('!'));
+
+    T c;
+    T d;
+    T e(unexpected('?'));
+    T f(unexpected('?'));
+
+    c = a;
+    d = b;
+    e = a;
+    f = b;
+
+    EXPECT(c.has_value());
+    EXPECT(!d.has_value());
+    EXPECT(e.has_value());
+    EXPECT(!f.has_value());
+
+    EXPECT_EQ(d.error(), '!');
+    EXPECT_EQ(f.error(), '!');
+
+    EXPECT(std::is_trivially_copy_assignable_v<T>);
+    EXPECT(!std::is_trivially_copy_assignable_v<U>);
+    EXPECT(std::is_copy_assignable_v<U>);
+    EXPECT(!std::is_copy_assignable_v<V>);
+}
+
+TEST(Expected, ExpectedVoidMoveAssignment)
+{
+    struct nontrivial { nontrivial& operator=(const nontrivial&); };
+    struct nonmove { void operator=(nonmove&&) = delete; };
+
+    using T = expected<void, int>;
+    using U = expected<void, nontrivial>;
+    using V = expected<void, nonmove>;
+
+    T a;
+    T b(unexpected('!'));
+
+    T c;
+    T d;
+    T e(unexpected('?'));
+    T f(unexpected('?'));
+
+    c = std::move(a);
+    d = std::move(b);
+    e = std::move(a);
+    f = std::move(b);
+
+    EXPECT(c.has_value());
+    EXPECT(!d.has_value());
+    EXPECT(e.has_value());
+    EXPECT(!f.has_value());
+
+    EXPECT_EQ(d.error(), '!');
+    EXPECT_EQ(f.error(), '!');
+
+    EXPECT(std::is_trivially_move_assignable_v<T>);
+    EXPECT(!std::is_trivially_move_assignable_v<U>);
+    EXPECT(std::is_move_assignable_v<U>);
+    EXPECT(!std::is_move_assignable_v<V>);
+}
+
+TEST(Expected, ExpectedVoidUnexpectedCopyAssignment)
+{
+    using T = expected<void, int>;
+
+    const auto a = unexpected('7');
+    const auto b = unexpected(42ULL);
+
+    T c;
+    T d(unexpected(3));
+
+    c = a;
+    d = b;
+
+    EXPECT(!c.has_value());
+    EXPECT(!d.has_value());
+
+    EXPECT_EQ(c.error(), '7');
+    EXPECT_EQ(d.error(), 42);
+}
+
+TEST(Expected, ExpectedVoidUnexpectedMoveAssignment)
+{
+    using T = expected<void, int>;
+
+    auto a = unexpected('7');
+    auto b = unexpected(42ULL);
+
+    T c;
+    T d(unexpected(3));
+
+    c = std::move(a);
+    d = std::move(b);
+
+    EXPECT(!c.has_value());
+    EXPECT(!d.has_value());
+
+    EXPECT_EQ(c.error(), '7');
+    EXPECT_EQ(d.error(), 42);
+}
+
+TEST(Expected, ExpectedVoidEmplace)
+{
+    using T = expected<void, int>;
+
+    T a;
+    T b(unexpected('?'));
+
+    a.emplace();
+    b.emplace();
+
+    EXPECT(a.has_value());
+    EXPECT(b.has_value());
+}
+
+TEST(Expected, ExpectedVoidSwap)
+{
+    using T = expected<void, int>;
+
+    T a;
+    T b(unexpected('!'));
+
+    a.swap(b);
+
+    EXPECT(!a.has_value());
+    EXPECT(b.has_value());
+
+    EXPECT_EQ(a.error(), '!');
+
+    a.swap(b);
+
+    EXPECT(a.has_value());
+    EXPECT(!b.has_value());
+
+    EXPECT_EQ(b.error(), '!');
+}
+
+TEST(Expected, ExpectedVoidErrorOr)
+{
+    using T = expected<void, char>;
+
+    const T a;
     const T b(unexpected('!'));
 
     EXPECT_EQ(a.error_or('?'), '?');
