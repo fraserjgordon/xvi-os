@@ -14,7 +14,9 @@ TEST(Pair, Layout)
     using T = pair<int, int>;
 
     EXPECT(std::is_standard_layout_v<T>);
+#ifdef __cpp_lib_is_layout_compatible
     EXPECT((std::is_layout_compatible_v<T, two_ints>));
+#endif
 }
 
 TEST(Pair, NoTrivialDefaultConstruct)

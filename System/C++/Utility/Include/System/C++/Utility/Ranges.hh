@@ -24,72 +24,6 @@ inline constexpr from_range_t from_range {};
 namespace ranges
 {
 
-
-namespace __detail
-{
-
-
-template <class _T>
-struct __is_initializer_list : std::false_type {};
-
-template <class _T>
-struct __is_initializer_list<std::initializer_list<_T>> : std::true_type {};
-
-template <class _T>
-inline constexpr bool __is_initializer_list_v = __is_initializer_list<_T>::value;
-
-
-struct __view_interface_base {};
-
-
-} // namespace __detail
-
-
-struct view_base {};
-
-template <class _T>
-inline constexpr bool enable_view =
-    std::derived_from<_T, view_base> || std::derived_from<_T, __detail::__view_interface_base>;
-
-template <class _T>
-concept view = range<_T> && std::movable<_T> && enable_view<_T>;
-
-
-template <class _R, class _T>
-concept output_range = range<_R> && output_iterator<iterator_t<_R>, _T>;
-
-template <class _T>
-concept input_range = range<_T> && input_iterator<iterator_t<_T>>;
-
-template <class _T>
-concept forward_range = input_range<_T> && forward_iterator<iterator_t<_T>>;
-
-template <class _T>
-concept bidirectional_range = forward_range<_T> && bidirectional_iterator<iterator_t<_T>>;
-
-template <class _T>
-concept random_access_range = bidirectional_range<_T> && random_access_iterator<iterator_t<_T>>;
-
-template <class _T>
-concept contiguous_range = random_access_range<_T> && contiguous_iterator<iterator_t<_T>>
-    && requires(_T& __t)
-    {
-        { ranges::data(__t) } -> std::same_as<std::add_pointer_t<range_reference_t<_T>>>;
-    };
-
-template <class _T>
-concept common_range = range<_T> && std::same_as<iterator_t<_T>, sentinel_t<_T>>;
-
-template <class _T>
-concept viewable_range = range<_T>
-    && ((view<std::remove_cvref_t<_T>>
-            && std::constructible_from<std::remove_cvref_t<_T>, _T>)
-        || (!view<std::remove_cvref_t<_T>>
-            && (std::is_lvalue_reference_v<_T>
-                || (std::movable<std::remove_reference_t<_T>>
-                    && !__detail::__is_initializer_list_v<std::remove_cvref_t<_T>>))));
-
-
 namespace __detail
 {
 
@@ -462,16 +396,6 @@ using ranges::get;
 
 namespace ranges
 {
-
-struct dangling
-{
-    constexpr dangling() noexcept = default;
-
-    constexpr dangling(auto&&...) noexcept {}
-};
-
-template <range _R>
-using borrowed_iterator_t = std::conditional_t<borrowed_range<_R>, iterator_t<_R>, dangling>;
 
 template <range _R>
 using borrowed_subrange_t = std::conditional_t<borrowed_range<_R>, subrange<iterator_t<_R>>, dangling>;

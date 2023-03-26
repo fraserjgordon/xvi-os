@@ -3,6 +3,8 @@
 #define __SYSTEM_CXX_UTILITY_RANGESALGORITHM_H
 
 
+#include <System/C++/Core/IteratorUtils.hh>
+
 #include <System/C++/Utility/Private/Config.hh>
 
 #include <System/C++/Utility/Ranges.hh>
@@ -21,79 +23,13 @@ namespace ranges
 
 
 template <class _I, class _F>
-struct in_fun_result
-{
-    [[no_unique_address]] _I in;
-    [[no_unique_address]] _F fun;
-
-    template <class _I2, class _F2>
-        requires convertible_to<const _I&, _I2> && convertible_to<const _F&, _F2>
-    constexpr operator in_fun_result<_I2, _F2>() const &
-    {
-        return {in, fun};
-    }
-
-    template <class _I2, class _F2>
-        requires convertible_to<_I, _I2> && convertible_to<_F, _F2>
-    constexpr operator in_fun_result<_I2, _F2>() &&
-    {
-        return {std::move(in), std::move(fun)};
-    }
-};
-
-template <class _I, class _F>
 using for_each_result = in_fun_result<_I, _F>;
 
 template <class _I, class _F>
 using for_each_n_result = in_fun_result<_I, _F>;
 
 template <class _I1, class _I2>
-struct in_in_result
-{
-    [[no_unique_address]] _I1 in1;
-    [[no_unique_address]] _I2 in2;
-
-    template <class _II1, class _II2>
-        requires convertible_to<const _I1, _II1> && convertible_to<const _I2&, _II2>
-    constexpr operator in_in_result<_II1, _II2>() const &
-    {
-        return {in1, in2};
-    }
-
-    template <class _II1, class _II2>
-        requires convertible_to<_I1, _II1> && convertible_to<_I2, _II2>
-    constexpr operator in_in_result<_II1, _II2>() &&
-    {
-        return {std::move(in1), std::move(in2)};
-    }
-};
-
-template <class _I1, class _I2>
 using mismatch_result = in_in_result<_I1, _I2>;
-
-template <class _I1, class _I2>
-using swap_ranges_result = in_in_result<_I1, _I2>;
-
-template <class _I, class _O>
-struct in_out_result
-{
-    [[no_unique_address]] _I in;
-    [[no_unique_address]] _O out;
-
-    template <class _I2, class _O2>
-        requires convertible_to<const _I&, _I2> && convertible_to<const _O&, _O2>
-    constexpr operator in_out_result<_I2, _O2>() const &
-    {
-        return {in, out};
-    }
-
-    template <class _I2, class _O2>
-        requires convertible_to<_I, _I2> && convertible_to<_O, _O2>
-    constexpr operator in_out_result<_I2, _O2>() &&
-    {
-        return {std::move(in), std::move(out)};
-    }
-};
 
 template <class _I, class _O>
 using copy_result = in_out_result<_I, _O>;
@@ -137,29 +73,6 @@ using reverse_copy_result = in_out_result<_I, _O>;
 template <class _I, class _O>
 using rotate_copy_result = in_out_result<_I, _O>;
 
-
-template <class _I1, class _I2, class _O>
-struct in_in_out_result
-{
-    [[no_unique_address]] _I1 in1;
-    [[no_unique_address]] _I2 in2;
-    [[no_unique_address]] _O  out;
-
-    template <class _II1, class _II2, class _OO>
-        requires convertible_to<const _I1&, _II1> && convertible_to<const _I2&, _II2> && convertible_to<const _O&, _OO>
-    constexpr operator in_in_out_result<_II1, _II2, _OO>() const &
-    {
-        return {in1, in2, out};
-    }
-
-    template <class _II1, class _II2, class _OO>
-        requires convertible_to<_I1, _II1> && convertible_to<_I2, _II2> && convertible_to<_O, _OO>
-    constexpr operator in_in_out_result<_II1, _II2, _OO>() &&
-    {
-        return {std::move(in1), std::move(in2), std::move(out)};
-    }
-};
-
 template <class _I1, class _I2, class _O>
 using binary_transform_result = in_in_out_result<_I1, _I2, _O>;
 
@@ -177,28 +90,6 @@ using set_difference_result = in_in_out_result<_I1, _I2, _O>;
 
 template <class _I1, class _I2, class _O>
 using set_symmetric_difference_result = in_in_out_result<_I1, _I2, _O>;
-
-template <class _I, class _O1, class _O2>
-struct in_out_out_result
-{
-    [[no_unique_address]] _I    in;
-    [[no_unique_address]] _O1   out1;
-    [[no_unique_address]] _O2   out2;
-
-    template <class _II, class _OO1, class _OO2>
-        requires convertible_to<const _I&, _II> && convertible_to<const _O1&, _OO1> && convertible_to<const _O2&, _OO2>
-    constexpr operator in_out_out_result<_II, _OO1, _OO2>() const &
-    {
-        return {in, out1, out2};
-    }
-
-    template <class _II, class _OO1, class _OO2>
-        requires convertible_to<_I, _II> && convertible_to<_O1, _OO1> && convertible_to<_O2, _OO2>
-    constexpr operator in_out_out_result<_II, _OO1, _OO2>() &&
-    {
-        return {std::move(in), std::move(out1), std::move(out2)};
-    }
-};
 
 template <class _I, class _O1, class _O2>
 using partition_copy_result = in_out_out_result<_I, _O1, _O2>;
@@ -816,26 +707,6 @@ struct __move_backward
     constexpr move_backward_result<borrowed_iterator_t<_R>, _I> operator()(_R&& __r, _I __result)
     {
         return operator()(ranges::begin(std::forward<_R>(__r)), ranges::end(std::forward<_R>(__r)), __result);
-    }
-};
-
-struct __swap_ranges
-{
-    template <input_iterator _I1, sentinel_for<_I1> _S1, input_iterator _I2, sentinel_for<_I2> _S2>
-        requires indirectly_swappable<_I1, _I2>
-    constexpr swap_ranges_result<_I1, _I2> operator()(_I1 __first1, _S1 __last1, _I2 __first2, _S2 __last2) const
-    {
-        for (; __first1 != __last1 && __first2 != __last2; ++__first1, (void)++__first2)
-            ranges::iter_swap(__first1, __first2);
-
-        return {__first1, __first2};
-    }
-
-    template <input_range _R1, input_range _R2>
-        requires indirectly_swappable<iterator_t<_R1>, iterator_t<_R2>>
-    constexpr swap_ranges_result<borrowed_iterator_t<_R1>, borrowed_iterator_t<_R2>> operator()(_R1&& __r1, _R2&& __r2) const
-    {
-        return operator()(ranges::begin(std::forward<_R1>(__r1)), ranges::end(std::forward<_R1>(__r1)), ranges::begin(std::forward<_R2>(__r2)), ranges::end(std::forward<_R2>(__r2)));
     }
 };
 
@@ -2924,7 +2795,6 @@ inline constexpr __detail::__copy_if                    copy_if = {};
 inline constexpr __detail::__copy_backward              copy_backward = {};
 inline constexpr __detail::__move                       move = {};
 inline constexpr __detail::__move_backward              move_backward = {};
-inline constexpr __detail::__swap_ranges                swap_ranges = {};
 inline constexpr __detail::__transform                  transform = {};
 inline constexpr __detail::__replace                    replace = {};
 inline constexpr __detail::__replace_if                 replace_if = {};
