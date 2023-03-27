@@ -6,6 +6,7 @@
 #include <exception>
 #include <iosfwd>
 #include <memory>
+#include <type_traits>
 
 
 namespace Tools::Development::Test
@@ -181,6 +182,8 @@ int runAllTests();
 #define EXPECT_THROW_ANY(...) \
     Tools::Development::Test::Expectation(_test_context_, nullptr, __FILE__, __LINE__).expectThrowAnything([&](){ __VA_ARGS__ ; })
 
+#define EXPECT_SAME_TYPE(...) TEST_EXPECTATION((std::is_same_v<__VA_ARGS__>))
+
 #define TEST_ASSERTION(expr) TEST_ASSERTION_(expr, #expr)
 #define TEST_ASSERTION_(expr, exprstr) \
     Tools::Development::Test::Assertion(_test_context_, exprstr, __FILE__, __LINE__).assertTrue(static_cast<bool>(expr))
@@ -201,6 +204,8 @@ int runAllTests();
 
 #define ASSERT_THROW_ANY(...) \
     Tools::Development::Test::Assertion(_test_context_, nullptr, __FILE__, __LINE__).assertThrowAnything([&](){ __VA_ARGS__ ; })
+
+#define ASSERT_SAME_TYPE(left, right) TEST_ASSERTION((std::is_same_v<left, right>))
 
 #define TEST_COMPILE(suite, name, signature, ...) TEST_COMPILE_(suite, name, signature, (__VA_ARGS__))
 #define TEST_COMPILE_(suite, name, signature, expr) TEST_DEFINE_COMPILE(Tools::Development::Test::Compile, suite, #suite, name, #name, signature, expr, #expr)

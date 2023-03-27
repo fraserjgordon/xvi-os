@@ -6,6 +6,7 @@
 
 #include <System/C++/Core/Private/Config.hh>
 #include <System/C++/Core/PointerTraits.hh>
+#include <System/C++/Core/Swap.hh>
 
 
 namespace __XVI_STD_CORE_NS_DECL
@@ -50,7 +51,7 @@ concept __dereferencable = requires(_T& __t)
 
 
 template <__detail::__dereferencable _T>
-using iter_reference_t = decltype((*declval<_T&>()));
+using iter_reference_t = decltype(*declval<_T&>());
 
 
 template <class> struct incrementable_traits {};
@@ -91,10 +92,14 @@ concept __is_primary_iterator_traits =
     && same_as<typename iterator_traits<_T>::__primary_iterator_traits_for, _T>;
 
 template <class _T>
-struct __iter_difference_t { using __type = typename iterator_traits<_T>::difference_type; };
+struct __iter_difference_t {};
 
 template <class _T>
-    requires __is_primary_iterator_traits<_T>
+    requires (!__is_primary_iterator_traits<_T>) && __has_member_difference_type<iterator_traits<_T>>
+struct __iter_difference_t<_T> { using __type = typename iterator_traits<_T>::difference_type; };
+
+template <class _T>
+    requires __is_primary_iterator_traits<_T> && __has_member_difference_type<incrementable_traits<_T>>
 struct __iter_difference_t<_T> { using __type = typename incrementable_traits<_T>::difference_type; };
 
 } // namespace __detail
@@ -159,17 +164,21 @@ namespace __detail
 {
 
 template <class _T>
-struct __iter_value_t { using __type = typename iterator_traits<_T>::value_type; };
+struct __iter_value_t {};
 
 template <class _T>
-    requires __is_primary_iterator_traits<_T>
+    requires (!__is_primary_iterator_traits<_T>) && __has_member_value_type<iterator_traits<_T>>
+struct __iter_value_t<_T> { using __type = typename iterator_traits<_T>::value_type; };
+
+template <class _T>
+    requires __is_primary_iterator_traits<_T> && __has_member_value_type<indirectly_readable_traits<_T>>
 struct __iter_value_t<_T> { using __type = typename indirectly_readable_traits<_T>::value_type; };
 
 } // namespace __detail
 
 
 template <class _T>
-using iter_value_t = typename __detail::__iter_value_t<_T>::__type;
+using iter_value_t = typename __detail::__iter_value_t<remove_cvref_t<_T>>::__type;
 
 
 namespace __detail
@@ -246,6 +255,9 @@ concept __has_iterator_types = requires
     typename _I::iterator_category;
 };
 
+template <class _I>
+concept __has_iterator_category = requires { typename _I::iterator_category; };
+
 template <class _T>
 concept __has_pointer_type = requires { typename _T::pointer; };
 
@@ -267,26 +279,37 @@ template <class _T>
 struct __iterator_traits_reference { using __type = iter_reference_t<_T>; };
 
 template <class _T>
-    requires requires { typename _T::reference_type; }
-struct __iterator_traits_reference<_T> { using __type = typename _T::reference_type; };
+    requires requires { typename _T::reference; }
+struct __iterator_traits_reference<_T> { using __type = typename _T::reference; };
 
 template <class _I>
 struct __iterator_traits_category;
 
 template <class _I>
+    requires __has_iterator_category<_I>
+struct __iterator_traits_category<_I> { using __type = typename _I::iterator_category; };
+
+template <class _I>
     requires __cpp17_random_access_iterator<_I>
+        && (!__has_iterator_category<_I>)
 struct __iterator_traits_category<_I> { using __type = random_access_iterator_tag; };
 
 template <class _I>
-    requires __cpp17_bidirectional_iterator<_I>
+    requires __cpp17_bidirectional_iterator<_I> 
+        && (!__cpp17_random_access_iterator<_I>)
+        && (!__has_iterator_category<_I>)
 struct __iterator_traits_category<_I> { using __type = bidirectional_iterator_tag; };
 
 template <class _I>
     requires __cpp17_forward_iterator<_I>
+        && (!__cpp17_bidirectional_iterator<_I>)
+        && (!__has_iterator_category<_I>)
 struct __iterator_traits_category<_I> { using __type = forward_iterator_tag; };
 
 template <class _I>
     requires __cpp17_input_iterator<_I>
+        && (!__cpp17_forward_iterator<_I>)
+        && (!__has_iterator_category<_I>)
 struct __iterator_traits_category<_I> { using __type = input_iterator_tag; };
 
 template <class _I>

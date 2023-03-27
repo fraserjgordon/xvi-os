@@ -67,18 +67,26 @@ using __pointer_of_or_t = typename __pointer_of_or<_T, _U>::type;
 template <class _T, class _U>
 concept __valid_rebind = requires { typename _T::template rebind<_U>; };
 
-template <class _T> struct __pointer_traits_element_type_helper; // Not defined.
-template <template <class, class...> class _Ptr, class _T, class... _Args>
-struct __pointer_traits_element_type_helper<_Ptr<_T, _Args...>>
+
+template <class _T>
+struct __pointer_traits_element_type {};
+
+template <class _T>
+    requires requires { typename _T::element_type; }
+struct __pointer_traits_element_type<_T>
+    { using type = _T::element_type; };
+
+template <template <class...> class _Ptr, class _T, class... _Args>
+    requires (!requires { typename _Ptr<_Args...>::element_type; })
+struct __pointer_traits_element_type<_Ptr<_T, _Args...>>
     { using type = _T; };
 
-template <class _T> struct __pointer_traits_element_type
-    : conditional_t<__has_member_element_type<_T>,
-                    __pointer_traits_element_type_detected<_T>,
-                    __pointer_traits_element_type_helper<_T>> {};
+template <class _T>
+concept __pointer_traits_has_element_type = requires { typename __pointer_traits_element_type<_T>::type; };
+
 
 template <class _T> struct __pointer_traits_difference_type
-    { using type = std::ptrdiff_t; };
+    { using type = ptrdiff_t; };
 
 template <class _T>
     requires __has_member_difference_type<_T>
@@ -103,7 +111,11 @@ template <class _T, class _U> struct __pointer_traits_rebind
 
 
 template <class _Ptr>
-struct pointer_traits
+struct pointer_traits {};
+
+template <class _Ptr>
+    requires __detail::__pointer_traits_has_element_type<_Ptr>
+struct pointer_traits<_Ptr>
 {
     using pointer           = _Ptr;
     using element_type      = typename __detail::__pointer_traits_element_type<_Ptr>::type;
@@ -149,6 +161,13 @@ struct pointer_traits<_T*>
 };
 
 
+template <class _T>
+constexpr _T* to_address(_T* __p) noexcept
+{
+    static_assert(!is_function_v<_T>, "cannot use to_address on function pointers");
+    return __p;
+}
+
 template <class _Ptr>
 auto to_address(const _Ptr& __p) noexcept
 {
@@ -158,15 +177,7 @@ auto to_address(const _Ptr& __p) noexcept
         return to_address(__p.operator->());
 }
 
-template <class _T>
-constexpr _T* to_address(_T* __p) noexcept
-{
-    static_assert(!is_function_v<_T>, "cannot use to_address on function pointers");
-    return __p;
-}
+} // namespace __XVI_STD_CORE_NS_DECL
 
 
-} // namespace __XVI_STD_UTILITY_NS
-
-
-#endif /* ifndef __SYSTEM_CXX_UTILITY_POINTERTRAITS_H */
+#endif /* ifndef __SYSTEM_CXX_CORE_POINTERTRAITS_H */

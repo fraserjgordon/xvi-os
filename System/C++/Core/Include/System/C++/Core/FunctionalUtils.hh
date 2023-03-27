@@ -255,7 +255,6 @@ template <> struct less_equal<void>
     using is_transparent = void;
 };
 
-
 template <class _T = void> struct logical_and
 {
     constexpr bool operator()(const _T& __x, const _T& __y) const
@@ -308,7 +307,7 @@ template <> struct logical_not<void>
 {
     template <class _T>
     constexpr auto operator()(_T&& __t)  const
-        -> decltype(__XVI_STD_NS::forward<_T>(__t))
+        -> decltype(!__XVI_STD_NS::forward<_T>(__t))
     {
         return !__XVI_STD_NS::forward<_T>(__t);
     }
@@ -343,7 +342,7 @@ template <class _T = void> struct bit_xor
 
 template <class _T = void> struct bit_not
 {
-    constexpr bool operator()(const _T& __x) const
+    constexpr _T operator()(const _T& __x) const
     {
         return ~__x;
     }
@@ -419,7 +418,9 @@ namespace __detail
 {
 
 template <class _T, class _U>
-concept _BUILTIN_PTR_CMP = is_pointer_v<remove_cvref_t<_T>> && is_pointer_v<remove_cvref_t<_U>>;
+concept _BUILTIN_PTR_CMP = 
+    is_pointer_v<remove_cvref_t<_T>> 
+    && same_as<remove_cvref_t<_T>, remove_cvref_t<_U>>;
 
 } // namespace __detail
 

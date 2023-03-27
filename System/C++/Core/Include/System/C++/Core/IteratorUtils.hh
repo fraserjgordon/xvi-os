@@ -256,7 +256,7 @@ concept contiguous_iterator = random_access_iterator<_I>
     && same_as<iter_value_t<_I>, remove_cvref_t<iter_reference_t<_I>>>
     && requires(const _I& __i)
     {
-        { to_address(__i) } -> same_as<add_pointer_t<iter_reference_t<_I>>>;
+        { __XVI_STD_NS::to_address(__i) } -> same_as<add_pointer_t<iter_reference_t<_I>>>;
     };
 
 
@@ -937,76 +937,15 @@ inline namespace __prev { inline constexpr __detail::__prev prev = {}; }
 namespace __detail
 {
 
-struct __swap;
-
-template <class _T> void swap(_T&, _T&) = delete;
-
-template <class _T>
-concept __enumeration_or_class = is_enum_v<remove_reference_t<_T>> || is_class_v<remove_reference_t<_T>>;
-
-template <class _T>
-concept __array_lvalue = is_lvalue_reference_v<_T> && is_array_v<remove_reference_t<_T>>;
-
-template <class _E1, class _E2>
-concept __swap_alt1 = ((__enumeration_or_class<_E1> || __enumeration_or_class<_E2>) && requires (_E1&& __e1, _E2&& __e2) { (void)swap(__XVI_STD_NS::forward<_E1>(__e1), __XVI_STD_NS::forward<_E2>(__e2)); });
-
-template <class _E1, class _E2>
-concept __swap_alt2 = !__swap_alt1<_E1, _E2>
-    && __array_lvalue<_E1>
-    && __array_lvalue<_E2>
-    && extent_v<remove_reference_t<_E1>> == extent_v<remove_reference_t<_E2>>
-    && requires(_E1&& __e1, _E2&& __e2) { declval<ranges::__detail::__swap>()(*__e1, *__e2); };
-
-template <class _E1, class _E2>
-concept __swap_alt3 = !__swap_alt1<_E1, _E2> && !__swap_alt2<_E1, _E2>
-    && is_lvalue_reference_v<_E1>
-    && is_lvalue_reference_v<_E2>
-    && is_same_v<remove_reference_t<_E1>, remove_reference_t<_E2>>
-    && move_constructible<remove_reference_t<_E1>>
-    && assignable_from<remove_reference_t<_E1>&, remove_reference_t<_E1>>;
-
-struct __swap
-{
-    template <class _E1, class _E2>
-        requires __swap_alt1<_E1, _E2>
-    constexpr void operator()(_E1&& __e1, _E2&& __e2) const noexcept(noexcept((void)swap(__e1, __e2)))
-    {
-        (void)swap(__XVI_STD_NS::forward<_E1>(__e1), __XVI_STD_NS::forward<_E2>(__e2));
-    }
-
-    // Can't be defined until after ranges::swap_ranges is available.
-    template <class _E1, class _E2>
-        requires __swap_alt2<_E1, _E2>
-    constexpr void operator()(_E1&& __e1, _E2&& __e2) const noexcept(noexcept(declval<const __swap&>()(*__XVI_STD_NS::forward<_E1>(__e1), *__XVI_STD_NS::forward<_E2>(__e2))));
-
-    template <class _E1, class _E2>
-        requires __swap_alt3<_E1, _E2>
-    constexpr void operator()(_E1&& __e1, _E2&& __e2) const noexcept(is_nothrow_move_constructible_v<remove_reference_t<_E1>> && is_nothrow_move_assignable_v<remove_reference_t<_E1>>)
-    {
-        using _T = remove_reference_t<_E1>;
-
-        _T __temp(__XVI_STD_NS::move(__e1));
-        __e1 = __XVI_STD_NS::move(__e2);
-        __e2 = __XVI_STD_NS::move(__temp);
-    }
-};
-
-} // namespace __detail
-
-inline namespace __swap { inline constexpr __detail::__swap swap = {}; }
-
-namespace __detail
-{
-
 template <class _I1, class _I2>
 void iter_swap(_I1, _I2) = delete;
 
 template <class _X, class _Y>
 constexpr iter_value_t<_X> __iter_exchange_move(_X&& __x, _Y&& __y)
-    noexcept(noexcept(iter_value_t<_X>(iter_move(__x))) && noexcept(*__x = iter_move(__y)))
+    noexcept(noexcept(iter_value_t<_X>(ranges::iter_move(__x))) && noexcept(*__x = ranges::iter_move(__y)))
 {
-    iter_value_t<_X> __old_value(iter_move(__x));
-    *__x = iter_move(__y);
+    iter_value_t<_X> __old_value(ranges::iter_move(__x));
+    *__x = ranges::iter_move(__y);
     return __old_value;
 }
 
@@ -1017,7 +956,7 @@ concept __iter_swap_alt1 = (__enumeration_or_class<_E1> || __enumeration_or_clas
 template <class _E1, class _E2>
 concept __iter_swap_alt2 = indirectly_readable<_E1>
     && indirectly_readable<_E2>
-    && swappable_with<_E1, _E2>;
+    && swappable_with<iter_reference_t<_E1>, iter_reference_t<_E2>>;
 
 template <class _E1, class _E2>
 concept __iter_swap_alt3 = indirectly_movable_storable<_E1, _E2>
@@ -1037,7 +976,7 @@ struct __iter_swap
     constexpr void operator()(_T&& __t, _U&& __u) const
         noexcept(noexcept(ranges::swap(*declval<_T>(), *declval<_U>())))
     {
-        ranges::swap(*__XVI_STD_NS::forward<_T>(__t), __XVI_STD_NS::forward<_U>(__u));
+        ranges::swap(*__XVI_STD_NS::forward<_T>(__t), *__XVI_STD_NS::forward<_U>(__u));
     }
 
     template <class _T, class _U>
@@ -1330,12 +1269,7 @@ namespace __detail
 {
 
 // Now that ranges::swap_ranges is available, the last method of ranges::swap can be defined.
-template <class _E1, class _E2>
-    requires __swap_alt2<_E1, _E2>
-constexpr void __swap::operator()(_E1&& __e1, _E2&& __e2) const noexcept(noexcept(declval<const __swap&>()(*__XVI_STD_NS::forward<_E1>(__e1), *__XVI_STD_NS::forward<_E2>(__e2))))
-{
-    (void)ranges::swap_ranges(__XVI_STD_NS::forward<_E1>(__e1), __XVI_STD_NS::forward<_E2>(__e2));
-}
+__XVI_STD_CORE_SWAP_RANGES_IMPL;
 
 } // namespace __detail
 
