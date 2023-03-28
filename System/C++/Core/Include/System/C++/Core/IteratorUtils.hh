@@ -2,6 +2,7 @@
 #define __SYSTEM_CXX_CORE_ITERATORUTILS_H
 
 
+#include <System/C++/LanguageSupport/Limits.hh>
 #include <System/C++/LanguageSupport/Utility.hh>
 #include <System/C++/TypeTraits/TypeTraits.hh>
 
@@ -19,10 +20,6 @@ namespace ranges
 
 namespace __detail
 {
-
-
-// Forward declaration.
-struct __less;
 
 
 // Undefined function.
@@ -260,10 +257,22 @@ concept contiguous_iterator = random_access_iterator<_I>
     };
 
 
+namespace __detail
+{
+
+template <class _T>
+struct __indirect_value { using type = iter_value_t<_T>&; };
+
+template <class _T>
+using __indirect_value_t = __indirect_value<_T>::type;
+
+} // namespace __detail
+
+
 template <class _F, class _I>
 concept indirectly_unary_invocable = indirectly_readable<_I>
     && copy_constructible<_F>
-    && invocable<_F&, iter_value_t<_I>&>
+    && invocable<_F&, __detail::__indirect_value_t<_I>>
     && invocable<_F&, iter_reference_t<_I>>
     && invocable<_F&, iter_common_reference_t<_I>>
     && common_reference_with<invoke_result_t<_F&, iter_value_t<_I>&>, invoke_result_t<_F&, iter_reference_t<_I>>>;
@@ -271,7 +280,7 @@ concept indirectly_unary_invocable = indirectly_readable<_I>
 template <class _F, class _I>
 concept indirect_regular_unary_invocable = indirectly_readable<_I>
     && copy_constructible<_F>
-    && regular_invocable<_F, iter_value_t<_I>&>
+    && regular_invocable<_F, __detail::__indirect_value_t<_I>>
     && regular_invocable<_F, iter_reference_t<_I>>
     && regular_invocable<_F, iter_common_reference_t<_I>>
     && common_reference_with<invoke_result_t<_F&, iter_value_t<_I>&>, invoke_result_t<_F&, iter_reference_t<_I>>>;
@@ -279,7 +288,7 @@ concept indirect_regular_unary_invocable = indirectly_readable<_I>
 template <class _F, class _I>
 concept indirect_unary_predicate = indirectly_readable<_I>
     && copy_constructible<_F>
-    && predicate<_F&, iter_value_t<_I>&>
+    && predicate<_F&, __detail::__indirect_value_t<_I>>
     && predicate<_F&, iter_reference_t<_I>>
     && predicate<_F&, iter_common_reference_t<_I>>;
 
@@ -287,27 +296,27 @@ template <class _F, class _I1, class _I2>
 concept indirect_binary_predicate = indirectly_readable<_I1>
     && indirectly_readable<_I2>
     && copy_constructible<_F>
-    && predicate<_F&, iter_value_t<_I1>&, iter_value_t<_I2>&>
-    && predicate<_F&, iter_value_t<_I1>&, iter_reference_t<_I2>>
-    && predicate<_F&, iter_reference_t<_I1>, iter_value_t<_I2>&>
+    && predicate<_F&, __detail::__indirect_value_t<_I1>, __detail::__indirect_value_t<_I2>>
+    && predicate<_F&, __detail::__indirect_value_t<_I1>, iter_reference_t<_I2>>
+    && predicate<_F&, iter_reference_t<_I1>, __detail::__indirect_value_t<_I2>>
     && predicate<_F&, iter_reference_t<_I1>, iter_reference_t<_I2>>
     && predicate<_F&, iter_common_reference_t<_I1>, iter_common_reference_t<_I2>>;
 
 template <class _F, class _I1, class _I2 = _I1>
 concept indirect_equivalence_relation = indirectly_readable<_I1> && indirectly_readable<_I2>
     && copy_constructible<_F>
-    && equivalence_relation<_F&, iter_value_t<_I1>&, iter_value_t<_I2>&>
-    && equivalence_relation<_F&, iter_value_t<_I1>&, iter_reference_t<_I2>>
-    && equivalence_relation<_F&, iter_reference_t<_I1>, iter_value_t<_I2>&>
+    && equivalence_relation<_F&, __detail::__indirect_value_t<_I1>, __detail::__indirect_value_t<_I2>>
+    && equivalence_relation<_F&, __detail::__indirect_value_t<_I1>, iter_reference_t<_I2>>
+    && equivalence_relation<_F&, iter_reference_t<_I1>, __detail::__indirect_value_t<_I2>>
     && equivalence_relation<_F&, iter_reference_t<_I1>, iter_reference_t<_I2>>
     && equivalence_relation<_F&, iter_common_reference_t<_I1>, iter_common_reference_t<_I2>>;
 
 template <class _F, class _I1, class _I2 = _I1>
 concept indirect_strict_weak_order = indirectly_readable<_I1> && indirectly_readable<_I2>
     && copy_constructible<_F>
-    && strict_weak_order<_F&, iter_value_t<_I1>&, iter_value_t<_I2>&>
-    && strict_weak_order<_F&, iter_value_t<_I1>&, iter_reference_t<_I2>>
-    && strict_weak_order<_F&, iter_reference_t<_I1>, iter_value_t<_I2>&>
+    && strict_weak_order<_F&, __detail::__indirect_value_t<_I1>, __detail::__indirect_value_t<_I2>>
+    && strict_weak_order<_F&, __detail::__indirect_value_t<_I1>, iter_reference_t<_I2>>
+    && strict_weak_order<_F&, iter_reference_t<_I1>, __detail::__indirect_value_t<_I2>>
     && strict_weak_order<_F&, iter_reference_t<_I1>, iter_reference_t<_I2>>
     && strict_weak_order<_F&, iter_common_reference_t<_I1>, iter_common_reference_t<_I2>>;
 
@@ -332,6 +341,14 @@ struct incrementable_traits<projected<_I, _Proj>>
 {
     using difference_type = iter_difference_t<_I>;
 };
+
+namespace __detail
+{
+
+template <class _I, class _Proj>
+struct __indirect_value<projected<_I, _Proj>> { using type = invoke_result_t<_Proj&, typename __indirect_value<_I>::type>; };
+
+} // namespace __detail
 
 
 template <class _InputIterator, class _Distance>
@@ -759,23 +776,13 @@ struct __advance
     template <input_or_output_iterator _I, sentinel_for<_I> _S>
     constexpr void operator()(_I& __i, _S __bound) const
     {
-        while (bool(__i != __bound))
-            ++__i;
-    }
-
-    template <input_or_output_iterator _I, sentinel_for<_I> _S>
-        requires assignable_from<_I&, _S>
-    constexpr void operator()(_I& __i, _S __bound) const
-    {
-        __i = __XVI_STD_NS::move(__bound);
-    }
-
-    template <input_or_output_iterator _I, sentinel_for<_I> _S>
-        requires (!assignable_from<_I&, _S>
-            && sized_sentinel_for<_S, _I>)
-    constexpr void operator()(_I& __i, _S __bound) const
-    {
-        operator()(__i, __bound - __i);
+        if constexpr (assignable_from<_I&, _S>)
+            __i = __XVI_STD_NS::move(__bound);
+        else if constexpr (sized_sentinel_for<_S, _I>)
+            operator()(__i, __bound - __i);
+        else
+            while (bool(__i != __bound))
+                ++__i;
     }
 
 
@@ -808,8 +815,7 @@ struct __advance
 
     template <input_or_output_iterator _I, sentinel_for<_I> _S>
         requires (!sized_sentinel_for<_S, _I>
-            && bidirectional_iterator<_S>
-            && same_as<_I, _S>)
+            && bidirectional_iterator<_S>)
     constexpr iter_difference_t<_I> operator()(_I& __i, iter_difference_t<_I> __n, _S __bound) const
     {
         if (__n >= 0)
@@ -830,6 +836,7 @@ struct __advance
 struct __distance
 {
     template <input_or_output_iterator _I, sentinel_for<_I> _S>
+        requires (!sized_sentinel_for<_S, _I>)
     constexpr iter_difference_t<_I> operator()(_I __first, _S __last) const
     {
         iter_difference_t<_I> __n = 0;
@@ -839,23 +846,18 @@ struct __distance
     }
 
     template <input_or_output_iterator _I, sentinel_for<_I> _S>
-        requires sized_sentinel_for<_S, _I>
     constexpr iter_difference_t<_I> operator()(_I __first, _S __last) const
     {
-        return (__last - __first);
+        return (__last - static_cast<const decay_t<_I>&>(__first));
     }
 
     template <range _R>
     constexpr range_difference_t<_R> operator()(_R&& __r) const
     {
-        return __distance()(__begin()(__r), __end()(__r));
-    }
-
-    template <range _R>
-        requires sized_range<_R>
-    constexpr range_difference_t<_R> operator()(_R&& __r) const
-    {
-        return static_cast<range_difference_t<_R>>(__size()(__r));
+        if constexpr (sized_range<_R>)
+            return static_cast<range_difference_t<_R>>(__size()(__r));
+        else
+            return __distance()(__begin()(__r), __end()(__r));
     }
 };
 
@@ -1028,7 +1030,7 @@ concept permutable = forward_iterator<_I>
     && indirectly_movable_storable<_I, _I>
     && indirectly_swappable<_I, _I>;
 
-template <class _I1, class _I2, class _Out, class _R = ranges::__detail::__less, class _P1 = identity, class _P2 = identity>
+template <class _I1, class _I2, class _Out, class _R = ranges::less, class _P1 = identity, class _P2 = identity>
 concept mergeable = input_iterator<_I1>
     && input_iterator<_I2>
     && weakly_incrementable<_Out>
@@ -1036,7 +1038,7 @@ concept mergeable = input_iterator<_I1>
     && indirectly_copyable<_I2, _Out>
     && indirect_strict_weak_order<_R, projected<_I1, _P1>, projected<_I2, _P2>>;
 
-template <class _I, class _R = ranges::__detail::__less, class _P = identity>
+template <class _I, class _R = ranges::less, class _P = identity>
 concept sortable = permutable<_I>
     && indirect_strict_weak_order<_R, projected<_I, _P>>;
 
@@ -1275,6 +1277,48 @@ __XVI_STD_CORE_SWAP_RANGES_IMPL;
 
 
 } // namespace ranges
+
+
+template <class _C> constexpr auto begin(_C& __c) -> decltype(__c.begin())
+    { return __c.begin(); }
+template <class _C> constexpr auto begin(const _C& __c) -> decltype(__c.begin())
+    { return __c.begin(); }
+template <class _C> constexpr auto end(_C& __c) -> decltype(__c.end())
+    { return __c.end(); }
+template <class _C> constexpr auto end(const _C& __c) -> decltype(__c.end())
+    { return __c.end(); }
+template <class _T, size_t _N> constexpr _T* begin(_T (&__array)[_N]) noexcept
+    { return __array; }
+template <class _T, size_t _N> constexpr _T* end(_T (&__array)[_N]) noexcept
+    { return __array + _N; }
+template <class _C> constexpr auto cbegin(const _C& __c) noexcept(noexcept(__XVI_STD_NS::begin(__c))) -> decltype(__XVI_STD_NS::begin(__c))
+    { return __XVI_STD_NS::begin(__c); }
+template <class _C> constexpr auto cend(const _C& __c) noexcept(noexcept(__XVI_STD_NS::end(__c))) -> decltype(__XVI_STD_NS::end(__c))
+    { return __XVI_STD_NS::end(__c); }
+
+
+template <class _C> constexpr auto size(const _C& __c) -> decltype(__c.size())
+    { return __c.size(); }
+template <class _T, size_t _N> constexpr size_t size(const _T (&)[_N]) noexcept
+    { return _N; }
+template <class _C> constexpr auto ssize(const _C& __c) -> common_type_t<ptrdiff_t, make_signed_t<decltype(__c.size())>>
+    { return static_cast<common_type_t<ptrdiff_t, make_signed_t<decltype(__c.size())>>>(__c.size()); }
+template <class _T, size_t _N> constexpr ptrdiff_t ssize(const _T (&)[_N]) noexcept
+    { static_assert(_N <= __XVI_STD_NS::numeric_limits<ptrdiff_t>::max()); return _N; }
+template <class _C> [[nodiscard]] constexpr auto empty(const _C& __c) -> decltype(__c.empty())
+    { return __c.empty();}
+template <class _T, size_t _N> [[nodiscard]] constexpr bool empty(const _T (&)[_N]) noexcept
+    { return false; }
+template <class _E> [[nodiscard]] constexpr bool empty(std::initializer_list<_E> __il) noexcept
+    { return __il.size() == 0; }
+template <class _C> constexpr auto data(_C& __c) -> decltype(__c.data())
+    { return __c.data(); }
+template <class _C> constexpr auto data(const _C& __c) -> decltype(__c.data())
+    { return __c.data(); }
+template <class _T, size_t _N> constexpr _T* data(_T (&__array)[_N]) noexcept
+    { return __array; }
+template <class _E> constexpr const _E* data(std::initializer_list<_E> __il) noexcept
+    { return __il.begin(); }
 
 
 } // namespace __XVI_STD_CORE_NS_DECL

@@ -3,7 +3,13 @@
 #include <System/C++/Core/IteratorUtils.hh>
 
 #include <compare>
+#include <functional>
 #include <utility>
+
+
+//! @todo more comprehensive tests of the invocable concepts.
+//! @todo range concepts tests.
+//! @todo begin, end, etc tests for class types.
 
 
 using namespace __XVI_STD_CORE_NS;
@@ -56,6 +62,9 @@ struct iter_swap_tester
 {
     int val;
     
+    using value_type = int;
+    int operator*() const;
+
     friend constexpr void iter_swap(iter_swap_tester& x, iter_swap_tester& y)
     {
         x.val += 10;
@@ -376,4 +385,407 @@ TEST(IteratorUtils, ConceptContiguousIterator)
     EXPECT(!contiguous_iterator<void*>);
     EXPECT(contiguous_iterator<minimal_contiguous_iterator>);
     EXPECT(!contiguous_iterator<minimal_random_iterator>);
+}
+
+TEST(IteratorUtils, ConceptIndirectlyUnaryInvocable)
+{
+    EXPECT((indirectly_unary_invocable<void(*)(const int&), const int*>));
+}
+
+TEST(IteratorUtils, ConceptIndirectRegularUnaryInvocable)
+{
+    EXPECT((indirect_regular_unary_invocable<void(*)(const int&), const int*>));
+}
+
+TEST(IteratorUtils, ConceptIndirectBinaryPredicate)
+{
+    EXPECT((indirect_binary_predicate<bool(*)(int, int), const int*, const int*>));
+}
+
+TEST(IteratorUtils, ConceptIndirectEquivalenceRelation)
+{
+    EXPECT((indirect_equivalence_relation<int(*)(int, int), const int*, const int*>));
+}
+
+TEST(IteratorUtils, ConceptIndirectStrictWeakOrder)
+{
+    EXPECT((indirect_strict_weak_order<int(*)(int, int), const int*, const int*>));
+}
+
+TEST(IteratorUtils, Projected)
+{
+    struct double_int
+    {
+        static int operator()(int x) { return x * 2; };
+    };
+
+    EXPECT((indirectly_unary_invocable<double_int, const int*>));
+
+    using Proj = projected<const int*, double_int>;
+
+    EXPECT_SAME_TYPE(Proj::value_type, int);
+    EXPECT_SAME_TYPE(decltype(*declval<Proj>()), int);
+}
+
+TEST(IteratorUtils, ConceptIndirectlyMovable)
+{
+    struct data {};
+    struct movable_thing { operator data() &&; };
+    
+    EXPECT((indirectly_movable<const int*, int*>));
+    EXPECT(!(indirectly_movable<const int*, const int*>));
+    EXPECT(!(indirectly_movable<void*, int*>));
+    EXPECT((indirectly_movable<movable_thing*, data*>));
+}
+
+TEST(IteratorUtils, ConceptIndirectlyMovableStorable)
+{
+    EXPECT((indirectly_movable_storable<const int*, int*>));
+    EXPECT(!(indirectly_movable_storable<const int*, const int*>));
+    EXPECT((indirectly_movable_storable<iter_swap_data_one<int>*, iter_swap_data_two<int>*>));
+    EXPECT((indirectly_movable_storable<iter_swap_data_two<int>*, iter_swap_data_one<int>*>));
+}
+
+TEST(IteratorUtils, ConceptIndirectlyCopyable)
+{
+    struct noncopy { void operator=(const noncopy&) = delete; };
+
+    EXPECT((indirectly_copyable<const int*, int*>));
+    EXPECT(!(indirectly_copyable<const int*, const int*>));
+    EXPECT(!(indirectly_copyable<const noncopy*, noncopy*>));
+}
+
+TEST(IteratorUtils, ConceptIndirectlyCopyableStorable)
+{
+    EXPECT((indirectly_copyable_storable<const int*, int*>));
+    EXPECT(!(indirectly_copyable_storable<const int*, const int*>));
+}
+
+TEST(IteratorUtils, ConceptIndirectlySwappable)
+{
+    EXPECT((indirectly_swappable<int*, int*>));
+    EXPECT(!(indirectly_swappable<const int*, int*>));
+    EXPECT((indirectly_swappable<iter_swap_tester&, iter_swap_tester&>));
+    EXPECT((indirectly_swappable<custom_swap*, custom_swap*>));
+    EXPECT((indirectly_swappable<iter_swap_data_one<int>*, iter_swap_data_two<int>*>));
+}
+
+TEST(IteratorUtils, ConceptIndirectlyComparable)
+{
+    EXPECT((indirectly_comparable<const int*, const int*, std::equal_to<>>));
+    EXPECT(!(indirectly_comparable<const void*, const void*, std::equal_to<>>));
+    EXPECT((indirectly_comparable<void**, void**, std::less<>>));
+}
+
+TEST(IteratorUtils, ConceptPermutable)
+{
+    EXPECT((permutable<int*>));
+    EXPECT(!(permutable<const int*>));
+}
+
+TEST(IteratorUtils, ConceptMergeable)
+{
+    EXPECT((mergeable<const int*, const int*, int*>));
+    EXPECT((mergeable<int**, void**, void**>));
+    EXPECT(!(mergeable<const int*, const int*, const int*>));
+}
+
+TEST(IteratorUtils, ConceptSortable)
+{
+    EXPECT((sortable<int*, std::ranges::less>));
+    EXPECT(!(sortable<const int*, std::ranges::less>));
+}
+
+TEST(IteratorUtils, Advance)
+{
+    int array[5];
+
+    auto p = &array[0];
+
+    advance(p, 1);
+    EXPECT_EQ(p, &array[1]);
+
+    advance(p, 3);
+    EXPECT_EQ(p, &array[4]);
+
+    advance(p, -2);
+    EXPECT_EQ(p, &array[2]);
+}
+
+TEST(IteratorUtils, Distance)
+{
+    int array[10];
+
+    auto p = &array[0];
+    auto q = &array[3];
+    auto r = &array[7];
+    auto s = &array[9];
+
+    EXPECT_EQ(distance(p, q), 3);
+    EXPECT_EQ(distance(q, r), 4);
+    EXPECT_EQ(distance(p, s), 9);
+    EXPECT_EQ(distance(s, r), -2);
+    EXPECT_EQ(distance(r, p), -7);
+}
+
+TEST(IteratorUtils, Next)
+{
+    int array[10];
+
+    auto p = &array[0];
+    auto q = &array[3];
+    auto r = &array[7];
+    auto s = &array[9];
+
+    EXPECT_EQ(next(p, 3), q);
+    EXPECT_EQ(next(q, 4), r);
+    EXPECT_EQ(next(r, 2), s);
+    EXPECT_EQ(next(s, -6), q);
+    EXPECT_EQ(next(r, -7), p);
+}
+
+TEST(IteratorUtils, Prev)
+{
+    int array[10];
+
+    auto p = &array[0];
+    auto q = &array[3];
+    auto r = &array[7];
+    auto s = &array[9];
+
+    EXPECT_EQ(prev(p, -3), q);
+    EXPECT_EQ(prev(q, -4), r);
+    EXPECT_EQ(prev(r, -2), s);
+    EXPECT_EQ(prev(s, 6), q);
+    EXPECT_EQ(prev(r, 7), p);
+}
+
+TEST(IteratorUtils, RangesAdvance)
+{
+    // Basic advancement by a distance for random-access iterators.
+    {
+        int array[5];
+
+        auto p = &array[0];
+
+        ranges::advance(p, 1);
+        EXPECT_EQ(p, &array[1]);
+
+        ranges::advance(p, 3);
+        EXPECT_EQ(p, &array[4]);
+
+        ranges::advance(p, -2);
+        EXPECT_EQ(p, &array[2]);
+    }
+
+    //! @todo basic advancement by a distance for bidirectional iterators.
+    {
+    }
+
+    //! @todo basic advancement by a positive distance for non-bidirectional iterators.
+    {
+    }
+
+    // Advancement to an assignable sentinel.
+    {
+        int array[5];
+
+        int* p = &array[0];
+        int* const s = &array[3];
+
+        ranges::advance(p, s);
+        EXPECT_EQ(p, s);
+    }
+
+    // Advancement to a non-assignable but sized sentinel.
+    {
+        int array[5];
+
+        int* p = &array[0];
+        const int* const s = &array[3];
+
+        ranges::advance(p, s);
+        EXPECT_EQ(p, s);
+    }
+
+    //! @todo advancement to a non-assignable, non-sized sentinel.
+    {
+    }
+
+    // Advancement to a bound or by a distance, whichever is smaller, with a sized sentinel.
+    {
+        int array[5];
+
+        int* p = &array[0];
+        int* const s = &array[3];
+
+        EXPECT_EQ(ranges::advance(p, 2, s), 0);
+        EXPECT_EQ(p, &array[2]);
+
+        EXPECT_EQ(ranges::advance(p, 2, s), 1);
+        EXPECT_EQ(p, s);
+
+        EXPECT_EQ(ranges::advance(p, 2, s), 2);
+    }
+
+    //! @todo advancement to a bound or by a distance, whichever is smaller, with a non-sized sentinel and with a
+    //!       bidirectional iterator type.
+    {
+    }
+
+    //! @todo advancement to a bound or by a distance, whichever is smaller, with a non-sized sentinel and with a
+    //!       non-bidirectional iterator type.
+}
+
+TEST(IteratorUtils, RangesDistance)
+{
+    // Distance for an iterator and sized sentinel.
+    {
+        int array[10];
+
+        auto p = &array[0];
+        auto q = &array[3];
+        auto r = &array[7];
+        auto s = &array[9];
+
+        EXPECT_EQ(ranges::distance(p, q), 3);
+        EXPECT_EQ(ranges::distance(q, r), 4);
+        EXPECT_EQ(ranges::distance(p, s), 9);
+        EXPECT_EQ(ranges::distance(s, r), -2);
+        EXPECT_EQ(ranges::distance(r, p), -7);
+    }
+
+    //! @todo distance for an iterator and non-sized sentinel.
+    {
+    }
+
+    //! @todo distance for a sized range.
+    {
+    }
+
+    //! @todo distance for a non-sized range.
+}
+
+TEST(IteratorUtils, RangesNext)
+{
+    // Next without a distance.
+    {
+        int array[3];
+
+        auto p = &array[0];
+        auto q = &array[1];
+        auto r = &array[2];
+
+        EXPECT_EQ(ranges::next(p), q);
+        EXPECT_EQ(ranges::next(q), r);
+    }
+    
+    // Next with a distance.
+    {
+        int array[10];
+
+        auto p = &array[0];
+        auto q = &array[3];
+        auto r = &array[7];
+        auto s = &array[9];
+
+        EXPECT_EQ(ranges::next(p, 3), q);
+        EXPECT_EQ(ranges::next(q, 4), r);
+        EXPECT_EQ(ranges::next(r, 2), s);
+        EXPECT_EQ(ranges::next(s, -6), q);
+        EXPECT_EQ(ranges::next(r, -7), p);
+    }
+
+    // Next with a sentinel.
+    {
+        int array[5];
+
+        int* const p = &array[0];
+        int* const s = &array[3];
+
+        EXPECT_EQ(ranges::next(p, s), s);
+    }
+
+    // Next with a distance and a sentinel.
+    {
+        int array[5];
+
+        int* const p = &array[0];
+        int* const s = &array[3];
+
+        EXPECT_EQ(ranges::next(p, 2, s), &array[2]);
+        EXPECT_EQ(ranges::next(p, 5, s), s);
+    }
+}
+
+TEST(IteratorUtils, RangesPrev)
+{
+    // Previous without a distance.
+    {
+        int array[3];
+
+        auto p = &array[0];
+        auto q = &array[1];
+        auto r = &array[2];
+
+        EXPECT_EQ(ranges::prev(r), q);
+        EXPECT_EQ(ranges::prev(q), p);
+    }
+
+    // Previous with a distance.
+    {
+        int array[10];
+
+        auto p = &array[0];
+        auto q = &array[3];
+        auto r = &array[7];
+        auto s = &array[9];
+
+        EXPECT_EQ(ranges::prev(p, -3), q);
+        EXPECT_EQ(ranges::prev(q, -4), r);
+        EXPECT_EQ(ranges::prev(r, -2), s);
+        EXPECT_EQ(ranges::prev(s, 6), q);
+        EXPECT_EQ(ranges::prev(r, 7), p);
+    }
+
+    // Previous with a distance and a sentinel.
+    {
+        int array[10];
+        
+        int* const p = &array[4];
+        int* const s = &array[1];
+
+        EXPECT_EQ(ranges::prev(p, 5, s), s);
+    }
+}
+
+TEST(IteratorUtils, ArrayIteratorFunctions)
+{
+    int array[10];
+
+    EXPECT_EQ(begin(array), &array[0]);
+    EXPECT_EQ(end(array), &array[9] + 1);
+    EXPECT_EQ(cbegin(array), begin(array));
+    EXPECT_EQ(cend(array), end(array));
+    EXPECT_EQ(size(array), 10);
+    EXPECT_EQ(ssize(array), 10);
+    EXPECT_EQ(data(array), begin(array));
+    EXPECT(!empty(array));
+}
+
+TEST(IteratorUtils, InitializerListIteratorFunctions)
+{
+    // Only data and empty have specific initializer list overloads. The others are the normal class-type overloads.
+    //
+    // We have to use qualified names here otherwise ADL will try to find the functions in the std namespace of the host.
+    auto init = {1, 2, 3, 4, 5};
+
+    EXPECT_EQ(__XVI_STD_CORE_NS::begin(init), init.begin());
+    EXPECT_EQ(__XVI_STD_CORE_NS::end(init), init.end());
+    EXPECT_EQ(__XVI_STD_CORE_NS::cbegin(init), __XVI_STD_CORE_NS::begin(init));
+    EXPECT_EQ(__XVI_STD_CORE_NS::cend(init), __XVI_STD_CORE_NS::end(init));
+    EXPECT_EQ(__XVI_STD_CORE_NS::size(init), init.size());
+    EXPECT_EQ(__XVI_STD_CORE_NS::ssize(init), __XVI_STD_CORE_NS::size(init));
+    EXPECT_EQ(__XVI_STD_CORE_NS::data(init), init.begin());
+    EXPECT(!__XVI_STD_CORE_NS::empty(init));
 }

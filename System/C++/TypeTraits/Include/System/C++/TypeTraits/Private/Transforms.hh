@@ -406,17 +406,18 @@ struct __common_reference_dual_helper : __common_type_utils
 
     struct __alt0 { static constexpr bool value = __use_alt0; template <class _X, class _Y> using __type = __alt0_t<_X, _Y>; };
     struct __alt1 { static constexpr bool value = __use_alt1; template <class _X, class _Y> using __type = __alt1_t<_X, _Y>; };
-    struct __alt2 { static constexpr bool value = __use_alt2; template <class _X, class _Y> using __Type = __alt2_t<_X, _Y>; };
+    struct __alt2 { static constexpr bool value = __use_alt2; template <class _X, class _Y> using __type = __alt2_t<_X, _Y>; };
     struct __alt3 { static constexpr bool value = __use_alt3; template <class _X, class _Y> using __type = __alt3_t<_X, _Y>; };
+    struct __fallback { static constexpr bool value = true;   template <class _X, class _Y> using __type = void; };
 
     template <class _X = _T0, class _Y = _T1>
-    using __type = typename disjunction<__alt0, __alt1, __alt2, __alt3>::template __type<_X, _Y>;
+    using __type = typename disjunction<__alt0, __alt1, __alt2, __alt3, __fallback>::template __type<_X, _Y>;
 };
 
-template <class _T0, class _T1, bool = __common_reference_dual_helper<_T0, _T1>::__has_type>
-    struct __common_reference_dual {};
+template <class _T0, class _T1> struct __common_reference_dual {};
 template <class _T0, class _T1>
-    struct __common_reference_dual<_T0, _T1, true> { using type = typename __common_reference_dual_helper<_T0, _T1>::template __type<>; };
+    requires (__common_reference_dual_helper<_T0, _T1>::__has_type)
+struct __common_reference_dual<_T0, _T1> { using type = typename __common_reference_dual_helper<_T0, _T1>::template __type<>; };
 
 template <bool, class _T0, class _T1, class... _Rest>
     struct __common_reference_multiple_helper : common_reference<typename common_reference<_T0, _T1>::type, _Rest...> {};
