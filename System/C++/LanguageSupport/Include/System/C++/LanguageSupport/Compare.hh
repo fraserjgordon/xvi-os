@@ -1,4 +1,3 @@
-#pragma once
 #ifndef __SYSTEM_CXX_LANGUAGESUPPORT_COMPARE_H
 #define __SYSTEM_CXX_LANGUAGESUPPORT_COMPARE_H
 
@@ -8,6 +7,11 @@
 
 #include <System/C++/LanguageSupport/StdDef.hh>
 #include <System/C++/LanguageSupport/Private/Namespace.hh>
+
+// Needed for nteroperability with std types when hosted.
+#if defined(__XVI_HOSTED)
+#  include <compare>
+#endif
 
 
 namespace __XVI_STD_LANGSUPPORT_NS_DECL
@@ -31,6 +35,15 @@ public:
     static const partial_ordering equivalent;
     static const partial_ordering greater;
     static const partial_ordering unordered;
+
+#if defined(__XVI_HOSTED)
+    constexpr partial_ordering(std::partial_ordering __o) :
+        _M_value((__o == std::partial_ordering::unordered)  ? -127 :
+                 (__o == std::partial_ordering::equivalent) ?  0   :
+                 (__o == std::partial_ordering::less)       ? -1   : 1),
+        _M_is_ordered(__o != std::partial_ordering::unordered)
+        {}
+#endif
 
     friend constexpr bool operator==(partial_ordering, partial_ordering) noexcept = default;
 
@@ -91,8 +104,13 @@ public:
     { 
         return _M_value == 0 ? partial_ordering::equivalent :
                _M_value <  0 ? partial_ordering::less : 
-                             partial_ordering::greater;
+                               partial_ordering::greater;
     }
+
+#if defined(__XVI_HOSTED)
+    constexpr weak_ordering(std::weak_ordering __o) :
+        _M_value((__o == std::weak_ordering::equivalent) ? 0 : (__o == std::weak_ordering::less) ? -1 : 1) {}
+#endif
 
     friend constexpr bool operator==(weak_ordering, weak_ordering) noexcept = default;
 
@@ -160,6 +178,11 @@ public:
                _M_value <  0 ? weak_ordering::less :
                                weak_ordering::greater;
     }
+
+#if __XVI_HOSTED
+    constexpr strong_ordering(std::strong_ordering __o) :
+        _M_value((__o == std::strong_ordering::equal) ? 0 : (__o == std::strong_ordering::less) ? -1 : 1) {}
+#endif
 
     friend constexpr bool operator==(strong_ordering, strong_ordering) noexcept = default;
 
@@ -229,6 +252,13 @@ template <> struct __is_comparison_category<partial_ordering> : true_type {};
 template <> struct __is_comparison_category<weak_ordering> : true_type {};
 template <> struct __is_comparison_category<strong_ordering> : true_type {};
 
+// Interoperability with std types when hosted.
+#if defined(__XVI_HOSTED)
+template <> struct __is_comparison_category<std::partial_ordering> : true_type {};
+template <> struct __is_comparison_category<std::weak_ordering> : true_type {};
+template <> struct __is_comparison_category<std::strong_ordering> : true_type {};
+#endif
+
 template <class _T, class... _Ts> struct __type_in_pack : bool_constant<(is_same_v<_T, _Ts> || ...)> {};
 
 template <class... _Ts>
@@ -238,10 +268,22 @@ struct __common_comparison_category
     static constexpr bool __pord = __type_in_pack<partial_ordering, _Ts...>::value;
     static constexpr bool __word = __type_in_pack<weak_ordering, _Ts...>::value;
 
+#if defined(__XVI_HOSTED)
+    static constexpr bool __pord_std = __type_in_pack<std::partial_ordering, _Ts...>::value;
+    static constexpr bool __word_std = __type_in_pack<std::weak_ordering, _Ts...>::value;
+
+    using __type_std = conditional_t<__other, void,
+                       conditional_t<__pord || __pord_std, partial_ordering,
+                       conditional_t<__word || __word_std, weak_ordering, strong_ordering>>>;
+#else
+    using __type_std = void;
+#endif
+
     // Note: defaults to strong_ordering when the pack is empty.
-    using __type = std::conditional_t<__other, void,
-                   std::conditional_t<__pord, partial_ordering,
-                   std::conditional_t<__word, weak_ordering, strong_ordering>>>;
+    using __type = conditional_t<!is_void_v<__type_std>, __type_std,
+                   conditional_t<__other, void,
+                   conditional_t<__pord, partial_ordering,
+                   conditional_t<__word, weak_ordering, strong_ordering>>>>;
 };
 
 } // namespace __detail
@@ -315,7 +357,7 @@ struct compare_three_way
         requires three_way_comparable_with<_T, _U> || __detail::__builtin_ptr_three_way<_T, _U>
     constexpr auto operator()(_T&& __t, _U&& __u) const
     {
-        return std::forward<_T>(__t) <=> std::forward<_U>(__u);
+        return __XVI_STD_NS::forward<_T>(__t) <=> __XVI_STD_NS::forward<_U>(__u);
     }
 
     using is_transparent = void;
@@ -366,7 +408,7 @@ struct __strong_order
          && __has_strong_order<strong_ordering, _E, _F>)
     static constexpr auto operator()(_E&& __e, _F&& __f)
     {
-        return strong_ordering(strong_order(std::forward<_E>(__e), std::forward<_F>(__f)));
+        return strong_ordering(strong_order(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f)));
     }
 
     template <class _E, class _F>
@@ -375,7 +417,7 @@ struct __strong_order
         && __has_compare_three_way<strong_ordering, _E, _F>)
     static constexpr auto operator()(_E&& __e, _F&& __f)
     {
-        return strong_ordering(compare_three_way()(std::forward<_E>(__e), std::forward<_F>(__f)));
+        return strong_ordering(compare_three_way()(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f)));
     }
 
     template <class _E, class _F>
@@ -398,7 +440,7 @@ struct __weak_order
         && __has_weak_order<weak_ordering, _E, _F>)
     static constexpr auto operator()(_E&& __e, _F&& __f)
     {
-        return weak_ordering(weak_order(std::forward<_E>(__e), std::forward<_F>(__f)));
+        return weak_ordering(weak_order(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f)));
     }
 
     template <class _E, class _F>
@@ -407,7 +449,7 @@ struct __weak_order
         && __has_compare_three_way<weak_ordering, _E, _F>)
     static constexpr auto operator()(_E&& __e, _F&& __f)
     {
-        return weak_ordering(compare_three_way()(std::forward<_E>(__e), std::forward<_F>(__f)));
+        return weak_ordering(compare_three_way()(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f)));
     }
 
     template <class _E, class _F>
@@ -417,7 +459,7 @@ struct __weak_order
         && __has_strong_order<weak_ordering, _E, _F>)
     static constexpr auto operator()(_E&& __e, _F&& __f)
     {
-        return weak_ordering(strong_order(std::forward<_E>(__e), std::forward<_F>(__f)));
+        return weak_ordering(strong_order(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f)));
     }
 
     template <class _E, class _F>
@@ -441,7 +483,7 @@ struct __partial_order
         && __has_partial_order<partial_ordering, _E, _F>)
     static constexpr auto operator()(_E&& __e, _F&& __f)
     {
-        return partial_ordering(partial_order(std::forward<_E>(__e), std::forward<_F>(__f)));
+        return partial_ordering(partial_order(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f)));
     }
 
     template <class _E, class _F>
@@ -450,7 +492,7 @@ struct __partial_order
         && __has_compare_three_way<partial_ordering, _E, _F>)
     static constexpr auto operator()(_E&& __e, _F&& __f)
     {
-        return partial_ordering(compare_three_way()(std::forward<_E>(__e), std::forward<_F>(__f)));
+        return partial_ordering(compare_three_way()(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f)));
     }
 
     template <class _E, class _F>
@@ -460,7 +502,7 @@ struct __partial_order
         && __has_weak_order<partial_ordering, _E, _F>)
     static constexpr auto operator()(_E&& __e, _F&& __f)
     {
-        return partial_ordering(weak_order(std::forward<_E>(__e), std::forward<_F>(__f)));
+        return partial_ordering(weak_order(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f)));
     }
 
     template <class _E, class _F>
@@ -484,7 +526,7 @@ struct __compare_strong_order_fallback
         && __has_strong_order<void, _E, _F>)
     static constexpr auto operator()(_E&& __e, _F&& __f)
     {
-        return strong_order(std::forward<_E>(__e), std::forward<_F>(__f));
+        return strong_order(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f));
     }
 
     template <class _E, class _F>
@@ -518,7 +560,7 @@ struct __compare_weak_order_fallback
         && __has_weak_order<void, _E, _F>)
     static constexpr auto operator()(_E&& __e, _F&& __f)
     {
-        return weak_order(std::forward<_E>(__e), std::forward<_F>(__f));
+        return weak_order(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f));
     }
 
     template <class _E, class _F>
@@ -552,7 +594,7 @@ struct __compare_partial_order_fallback
         && __has_partial_order<void, _E, _F>)
     static constexpr auto operator()(_E&& __e, _F&& __f)
     {
-        return partial_order(std::forward<_E>(__e), std::forward<_F>(__f));
+        return partial_order(__XVI_STD_NS::forward<_E>(__e), __XVI_STD_NS::forward<_F>(__f));
     }
 
     template <class _E, class _F>
@@ -590,7 +632,11 @@ constexpr auto __synth_three_way = []<class _T, class _U>(const _T& __t, const _
     }
 {
     if constexpr (three_way_comparable_with<_T, _U>)
-        return __t <=> __u;
+    {
+        // Force conversion from a std to __XVI_STD type when hosted.
+        using _C = common_comparison_category_t<decltype(__t <=> __u)>;
+        return _C(__t <=> __u);
+    }
     else
     {
         if (__t < __u)

@@ -124,7 +124,7 @@ public:
 
     constexpr decltype(auto) operator[](difference_type __n) const
     {
-        return _M_current[__n - 1];
+        return _M_current[-__n - 1];
     }
 
     friend constexpr iter_rvalue_reference_t<_Iterator> iter_move(const reverse_iterator& __i)
@@ -544,6 +544,359 @@ template <class _Container>
 constexpr insert_iterator<_Container> inserter(_Container& __x, ranges::iterator_t<_Container> __i)
 {
     return insert_iterator<_Container>(__x, __i);
+}
+
+
+template <input_iterator> class basic_const_iterator;
+
+template <indirectly_readable _It>
+using iter_const_reference_t = common_reference_t<const iter_value_t<_It>&&, iter_reference_t<_It>>;
+
+namespace __detail
+{
+
+template <class _It>
+concept __constant_iterator = input_iterator<_It> && same_as<iter_const_reference_t<_It>, iter_reference_t<_It>>;
+
+template <input_iterator _I>
+struct __const_iterator { using type = basic_const_iterator<_I>; };
+
+template <input_iterator _I>
+    requires __constant_iterator<_I>
+struct __const_iterator<_I> { using type = _I; };
+
+template <semiregular _S>
+struct __const_sentinel { using type = _S; };
+
+template <semiregular _S>
+    requires input_iterator<_S>
+struct __const_sentinel<_S> { using type = __const_iterator<_S>::type; };
+
+template <class _T>
+struct __is_basic_const_iterator_specialization : false_type {};
+
+template <input_iterator _T>
+struct __is_basic_const_iterator_specialization<basic_const_iterator<_T>> : true_type {};
+
+template <class _I>
+concept __not_a_const_iterator = !__is_basic_const_iterator_specialization<_I>::value;
+
+template <indirectly_readable _I>
+using __iter_const_rvalue_reference_t = common_reference_t<const iter_value_t<_I>&&, iter_rvalue_reference_t<_I>>;
+
+template <input_iterator _I>
+struct __basic_const_iterator_category {};
+
+template <forward_iterator _I>
+struct __basic_const_iterator_category<_I> { using iterator_category = iterator_traits<_I>::iterator_category; };
+
+template <input_iterator _I>
+struct __basic_const_iterator_concept { using type = input_iterator_tag; };
+
+template <forward_iterator _I>
+struct __basic_const_iterator_concept<_I> { using type = forward_iterator_tag; };
+
+template <bidirectional_iterator _I>
+struct __basic_const_iterator_concept<_I> { using type = bidirectional_iterator_tag; };
+
+template <random_access_iterator _I>
+struct __basic_const_iterator_concept<_I> { using type = random_access_iterator_tag; };
+
+template <contiguous_iterator _I>
+struct __basic_const_iterator_concept<_I> { using type = contiguous_iterator_tag; };
+
+template <class _T, class _U>
+concept __different_from = !same_as<remove_cvref_t<_T>, remove_cvref_t<_U>>;
+
+} // namespace __detail
+
+template <input_iterator _I>
+using const_iterator = __detail::__const_iterator<_I>::type;
+
+template <semiregular _S>
+using const_sentinel = __detail::__const_sentinel<_S>::type;
+
+template <input_iterator _Iterator>
+class basic_const_iterator :
+    public __detail::__basic_const_iterator_category<_Iterator>
+{
+    using __reference = iter_const_reference_t<_Iterator>;
+    using __rvalue_reference = __detail::__iter_const_rvalue_reference_t<_Iterator>;
+
+public:
+
+    using iterator_concept = __detail::__basic_const_iterator_concept<_Iterator>::type;
+    using value_type = iter_value_t<_Iterator>;
+    using difference_type = iter_difference_t<_Iterator>;
+
+    basic_const_iterator()
+        requires default_initializable<_Iterator> = default;
+
+    constexpr basic_const_iterator(_Iterator __current) :
+        _M_current(__XVI_STD_NS::move(__current))
+    {
+    }
+
+    template <convertible_to<_Iterator> _U>
+    constexpr basic_const_iterator(basic_const_iterator<_U> __current) :
+        _M_current(__XVI_STD_NS::move(__current._M_current))
+    {
+    }
+
+    template <__detail::__different_from<basic_const_iterator> _T>
+        requires convertible_to<_T, _Iterator>
+    constexpr basic_const_iterator(_T&& __current) :
+        _M_current(__XVI_STD_NS::forward<_T>(__current))
+    {
+    }
+
+    constexpr const _Iterator& base() const & noexcept
+    {
+        return _M_current;
+    }
+
+    constexpr _Iterator base() &&
+    {
+        return __XVI_STD_NS::move(_M_current);
+    }
+
+    constexpr __reference operator*() const
+    {
+        return static_cast<__reference>(*_M_current);
+    }
+
+    constexpr const auto* operator->() const
+        requires is_lvalue_reference_v<iter_reference_t<_Iterator>>
+            && same_as<remove_cvref_t<iter_reference_t<_Iterator>>, value_type>
+    {
+        if constexpr (contiguous_iterator<_Iterator>)
+            return __XVI_STD_NS::to_address(_M_current);
+        else
+            return __XVI_STD_NS::addressof(*_M_current);
+    }
+
+    constexpr basic_const_iterator& operator++()
+    {
+        ++_M_current;
+        return *this;
+    }
+
+    constexpr void operator++(int)
+    {
+        ++_M_current;
+    }
+
+    constexpr basic_const_iterator operator++(int)
+        requires forward_iterator<_Iterator>
+    {
+        auto __tmp = *this;
+        ++*this;
+        return __tmp;
+    }
+
+    constexpr basic_const_iterator& operator--()
+        requires bidirectional_iterator<_Iterator>
+    {
+        --_M_current;
+        return *this;
+    }
+
+    constexpr basic_const_iterator operator--(int)
+        requires bidirectional_iterator<_Iterator>
+    {
+        auto __tmp = *this;
+        --*this;
+        return __tmp;
+    }
+
+    constexpr basic_const_iterator& operator+=(difference_type __n)
+        requires random_access_iterator<_Iterator>
+    {
+        _M_current += __n;
+        return *this;
+    }
+
+    constexpr basic_const_iterator& operator-=(difference_type __n)
+        requires random_access_iterator<_Iterator>
+    {
+        _M_current -= __n;
+        return *this;
+    }
+
+    constexpr __reference operator[](difference_type __n) const
+        requires random_access_iterator<_Iterator>
+    {
+        return static_cast<__reference>(_M_current[__n]);
+    }
+
+    template <sentinel_for<_Iterator> _S>
+    constexpr bool operator==(const _S& __s) const
+    {
+        return _M_current == __s;
+    }
+
+    constexpr bool operator<(const basic_const_iterator& __y) const
+        requires random_access_iterator<_Iterator>
+    {
+        return _M_current < __y._M_current;
+    }
+
+    constexpr bool operator>(const basic_const_iterator& __y) const
+        requires random_access_iterator<_Iterator>
+    {
+        return _M_current > __y._M_current;
+    }
+
+    constexpr bool operator<=(const basic_const_iterator& __y) const
+        requires random_access_iterator<_Iterator>
+    {
+        return _M_current <= __y._M_current;
+    }
+
+    constexpr bool operator>=(const basic_const_iterator& __y) const
+        requires random_access_iterator<_Iterator>
+    {
+        return _M_current >= __y._M_current;
+    }
+
+    constexpr auto operator<=>(const basic_const_iterator& __y) const
+        requires random_access_iterator<_Iterator> && three_way_comparable<_Iterator>
+    {
+        return _M_current <=> __y._M_current;
+    }
+
+    template <__detail::__different_from<basic_const_iterator> _I>
+    constexpr bool operator<(const _I& __y) const
+        requires random_access_iterator<_Iterator> && totally_ordered_with<_Iterator, _I>
+    {
+        return _M_current < __y;
+    }
+
+    template <__detail::__different_from<basic_const_iterator> _I>
+    constexpr bool operator>(const _I& __y) const
+        requires random_access_iterator<_Iterator> && totally_ordered_with<_Iterator, _I>
+    {
+        return _M_current > __y;
+    }
+
+    template <__detail::__different_from<basic_const_iterator> _I>
+    constexpr bool operator<=(const _I& __y) const
+        requires random_access_iterator<_Iterator> && totally_ordered_with<_Iterator, _I>
+    {
+        return _M_current <= __y;
+    }
+
+    template <__detail::__different_from<basic_const_iterator> _I>
+    constexpr bool operator>=(const _I& __y) const
+        requires random_access_iterator<_Iterator> && totally_ordered_with<_Iterator, _I>
+    {
+        return _M_current >= __y;
+    }
+
+    template <__detail::__different_from<basic_const_iterator> _I>
+    constexpr auto operator<=>(const _I& __y) const
+        requires random_access_iterator<_Iterator> && totally_ordered_with<_Iterator, _I> && three_way_comparable_with<_Iterator, _I>
+    {
+        return _M_current <=> __y;
+    }
+
+    template <__detail::__not_a_const_iterator _I>
+    friend constexpr bool operator<(const _I& __x, const basic_const_iterator& __y)
+        requires random_access_iterator<_Iterator> && totally_ordered_with<_Iterator, _I>
+    {
+        return __x < __y._M_current;
+    }
+
+    template <__detail::__not_a_const_iterator _I>
+    friend constexpr bool operator>(const _I& __x, const basic_const_iterator& __y)
+        requires random_access_iterator<_Iterator> && totally_ordered_with<_Iterator, _I>
+    {
+        return __x > __y._M_current;
+    }
+
+    template <__detail::__not_a_const_iterator _I>
+    friend constexpr bool operator<=(const _I& __x, const basic_const_iterator& __y)
+        requires random_access_iterator<_Iterator> && totally_ordered_with<_Iterator, _I>
+    {
+        return __x <= __y._M_current;
+    }
+
+    template <__detail::__not_a_const_iterator _I>
+    friend constexpr bool operator>=(const _I& __x, const basic_const_iterator& __y)
+        requires random_access_iterator<_Iterator> && totally_ordered_with<_Iterator, _I>
+    {
+        return __x >= __y._M_current;
+    }
+
+    friend constexpr basic_const_iterator operator+(const basic_const_iterator& __i, difference_type __n)
+        requires random_access_iterator<_Iterator>
+    {
+        return basic_const_iterator(__i._M_current + __n);
+    }
+
+    friend constexpr basic_const_iterator operator+(difference_type __n, const basic_const_iterator& __i)
+        requires random_access_iterator<_Iterator>
+    {
+        return basic_const_iterator(__i._M_current + __n);
+    }
+
+    friend constexpr basic_const_iterator operator-(const basic_const_iterator& __i, difference_type __n)
+        requires random_access_iterator<_Iterator>
+    {
+        return basic_const_iterator(__i._M_current - __n);
+    }
+
+    template <sized_sentinel_for<_Iterator> _S>
+    constexpr difference_type operator-(const _S& __s) const
+    {
+        return _M_current - __s;
+    }
+
+    template <__detail::__not_a_const_iterator _S>
+        requires sized_sentinel_for<_S, _Iterator>
+    friend constexpr difference_type operator-(const _S& __x, const basic_const_iterator& __y)
+    {
+        return __x - __y._M_current;
+    }
+
+    friend constexpr __rvalue_reference iter_move(const basic_const_iterator& __i)
+        noexcept(noexcept(static_cast<__rvalue_reference>(ranges::iter_move(__i._M_current))))
+    {
+        return static_cast<__rvalue_reference>(ranges::iter_move(__i._M_current));
+    }
+
+private:
+
+    template <input_iterator> friend class basic_const_iterator;
+
+    _Iterator _M_current = _Iterator();
+};
+
+template <class _T, common_with<_T> _U>
+    requires input_iterator<common_type_t<_T, _U>>
+struct common_type<basic_const_iterator<_T>, _U>
+    { using type = basic_const_iterator<common_type_t<_T, _U>>; };
+
+template <class _T, common_with<_T> _U>
+    requires input_iterator<common_type_t<_T, _U>>
+struct common_type<_U, basic_const_iterator<_T>>
+    { using type = basic_const_iterator<common_type_t<_T, _U>>; };
+
+template <class _T, common_with<_T> _U>
+    requires input_iterator<common_type_t<_T, _U>>
+struct common_type<basic_const_iterator<_T>, basic_const_iterator<_U>>
+    { using type = basic_const_iterator<common_type_t<_T, _U>>; };
+
+template <input_iterator _I>
+constexpr const_iterator<_I> make_const_iterator(_I __it)
+{
+    return __it;
+}
+
+template <semiregular _S>
+constexpr const_sentinel<_S> make_const_sentinel(_S __s)
+{
+    return __s;
 }
 
 
@@ -1278,9 +1631,9 @@ template <class _T, size_t _N> constexpr reverse_iterator<_T*> rbegin(_T (&__arr
     { return reverse_iterator<_T*>(__array + _N); }
 template <class _T, size_t _N> constexpr reverse_iterator<_T*> rend(_T (&__array)[_N])
     { return reverse_iterator<_T*>(__array); }
-template <class _E> constexpr reverse_iterator<const _E*> rbegin(initializer_list<_E> __il)
+template <class _E> constexpr reverse_iterator<const _E*> rbegin(std::initializer_list<_E> __il)
     { return reverse_iterator<const _E*>(__il.end()); }
-template <class _E> constexpr reverse_iterator<const _E*> rend(initializer_list<_E> __il)
+template <class _E> constexpr reverse_iterator<const _E*> rend(std::initializer_list<_E> __il)
     { return reverse_iterator<const _E*>(__il.begin()); }
 template <class _C> constexpr auto crbegin(const _C& __c) -> decltype(__XVI_STD_NS::rbegin(__c))
     { return __XVI_STD_NS::rbegin(__c); }
