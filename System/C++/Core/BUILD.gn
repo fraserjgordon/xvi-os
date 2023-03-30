@@ -16,6 +16,7 @@ library("Core")
     [
         "AddressOf.hh",
         "Any.hh",
+        "Array.hh",
         "CtorTags.hh",
         "Expected.hh",
         "Function.hh",
@@ -43,6 +44,7 @@ library("Core")
     [
         "AddressOf.cc",
         "Any.cc",
+        "Array.cc",
         "Expected.cc",
         "Function.cc",
         "FunctionalUtils.cc",
@@ -52,6 +54,7 @@ library("Core")
         "IteratorTraits.cc",
         "IteratorUtils.cc",
         "MemoryAlgorithms.cc",
+        "MoveOnlyFunction.cc",
         "Optional.cc",
         "Pair.cc",
         "PointerTraits.cc",

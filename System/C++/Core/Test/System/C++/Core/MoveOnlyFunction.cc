@@ -1,2 +1,3 @@
-#include <System/C++/Core/Function.hh>
+#include <Tools/Development/Test/Test.hh>
+
 #include <System/C++/Core/MoveOnlyFunction.hh>

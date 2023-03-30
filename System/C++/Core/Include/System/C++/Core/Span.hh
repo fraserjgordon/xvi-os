@@ -7,6 +7,7 @@
 #include <System/C++/TypeTraits/TypeTraits.hh>
 
 #include <System/C++/Core/Private/Config.hh>
+#include <System/C++/Core/Array.hh>
 #include <System/C++/Core/IteratorAdaptors.hh>
 
 
@@ -15,7 +16,6 @@ namespace __XVI_STD_CORE_NS_DECL
 
 
 // Forward declarations.
-template <class, size_t> struct array;
 template <class, size_t> class span;
 
 
@@ -47,7 +47,9 @@ public:
     using reference             = element_type&;
     using const_reference       = const element_type&;
     using iterator              = pointer;
+    using const_iterator        = __XVI_STD_NS::const_iterator<iterator>;
     using reverse_iterator      = __XVI_STD_NS::reverse_iterator<iterator>;
+    using const_reverse_iterator= __XVI_STD_NS::const_iterator<reverse_iterator>;
   
     static constexpr size_type extent = _Extent;
 
@@ -82,7 +84,7 @@ public:
     constexpr span(type_identity_t<element_type> (&__arr)[_N]) noexcept
         requires (extent == dynamic_extent || extent == _N)
                   && is_convertible_v<remove_pointer_t<decltype(__XVI_STD_NS::data(__arr))>(*)[], element_type(*)[]>
-        : _M_data(__XVI_STD_NS::addressof(__arr)),
+        : _M_data(__XVI_STD_NS::data(__arr)),
           _M_size(_N)
     {
     }
@@ -208,7 +210,7 @@ public:
 
     constexpr reference back() const
     {
-        return (*data() + (size() - 1));
+        return *(data() + (size() - 1));
     }
 
     constexpr pointer data() const noexcept
@@ -226,6 +228,16 @@ public:
         return _M_data + _M_size;
     }
 
+    constexpr const_iterator cbegin() const noexcept
+    {
+        return begin();
+    }
+
+    constexpr const_iterator cend() const noexcept
+    {
+        return end();
+    }
+
     constexpr reverse_iterator rbegin() const noexcept
     {
         return reverse_iterator(end());
@@ -234,6 +246,16 @@ public:
     constexpr reverse_iterator rend() const noexcept
     {
         return reverse_iterator(begin());
+    }
+
+    constexpr const_reverse_iterator crbegin() const noexcept
+    {
+        return rbegin();
+    }
+
+    constexpr const_reverse_iterator crend() const noexcept
+    {
+        return rend();
     }
 
 private:
