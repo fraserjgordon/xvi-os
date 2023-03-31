@@ -152,7 +152,7 @@ public:
 
     bool __valid() const final
     {
-        return is_same_v<_T, __empty_function>;
+        return !is_same_v<_T, __empty_function<_R, _Args...>>;
     }
 
     _R __call(__function_storage_t& __s, _Args&&... __args) const final
@@ -208,6 +208,14 @@ public:
         if constexpr (is_pointer_v<remove_cvref_t<_F>> && is_function_v<remove_pointer_t<remove_cvref_t<_F>>>)
         {
             // Null function pointer => empty.
+            if (__f == nullptr)
+                return;
+
+            // Otherwise, construct normally.
+        }
+        else if constexpr (is_member_pointer_v<remove_cvref_t<_F>>)
+        {
+            // Null member data pointer => empty.
             if (__f == nullptr)
                 return;
 
@@ -411,63 +419,63 @@ template <class...> class move_only_function;
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) noexcept(false)>
-    : __detail::__move_only_function_base<false, false, int, _R, _ArgTypes...>
-        { using __detail::__move_only_function_base<false, false, int, _R, _ArgTypes...>::__move_only_function_base; };
+    : public __detail::__move_only_function_base<false, false, int, _R, _ArgTypes...>
+        { using _Base = __detail::__move_only_function_base<false, false, int, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) const noexcept(false)>
-    : __detail::__move_only_function_base<true, false, int, _R, _ArgTypes...>
-        { using __detail::__move_only_function_base<true, false, int, _R, _ArgTypes...>::__move_only_function_base; };
+    : public __detail::__move_only_function_base<true, false, int, _R, _ArgTypes...>
+        { using _Base = __detail::__move_only_function_base<true, false, int, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) & noexcept(false)>
-    : __detail::__move_only_function_base<false, false, int&, _R, _ArgTypes...>
-        { using __detail::__move_only_function_base<false, false, int&, _R, _ArgTypes...>::__move_only_function_base; };
+    : public __detail::__move_only_function_base<false, false, int&, _R, _ArgTypes...>
+        { using _Base =__detail::__move_only_function_base<false, false, int&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) const & noexcept(false)>
-    : __detail::__move_only_function_base<true, false, int&, _R, _ArgTypes...>
-        { using __detail::__move_only_function_base<true, false, int&, _R, _ArgTypes...>::__move_only_function_base; };
+    : public __detail::__move_only_function_base<true, false, int&, _R, _ArgTypes...>
+        { using _Base = __detail::__move_only_function_base<true, false, int&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) && noexcept(false)>
-    : __detail::__move_only_function_base<false, false, int&&, _R, _ArgTypes...>
-        { using __detail::__move_only_function_base<false, false, int&&, _R, _ArgTypes...>::__move_only_function_base; };
+    : public __detail::__move_only_function_base<false, false, int&&, _R, _ArgTypes...>
+        { using _Base = __detail::__move_only_function_base<false, false, int&&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) const && noexcept(false)>
-    : __detail::__move_only_function_base<true, false, int&&, _R, _ArgTypes...>
-        { using __detail::__move_only_function_base<true, false, int&&, _R, _ArgTypes...>::__move_only_function_base; };
+    : public __detail::__move_only_function_base<true, false, int&&, _R, _ArgTypes...>
+        { using _Base = __detail::__move_only_function_base<true, false, int&&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) noexcept(true)>
-    : __detail::__move_only_function_base<false, true, int, _R, _ArgTypes...>
-        { using __detail::__move_only_function_base<true, false, int, _R, _ArgTypes...>::__move_only_function_base; };
+    : public __detail::__move_only_function_base<false, true, int, _R, _ArgTypes...>
+        { using _Base = __detail::__move_only_function_base<false, true, int, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) const noexcept(true)>
-    : __detail::__move_only_function_base<true, true, int, _R, _ArgTypes...>
-        { using __detail::__move_only_function_base<true, true, int, _R, _ArgTypes...>::__move_only_function_base; };
+    : public __detail::__move_only_function_base<true, true, int, _R, _ArgTypes...>
+        { using _Base = __detail::__move_only_function_base<true, true, int, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) & noexcept(true)>
-    : __detail::__move_only_function_base<false, true, int&, _R, _ArgTypes...>
-        { using __detail::__move_only_function_base<false, true, int&, _R, _ArgTypes...>::__move_only_function_base; };
+    : public __detail::__move_only_function_base<false, true, int&, _R, _ArgTypes...>
+        { using _Base = __detail::__move_only_function_base<false, true, int&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) const & noexcept(true)>
-    : __detail::__move_only_function_base<true, true, int&, _R, _ArgTypes...>
-        { using __detail::__move_only_function_base<true, true, int&, _R, _ArgTypes...>::__move_only_function_base; };
+    : public __detail::__move_only_function_base<true, true, int&, _R, _ArgTypes...>
+        { using _Base = __detail::__move_only_function_base<true, true, int&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) && noexcept(true)>
-    : __detail::__move_only_function_base<false, true, int&&, _R, _ArgTypes...>
-        { using __detail::__move_only_function_base<true, false, int&&, _R, _ArgTypes...>::__move_only_function_base; };
+    : public __detail::__move_only_function_base<false, true, int&&, _R, _ArgTypes...>
+        { using _Base = __detail::__move_only_function_base<false, true, int&&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) const && noexcept(true)>
-    : __detail::__move_only_function_base<true, true, int&&, _R, _ArgTypes...>
-        { using __detail::__move_only_function_base<true, true, int&&, _R, _ArgTypes...>::__move_only_function_base; };
+    : public __detail::__move_only_function_base<true, true, int&&, _R, _ArgTypes...>
+        { using _Base = __detail::__move_only_function_base<true, true, int&&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 
 template <class... _T>

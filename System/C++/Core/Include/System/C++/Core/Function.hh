@@ -8,6 +8,7 @@
 
 #include <System/C++/Core/Private/Config.hh>
 #include <System/C++/Core/Invoke.hh>
+#include <System/C++/Core/ReferenceWrapper.hh>
 
 
 namespace __XVI_STD_CORE_NS_DECL
@@ -289,14 +290,14 @@ public:
 
     function& operator=(nullptr_t) noexcept
     {
-        return operator&=(function());
+        return operator=(function());
     }
 
     template <class _F>
         requires is_invocable_v<decay_t<_F>, _ArgTypes...>
     function& operator=(_F&& __f)
     {
-        function(__XVI_STD_NS::forward<_F>(__f).swap(*this));
+        function(__XVI_STD_NS::forward<_F>(__f)).swap(*this);
         return *this;
     }
 

@@ -103,9 +103,9 @@ constexpr decltype(auto) __invoke_other(_F&& __f, _Tn&&... __tn)
 template <class _F, class _T1, class... _Tn>
 consteval int __invoke_select_impl()
 {
-    if constexpr (is_member_function_pointer<_F>::value)
+    if constexpr (is_member_function_pointer<typename remove_cvref<_F>::type>::value)
     {
-        using _C = typename __mem_fn_ptr_class<typename __strip_memfn_qualifiers<_F>::type>::type;
+        using _C = typename __mem_fn_ptr_class<typename __strip_memfn_qualifiers<typename remove_cvref<_F>::type>::type>::type;
 
         if constexpr (is_base_of<_C, typename remove_reference<_T1>::type>::value)
             return 1;
@@ -114,9 +114,9 @@ consteval int __invoke_select_impl()
         else
             return 3;
     }
-    else if constexpr (is_member_object_pointer<_F>::value && sizeof...(_Tn) == 0)
+    else if constexpr (is_member_object_pointer<typename remove_cvref<_F>::type>::value && sizeof...(_Tn) == 0)
     {
-        using _C = typename __mem_obj_ptr_class<_F>::type;
+        using _C = typename __mem_obj_ptr_class<typename remove_cvref<_F>::type>::type;
 
         if constexpr (is_base_of<_C, typename remove_reference<_T1>::type>::value)
             return 4;
@@ -217,7 +217,7 @@ template <class _R, class... _Args>
 concept __invoke_r_implicit_conv = is_void<_R>::value || requires { [](_Args&&... __args) -> _R { return _INVOKE(__XVI_STD_NS::forward<_Args>(__args)...); }; };
 
 template <class _R, class... _Args>
-concept __invoke_r_implicit_conv_nothrow = __invoke_r_implicit_conv<_R, _Args...> && noexcept(_R{_INVOKE(declval<_Args>()...)});
+concept __invoke_r_implicit_conv_nothrow = __invoke_r_implicit_conv<_R, _Args...> && noexcept(_R(_INVOKE(declval<_Args>()...)));
 
 template <class _R, class... _Args>
     requires requires(_Args&&... __args)
