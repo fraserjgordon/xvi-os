@@ -289,8 +289,10 @@ public:
 
     template <class _F>
     __move_only_function_base& operator=(_F&& __f)
+        requires is_constructible_v<__move_only_function_base, _F>
     {
-        move_only_function(__XVI_STD_NS::forward<_F>(__f)).swap(*this);
+        __move_only_function_base(__XVI_STD_NS::forward<_F>(__f)).swap(*this);
+        return *this;
     }
 
     ~__move_only_function_base()
@@ -420,62 +422,62 @@ template <class...> class move_only_function;
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) noexcept(false)>
     : public __detail::__move_only_function_base<false, false, int, _R, _ArgTypes...>
-        { using _Base = __detail::__move_only_function_base<false, false, int, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
+        { public: using _Base = __detail::__move_only_function_base<false, false, int, _R, _ArgTypes...>; using _Base::_Base;  };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) const noexcept(false)>
     : public __detail::__move_only_function_base<true, false, int, _R, _ArgTypes...>
-        { using _Base = __detail::__move_only_function_base<true, false, int, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
+        { public: using _Base = __detail::__move_only_function_base<true, false, int, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) & noexcept(false)>
     : public __detail::__move_only_function_base<false, false, int&, _R, _ArgTypes...>
-        { using _Base =__detail::__move_only_function_base<false, false, int&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
+        { public: using _Base =__detail::__move_only_function_base<false, false, int&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) const & noexcept(false)>
     : public __detail::__move_only_function_base<true, false, int&, _R, _ArgTypes...>
-        { using _Base = __detail::__move_only_function_base<true, false, int&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
+        { public: using _Base = __detail::__move_only_function_base<true, false, int&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) && noexcept(false)>
     : public __detail::__move_only_function_base<false, false, int&&, _R, _ArgTypes...>
-        { using _Base = __detail::__move_only_function_base<false, false, int&&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
+        { public: using _Base = __detail::__move_only_function_base<false, false, int&&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) const && noexcept(false)>
     : public __detail::__move_only_function_base<true, false, int&&, _R, _ArgTypes...>
-        { using _Base = __detail::__move_only_function_base<true, false, int&&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
+        { public: using _Base = __detail::__move_only_function_base<true, false, int&&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) noexcept(true)>
     : public __detail::__move_only_function_base<false, true, int, _R, _ArgTypes...>
-        { using _Base = __detail::__move_only_function_base<false, true, int, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
+        { public: using _Base = __detail::__move_only_function_base<false, true, int, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) const noexcept(true)>
     : public __detail::__move_only_function_base<true, true, int, _R, _ArgTypes...>
-        { using _Base = __detail::__move_only_function_base<true, true, int, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
+        { public: using _Base = __detail::__move_only_function_base<true, true, int, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) & noexcept(true)>
     : public __detail::__move_only_function_base<false, true, int&, _R, _ArgTypes...>
-        { using _Base = __detail::__move_only_function_base<false, true, int&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
+        { public: using _Base = __detail::__move_only_function_base<false, true, int&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) const & noexcept(true)>
     : public __detail::__move_only_function_base<true, true, int&, _R, _ArgTypes...>
-        { using _Base = __detail::__move_only_function_base<true, true, int&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
+        { public: using _Base = __detail::__move_only_function_base<true, true, int&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) && noexcept(true)>
     : public __detail::__move_only_function_base<false, true, int&&, _R, _ArgTypes...>
-        { using _Base = __detail::__move_only_function_base<false, true, int&&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
+        { public: using _Base = __detail::__move_only_function_base<false, true, int&&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 template <class _R, class... _ArgTypes>
 class move_only_function<_R(_ArgTypes...) const && noexcept(true)>
     : public __detail::__move_only_function_base<true, true, int&&, _R, _ArgTypes...>
-        { using _Base = __detail::__move_only_function_base<true, true, int&&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
+        { public: using _Base = __detail::__move_only_function_base<true, true, int&&, _R, _ArgTypes...>; using _Base::_Base; using _Base::operator=; };
 
 
 template <class... _T>
@@ -488,7 +490,7 @@ void swap(move_only_function<_T...>& __x, move_only_function<_T...>& __y)
 template <class... _T>
 bool operator==(const move_only_function<_T...>& __x, nullptr_t)
 {
-    return bool(__x);
+    return !bool(__x);
 }
 
 
