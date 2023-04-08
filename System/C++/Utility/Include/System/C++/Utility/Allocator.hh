@@ -49,7 +49,11 @@ public:
             __XVI_CXX_UTILITY_THROW(bad_array_new_length());
 
         // Note that the elements are left uninitialized.
+    #if __has_builtin(__builtin_operator_new)
+        return static_cast<_T*>(__builtin_operator_new(__n * sizeof(_T)));
+    #else
         return static_cast<_T*>(::operator new(__n * sizeof(_T)));
+    #endif
     }
 
     [[nodiscard]] constexpr allocation_result<_T*> allocate_at_least(std::size_t __n)
@@ -63,7 +67,11 @@ public:
 
     constexpr void deallocate(_T* __p, size_t __n)
     {
+    #if __has_builtin(__builtin_operator_delete)
+        __builtin_operator_delete(__p, __n);
+    #else
         ::operator delete(__p, __n);
+    #endif
     }
 };
 

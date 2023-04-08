@@ -873,14 +873,17 @@ inline constexpr bool __tuple_assignable_from_v = __tuple_assignable_from<_UTupl
 
 template <class, class> struct __tuple_constructible_from_tuple_impl;
 
+template <class _UTuple, class... _Types>
+concept __tuple_constructible_from_tuple_test =
+    __tuple_constructible_from_v<_UTuple, _Types...>
+        && (sizeof...(_Types) != 1
+            || (!__XVI_STD_NS::is_convertible_v<_UTuple, __first_type_t<_Types...>>
+                && !__XVI_STD_NS::is_constructible_v<__first_type_t<_Types...>, _UTuple>
+                && !__XVI_STD_NS::is_same_v<__first_type_t<_Types...>, tuple_element_t<0, remove_cvref_t<_UTuple>>>));
+
 template <class... _Types, class _UTuple>
 struct __tuple_constructible_from_tuple_impl<tuple<_Types...>, _UTuple>
-    : bool_constant<
-            __tuple_constructible_from_v<_UTuple, _Types...>
-            && (sizeof...(_Types) != 1
-                || (!__XVI_STD_NS::is_convertible_v<_UTuple, __first_type_t<_Types...>>
-                    && !__XVI_STD_NS::is_constructible_v<__first_type_t<_Types...>, _UTuple>
-                    && !__XVI_STD_NS::is_same_v<__first_type_t<_Types...>, tuple_element_t<0, remove_cvref_t<_UTuple>>>))> {};
+    : bool_constant<__tuple_constructible_from_tuple_test<_UTuple, _Types...>> {};
 
 template <class _Tuple, class _UTuple>
 concept __tuple_constructible_from_tuple = __tuple_constructible_from_tuple_impl<_Tuple, _UTuple>::value;

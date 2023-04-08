@@ -12,9 +12,15 @@
 TEST(Strrchr, NotFound)
 {
     EXPECT_EQ(__strrchr("Hello", 'h'), nullptr);
-    EXPECT_EQ(__strrchr("Hi", '\0'), nullptr);
-    EXPECT_EQ(__strrchr("", '\0'), nullptr);
+    EXPECT_EQ(__strrchr("Hi", 'e'), nullptr);
+    EXPECT_EQ(__strrchr("", 'H'), nullptr);
     EXPECT_EQ(__strrchr("", '!'), nullptr);
+}
+
+TEST(Strrchr, Nul)
+{
+    EXPECT_AT_OFFSET("Hi", '\0', 2);
+    EXPECT_AT_OFFSET("", '\0', 0);
 }
 
 TEST(Strrchr, FindLast)

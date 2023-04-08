@@ -11,6 +11,7 @@ library("Utility")
         "../Atomic",
         "../Core:Core_headers",
         "../LanguageSupport:LanguageSupport_headers",
+        "../String",
         "../TypeTraits",
 
         "//C/LanguageSupport",

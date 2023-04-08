@@ -40,10 +40,15 @@ namespace __detail
 template <class> struct __strip_fn_qualifiers;  // In SimpleTraits.hh
 template <class, class> struct __is_not_same;   // In Relations.hh 
 
-template <class _T> struct __is_referenceable
+#if !__has_builtin(__is_referenceable)
+template <class _T> struct __is_referenceable_t
     : bool_constant<is_object<_T>::value 
         || (is_function<_T>::value && is_same<_T, typename __strip_fn_qualifiers<_T>::type>::value)
         || is_reference<_T>::value> {};
+#else
+template <class _T> struct __is_referenceable_t
+    : bool_constant<__is_referenceable(_T)> {};
+#endif
 
 template <class _T> struct remove_const { using type = _T; };
 template <class _T> struct remove_const<const _T> { using type = _T; };
@@ -72,11 +77,11 @@ template <class _T> struct remove_reference { using type = _T; };
 template <class _T> struct remove_reference<_T&> { using type = _T; };
 template <class _T> struct remove_reference<_T&&> { using type = _T; };
 
-template <class _T, bool = __is_referenceable<_T>::value>
+template <class _T, bool = __is_referenceable_t<_T>::value>
     struct add_lvalue_reference { using type = _T&; };
 template <class _T> struct add_lvalue_reference<_T, false> { using type = _T; };
 
-template <class _T, bool = __is_referenceable<_T>::value>
+template <class _T, bool = __is_referenceable_t<_T>::value>
     struct add_rvalue_reference { using type = _T&&; };
 template <class _T> struct add_rvalue_reference<_T, false> { using type = _T; };
 
@@ -172,7 +177,7 @@ template <class _T, class _U = typename remove_cv<_T>::type>
     struct remove_pointer { using type = _T; };
 template <class _T, class _U> struct remove_pointer<_T, _U*> { using type = _U; };
 
-template <class _T, bool = __is_referenceable<_T>::value || is_void<_T>::value>
+template <class _T, bool = __is_referenceable_t<_T>::value || is_void<_T>::value>
     struct add_pointer { using type = typename remove_reference<_T>::type*; };
 template <class _T> struct add_pointer<_T, false> { using type = _T; };
 

@@ -2,6 +2,7 @@ library_group("C++")
 {
     deps =
     [
+        #"Algorithm",
         "Atomic",
         "Chrono",
         "Containers",
@@ -17,6 +18,7 @@ library_group("C++")
         "Runtime",
         #"Stacktrace",
         "StdLib",
+        "String",
         "Threads",
         "TypeTraits",
         "Utility",

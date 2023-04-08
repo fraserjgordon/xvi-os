@@ -93,7 +93,14 @@ template("gcc_toolchain")
     arch_soflags = ""
     if (use_clang)
     {
-        arch_cflags = "-target ${clang_target}-xvi "
+        if (!is_host_toolchain)
+        {
+            arch_cflags += "-target ${clang_target}-xvi "
+        }
+        else
+        {
+            not_needed(["clang_target"])
+        }
 
         if (defined(toolchain_prefix) && toolchain_prefix != "${clang_target}-xvi-")
         {

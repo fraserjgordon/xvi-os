@@ -25,8 +25,12 @@ template <class _T> struct is_union : bool_constant<__is_union(_T)> {};
 
 template <class _T> struct is_class : bool_constant<__is_class(_T)> {};
 
+#if __has_builtin(__is_trivially_copyable)
+template <class _T> struct is_trivially_copyable : bool_constant<__is_trivially_copyable(_T)> {};
+#else
 template <class _T> struct is_trivially_copyable
     : bool_constant<__has_trivial_copy(_T) && !is_reference<_T>::value> {};
+#endif
 
 template <class _T> struct is_empty : bool_constant<__is_empty(_T)> {};
 

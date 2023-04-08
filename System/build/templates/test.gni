@@ -13,6 +13,8 @@ template("test")
         {
             testonly = true
 
+            forward_variables_from(invoker, ["include_prefix"])
+
             # This is really hacky...
             sodir = rebase_path("//Test/build", "")
             lib_dirs = [ sodir ]

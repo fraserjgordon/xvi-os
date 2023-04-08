@@ -16,7 +16,9 @@ struct source_location
     static consteval source_location current() noexcept
     {
         source_location __loc;
-#if __has_builtin(__builtin_LINE)
+#if __has_builtin(__builtin_source_location)
+        __loc = __builtin_source_location();
+#elif __has_builtin(__builtin_LINE)
         __loc._M_line = __builtin_LINE();
         __loc._M_column = __builtin_COLUMN();
         __loc._M_file_name = __builtin_FILE();

@@ -41,10 +41,11 @@ static constexpr T* memory_copy_until(T* __restrict dest, const T* __restrict so
 {
     for (std::size_t i = 0; i < count; ++i)
     {
-        if (TV(source[i]) == terminator)
-            return &dest[i];
+        auto c = source[i];
+        dest[i] = c;
 
-        dest[i] = source[i];
+        if (TV(c) == terminator)
+            return &dest[i] + 1;
     }
 
     return nullptr;
@@ -179,10 +180,14 @@ static constexpr C* string_copy_n(C* __restrict dest, const C* __restrict source
 template <class C, class CV, CV Nul = C(0)>
 static constexpr C* string_find(C* string, CV value)
 {
-    while (*string != Nul)
+    while (true)
     {
         if (*string == value)
             return string;
+
+        if (*string == Nul)
+            return nullptr;
+
         ++string;
     }
 
@@ -193,10 +198,14 @@ template <class C, class CV, CV Nul = C(0)>
 static constexpr C* string_find_last(C* string, CV value)
 {
     C* last = nullptr;
-    while (*string != Nul)
+    while (true)
     {
         if (*string == value)
             last = string;
+
+        if (*string == Nul)
+            break;
+
         string++;
     }
 

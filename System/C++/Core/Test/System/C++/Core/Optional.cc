@@ -6,6 +6,12 @@
 using namespace __XVI_STD_CORE_NS;
 
 
+#if defined(__clang__)
+TEST(Optional, DefaultConstructor)
+{
+    EXPECT(!"Clang bug - no support for constexpr unions with non-literal members.");
+}
+#else
 TEST(Optional, DefaultConstructor)
 {
     struct nontrivial { nontrivial(); };
@@ -24,6 +30,7 @@ TEST(Optional, DefaultConstructor)
     EXPECT(!u.has_value());
     EXPECT(!v.has_value());
 }
+#endif
 
 TEST(Optional, NulloptConstructor)
 {

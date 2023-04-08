@@ -3,7 +3,7 @@
         {
             "name": "XVI GCC x86_64",
             "compilerPath": "/opt/cross/bin/x86_64-xvi-g++",
-            "cStandard": "c17",
+            "cStandard": "c23",
             "cppStandard": "c++23",
             "intelliSenseMode": "linux-gcc-x64",
             "compileCommands": "${workspaceRoot}/out/compile_commands.json",
@@ -18,10 +18,28 @@
         {
             "name": "XVI GCC (host)",
             "compilerPath": "/opt/cross/bin/g++",
-            "cStandard": "c17",
+            "cStandard": "c23",
             "cppStandard": "c++23",
             "intelliSenseMode": "linux-gcc-x64",
             "compileCommands": "${workspaceFolder}/out/compile_commands.json",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "${workspaceFolder}"
+                ]
+            },
+            "mergeConfigurations": true
+        },
+        {
+            "name": "XVI Clang x64",
+            "compilerPath": "/opt/cross/bin/clang++",
+            "cStandard": "c23",
+            "cppStandard": "c++23",
+            "intelliSenseMode": "linux-clang-x64",
+            "compileCommands": "${workspaceFolder}/out-clang/compile_commands.json",
             "includePath": [
                 "${workspaceFolder}/**"
             ],

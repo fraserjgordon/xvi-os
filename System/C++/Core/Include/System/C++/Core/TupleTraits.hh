@@ -13,8 +13,8 @@ namespace __XVI_STD_CORE_NS_DECL
 
 
 // Forward declarations.
-template <class, __XVI_STD_NS::size_t> class array;
-template <class, class> class pair;
+template <class, __XVI_STD_NS::size_t> struct array;
+template <class, class> struct pair;
 template <class...> class tuple;
 
 

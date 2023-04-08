@@ -1279,6 +1279,15 @@ __XVI_STD_CORE_SWAP_RANGES_IMPL;
 } // namespace ranges
 
 
+template <class _T, size_t _N>
+    requires std::is_swappable_v<_T>
+constexpr void swap(_T (&__a)[_N], _T (&__b)[_N])
+    noexcept(std::is_nothrow_swappable_v<_T>)
+{
+    ranges::swap_ranges(__a, __b);
+}
+
+
 template <class _C> constexpr auto begin(_C& __c) -> decltype(__c.begin())
     { return __c.begin(); }
 template <class _C> constexpr auto begin(const _C& __c) -> decltype(__c.begin())
