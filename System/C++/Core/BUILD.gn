@@ -12,6 +12,11 @@ library("Core")
         "../TypeTraits",
     ]
 
+    test_deps =
+    [
+        "../Exception",
+    ]
+
     public_headers =
     [
         "AddressOf.hh",
@@ -33,6 +38,7 @@ library("Core")
         "PointerTraits.hh",
         "ReferenceWrapper.hh",
         "Span.hh",
+        "StdExcept.hh",
         "Swap.hh",
         "Tuple.hh",
         "TupleTraits.hh",
@@ -62,6 +68,7 @@ library("Core")
         "PointerTraits.cc",
         "ReferenceWrapper.cc",
         "Span.cc",
+        "StdExcept.cc",
         "Swap.cc",
         "Tuple.cc",
         "Variant.cc",

@@ -3,12 +3,12 @@
 #define __SYSTEM_CXX_LANGUAGESUPPORT_TYPEINFO_H
 
 
-#if defined(__XVI_HOSTED) && __has_include(<typeinfo>)
+#if defined(__XVI_HOSTED)
 #  define __XVI_USING_HOST_TYPEINFO
 #  include <typeinfo>
-#else
-#  include <System/ABI/C++/TypeInfo.hh>
 #endif
+
+#include <System/ABI/C++/TypeInfo.hh>
 
 #include <System/C++/LanguageSupport/Exception.hh>
 #include <System/C++/LanguageSupport/Private/Namespace.hh>

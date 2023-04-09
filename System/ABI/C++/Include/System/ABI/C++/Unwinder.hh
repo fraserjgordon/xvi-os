@@ -29,14 +29,14 @@ enum _Unwind_Reason_Code
 };
 
 #if defined(__SYSTEM_ABI_CXX_AEABI)
-using _Unwind_State = std::uint32_t;
+using _Unwind_State = __XVI_STD_NS::uint32_t;
 
 inline constexpr _Unwind_State _US_VIRTUAL_UNWIND_FRAME     = 0;
 inline constexpr _Unwind_State _US_UNWIND_FRAME_STARTING    = 1;
 inline constexpr _Unwind_State _US_UNWIND_FRAME_RESUME      = 2;
 inline constexpr _Unwind_State _US_FORCE_UNWIND             = 8;    // Flag - XVI extension.
 
-using _Unwind_EHT_Header = std::uint32_t;
+using _Unwind_EHT_Header = __XVI_STD_NS::uint32_t;
 using _Unwind_Exception_Cleanup_Fn  = void (*)(_Unwind_Reason_Code, struct _Unwind_Control_Block*);
 
 struct _Unwind_Context;
@@ -46,14 +46,14 @@ struct _Unwind_Context;
 using _Unwind_Trace_Fn              = _Unwind_Reason_Code (*)(_Unwind_Context*, void*);
 
 // XVI extension (based on the SysV ABI).
-using _Unwind_Stop_Fn               = _Unwind_Reason_Code (*)(int, _Unwind_State, std::uint64_t, struct _Unwind_Control_Block*, struct _Unwind_Context*, void*);
+using _Unwind_Stop_Fn               = _Unwind_Reason_Code (*)(int, _Unwind_State, __XVI_STD_NS::uint64_t, struct _Unwind_Control_Block*, struct _Unwind_Context*, void*);
 
 struct alignas(8) _Unwind_Control_Block
 {
     union
     {
         char                        exception_class[8];
-        std::uint64_t               __exception_class = 0;
+        __XVI_STD_NS::uint64_t      __exception_class = 0;
     };
 
     _Unwind_Exception_Cleanup_Fn    exception_cleanup = nullptr;
@@ -61,32 +61,32 @@ struct alignas(8) _Unwind_Control_Block
     // Unwinder cache.
     struct
     {
-        std::uint32_t   reserved1   = 0;
-        std::uint32_t   reserved2   = 0;
-        std::uint32_t   reserved3   = 0;
-        std::uint32_t   reserved4   = 0;
-        std::uint32_t   reserved5   = 0;
+        __XVI_STD_NS::uint32_t  reserved1   = 0;
+        __XVI_STD_NS::uint32_t  reserved2   = 0;
+        __XVI_STD_NS::uint32_t  reserved3   = 0;
+        __XVI_STD_NS::uint32_t  reserved4   = 0;
+        __XVI_STD_NS::uint32_t  reserved5   = 0;
     } unwinder_cache;
 
     // The "propogation barrier" is the frame that handles the exception.
     struct
     {
-        std::uint32_t   sp = 0;
-        std::uint32_t   bitpattern[5] = {};
+        __XVI_STD_NS::uint32_t  sp = 0;
+        __XVI_STD_NS::uint32_t  bitpattern[5] = {};
     } barrier_cache;
 
     struct
     {
-        std::uint32_t   bitpattern[4] = {};
+        __XVI_STD_NS::uint32_t  bitpattern[4] = {};
     } cleanup_cache;
 
     // Personality routine cache.
     struct
     {
-        std::uint32_t       fnstart = 0;
-        _Unwind_EHT_Header* ehtp = nullptr;
-        std::uint32_t       additional = 0;
-        std::uint32_t       reserved = 0;
+        __XVI_STD_NS::uint32_t      fnstart = 0;
+        _Unwind_EHT_Header*         ehtp = nullptr;
+        __XVI_STD_NS::uint32_t      additional = 0;
+        __XVI_STD_NS::uint32_t      reserved = 0;
     } pr_cache;
 };
 
@@ -120,26 +120,26 @@ __SYSTEM_ABI_CXX_UNWIND_EXPORT void _Unwind_Resume(_Unwind_Control_Block*);
 __SYSTEM_ABI_CXX_UNWIND_EXPORT void _Unwind_Complete(_Unwind_Control_Block*);
 __SYSTEM_ABI_CXX_UNWIND_EXPORT void _Unwind_DeleteException(_Unwind_Control_Block*);
 
-__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_VRS_Result _Unwind_VRS_Set(_Unwind_Context*, _Unwind_VRS_RegClass, std::uint32_t, _Unwind_VRS_DataRepresentation, void*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_VRS_Result _Unwind_VRS_Get(_Unwind_Context*, _Unwind_VRS_RegClass, std::uint32_t, _Unwind_VRS_DataRepresentation, void*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_VRS_Result _Unwind_VRS_Pop(_Unwind_Context*, _Unwind_VRS_RegClass, std::uint32_t, _Unwind_VRS_DataRepresentation);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_VRS_Result _Unwind_VRS_Set(_Unwind_Context*, _Unwind_VRS_RegClass, __XVI_STD_NS::uint32_t, _Unwind_VRS_DataRepresentation, void*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_VRS_Result _Unwind_VRS_Get(_Unwind_Context*, _Unwind_VRS_RegClass, __XVI_STD_NS::uint32_t, _Unwind_VRS_DataRepresentation, void*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_VRS_Result _Unwind_VRS_Pop(_Unwind_Context*, _Unwind_VRS_RegClass, __XVI_STD_NS::uint32_t, _Unwind_VRS_DataRepresentation);
 
 // GCC extension.
 __SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_Reason_Code _Unwind_Backtrace(_Unwind_Trace_Fn, void*);
 
 // XVI extensions (based on the SysV ABI).
-__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_Reason_Code _Unwind_ForcedUnwind(_Unwind_Control_Block*, _Unwind_Stop_Fn, void*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetGR(_Unwind_Context*, int);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT void                _Unwind_SetGR(_Unwind_Context*, int, std::uintptr_t);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetIP(_Unwind_Context*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT void                _Unwind_SetIP(_Unwind_Context*, std::uintptr_t);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetLanguageSpecificData(_Unwind_Context*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetRegionStart(_Unwind_Context*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetDataRelBase(_Unwind_Context*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetTextRelBase(_Unwind_Context*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT void*               _Unwind_FindEnclosingFunction(void*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetCFA(_Unwind_Context*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetIPInfo(_Unwind_Context*, int*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_Reason_Code      _Unwind_ForcedUnwind(_Unwind_Control_Block*, _Unwind_Stop_Fn, void*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT __XVI_STD_NS::uintptr_t  _Unwind_GetGR(_Unwind_Context*, int);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT void                     _Unwind_SetGR(_Unwind_Context*, int, __XVI_STD_NS::uintptr_t);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT __XVI_STD_NS::uintptr_t  _Unwind_GetIP(_Unwind_Context*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT void                     _Unwind_SetIP(_Unwind_Context*, __XVI_STD_NS::uintptr_t);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT __XVI_STD_NS::uintptr_t  _Unwind_GetLanguageSpecificData(_Unwind_Context*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT __XVI_STD_NS::uintptr_t  _Unwind_GetRegionStart(_Unwind_Context*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT __XVI_STD_NS::uintptr_t  _Unwind_GetDataRelBase(_Unwind_Context*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT __XVI_STD_NS::uintptr_t  _Unwind_GetTextRelBase(_Unwind_Context*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT void*                    _Unwind_FindEnclosingFunction(void*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT __XVI_STD_NS::uintptr_t  _Unwind_GetCFA(_Unwind_Context*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT __XVI_STD_NS::uintptr_t  _Unwind_GetIPInfo(_Unwind_Context*, int*);
 
 
 
@@ -152,7 +152,7 @@ inline constexpr _Unwind_Action _UA_HANDLER_FRAME      = 0x00000004;
 inline constexpr _Unwind_Action _UA_FORCE_UNWIND       = 0x00000008;
 
 using _Unwind_Exception_Cleanup_Fn  = void (*)(_Unwind_Reason_Code, struct _Unwind_Exception*);
-using _Unwind_Stop_Fn               = _Unwind_Reason_Code (*)(int, _Unwind_Action, std::uint64_t, struct _Unwind_Exception*, struct _Unwind_Context*, void*);
+using _Unwind_Stop_Fn               = _Unwind_Reason_Code (*)(int, _Unwind_Action, __XVI_STD_NS::uint64_t, struct _Unwind_Exception*, struct _Unwind_Context*, void*);
 
 // GCC extension.
 using _Unwind_Trace_Fn              = _Unwind_Reason_Code (*)(_Unwind_Context*, void*);
@@ -174,46 +174,46 @@ using _Unwind_Trace_Fn              = _Unwind_Reason_Code (*)(_Unwind_Context*, 
 //! @param  context     The current unwind context. The language-specific data
 //!                     for the current frame can be retrieved from it.
 //!
-using _Unwind_Personality_Fn        = _Unwind_Reason_Code (*)(int version, _Unwind_Action action, std::uint64_t exception_class, _Unwind_Exception* exception, _Unwind_Context* context);
+using _Unwind_Personality_Fn        = _Unwind_Reason_Code (*)(int version, _Unwind_Action action, __XVI_STD_NS::uint64_t exception_class, _Unwind_Exception* exception, _Unwind_Context* context);
 
 struct _Unwind_Exception
 {
-    std::uint64_t                   exception_class     = 0;
+    __XVI_STD_NS::uint64_t          exception_class     = 0;
     _Unwind_Exception_Cleanup_Fn    exception_cleanup   = nullptr;
-    std::uint64_t                   private1            = 0;
-    std::uint64_t                   private2            = 0;
+    __XVI_STD_NS::uint64_t          private1            = 0;
+    __XVI_STD_NS::uint64_t          private2            = 0;
 };
 
 struct _Unwind_Context;
 
 
-__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_Reason_Code _Unwind_RaiseException(_Unwind_Exception*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_Reason_Code _Unwind_ForcedUnwind(_Unwind_Exception*, _Unwind_Stop_Fn, void*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT [[noreturn]] void   _Unwind_Resume(_Unwind_Exception*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT void                _Unwind_DeleteException(_Unwind_Exception*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetGR(_Unwind_Context*, int);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT void                _Unwind_SetGR(_Unwind_Context*, int, std::uintptr_t);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetIP(_Unwind_Context*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT void                _Unwind_SetIP(_Unwind_Context*, std::uintptr_t);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetLanguageSpecificData(_Unwind_Context*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetRegionStart(_Unwind_Context*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_Reason_Code      _Unwind_RaiseException(_Unwind_Exception*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_Reason_Code      _Unwind_ForcedUnwind(_Unwind_Exception*, _Unwind_Stop_Fn, void*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT [[noreturn]] void        _Unwind_Resume(_Unwind_Exception*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT void                     _Unwind_DeleteException(_Unwind_Exception*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT __XVI_STD_NS::uintptr_t  _Unwind_GetGR(_Unwind_Context*, int);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT void                     _Unwind_SetGR(_Unwind_Context*, int, __XVI_STD_NS::uintptr_t);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT __XVI_STD_NS::uintptr_t  _Unwind_GetIP(_Unwind_Context*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT void                     _Unwind_SetIP(_Unwind_Context*, __XVI_STD_NS::uintptr_t);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT __XVI_STD_NS::uintptr_t  _Unwind_GetLanguageSpecificData(_Unwind_Context*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT __XVI_STD_NS::uintptr_t  _Unwind_GetRegionStart(_Unwind_Context*);
 
 // GCC extensions.
-__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_Reason_Code _Unwind_Resume_or_Rethrow(_Unwind_Exception*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetDataRelBase(_Unwind_Context*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetTextRelBase(_Unwind_Context*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT void*               _Unwind_FindEnclosingFunction(void*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_Reason_Code _Unwind_Backtrace(_Unwind_Trace_Fn, void*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT const void*         _Unwind_Find_FDE(const void*, struct dwarf_eh_bases*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetCFA(_Unwind_Context*);
-__SYSTEM_ABI_CXX_UNWIND_EXPORT std::uintptr_t      _Unwind_GetIPInfo(_Unwind_Context*, int*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_Reason_Code      _Unwind_Resume_or_Rethrow(_Unwind_Exception*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT __XVI_STD_NS::uintptr_t  _Unwind_GetDataRelBase(_Unwind_Context*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT __XVI_STD_NS::uintptr_t  _Unwind_GetTextRelBase(_Unwind_Context*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT void*                    _Unwind_FindEnclosingFunction(void*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT _Unwind_Reason_Code      _Unwind_Backtrace(_Unwind_Trace_Fn, void*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT const void*              _Unwind_Find_FDE(const void*, struct dwarf_eh_bases*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT __XVI_STD_NS::uintptr_t  _Unwind_GetCFA(_Unwind_Context*);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT __XVI_STD_NS::uintptr_t  _Unwind_GetIPInfo(_Unwind_Context*, int*);
 
 // GCC extensions - should be moved to DWARF unwinder.
 __SYSTEM_ABI_CXX_UNWIND_EXPORT void                __register_frame(const void*);
 __SYSTEM_ABI_CXX_UNWIND_EXPORT void                __deregister_frame(const void*);
 
 // XVI extensions.
-__SYSTEM_ABI_CXX_UNWIND_EXPORT void                 _Unwind_XVI_RegisterEhFrameHdr(const std::byte*, std::uintptr_t text, std::uintptr_t data);
+__SYSTEM_ABI_CXX_UNWIND_EXPORT void                 _Unwind_XVI_RegisterEhFrameHdr(const __XVI_STD_NS::byte*, __XVI_STD_NS::uintptr_t text, __XVI_STD_NS::uintptr_t data);
 
 #endif // if defined(__SYSTEM_ABI_CXX_AEABI)
 

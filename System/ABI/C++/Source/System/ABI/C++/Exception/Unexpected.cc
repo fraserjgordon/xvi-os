@@ -42,7 +42,7 @@ std::unexpected_handler setUnexpectedExceptionHandler(std::unexpected_handler ha
 }
 
 
-namespace __cxxabiv1
+namespace __SYSTEM_ABI_CXX_NS
 {
 
 
@@ -63,4 +63,4 @@ void __cxa_call_unexpected(_Exception_T* exception)
 }
 
 
-} // namespace __cxxabiv1
+} // namespace __SYSTEM_ABI_CXX_NS

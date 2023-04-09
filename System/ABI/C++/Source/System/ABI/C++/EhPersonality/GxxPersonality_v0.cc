@@ -10,7 +10,7 @@
 #include <System/ABI/C++/EhPersonality/Utils.hh>
 
 
-using namespace __cxxabiv1;
+using namespace __SYSTEM_ABI_CXX_NS;
 using namespace System::ABI::CXX;
 
 namespace Dwarf = System::ABI::Dwarf;

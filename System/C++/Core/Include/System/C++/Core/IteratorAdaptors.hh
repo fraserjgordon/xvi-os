@@ -5,6 +5,7 @@
 #include <System/C++/LanguageSupport/InitializerList.hh>
 
 #include <System/C++/Core/Private/Config.hh>
+#include <System/C++/Core/AddressOf.hh>
 #include <System/C++/Core/IteratorTraits.hh>
 #include <System/C++/Core/IteratorUtils.hh>
 #include <System/C++/Core/Variant.hh>

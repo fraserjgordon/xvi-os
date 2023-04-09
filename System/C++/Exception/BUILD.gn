@@ -1,0 +1,50 @@
+library("Exception")
+{
+    library_name= "System.C++.Exception"
+    library_version = "0.1.0"
+
+    shared_define = "__XVI_SYSTEM_CXX_EXCEPTION_BUILD_SHARED"
+
+    define_header_target = true
+    use_stdlib = false
+
+    header_deps =
+    [
+        "//ABI/C++:C++_headers",
+        "//C++/Core",
+        "//C++/LanguageSupport",
+        "//C++/String",
+        "//C++/TypeTraits",
+    ]
+
+    public_headers =
+    [
+        "Private/Config.hh",
+
+        "ExceptionPtr.hh",
+        "NestedException.hh",
+        "StdExcept.hh",
+        "Terminate.hh",
+        "Uncaught.hh",
+        "Unexpected.hh",
+    ]
+
+    sources =
+    [
+        "ExceptionPtr.cc",
+        "ExceptionStrings.cc",
+        "Terminate.cc",
+        "Uncaught.cc",
+        "Unexpected.cc",
+    ]
+
+    test_sources =
+    [
+        "ExceptionPtr.cc",
+        "NestedException.cc",
+        "StdExcept.cc",
+        "Terminate.cc",
+        "Uncaught.cc",
+        "Unexpected.cc",
+    ]
+}

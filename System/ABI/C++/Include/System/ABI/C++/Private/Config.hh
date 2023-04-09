@@ -65,8 +65,19 @@
 #  endif
 #endif
 
-#define __SYSTEM_ABI_CXX_SYMBOL_(x)     asm(#x)
-#define __SYSTEM_ABI_CXX_SYMBOL(x)      __SYSTEM_ABI_CXX_SYMBOL_(x)
+#if defined(__XVI_HOSTED)
+#  define __SYSTEM_ABI_CXX_SYMBOL_(x)       asm(#x)
+#  define __SYSTEM_ABI_CXX_SYMBOL(x)        __SYSTEM_ABI_CXX_SYMBOL_(hostedabi_##x)
+#else
+#  define __SYSTEM_ABI_CXX_SYMBOL_(x)       asm(#x)
+#  define __SYSTEM_ABI_CXX_SYMBOL(x)        __SYSTEM_ABI_CXX_SYMBOL_(x)
+#endif
+
+#if defined(__XVI_HOSTED)
+#  define __SYSTEM_ABI_CXX_NS               hosted_cxxabiv1
+#else
+#  define __SYSTEM_ABI_CXX_NS               __cxxabiv1
+#endif
 
 
 #endif /* ifndef __SYSTEM_ABI_CXX_PRIVATE_CONFIG_H */

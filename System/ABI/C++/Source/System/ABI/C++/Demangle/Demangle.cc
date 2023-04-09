@@ -3339,7 +3339,7 @@ catch (...)
 } // namespace System::ABI::CXX
 
 
-namespace __cxxabiv1
+namespace __SYSTEM_ABI_CXX_NS
 {
 
 
@@ -3396,4 +3396,4 @@ char* __cxa_demangle(const char* mangled_name, char* buf, std::size_t* n, int* s
 }
 
 
-} // namespace __cxxabiv1
+} // namespace __SYSTEM_ABI_CXX_NS

@@ -3,17 +3,30 @@
 #define __SYSTEM_ABI_CXX_TYPEINFO_H
 
 
+#if defined(__XVI_HOSTED)
+#  include <typeinfo>
+#endif
+
 #include <System/ABI/C++/Private/Config.hh>
 
 #include <System/C++/LanguageSupport/StdDef.hh>
 #include <System/C++/LanguageSupport/StdInt.hh>
 
 
-#if !defined(__XVI_HOSTED) || !__has_include(<typeinfo>)
+#if !defined(__XVI_HOSTED)
 #  define __ABI_TI_NS std
 #else
-#  define __ABI_TS_NS __XVI_STD_NS
+#  define __ABI_TI_NS __XVI_STD_NS
 #endif
+
+
+namespace __cxxabiv1
+{
+
+// Forward declarations.
+class __class_type_info;
+
+} // namespace __cxxabiv1
 
 
 // Note: the definition of type_info *must* be in the `std` namespace. If not placed here, compilers won't recognise it
@@ -30,11 +43,15 @@ public:
     virtual ~type_info();
     constexpr bool operator==(const type_info&) const noexcept;
     bool before(const type_info&) const noexcept;
-    std::size_t hash_code() const noexcept;
+    __XVI_STD_NS::size_t hash_code() const noexcept;
     const char* name() const;
 
     type_info(const type_info&) = delete;
     type_info& operator=(const type_info&) = delete;
+
+    // Undocumented (& unofficial?) Itanium ABI members.
+    virtual bool __do_catch(const type_info* __thrown_type, void** __thrown_object, unsigned __outer) const;
+    virtual bool __do_upcast(const __cxxabiv1::__class_type_info* __target, void** __object) const;
 
 private:
 
@@ -125,9 +142,9 @@ struct __SYSTEM_ABI_CXX_RTTI_EXPORT __base_class_type_info
         __offset_shift      = 8,
     };
 
-    std::ptrdiff_t __get_offset() const
+    __XVI_STD_NS::ptrdiff_t __get_offset() const
     {
-        return static_cast<std::ptrdiff_t>(__offset_flags >> __offset_shift);
+        return static_cast<__XVI_STD_NS::ptrdiff_t>(__offset_flags >> __offset_shift);
     }
 
     long __get_flags() const
@@ -315,7 +332,7 @@ inline const void* wholeObjectPointer(const void* obj)
 inline const void* adjustToBase(const void* obj, const __cxxabiv1::__base_class_type_info& info)
 {
     // Raw offset value. The interpretation varies between the virtual and non-virtual cases.
-    std::ptrdiff_t offset = info.__offset_flags >> __cxxabiv1::__base_class_type_info::__offset_shift;
+    __XVI_STD_NS::ptrdiff_t offset = info.__offset_flags >> __cxxabiv1::__base_class_type_info::__offset_shift;
     bool is_virtual = info.__offset_flags & __cxxabiv1::__base_class_type_info::__virtual_mask;
 
     if (is_virtual)

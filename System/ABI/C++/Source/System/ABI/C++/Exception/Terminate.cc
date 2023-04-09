@@ -56,7 +56,7 @@ namespace std
 } // namespace std
 
 
-namespace __cxxabiv1
+namespace __SYSTEM_ABI_CXX_NS
 {
 
 
@@ -81,4 +81,4 @@ void __cxa_call_terminate(_Exception_T* exception)
 }
 
 
-} // namespace __cxxabiv1
+} // namespace __SYSTEM_ABI_CXX_NS

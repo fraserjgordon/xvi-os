@@ -5,7 +5,7 @@
 #include <System/ABI/C++/Exception.hh>
 
 
-using namespace __cxxabiv1;
+using namespace __SYSTEM_ABI_CXX_NS;
 using namespace System::ABI::CXX;
 
 

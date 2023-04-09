@@ -10,7 +10,7 @@
 #pragma GCC optimize ("no-exceptions")
 
 
-namespace __cxxabiv1
+namespace __SYSTEM_ABI_CXX_NS
 {
 
 
@@ -515,7 +515,7 @@ void __cxa_bad_typeid()
 }
 
 
-} // namespace __cxxabiv1
+} // namespace __SYSTEM_ABI_CXX_NS
 
 
 namespace System::ABI::CXX
@@ -525,7 +525,7 @@ namespace System::ABI::CXX
 void* getCurrentException() noexcept
 {
     // Get the current exception, if one exists.
-    auto header = __cxxabiv1::__cxa_get_globals()->caughtExceptions;
+    auto header = __SYSTEM_ABI_CXX_NS::__cxa_get_globals()->caughtExceptions;
     if (!header)
         return nullptr;
 
@@ -534,29 +534,29 @@ void* getCurrentException() noexcept
         return nullptr;
 
     // Always return a pointer to the primary exception, never a dependent one.
-    return __cxxabiv1::primaryException(header) + 1;
+    return __SYSTEM_ABI_CXX_NS::primaryException(header) + 1;
 }
 
 
 void* createException(std::size_t size, const std::type_info* type, void (*destructor)(void*)) noexcept
 {
     // Attempt to allocate space for the exception.
-    auto* exception = __cxxabiv1::__cxa_allocate_exception(size);
+    auto* exception = __SYSTEM_ABI_CXX_NS::__cxa_allocate_exception(size);
     if (!exception)
         return nullptr;
 
     // Exception was allocated - fill in the C++ exception header.
-    auto* header = __cxxabiv1::fromObject(exception);
+    auto* header = __SYSTEM_ABI_CXX_NS::fromObject(exception);
     header->exceptionType = type;
     header->exceptionDestructor = destructor;
     header->unexpectedHandler = getUnexpectedExceptionHandler();
     header->terminateHandler = getTerminateHandler();
 
     // Add a single reference to the exception.
-    __cxxabiv1::incrementRefcount(header);
+    __SYSTEM_ABI_CXX_NS::incrementRefcount(header);
 
     // Fill in the unwind header for a primary exception.
-    setupException(header, __cxxabiv1::CxxExceptionClass, &__cxxabiv1::exceptionCleanup);
+    setupException(header, __SYSTEM_ABI_CXX_NS::CxxExceptionClass, &__SYSTEM_ABI_CXX_NS::exceptionCleanup);
 
     return exception;
 }
@@ -570,17 +570,17 @@ void rethrowException(void* e)
         terminate();    
 
     // We cannot rethrow foreign exceptions as a dependent exception.
-    auto header = __cxxabiv1::fromObject(e);
+    auto header = __SYSTEM_ABI_CXX_NS::fromObject(e);
     if (!isNative(unwindHeader(header)))
         terminate();
 
     // Ensure we're pointing to a primary exception.
-    header = __cxxabiv1::primaryException(header);
+    header = __SYSTEM_ABI_CXX_NS::primaryException(header);
 
     // Attempt to allocate a dependent exception object.
     //
     //! @TODO: what is the standard-mandated behaviour if rethrowing fails to allocate?
-    auto dependent = __cxxabiv1::__cxa_allocate_dependent_exception();
+    auto dependent = __SYSTEM_ABI_CXX_NS::__cxa_allocate_dependent_exception();
     if (!dependent)
         terminate();
 
@@ -593,34 +593,34 @@ void rethrowException(void* e)
     incrementRefcount(header);
 
     // Fill in the unwind header.
-    setupException(dependent, __cxxabiv1::CxxDependentClass, &__cxxabiv1::exceptionCleanup);
+    setupException(dependent, __SYSTEM_ABI_CXX_NS::CxxDependentClass, &__SYSTEM_ABI_CXX_NS::exceptionCleanup);
 
     // There is now another uncaught exception in flight.
-    __cxxabiv1::__cxa_get_globals_fast()->uncaughtExceptions++;
+    __SYSTEM_ABI_CXX_NS::__cxa_get_globals_fast()->uncaughtExceptions++;
 
     // Start the unwinding process. This doesn't normally return.
     auto result = _Unwind_RaiseException(unwindHeader(header));
 
-    __cxxabiv1::raiseExceptionFailed(result, toExceptionT(dependent + 1));
+    __SYSTEM_ABI_CXX_NS::raiseExceptionFailed(result, toExceptionT(dependent + 1));
 }
 
 
 void addExceptionRef(void* e)
 {
-    auto header = __cxxabiv1::fromObject(e);
+    auto header = __SYSTEM_ABI_CXX_NS::fromObject(e);
     if (!isNative(unwindHeader(header)))
         terminate();
 
-    __cxxabiv1::incrementRefcount(header);
+    __SYSTEM_ABI_CXX_NS::incrementRefcount(header);
 }
 
 void releaseExceptionRef(void* e)
 {
-    auto header = __cxxabiv1::fromObject(e);
+    auto header = __SYSTEM_ABI_CXX_NS::fromObject(e);
     if (!isNative(unwindHeader(header)))
         terminate();
 
-    __cxxabiv1::decrementRefcount(header);
+    __SYSTEM_ABI_CXX_NS::decrementRefcount(header);
 }
 
 

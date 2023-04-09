@@ -14,7 +14,7 @@ extern "C" [[gnu::weak]] void* __malloc(size_t) asm("System.Allocator.C.Malloc")
 extern "C" [[gnu::weak]] void __free(void*) asm("System.Allocator.C.Free");
 
 
-namespace __XVI_STD_LANGSUPPORT_NS
+namespace __XVI_STD_LANGSUPPORT_NS_DECL
 {
 
 
@@ -32,7 +32,7 @@ new_handler set_new_handler(new_handler handler) noexcept
 }
 
 
-} // namespace __XVI_STD_LANGSUPPORT_NS
+} // namespace __XVI_STD_LANGSUPPORT_NS_DECL
 
 
 //! @TODO: aligned operators.
@@ -40,6 +40,7 @@ new_handler set_new_handler(new_handler handler) noexcept
 // Note: the C++ standard explicitly requires that the nothrow variants of new call the throwing variant.
 
 
+#if !defined(__XVI_HOSTED)
 void* operator new(size_t size)
 {
     if (!__malloc)
@@ -133,3 +134,4 @@ void operator delete(void* ptr, std::align_val_t align) noexcept
     //! @TODO: properly.
     operator delete(ptr);
 }
+#endif // if !defined(__XVI_HOSTED)

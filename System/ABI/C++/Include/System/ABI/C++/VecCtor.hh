@@ -8,7 +8,7 @@
 #include <System/ABI/C++/Private/Config.hh>
 
 
-namespace __cxxabiv1
+namespace __SYSTEM_ABI_CXX_NS
 {
 
 
@@ -27,7 +27,7 @@ extern "C" __SYSTEM_ABI_CXX_CTORDTOR_EXPORT void __cxa_vec_cleanup(void*, std::s
 
 extern "C" __SYSTEM_ABI_CXX_CTORDTOR_EXPORT void __cxa_vec_cctor(void*, void*, std::size_t, std::size_t, void (*)(void*, void*), void (*)(void*));
 
-} // namespace __cxxabiv1
+} // namespace __SYSTEM_ABI_CXX_NS
 
 
 #endif /* ifndef __SYSTEM_ABI_CXX_CTORDTOR_H */

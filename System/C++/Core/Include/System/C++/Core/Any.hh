@@ -7,6 +7,7 @@
 #include <System/C++/LanguageSupport/New.hh>
 #include <System/C++/LanguageSupport/StdDef.hh>
 #include <System/C++/LanguageSupport/TypeInfo.hh>
+#include <System/C++/LanguageSupport/Utility.hh>
 #include <System/C++/TypeTraits/TypeTraits.hh>
 
 #include <System/C++/Core/Private/Config.hh>

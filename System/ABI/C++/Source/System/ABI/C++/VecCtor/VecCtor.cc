@@ -6,7 +6,7 @@
 #include <System/ABI/C++/Exception.hh>
 
 
-namespace __cxxabiv1
+namespace __SYSTEM_ABI_CXX_NS
 {
 
 
@@ -229,4 +229,4 @@ void __cxa_vec_cleanup(void* array_ptr, std::size_t element_count, std::size_t e
 }
 
 
-} // namespace __cxxabiv1
+} // namespace __SYSTEM_ABI_CXX_NS

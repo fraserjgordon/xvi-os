@@ -4,6 +4,7 @@
 
 
 #include <System/C++/Atomic/Atomic.hh>
+#include <System/C++/Exception/Terminate.hh>
 #include <System/C++/LanguageSupport/Exception.hh>
 #include <System/C++/LanguageSupport/StdDef.hh>
 
@@ -12,8 +13,13 @@
 #include <System/ABI/C++/Unwinder.hh>
 
 
-namespace __cxxabiv1
+namespace __SYSTEM_ABI_CXX_NS
 {
+
+
+using __unexpected_handler = void(*)();
+using __terminate_handler = void(*)();
+
 
 extern "C"
 {
@@ -21,12 +27,12 @@ extern "C"
 
 struct __cxa_exception
 {
-    std::atomic<std::size_t> referenceCount             = 0;
+    __XVI_STD_NS::atomic<__XVI_STD_NS::size_t> referenceCount = 0;
 
     const std::type_info*   exceptionType               = nullptr;
     void (*exceptionDestructor)(void*)                  = nullptr;
-    std::unexpected_handler unexpectedHandler           = nullptr;
-    std::terminate_handler  terminateHandler            = nullptr;
+    __unexpected_handler    unexpectedHandler           = nullptr;
+    __terminate_handler     terminateHandler            = nullptr;
     __cxa_exception*        nextException               = nullptr;
 
     int                     handlerCount                = 0;
@@ -51,8 +57,8 @@ struct __cxa_dependent_exception
 {
     void*                   primaryException            = nullptr;
 
-    std::unexpected_handler unexpectedHandler           = nullptr;
-    std::terminate_handler  terminateHandler            = nullptr;
+    __unexpected_handler    unexpectedHandler           = nullptr;
+    __terminate_handler     terminateHandler            = nullptr;
     __cxa_exception*        nextException               = nullptr;
 
     int                     handlerCount                = 0;
@@ -104,7 +110,7 @@ enum __cxa_type_match_result
 
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT __cxa_eh_globals*     __cxa_get_globals();
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT __cxa_eh_globals*     __cxa_get_globals_fast();
-__SYSTEM_ABI_CXX_EXCEPTION_EXPORT void*                 __cxa_allocate_exception(std::size_t);
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT void*                 __cxa_allocate_exception(__XVI_STD_NS::size_t);
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT void                  __cxa_free_exception(void*);
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT [[noreturn]] void     __cxa_throw(void*, std::type_info*, void (*)(void*));
 #if __SYSTEM_ABI_CXX_AEABI
@@ -145,30 +151,34 @@ __SYSTEM_ABI_CXX_EXCEPTION_EXPORT void                        __cxa_free_depende
 } // extern "C"
 
 
-} // namespace __cxxabiv1
+} // namespace __SYSTEM_ABI_CXX_NS
 
 
 namespace System::ABI::CXX
 {
 
 
-constexpr std::uint64_t CxxExceptionClass       = 0x58564900'432B2B00;  // 'XVI\0C++\0'
-constexpr std::uint64_t CxxDependentClass       = 0x58564800'432B2B01;  // 'XVI\0C++\1'
+using terminate_handler = __SYSTEM_ABI_CXX_NS::__terminate_handler;
+using unexpected_handler = __SYSTEM_ABI_CXX_NS::__unexpected_handler;
+
+
+constexpr __XVI_STD_NS::uint64_t CxxExceptionClass       = 0x58564900'432B2B00;  // 'XVI\0C++\0'
+constexpr __XVI_STD_NS::uint64_t CxxDependentClass       = 0x58564800'432B2B01;  // 'XVI\0C++\1'
 
 
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT [[noreturn]] void       terminate() __SYSTEM_ABI_CXX_SYMBOL(System.ABI.CXX.Exception.Terminate);
-__SYSTEM_ABI_CXX_EXCEPTION_EXPORT [[noreturn]] void       terminateWithHandler(std::terminate_handler) __SYSTEM_ABI_CXX_SYMBOL(System.ABI.CXX.Exception.TerminateWithHandler);
-__SYSTEM_ABI_CXX_EXCEPTION_EXPORT std::terminate_handler  getTerminateHandler() __SYSTEM_ABI_CXX_SYMBOL(System.ABI.CXX.Exception.GetTerminateHandler);
-__SYSTEM_ABI_CXX_EXCEPTION_EXPORT std::terminate_handler  setTerminateHandler(std::terminate_handler) __SYSTEM_ABI_CXX_SYMBOL(System.ABI.CXX.Exception.SetTerminateHandler);
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT [[noreturn]] void       terminateWithHandler(terminate_handler) __SYSTEM_ABI_CXX_SYMBOL(System.ABI.CXX.Exception.TerminateWithHandler);
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT terminate_handler       getTerminateHandler() __SYSTEM_ABI_CXX_SYMBOL(System.ABI.CXX.Exception.GetTerminateHandler);
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT terminate_handler       setTerminateHandler(terminate_handler) __SYSTEM_ABI_CXX_SYMBOL(System.ABI.CXX.Exception.SetTerminateHandler);
 
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT [[noreturn]] void       unexpectedException() __SYSTEM_ABI_CXX_SYMBOL(System.ABI.CXX.Exception.UnexpectedException);
-__SYSTEM_ABI_CXX_EXCEPTION_EXPORT [[noreturn]] void       unexpectedExceptionWithHandler(std::unexpected_handler) __SYSTEM_ABI_CXX_SYMBOL(System.ABI.CXX.Exception.UnexpectedExceptionWithHandler);
-__SYSTEM_ABI_CXX_EXCEPTION_EXPORT std::unexpected_handler getUnexpectedExceptionHandler() __SYSTEM_ABI_CXX_SYMBOL(System.ABI.CXX.Exception.GetUnexpectedExceptionHandler);
-__SYSTEM_ABI_CXX_EXCEPTION_EXPORT std::unexpected_handler setUnexpectedExceptionHandler(std::unexpected_handler) __SYSTEM_ABI_CXX_SYMBOL(System.ABI.CXX.Exception.SetUnexpectedExceptionHandler);
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT [[noreturn]] void       unexpectedExceptionWithHandler(unexpected_handler) __SYSTEM_ABI_CXX_SYMBOL(System.ABI.CXX.Exception.UnexpectedExceptionWithHandler);
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT unexpected_handler      getUnexpectedExceptionHandler() __SYSTEM_ABI_CXX_SYMBOL(System.ABI.CXX.Exception.GetUnexpectedExceptionHandler);
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT unexpected_handler      setUnexpectedExceptionHandler(unexpected_handler) __SYSTEM_ABI_CXX_SYMBOL(System.ABI.CXX.Exception.SetUnexpectedExceptionHandler);
 
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT void*                   getCurrentException() noexcept __SYSTEM_ABI_CXX_SYMBOL(System.ABI.CXX.Exception.GetCurrentException);
 
-__SYSTEM_ABI_CXX_EXCEPTION_EXPORT void*                   createException(std::size_t, const std::type_info*, void (*destructor)(void*)) noexcept __SYSTEM_ABI_CXX_SYMBOL(System.ABI.CXX.Exception.CreateException);
+__SYSTEM_ABI_CXX_EXCEPTION_EXPORT void*                   createException(__XVI_STD_NS::size_t, const std::type_info*, void (*destructor)(void*)) noexcept __SYSTEM_ABI_CXX_SYMBOL(System.ABI.CXX.Exception.CreateException);
 
 __SYSTEM_ABI_CXX_EXCEPTION_EXPORT [[noreturn]] void       rethrowException(void*) __SYSTEM_ABI_CXX_SYMBOL(System.ABI.CXX.Exception.RethrowException);
 

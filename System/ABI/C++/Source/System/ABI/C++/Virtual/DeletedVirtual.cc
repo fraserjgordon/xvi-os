@@ -1,7 +1,7 @@
 #include <System/ABI/C++/Virtual.hh>
 
 
-namespace __cxxabiv1
+namespace __SYSTEM_ABI_CXX_NS
 {
 
 
@@ -14,4 +14,4 @@ void __cxa_deleted_virtual()
 }
 
 
-}
+} // namespace __SYSTEM_ABI_CXX_NS

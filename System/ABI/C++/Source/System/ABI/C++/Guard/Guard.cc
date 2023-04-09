@@ -3,7 +3,7 @@
 //#include <System/IPC/Sync/WaitOnAddress.hh>
 
 
-namespace __cxxabiv1
+namespace __SYSTEM_ABI_CXX_NS
 {
 
 
@@ -42,4 +42,4 @@ void __cxa_guard_abort(std::int64_t* ptr)
 }
 
 
-} // namespace __cxxabiv1
+} // namespace __SYSTEM_ABI_CXX_NS

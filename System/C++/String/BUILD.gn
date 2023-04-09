@@ -18,6 +18,7 @@ library("String")
         "CharTraits.hh",
         "FPos.hh",
         "MBState.hh",
+        "StringView.hh",
 
         "Private/Config.hh",
     ]
@@ -27,5 +28,6 @@ library("String")
         "CharTraits.cc",
         "FPos.cc",
         "MBState.cc",
+        "StringView.cc",
     ]
 }

@@ -3,7 +3,7 @@
 #include <System/ABI/C++/Exception.hh>
 
 
-namespace __cxxabiv1
+namespace __SYSTEM_ABI_CXX_NS
 {
 
 
@@ -16,4 +16,4 @@ void __cxa_pure_virtual()
 }
 
 
-}
+} // namespace __SYSTEM_ABI_CXX_NS

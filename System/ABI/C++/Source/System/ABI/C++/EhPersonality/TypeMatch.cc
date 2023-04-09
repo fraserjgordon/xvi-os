@@ -8,7 +8,7 @@
 #include <System/ABI/C++/EhPersonality/Utils.hh>
 
 
-using namespace __cxxabiv1;
+using namespace __SYSTEM_ABI_CXX_NS;
 using namespace System::ABI::CXX;
 
 
@@ -442,7 +442,7 @@ static std::pair<__cxa_type_match_result, std::ptrdiff_t> typesMatchForCatch(con
 }
 
 
-namespace __cxxabiv1
+namespace __SYSTEM_ABI_CXX_NS
 {
 
 
@@ -484,4 +484,4 @@ __cxa_type_match_result __cxa_type_match(void* exception, const std::type_info* 
 }
 
 
-} // namespace __cxxabiv1
+} // namespace __SYSTEM_ABI_CXX_NS

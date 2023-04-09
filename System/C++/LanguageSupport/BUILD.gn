@@ -57,8 +57,6 @@ library("LanguageSupport")
 
     sources =
     [
-        "Exception.cc",
         "New.cc",
-        "Terminate.cc",
     ]
 }

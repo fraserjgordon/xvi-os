@@ -1,64 +1,11 @@
-#include <System/C++/LanguageSupport/Exception.hh>
+#include <System/C++/Exception/ExceptionPtr.hh>
 
 #include <System/ABI/C++/Exception.hh>
+#include <System/C++/LanguageSupport/Exception.hh>
 
 
-namespace __XVI_STD_LANGSUPPORT_NS
+namespace __XVI_STD_EXCEPTION_NS_DECL
 {
-
-
-exception::~exception() = default;
-
-const char* exception::what() const noexcept
-{
-    return "unknown exception";
-}
-
-const char* bad_exception::what() const noexcept
-{
-    return "bad exception";
-}
-
-const char* bad_alloc::what() const noexcept
-{
-    return "allocation failure";
-}
-
-const char* bad_array_new_length::what() const noexcept
-{
-    return "invalid length for array new";
-}
-
-
-terminate_handler set_terminate(terminate_handler new_handler) noexcept
-{
-    return System::ABI::CXX::setTerminateHandler(new_handler);
-}
-
-terminate_handler get_terminate() noexcept
-{
-    return System::ABI::CXX::getTerminateHandler();
-}
-
-unexpected_handler set_unexpected(unexpected_handler new_handler) noexcept
-{
-    return System::ABI::CXX::setUnexpectedExceptionHandler(new_handler);
-}
-
-unexpected_handler get_unexpected() noexcept
-{
-    return System::ABI::CXX::getUnexpectedExceptionHandler();
-}
-
-
-int uncaught_exceptions() noexcept
-{
-    const auto* globals = __cxxabiv1::__cxa_get_globals();
-    auto uncaught = globals->uncaughtExceptions;
-
-    // Hopefully we never have more than numeric_limits<int>::max() uncaught exceptions...
-    return static_cast<int>(uncaught);
-}
 
 
 exception_ptr exception_ptr::__make(void* obj, size_t obj_size, const std::type_info* type, void (*destructor)(void*), void (*copy)(void*, const void*))
@@ -92,7 +39,7 @@ exception_ptr exception_ptr::__make(void* obj, size_t obj_size, const std::type_
     catch (...)
     {
         // The copy operation threw. We should return a pointer to that exception instead.
-        __cxxabiv1::__cxa_free_exception(exception);
+        __SYSTEM_ABI_CXX_NS::__cxa_free_exception(exception);
         return current_exception();
     }
 
@@ -143,4 +90,4 @@ void rethrow_exception(exception_ptr ep)
 }
 
 
-} // namespace 
+} // namespace __XVI_STD_EXCEPTION_NS_DECL
