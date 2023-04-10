@@ -16,11 +16,6 @@ namespace __XVI_STD_UTILITY_NS
 {
 
 
-struct from_range_t { explicit from_range_t() = default; };
-
-inline constexpr from_range_t from_range {};
-
-
 namespace ranges
 {
 

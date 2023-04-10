@@ -12,6 +12,7 @@
 
 #include <System/C++/String/Private/Config.hh>
 #include <System/C++/String/CharTraits.hh>
+#include <System/C++/String/StringFwd.hh>
 
 
 namespace __XVI_STD_STRING_NS_DECL
@@ -22,7 +23,7 @@ namespace __XVI_STD_STRING_NS_DECL
 class out_of_range;
 
 
-template <class _CharT, class _Traits = char_traits<_CharT>>
+template <class _CharT, class _Traits>
 class basic_string_view
 {
 public:

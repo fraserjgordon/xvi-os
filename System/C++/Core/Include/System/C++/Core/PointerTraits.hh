@@ -131,7 +131,7 @@ struct pointer_traits<_Ptr>
 
     template <class _U>
     static pointer pointer_to(_U& __r) noexcept
-        requires (std::is_void_v<element_type>)
+        requires (is_void_v<element_type>)
     {
         return _Ptr::pointer_to(__r);
     }

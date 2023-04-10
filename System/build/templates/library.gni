@@ -265,6 +265,12 @@ template("library")
     if (defined(invoker.test_sources))
     {
         test_sources = invoker.test_sources
+
+        test_deps = []
+        if (defined(invoker.test_deps))
+        {
+            test_deps = invoker.test_deps
+        }
     }
 
     # Enable host builds automatically if test sources are defined.
@@ -595,7 +601,12 @@ template("library")
             build_static = false
         }
 
-        if (use_stdlib)
+        if (host_build)
+        {
+            # No special config.
+            not_needed(["use_stdlib"])
+        }
+        else if (use_stdlib)
         {
             if (!rust_only)
             {

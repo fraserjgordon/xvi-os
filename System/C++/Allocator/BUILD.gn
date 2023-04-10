@@ -1,0 +1,31 @@
+library("Allocator")
+{
+    library_name = "System.C++.Allocator"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    shared_define = "__SYSTEM_CXX_ALLOCATOR_BUILD_SHARED"
+
+    public_deps =
+    [
+        "../Core",
+    ]
+
+    public_headers =
+    [
+        "Allocator.hh",
+        "AllocatorTraits.hh",
+        "Private/Config.hh",
+    ]
+
+    sources =
+    [
+    ]
+
+    test_sources =
+    [
+        "Allocator.cc",
+        "AllocatorTraits.cc",
+    ]
+}

@@ -1330,6 +1330,21 @@ template <class _E> constexpr const _E* data(std::initializer_list<_E> __il) noe
     { return __il.begin(); }
 
 
+namespace __detail
+{
+
+
+template <class _T>
+concept __maybe_iterator = (!std::integral<_T>);
+
+template <class _R, class _T>
+concept __container_compatible_range = ranges::input_range<_R>
+    && std::convertible_to<ranges::range_reference_t<_R>, _T>;
+
+
+} // namespace __detail
+
+
 } // namespace __XVI_STD_CORE_NS_DECL
 
 

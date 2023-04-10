@@ -1100,7 +1100,7 @@ public:
     constexpr
     explicit(!__detail::__tuple_converts_from_tuple_like_v<_UTuple, _Types...>)
     tuple(_UTuple&& __u) :
-        _M_elems(std::forward<_UTuple>(__u))
+        _M_elems(__XVI_STD_NS::forward<_UTuple>(__u))
     {
     }
 
@@ -1257,7 +1257,7 @@ public:
     constexpr
     explicit(!__detail::__tuple_converts_from_tuple_like_v<_UTuple, _Types...>)
     tuple(allocator_arg_t, const _Alloc& __alloc, _UTuple&& __u) :
-        _M_elems(allocator_arg, __alloc, std::forward<_UTuple>(__u))
+        _M_elems(allocator_arg, __alloc, __XVI_STD_NS::forward<_UTuple>(__u))
     {
     }
 

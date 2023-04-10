@@ -18,7 +18,6 @@ library("Atomic")
     [
         "Atomic.hh",
         "Private/Config.hh",
-        "Private/Namespace.hh",
     ]
 
     if (!host_build)

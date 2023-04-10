@@ -10,6 +10,7 @@
 #include <System/C++/TypeTraits/TypeTraits.hh>
 
 #include <System/C++/Core/Private/Config.hh>
+#include <System/C++/Core/AddressOf.hh>
 #include <System/C++/Core/CtorTags.hh>
 #include <System/C++/Core/IntegerSequence.hh>
 #include <System/C++/Core/Invoke.hh>
@@ -96,7 +97,7 @@ template <size_t _I, class... _Types>
 constexpr auto __ptr(__variant_storage_union_base<_Types...>& __u) noexcept
 {
     if constexpr (_I == 0)
-        return std::addressof(__u.__val);
+        return __XVI_STD_NS::addressof(__u.__val);
     else
         return __ptr<_I - 1>(__u.__inner);
 }
@@ -105,7 +106,7 @@ template <size_t _I, class... _Types>
 constexpr auto __ptr(const __variant_storage_union_base<_Types...>& __u) noexcept
 {
     if constexpr (_I == 0)
-        return std::addressof(__u.__val);
+        return __XVI_STD_NS::addressof(__u.__val);
     else
         return __ptr<_I - 1>(__u.__inner);
 }
@@ -113,8 +114,8 @@ constexpr auto __ptr(const __variant_storage_union_base<_Types...>& __u) noexcep
 template <class _T, class... _Types>
 constexpr _T* __ptr(__variant_storage_union_base<_Types...>& __u) noexcept
 {
-    if constexpr (std::is_same_v<_T, typename __variant_storage_union_base<_Types...>::__value_t>)
-        return std::addressof(__u.__val);
+    if constexpr (is_same_v<_T, typename __variant_storage_union_base<_Types...>::__value_t>)
+        return __XVI_STD_NS::addressof(__u.__val);
     else
         return __ptr<_T>(__u.__inner);
 }
@@ -122,8 +123,8 @@ constexpr _T* __ptr(__variant_storage_union_base<_Types...>& __u) noexcept
 template <class _T, class... _Types>
 constexpr const _T* __ptr(const __variant_storage_union_base<_Types...>& __u) noexcept
 {
-    if constexpr (std::is_same_v<_T, typename __variant_storage_union_base<_Types...>::__value_t>)
-        return std::addressof(__u.__val);
+    if constexpr (is_same_v<_T, typename __variant_storage_union_base<_Types...>::__value_t>)
+        return __XVI_STD_NS::addressof(__u.__val);
     else
         return __ptr<_T>(__u.__inner);
 }
@@ -161,7 +162,7 @@ constexpr void __move_construct(__variant_storage_union_base<_T, _Types...>& __d
         return;
     }
 
-    new (__ptr<0>(__dest)) _T(std::move(__get<0>(__src)));
+    new (__ptr<0>(__dest)) _T(__XVI_STD_NS::move(__get<0>(__src)));
 }
 
 template <class _T, class... _Types>
@@ -205,7 +206,7 @@ constexpr void __move_assign(__variant_storage_union_base<_T, _Types...>& __dest
         return;
     }
 
-    __get<0>(__dest) = std::move(__get<0>(__src));
+    __get<0>(__dest) = __XVI_STD_NS::move(__get<0>(__src));
 }
 
 template <class _T, class... _Types, class... _Args>
@@ -216,11 +217,11 @@ constexpr void __emplace(__variant_storage_union_base<_T, _Types...>& __dest,
     if (__index != 0)
     {
         if constexpr (sizeof...(_Types) > 0)
-            __emplace(__dest.__inner, __index - 1, std::forward<_Args>(__args)...);
+            __emplace(__dest.__inner, __index - 1, __XVI_STD_NS::forward<_Args>(__args)...);
         return;
     }
 
-    new (__ptr<0>(__dest)) _T(std::forward<_Args>(__args)...);
+    new (__ptr<0>(__dest)) _T(__XVI_STD_NS::forward<_Args>(__args)...);
 }
 
 template <class _T, class... _Types>
@@ -228,7 +229,7 @@ constexpr void __swap_elem(__variant_storage_union_base<_T, _Types...>& __lhs,
                            __variant_storage_union_base<_T, _Types...>& __rhs,
                            size_t __index)
 {
-    using std::swap;
+    using __XVI_STD_NS::swap;
 
     if (__index != 0)
     {
@@ -331,16 +332,16 @@ constexpr bool __ge(const __variant_storage_union_base<_T, _Types...>& __lhs,
 }
 
 template <class _T, class... _Types>
-constexpr std::common_comparison_category_t<std::compare_three_way_result_t<_T>, std::compare_three_way_result_t<_Types>...>
+constexpr common_comparison_category_t<compare_three_way_result_t<_T>, compare_three_way_result_t<_Types>...>
 __cmp(const __variant_storage_union_base<_T, _Types...>& __lhs,
       const __variant_storage_union_base<_T, _Types...>& __rhs,
-      std::size_t __index)
+      size_t __index)
 {
     if (__index != 0)
     {
         if constexpr (sizeof...(_Types) > 0)
             return __cmp(__lhs.__inner, __rhs.__inner, __index - 1);
-        return std::strong_ordering::equal;
+        return strong_ordering::equal;
     }
 
     return __get<0>(__lhs) <=> __get<0>(__rhs);
@@ -360,23 +361,23 @@ union __variant_storage_union
     constexpr __variant_storage_union() : __raw() {}
 
     constexpr __variant_storage_union(const __variant_storage_union&)
-        requires (std::is_trivially_copy_constructible_v<_Types> && ...) = default;
+        requires (is_trivially_copy_constructible_v<_Types> && ...) = default;
 
     constexpr __variant_storage_union(const __variant_storage_union&)
-        requires (!(std::is_trivially_copy_constructible_v<_Types> && ...))
+        requires (!(is_trivially_copy_constructible_v<_Types> && ...))
     {
     }
 
     constexpr __variant_storage_union(__variant_storage_union&&)
-        requires (std::is_trivially_move_constructible_v<_Types> && ...) = default;
+        requires (is_trivially_move_constructible_v<_Types> && ...) = default;
 
     constexpr __variant_storage_union(__variant_storage_union&&)
-        requires (!(std::is_trivially_move_constructible_v<_Types> && ...))
+        requires (!(is_trivially_move_constructible_v<_Types> && ...))
     {
     }
 
     constexpr ~__variant_storage_union() 
-        requires (std::is_trivially_destructible_v<_Types> && ...) = default;
+        requires (is_trivially_destructible_v<_Types> && ...) = default;
 
     // Non-trivial but empty destructor for unions with non-trivial members.
     constexpr ~__variant_storage_union()
@@ -385,27 +386,27 @@ union __variant_storage_union
     }
 
     constexpr __variant_storage_union& operator=(const __variant_storage_union&)
-        requires (std::is_trivially_copy_assignable_v<_Types> && ...)
-            && (std::is_trivially_copy_constructible_v<_Types> && ...)
-            && (std::is_trivially_destructible_v<_Types> && ...) = default;
+        requires (is_trivially_copy_assignable_v<_Types> && ...)
+            && (is_trivially_copy_constructible_v<_Types> && ...)
+            && (is_trivially_destructible_v<_Types> && ...) = default;
 
     constexpr __variant_storage_union& operator=(const __variant_storage_union&)
-        requires (!((std::is_trivially_copy_assignable_v<_Types> && ...)
-            && (std::is_trivially_copy_constructible_v<_Types> && ...)
-            && (std::is_trivially_destructible_v<_Types> && ...)))
+        requires (!((is_trivially_copy_assignable_v<_Types> && ...)
+            && (is_trivially_copy_constructible_v<_Types> && ...)
+            && (is_trivially_destructible_v<_Types> && ...)))
     {
         return *this;
     }
 
     constexpr __variant_storage_union& operator=(__variant_storage_union&&)
-        requires (std::is_trivially_move_assignable_v<_Types> && ...)
-            && (std::is_trivially_move_constructible_v<_Types> && ...)
-            && (std::is_trivially_destructible_v<_Types> && ...) = default;
+        requires (is_trivially_move_assignable_v<_Types> && ...)
+            && (is_trivially_move_constructible_v<_Types> && ...)
+            && (is_trivially_destructible_v<_Types> && ...) = default;
 
     constexpr __variant_storage_union& operator=(__variant_storage_union&&)
-        requires (!((std::is_trivially_move_assignable_v<_Types> && ...)
-            && (std::is_trivially_move_constructible_v<_Types> && ...)
-            && (std::is_trivially_destructible_v<_Types> && ...)))
+        requires (!((is_trivially_move_assignable_v<_Types> && ...)
+            && (is_trivially_move_constructible_v<_Types> && ...)
+            && (is_trivially_destructible_v<_Types> && ...)))
     {
         return *this;
     }
@@ -418,7 +419,7 @@ struct __variant_storage
     using __union_t = __variant_storage_union<_Types...>;
     using _T0 = typename __variant_storage_union<_Types...>::__inner_t::__value_t;    
 
-    using __compare_t = std::common_comparison_category_t<__detail::detected_or_t<std::false_type, std::compare_three_way_result, _Types>...>;
+    using __compare_t = common_comparison_category_t<__detail::detected_or_t<false_type, compare_three_way_result, _Types>...>;
 
     __union_t _M_storage = {};
     size_t    _M_index = 0;
@@ -431,13 +432,13 @@ struct __variant_storage
     }
 
     constexpr __variant_storage(const __variant_storage&)
-        requires (std::is_trivially_copy_constructible_v<_Types> && ...) = default;
+        requires (is_trivially_copy_constructible_v<_Types> && ...) = default;
 
     constexpr __variant_storage(const __variant_storage& __rhs)
-        requires (!(std::is_trivially_copy_constructible_v<_Types> && ...))
+        requires (!(is_trivially_copy_constructible_v<_Types> && ...))
     {
         //! @TODO: evaluate recursive vs jump table.
-        if (!__variant_use_jump_table || std::is_constant_evaluated())
+        if (!__variant_use_jump_table || is_constant_evaluated())
         {
             if (__rhs._M_index != variant_npos)
                 __copy_construct(_M_storage.__inner, __rhs._M_storage.__inner, __rhs._M_index);
@@ -451,13 +452,13 @@ struct __variant_storage
     }
 
     constexpr __variant_storage(__variant_storage&&)
-        requires (std::is_trivially_move_constructible_v<_Types> && ...) = default;
+        requires (is_trivially_move_constructible_v<_Types> && ...) = default;
 
     constexpr __variant_storage(__variant_storage&& __rhs)
         requires (!(is_trivially_move_constructible_v<_Types> && ...))
     {
         //! @TODO: evaluate recursive vs jump table.
-        if (!__variant_use_jump_table || std::is_constant_evaluated())
+        if (!__variant_use_jump_table || is_constant_evaluated())
         {
             if (__rhs._M_index != variant_npos)
                 __move_construct(_M_storage.__inner, __rhs._M_storage.__inner, __rhs._M_index);
@@ -471,16 +472,16 @@ struct __variant_storage
     }
 
     constexpr ~__variant_storage()
-        requires (std::is_trivially_destructible_v<_Types> && ...) = default;
+        requires (is_trivially_destructible_v<_Types> && ...) = default;
 
     constexpr ~__variant_storage()
-        requires (!(std::is_trivially_destructible_v<_Types> && ...))
+        requires (!(is_trivially_destructible_v<_Types> && ...))
     {
         if (_M_index == variant_npos)
             return;
         
         //! @TODO: evaluate recursive vs jump table.
-        if (!__variant_use_jump_table || std::is_constant_evaluated())
+        if (!__variant_use_jump_table || is_constant_evaluated())
         {
             __destruct(_M_storage.__inner, _M_index);
             _M_index = variant_npos;
@@ -492,17 +493,17 @@ struct __variant_storage
     }
 
     constexpr __variant_storage& operator=(__variant_storage&&)
-        requires ((std::is_trivially_move_constructible_v<_Types> && std::is_trivially_move_assignable_v<_Types> && std::is_trivially_destructible_v<_Types>) && ...) = default;
+        requires ((is_trivially_move_constructible_v<_Types> && is_trivially_move_assignable_v<_Types> && is_trivially_destructible_v<_Types>) && ...) = default;
 
     constexpr __variant_storage& operator=(__variant_storage&& __rhs)
-        requires (!((std::is_trivially_move_constructible_v<_Types> && std::is_trivially_move_assignable_v<_Types> && std::is_trivially_destructible_v<_Types>) && ...))
+        requires (!((is_trivially_move_constructible_v<_Types> && is_trivially_move_assignable_v<_Types> && is_trivially_destructible_v<_Types>) && ...))
     {
         // Note: safe for self-assignment if the underlying types are safe.
 
         bool __this_empty = _M_index == variant_npos;
         bool __that_empty = __rhs._M_index == variant_npos;
 
-        std::size_t __j = __rhs._M_index;
+        size_t __j = __rhs._M_index;
 
         if (__this_empty && __that_empty)
         {
@@ -516,7 +517,7 @@ struct __variant_storage
         else if (_M_index == __rhs._M_index)
         {
             //! @TODO: evaluate recursive vs jump table.
-            if (!__variant_use_jump_table || std::is_constant_evaluated())
+            if (!__variant_use_jump_table || is_constant_evaluated())
             {
                 __move_assign(_M_storage.__inner, __rhs._M_storage.__inner, _M_index);
                 return *this;
@@ -530,7 +531,7 @@ struct __variant_storage
             __reset();
             
             //! @todo: evaluate recursive vs jump table.
-            if (__variant_use_jump_table || std::is_constant_evaluated())
+            if (__variant_use_jump_table || is_constant_evaluated())
             {
                 __move_construct(_M_storage.__inner, __rhs._M_storage.__inner, __rhs._M_index);
                 _M_index = __rhs._M_index;
@@ -544,17 +545,17 @@ struct __variant_storage
     }
 
     constexpr __variant_storage& operator=(const __variant_storage&)
-        requires ((std::is_trivially_copy_constructible_v<_Types> && std::is_trivially_copy_assignable_v<_Types> && std::is_trivially_destructible_v<_Types>) && ...) = default;
+        requires ((is_trivially_copy_constructible_v<_Types> && is_trivially_copy_assignable_v<_Types> && is_trivially_destructible_v<_Types>) && ...) = default;
 
     constexpr __variant_storage& operator=(const __variant_storage& __rhs)
-        requires (!((std::is_trivially_copy_constructible_v<_Types> && std::is_trivially_copy_assignable_v<_Types> && std::is_trivially_destructible_v<_Types>) && ...))
+        requires (!((is_trivially_copy_constructible_v<_Types> && is_trivially_copy_assignable_v<_Types> && is_trivially_destructible_v<_Types>) && ...))
     {
         // Note: safe for self-assignment if the underlying types are safe.
 
         bool __this_empty = _M_index == variant_npos;
         bool __that_empty = __rhs._M_index == variant_npos;
 
-        std::size_t __j = __rhs._M_index;
+        size_t __j = __rhs._M_index;
 
         if (__this_empty && __that_empty)
         {
@@ -568,7 +569,7 @@ struct __variant_storage
         else if (_M_index == __rhs._M_index)
         {
             //! @TODO: evaluate recursive vs jump table.
-            if (!__variant_use_jump_table || std::is_constant_evaluated())
+            if (!__variant_use_jump_table || is_constant_evaluated())
             {
                 __copy_assign(_M_storage.__inner, __rhs._M_storage.__inner, _M_index);
                 return *this;
@@ -582,7 +583,7 @@ struct __variant_storage
             __reset();
 
             //! @todo: evaluate recursive vs jump table.
-            if (!__variant_use_jump_table || std::is_constant_evaluated())
+            if (!__variant_use_jump_table || is_constant_evaluated())
             {
                 __copy_construct(_M_storage.__inner, __rhs._M_storage.__inner, __rhs._M_index);
                 _M_index = __rhs._M_index;
@@ -605,7 +606,7 @@ struct __variant_storage
     template <class _T, class... _Args>
     constexpr void __emplace_construct(_Args&&... __args)
     {
-        new (__ptr<_T>()) _T(std::forward<_Args>(__args)...);
+        new (__ptr<_T>()) _T(__XVI_STD_NS::forward<_Args>(__args)...);
         _M_index = __index_of_v<_T, _Types...>;
     }
 
@@ -613,7 +614,7 @@ struct __variant_storage
     constexpr void __emplace_construct(_Args&&... __args)
     {
         using _T = typename __nth_type<_I, _Types...>::type;
-        new (__ptr<_I>()) _T(std::forward<_Args>(__args)...);
+        new (__ptr<_I>()) _T(__XVI_STD_NS::forward<_Args>(__args)...);
         _M_index = _I;
     }
 
@@ -623,7 +624,7 @@ struct __variant_storage
             return;
         
         //! @TODO: evaluate recursive vs jump table.
-        if (!__variant_use_jump_table || std::is_constant_evaluated())
+        if (!__variant_use_jump_table || is_constant_evaluated())
         {
             __destruct(_M_storage.__inner, _M_index);
             _M_index = variant_npos;
@@ -642,7 +643,7 @@ struct __variant_storage
         if (_M_index == __rhs._M_index)
         {
             //! @TODO: evaluate recursive vs jump table.
-            if (!__variant_use_jump_table || std::is_constant_evaluated())
+            if (!__variant_use_jump_table || is_constant_evaluated())
             {
                 __swap_elem(_M_storage.__inner, __rhs._M_storage.__inner, _M_index);
                 return;
@@ -654,9 +655,9 @@ struct __variant_storage
 
         // Requires a three-move exchange. All of these are move-construct as the two variants have different active
         // indices (so the assigns will actually do a move-construct instead of a move-assign internally).
-        __variant_storage __temp {std::move(__rhs)};
-        __rhs = std::move(*this);
-        *this = std::move(__temp);
+        __variant_storage __temp {__XVI_STD_NS::move(__rhs)};
+        __rhs = __XVI_STD_NS::move(*this);
+        *this = __XVI_STD_NS::move(__temp);
     }
 
     template <size_t _I> constexpr auto& __get() noexcept
@@ -687,7 +688,7 @@ struct __variant_storage
         if (_M_index == variant_npos)
             return true;
         
-        if (!__variant_use_jump_table || std::is_constant_evaluated())
+        if (!__variant_use_jump_table || is_constant_evaluated())
         {
             //! @TODO: evaluate recursive vs jump table.
             return __variant_eq(_M_storage.__inner, __v._M_storage.__inner, _M_index);
@@ -704,7 +705,7 @@ struct __variant_storage
         if (_M_index == variant_npos)
             return false;
         
-        if (!__variant_use_jump_table || std::is_constant_evaluated())
+        if (!__variant_use_jump_table || is_constant_evaluated())
         {
             //! @TODO: evaluate recursive vs jump table.
             return __neq(_M_storage.__inner, __v._M_storage.__inner, _M_index);
@@ -727,7 +728,7 @@ struct __variant_storage
         if (_M_index > __v._M_index)
             return false;
         
-        if (!__variant_use_jump_table || std::is_constant_evaluated())
+        if (!__variant_use_jump_table || is_constant_evaluated())
         {
             //! @TODO: evaluate recursive vs jump table.
             return __lt(_M_storage.__inner, __v._M_storage.__inner, _M_index);
@@ -750,7 +751,7 @@ struct __variant_storage
         if (_M_index < __v._M_index)
             return false;
         
-        if (!__variant_use_jump_table || std::is_constant_evaluated())
+        if (!__variant_use_jump_table || is_constant_evaluated())
         {
             //! @TODO: evaluate recursive vs jump table.
             return __gt(_M_storage.__inner, __v._M_storage.__inner, _M_index);
@@ -773,7 +774,7 @@ struct __variant_storage
         if (_M_index > __v._M_index)
             return false;
         
-        if (!__variant_use_jump_table || std::is_constant_evaluated())
+        if (!__variant_use_jump_table || is_constant_evaluated())
         {
             //! @TODO: evaluate recursive vs jump table.
             return __le(_M_storage.__inner, __v._M_storage.__inner, _M_index);
@@ -796,7 +797,7 @@ struct __variant_storage
         if (_M_index < __v._M_index)
             return false;
         
-        if (!__variant_use_jump_table || std::is_constant_evaluated())
+        if (!__variant_use_jump_table || is_constant_evaluated())
         {
             //! @TODO: evaluate recursive vs jump table.
             return __ge(_M_storage.__inner, __v._M_storage.__inner, _M_index);
@@ -809,7 +810,7 @@ struct __variant_storage
     {
         if (__v._M_index == _M_index)
         {
-            if (!__variant_use_jump_table || std::is_constant_evaluated())
+            if (!__variant_use_jump_table || is_constant_evaluated())
             {
                 //! @todo: evaluate recursive vs jump table.
                 return __cmp(_M_storage.__inner, __v._M_storage.__inner, _M_index);
@@ -819,129 +820,129 @@ struct __variant_storage
         }
 
         if (_M_index < __v._M_index)
-            return std::strong_ordering::less;
+            return strong_ordering::less;
         else
-            return std::strong_ordering::greater;
+            return strong_ordering::greater;
     }
 
-    template <template <std::size_t> class _Fn, std::size_t... _Idx>
-    static constexpr auto __get_fn_(std::size_t __i, std::index_sequence<_Idx...>)
+    template <template <size_t> class _Fn, size_t... _Idx>
+    static constexpr auto __get_fn_(size_t __i, index_sequence<_Idx...>)
     {
         using _Sig = decltype(_Fn<0>::__fn);
         constexpr _Sig* __fns[] = {&_Fn<_Idx>::__fn...};
         return __fns[__i];
     }
 
-    template <template <std::size_t> class _Fn>
-    static constexpr auto __get_fn(std::size_t __i)
+    template <template <size_t> class _Fn>
+    static constexpr auto __get_fn(size_t __i)
     {
-        constexpr auto _IndexSeq = std::make_index_sequence<sizeof...(_Types)>();
+        constexpr auto _IndexSeq = make_index_sequence<sizeof...(_Types)>();
         return __get_fn_<_Fn>(__i, _IndexSeq);
     }
 
     // Copy constructor methods.
-    template <std::size_t _I> struct __copy_ctor
+    template <size_t _I> struct __copy_ctor
     {
         static constexpr void __fn(__variant_storage& __to, const __variant_storage& __from)
             { new (__to.template __ptr<_I>()) __nth_type_t<_I, _Types...>(__from.template __get<_I>()); }
     };
-    static constexpr auto __copy_ctors(std::size_t __i) { return __get_fn<__copy_ctors>(__i); }
+    static constexpr auto __copy_ctors(size_t __i) { return __get_fn<__copy_ctors>(__i); }
 
     // Move constructor methods.
-    template <std::size_t _I> struct __move_ctor
+    template <size_t _I> struct __move_ctor
     {
         static constexpr void __fn(__variant_storage& __to, __variant_storage& __from)
-            { new (__to.template __ptr<_I>()) __nth_type_t<_I, _Types...>(std::move(__from.template __get<_I>())); }
+            { new (__to.template __ptr<_I>()) __nth_type_t<_I, _Types...>(__XVI_STD_NS::move(__from.template __get<_I>())); }
     };
-    static constexpr auto __move_ctors(std::size_t __i) { return __get_fn<__move_ctor>(__i); }
+    static constexpr auto __move_ctors(size_t __i) { return __get_fn<__move_ctor>(__i); }
 
     // Destructor methods.
-    template <std::size_t _I> struct __dtor
+    template <size_t _I> struct __dtor
     {
         static constexpr void __fn(__variant_storage& __v)
             { __v.template __get<_I>().~__nth_type_t<_I, _Types...>(); }
     };
-    static constexpr auto __dtors(std::size_t __i) { return __get_fn<__dtor>(__i); }
+    static constexpr auto __dtors(size_t __i) { return __get_fn<__dtor>(__i); }
 
     // Copy assignment methods.
-    template <std::size_t _I> struct __copy_assign
+    template <size_t _I> struct __copy_assign
     {
         static constexpr void __fn(__variant_storage& __to, const __variant_storage& __from)
             { __to.template __get<_I>() = __from.template __get<_I>(); }
     };
-    static constexpr auto __copy_assigns(std::size_t __i) { return __get_fn<__copy_assign>(__i); }
+    static constexpr auto __copy_assigns(size_t __i) { return __get_fn<__copy_assign>(__i); }
 
     // Move assignment methods.
-    template <std::size_t _I> struct __move_assign
+    template <size_t _I> struct __move_assign
     {
         static void __fn(__variant_storage& __to, __variant_storage& __from)
-            { __to.template __get<_I>() = std::move(__from.template __get<_I>()); }
+            { __to.template __get<_I>() = __XVI_STD_NS::move(__from.template __get<_I>()); }
     };
-    static constexpr auto __move_assigns(std::size_t __i) { return __get_fn<__move_assign>(__i); }
+    static constexpr auto __move_assigns(size_t __i) { return __get_fn<__move_assign>(__i); }
 
     // Swap methods.
-    template <std::size_t _I> struct __swap_fn
+    template <size_t _I> struct __swap_fn
     {
         static void __fn(__variant_storage& __l, __variant_storage& __r)
-            { using std::swap; swap(__l.template __get<_I>(), __r.template __get<_I>()); }
+            { using __XVI_STD_NS::swap; swap(__l.template __get<_I>(), __r.template __get<_I>()); }
     };
-    static constexpr auto __swap_fns(std::size_t __i) { return __get_fn<__swap_fn>(__i); }
+    static constexpr auto __swap_fns(size_t __i) { return __get_fn<__swap_fn>(__i); }
 
     // Equality methods.
-    template <std::size_t _I> struct __eq_fn
+    template <size_t _I> struct __eq_fn
     {
         static bool __fn(const __variant_storage& __l, const __variant_storage& __r)
             { return __l.template __get<_I>() == __r.template __get<_I>(); }
     };
-    static constexpr auto __eq_fns(std::size_t __i) { return __get_fn<__eq_fn>(__i); }
+    static constexpr auto __eq_fns(size_t __i) { return __get_fn<__eq_fn>(__i); }
 
     // Inequality methods.
-    template <std::size_t _I> struct __neq_fn
+    template <size_t _I> struct __neq_fn
     {
         static bool __fn(const __variant_storage& __l, const __variant_storage& __r)
             { return __l.template __get<_I>() != __r.template __get<_I>(); }
     };
-    static constexpr auto __neq_fns(std::size_t __i) { return __get_fn<__neq_fn>(__i); }
+    static constexpr auto __neq_fns(size_t __i) { return __get_fn<__neq_fn>(__i); }
 
     // Less-than methods.
-    template <std::size_t _I> struct __lt_fn
+    template <size_t _I> struct __lt_fn
     {
         static bool __fn(const __variant_storage& __l, const __variant_storage& __r)
             { return __l.template __get<_I>() < __r.template __get<_I>(); }
     };
-    static constexpr auto __lt_fns(std::size_t __i) { return __get_fn<__lt_fn>(__i); }
+    static constexpr auto __lt_fns(size_t __i) { return __get_fn<__lt_fn>(__i); }
 
     // Greater-than methods.
-    template <std::size_t _I> struct __gt_fn
+    template <size_t _I> struct __gt_fn
     {
         static bool __fn(const __variant_storage& __l, const __variant_storage& __r)
             { return __l.template __get<_I>() > __r.template __get<_I>(); }
     };
-    static constexpr auto __gt_fns(std::size_t __i) { return __get_fn<__gt_fn>(__i); }
+    static constexpr auto __gt_fns(size_t __i) { return __get_fn<__gt_fn>(__i); }
 
     // Less-or-equal methods.
-    template <std::size_t _I> struct __le_fn
+    template <size_t _I> struct __le_fn
     {
         static bool __fn(const __variant_storage& __l, const __variant_storage& __r)
             { return __l.template __get<_I>() <= __r.template __get<_I>(); }
     };
-    static constexpr auto __le_fns(std::size_t __i) { return __get_fn<__le_fn>(__i); }
+    static constexpr auto __le_fns(size_t __i) { return __get_fn<__le_fn>(__i); }
 
     // Greater-or-equal methods.
-    template <std::size_t _I> struct __ge_fn
+    template <size_t _I> struct __ge_fn
     {
         static bool __fn(const __variant_storage& __l, const __variant_storage& __r)
             { return __l.template __get<_I>() >= __r.template __get<_I>(); }
     };
-    static constexpr auto __ge_fns(std::size_t __i) { return __get_fn<__ge_fn>(__i); }
+    static constexpr auto __ge_fns(size_t __i) { return __get_fn<__ge_fn>(__i); }
 
     // Three way comparison methods.
-    template <std::size_t _I> struct __cmp_fn
+    template <size_t _I> struct __cmp_fn
     {
         static __compare_t __fn(const __variant_storage& __l, const __variant_storage& __r)
             { return __l.template __get<_I>() <=> __r.template __get<_I>(); }
     };
-    static constexpr auto __cmp_fns(std::size_t __i) { return __get_fn<__cmp_fn>(__i); }
+    static constexpr auto __cmp_fns(size_t __i) { return __get_fn<__cmp_fn>(__i); }
 
     // Truth table for nothrow copy constructibility.
     static inline constexpr bool __nothrow_copy_constructible[] =
@@ -996,7 +997,7 @@ template <class _T, class... _Types>
 struct __variant_type_selector : __variant_type_selector_helper<_T, _Types...>
 {
     using __variant_type_selector_helper<_T, _Types...>::__fn;
-    template <class _U> using __detector = decltype(__fn(std::forward<_U>(declval<_U>())));
+    template <class _U> using __detector = decltype(__fn(__XVI_STD_NS::forward<_U>(declval<_U>())));
     using type = detected_or_t<__variant_fn_ignore, __detector, _T>;
 };
 
@@ -1013,8 +1014,7 @@ class bad_variant_access
 public:
 
     constexpr bad_variant_access() noexcept = default;
-    const char* what() const noexcept override
-        { return "bad variant access"; }
+    const char* what() const noexcept override;
 };
 
 
@@ -1026,142 +1026,142 @@ public:
     using _T0 = typename __detail::__nth_type<0, _Types...>::type;
 
     constexpr variant() noexcept(is_nothrow_default_constructible_v<_T0>)
-        requires std::is_default_constructible_v<_T0> = default;
+        requires is_default_constructible_v<_T0> = default;
 
     constexpr variant(const variant&)
-        requires (std::is_copy_constructible_v<_Types> && ...) = default;
+        requires (is_copy_constructible_v<_Types> && ...) = default;
 
     constexpr variant(const variant&)
-        requires (!(std::is_copy_constructible_v<_Types> && ...)) = delete;
+        requires (!(is_copy_constructible_v<_Types> && ...)) = delete;
 
     constexpr variant(variant&&) noexcept((is_nothrow_move_constructible_v<_Types> && ...))
-        requires (std::is_move_constructible_v<_Types> && ...) = default;
+        requires (is_move_constructible_v<_Types> && ...) = default;
 
     template <class _T,
               class _Tj = __detail::__variant_type_selector_t<_T, _Types...>>
         requires (sizeof...(_Types) != 0)
-            && (!std::is_same_v<std::remove_cvref_t<_T>, variant>)
-            && (!__detail::__is_in_place_type_specialization_v<std::remove_cvref_t<_T>>)
-            && (!__detail::__is_in_place_index_specialization_v<std::remove_cvref_t<_T>>)
-            && std::is_constructible_v<_Tj, _T>
-            && (!std::is_same_v<_Tj, __detail::__variant_fn_ignore>)
+            && (!is_same_v<remove_cvref_t<_T>, variant>)
+            && (!__detail::__is_in_place_type_specialization_v<remove_cvref_t<_T>>)
+            && (!__detail::__is_in_place_index_specialization_v<remove_cvref_t<_T>>)
+            && is_constructible_v<_Tj, _T>
+            && (!is_same_v<_Tj, __detail::__variant_fn_ignore>)
     constexpr variant(_T&& __t) noexcept(is_nothrow_constructible_v<_Tj, _T>)
     {
         _M_storage._M_index = variant_npos;
-        _M_storage.template __emplace_construct<_Tj>(std::forward<_T>(__t));
+        _M_storage.template __emplace_construct<_Tj>(__XVI_STD_NS::forward<_T>(__t));
     }
 
     template <class _T, class... _Args>
         requires __detail::__type_unique_in_pack_v<_T, _Types...>
-            && std::is_constructible_v<_T, _Args...>
+            && is_constructible_v<_T, _Args...>
     constexpr explicit variant(in_place_type_t<_T>, _Args&&... __args)
     {
         _M_storage._M_index = variant_npos;
-        _M_storage.template __emplace_construct<_T>(std::forward<_Args>(__args)...);
+        _M_storage.template __emplace_construct<_T>(__XVI_STD_NS::forward<_Args>(__args)...);
     }
 
     template <class _T, class _U, class... _Args>
         requires __detail::__type_unique_in_pack_v<_T, _Types...>
-            && std::is_constructible_v<_T, initializer_list<_U>&, _Args...>
+            && is_constructible_v<_T, initializer_list<_U>&, _Args...>
     constexpr explicit variant(in_place_type_t<_T>, initializer_list<_U> __il, _Args&&... __args)
     {
         _M_storage._M_index = variant_npos;
-        _M_storage.template __emplace_construct<_T>(__il, std::forward<_Args>(__args)...);
+        _M_storage.template __emplace_construct<_T>(__il, __XVI_STD_NS::forward<_Args>(__args)...);
     }
 
     template <size_t _I, class... _Args>
         requires (_I < sizeof...(_Types))
-            && std::is_constructible_v<__detail::__nth_type_t<_I, _Types...>, _Args...>
+            && is_constructible_v<__detail::__nth_type_t<_I, _Types...>, _Args...>
     constexpr explicit variant(in_place_index_t<_I>, _Args&&... __args)
     {
         _M_storage._M_index = variant_npos;
-        _M_storage.template __emplace_construct<_I>(std::forward<_Args>(__args)...);
+        _M_storage.template __emplace_construct<_I>(__XVI_STD_NS::forward<_Args>(__args)...);
     }
 
     template <size_t _I, class _U, class... _Args>
         requires (_I < sizeof...(_Types))
-            && std::is_constructible_v<__detail::__nth_type_t<_I, _Types...>, initializer_list<_U>&, _Args...>
+            && is_constructible_v<__detail::__nth_type_t<_I, _Types...>, initializer_list<_U>&, _Args...>
     constexpr explicit variant(in_place_index_t<_I>, initializer_list<_U> __il, _Args&&... __args)
     {
         _M_storage._M_index = variant_npos;
-        _M_storage.template __emplace_construct<_I>(__il, std::forward<_Args>(__args)...);
+        _M_storage.template __emplace_construct<_I>(__il, __XVI_STD_NS::forward<_Args>(__args)...);
     }
 
     constexpr ~variant() = default;
 
     constexpr variant& operator=(const variant&)
-        requires (std::is_copy_constructible_v<_Types> && ...)
-            && (std::is_copy_assignable_v<_Types> && ...) = default;
+        requires (is_copy_constructible_v<_Types> && ...)
+            && (is_copy_assignable_v<_Types> && ...) = default;
 
     constexpr variant& operator=(const variant&)
-        requires (!((std::is_copy_constructible_v<_Types> && ...)
-            && (std::is_copy_assignable_v<_Types> && ...))) = delete;
+        requires (!((is_copy_constructible_v<_Types> && ...)
+            && (is_copy_assignable_v<_Types> && ...))) = delete;
 
     constexpr variant& operator=(variant&&)
         noexcept(((is_nothrow_move_constructible_v<_Types>
                    && is_nothrow_move_assignable_v<_Types>) && ...))
-        requires (std::is_move_constructible_v<_Types> && ...)
-            && (std::is_move_assignable_v<_Types> && ...) = default;
+        requires (is_move_constructible_v<_Types> && ...)
+            && (is_move_assignable_v<_Types> && ...) = default;
 
     template <class _T,
               class _Tj = typename __detail::__variant_type_selector<_T, _Types...>::type>
-        requires (!std::is_same_v<std::remove_cvref_t<_T>, variant>)
-            && std::is_assignable_v<_Tj, _T>
-            && std::is_convertible_v<_Tj, _T>
-            && (!std::is_same_v<_Tj, __detail::__variant_fn_ignore>)
+        requires (!is_same_v<remove_cvref_t<_T>, variant>)
+            && is_assignable_v<_Tj, _T>
+            && is_convertible_v<_Tj, _T>
+            && (!is_same_v<_Tj, __detail::__variant_fn_ignore>)
     constexpr variant& operator=(_T&& __t)
         noexcept(is_nothrow_assignable_v<_Tj&, _T> && is_nothrow_constructible_v<_Tj, _T>)
     {
-        constexpr std::size_t _J = __detail::__index_of_v<_Tj, _Types...>;
+        constexpr size_t _J = __detail::__index_of_v<_Tj, _Types...>;
         if (_M_storage._M_index == _J)
         {
-            _M_storage.template __get<_J>() = std::forward<_T>(__t);
+            _M_storage.template __get<_J>() = __XVI_STD_NS::forward<_T>(__t);
             return *this;
         }
-        else if constexpr (std::is_nothrow_constructible_v<_Tj, _T> || !std::is_nothrow_move_constructible_v<_Tj>)
+        else if constexpr (is_nothrow_constructible_v<_Tj, _T> || !is_nothrow_move_constructible_v<_Tj>)
         {
-            emplace<_J>(std::forward<_T>(__t));
+            emplace<_J>(__XVI_STD_NS::forward<_T>(__t));
             return *this;
         }
         else
         {
-            return operator=(variant(std::forward<_T>(__t)));
+            return operator=(variant(__XVI_STD_NS::forward<_T>(__t)));
         }
     }
 
     template <class _T, class... _Args>
-        requires std::is_constructible_v<_T, _Args...>
+        requires is_constructible_v<_T, _Args...>
             && __detail::__type_unique_in_pack_v<_T, _Types...>
     _T& emplace(_Args&&... __args)
     {
         constexpr size_t _I = __detail::__index_of_v<_T, _Types...>;
-        return emplace<_I>(std::forward<_Args>(__args)...);
+        return emplace<_I>(__XVI_STD_NS::forward<_Args>(__args)...);
     }
 
     template <class _T, class _U, class... _Args>
-        requires std::is_constructible_v<_T, initializer_list<_U>&, _Args...>
+        requires is_constructible_v<_T, initializer_list<_U>&, _Args...>
             && __detail::__type_unique_in_pack_v<_T, _Types...>
     _T& emplace(initializer_list<_U> __il, _Args&&... __args)
     {
         constexpr size_t _I = __detail::__index_of_v<_T, _Types...>;
-        return emplace<_I>(__il, std::forward<_Args>(__args)...);
+        return emplace<_I>(__il, __XVI_STD_NS::forward<_Args>(__args)...);
     }
 
     template <size_t _I, class... _Args>
-        requires std::is_constructible_v<__detail::__nth_type_t<_I, _Types...>, _Args...>
+        requires is_constructible_v<__detail::__nth_type_t<_I, _Types...>, _Args...>
     __detail::__nth_type_t<_I, _Types...>& emplace(_Args&&... __args)
     {
         _M_storage.__reset();
-        _M_storage.template __emplace_construct<_I>(std::forward<_Args>(__args)...);
+        _M_storage.template __emplace_construct<_I>(__XVI_STD_NS::forward<_Args>(__args)...);
         return _M_storage.template __get<_I>();
     }
 
     template <size_t _I, class _U, class... _Args>
-        requires std::is_constructible_v<__detail::__nth_type_t<_I, _Types...>, initializer_list<_U>&, _Args...>
+        requires is_constructible_v<__detail::__nth_type_t<_I, _Types...>, initializer_list<_U>&, _Args...>
     __detail::__nth_type_t<_I, _Types...>& emplace(initializer_list<_U> __il, _Args&&... __args)
     {
         _M_storage.__reset();
-        _M_storage.template __emplace_construct<_I>(__il, std::forward<_Args>(__args)...);
+        _M_storage.template __emplace_construct<_I>(__il, __XVI_STD_NS::forward<_Args>(__args)...);
         return _M_storage.template __get<_I>();
     }
 
@@ -1281,11 +1281,11 @@ template <class... _Types> struct variant_size<variant<_Types...>> : integral_co
 
 template <size_t, class> struct variant_alternative;
 template <size_t _I, class _T> struct variant_alternative<_I, const _T>
-    { using type = std::add_const_t<typename variant_alternative<_I, _T>::type>; };
+    { using type = add_const_t<typename variant_alternative<_I, _T>::type>; };
 template <size_t _I, class _T> struct variant_alternative<_I, volatile _T>
-    { using type = std::add_volatile_t<typename variant_alternative<_I, _T>::type>; };
+    { using type = add_volatile_t<typename variant_alternative<_I, _T>::type>; };
 template <size_t _I, class _T> struct variant_alternative<_I, const volatile _T>
-    { using type = std::add_cv_t<typename variant_alternative<_I, _T>::type>; };
+    { using type = add_cv_t<typename variant_alternative<_I, _T>::type>; };
 
 template <size_t _I, class _T> using variant_alternative_t = typename variant_alternative<_I, _T>::type;
 
@@ -1309,7 +1309,7 @@ constexpr variant_alternative_t<_I, variant<_Types...>>& get(variant<_Types...>&
 template <size_t _I, class... _Types>
 constexpr variant_alternative_t<_I, variant<_Types...>>&& get(variant<_Types...>&& __v)
 {
-    return std::move(__v.template __get<_I>());
+    return __XVI_STD_NS::move(__v.template __get<_I>());
 }
 
 template <size_t _I, class... _Types>
@@ -1333,7 +1333,7 @@ constexpr _T& get(variant<_Types...>& __v)
 template <class _T, class... _Types>
 constexpr _T&& get(variant<_Types...>&& __v)
 {
-    return std::move(__v.template __get<_T>());
+    return __XVI_STD_NS::move(__v.template __get<_T>());
 }
 
 template <class _T, class... _Types>
@@ -1350,25 +1350,25 @@ constexpr const _T&& get(const variant<_Types...>&& __v)
 
 
 template <size_t _I, class... _Types>
-constexpr std::add_pointer_t<variant_alternative_t<_I, variant<_Types...>>>
+constexpr add_pointer_t<variant_alternative_t<_I, variant<_Types...>>>
 get_if(variant<_Types...>* __v) noexcept
 {
     if (!__v || __v->index() != _I)
         return nullptr;
-    return std::addressof(get<_I>(*__v));
+    return __XVI_STD_NS::addressof(get<_I>(*__v));
 }
 
 template <size_t _I, class... _Types>
-constexpr std::add_pointer_t<const variant_alternative_t<_I, variant<_Types...>>>
+constexpr add_pointer_t<const variant_alternative_t<_I, variant<_Types...>>>
 get_if(const variant<_Types...>* __v) noexcept
 {
     if (!__v || __v->index() != _I)
         return nullptr;
-    return std::addressof(get<_I>(*__v));
+    return __XVI_STD_NS::addressof(get<_I>(*__v));
 }
 
 template <class _T, class... _Types>
-constexpr std::add_pointer_t<_T>
+constexpr add_pointer_t<_T>
 get_if(variant<_Types...>* __v) noexcept
 {
     constexpr size_t _I = __detail::__index_of_v<_T, _Types...>;
@@ -1376,7 +1376,7 @@ get_if(variant<_Types...>* __v) noexcept
 }
 
 template <class _T, class... _Types>
-constexpr std::add_pointer_t<const _T>
+constexpr add_pointer_t<const _T>
 get_if(const variant<_Types...>* __v) noexcept
 {
     constexpr size_t _I = __detail::__index_of_v<_T, _Types...>;
@@ -1421,8 +1421,8 @@ constexpr bool operator>=(const variant<_Types...>& __v, const variant<_Types...
 }
 
 template <class... _Types>
-    requires (std::three_way_comparable<_Types>  && ...)
-constexpr std::common_comparison_category_t<std::compare_three_way_result_t<_Types>...>
+    requires (three_way_comparable<_Types>  && ...)
+constexpr common_comparison_category_t<compare_three_way_result_t<_Types>...>
 operator<=>(const variant<_Types...>& __v, const variant<_Types...>& __w)
 {
     return variant<_Types...>::__cmp(__v, __w);
@@ -1430,7 +1430,7 @@ operator<=>(const variant<_Types...>& __v, const variant<_Types...>& __w)
 
 
 template <class... _Types>
-    requires ((std::is_move_constructible_v<_Types> && std::is_swappable_v<_Types>) && ...)
+    requires ((is_move_constructible_v<_Types> && is_swappable_v<_Types>) && ...)
 constexpr void swap(variant<_Types...>& __v, variant<_Types...>& __w) noexcept(noexcept(__v.swap(__w)))
 {
     __v.swap(__w);
@@ -1443,13 +1443,13 @@ namespace __detail
 template <size_t _M, class _Visitor, class _Variant>
 constexpr auto __dispatch1_fn(_Visitor&& __v, _Variant&& __var)
 { 
-    return __XVI_STD_NS::invoke(std::forward<_Visitor>(__v), get<_M>(std::forward<_Variant>(__var)));
+    return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_Visitor>(__v), get<_M>(__XVI_STD_NS::forward<_Variant>(__var)));
 }
 
 template <size_t _M, class _R, class _Visitor, class _Variant>
 constexpr _R __dispatch1r_fn(_Visitor&& __v, _Variant&& __var)
 {
-    return __XVI_STD_NS::invoke_r<_R>(std::forward<_Visitor>(__v), get<_M>(std::forward<_Variant>(__var)));
+    return __XVI_STD_NS::invoke_r<_R>(__XVI_STD_NS::forward<_Visitor>(__v), get<_M>(__XVI_STD_NS::forward<_Variant>(__var)));
 }
 
 template <class _Visitor, class _Variant, size_t... _Idx>
@@ -1457,11 +1457,11 @@ constexpr auto __dispatch1_via_table(index_sequence<_Idx...>, _Visitor&& __vis, 
     -> invoke_result_t<_Visitor, variant_alternative_t<0, remove_reference_t<_Variant>>>
 {
     using __dispatch1_fn_t = decltype(__dispatch1_fn<0, _Visitor, _Variant>);
-    static_assert((std::is_same_v<__dispatch1_fn_t, decltype(__dispatch1_fn<_Idx, _Visitor, _Variant>)> && ...),
+    static_assert((is_same_v<__dispatch1_fn_t, decltype(__dispatch1_fn<_Idx, _Visitor, _Variant>)> && ...),
         "std::visit requires all methods to have the same result type");
     
     constexpr __dispatch1_fn_t* __table[] = {&__dispatch1_fn<_Idx, _Visitor, _Variant>...};
-    return __table[__var.index()](std::forward<_Visitor>(__vis), std::forward<_Variant>(__var));
+    return __table[__var.index()](__XVI_STD_NS::forward<_Visitor>(__vis), __XVI_STD_NS::forward<_Variant>(__var));
 }
 
 template <class _R, class _Visitor, class _Variant, size_t... _Idx>
@@ -1469,7 +1469,7 @@ constexpr _R __dispatch1r_via_table(index_sequence<_Idx...>, _Visitor&& __vis, _
 {
     using __dispatch1r_fn_t = decltype(__dispatch1r_fn<0, _R, _Visitor, _Variant>);
     constexpr __dispatch1r_fn_t* __table[] = {&__dispatch1r_fn<_Idx, _R, _Visitor, _Variant>...};
-    return __table[__var.index()](std::forward<_Visitor>(__vis), std::forward<_Variant>(__var));
+    return __table[__var.index()](__XVI_STD_NS::forward<_Visitor>(__vis), __XVI_STD_NS::forward<_Variant>(__var));
 }
 
 } // namespace __detail
@@ -1479,17 +1479,17 @@ template <class _Visitor, class... _Variants>
 constexpr decltype(auto) visit(_Visitor&& __vis, _Variants&&... __vars)
 {
     if constexpr (sizeof...(_Variants) == 0)
-        return __XVI_STD_NS::invoke(std::forward<_Visitor>(__vis));
+        return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_Visitor>(__vis));
     else if constexpr (sizeof...(_Variants) == 1)
     {
         // Dispatch via a table for constant-time behaviour.
         using _Variant = typename __detail::__nth_type_t<0, _Variants...>;
-        using _V = std::remove_cvref_t<_Variant>;
+        using _V = remove_cvref_t<_Variant>;
         constexpr size_t _M = variant_size_v<_V>;
 
-        return __detail::__dispatch1_via_table(std::make_index_sequence<_M>(),
-                                               std::forward<_Visitor>(__vis),
-                                               std::forward<_Variant>(__vars)...);
+        return __detail::__dispatch1_via_table(make_index_sequence<_M>(),
+                                               __XVI_STD_NS::forward<_Visitor>(__vis),
+                                               __XVI_STD_NS::forward<_Variant>(__vars)...);
     }
     else
     {
@@ -1509,9 +1509,9 @@ constexpr _R visit(_Visitor&& __vis, _Variants&&... __vars)
         using _Variant = typename __detail::__nth_type_t<0, _Variants...>;
         constexpr size_t _M = variant_size_v<_Variant>;
 
-        return __detail::__dispatch1r_via_table<_R>(std::make_index_sequence<_M>(),
-                                                    std::forward<_Visitor>(__vis),
-                                                    std::forward<_Variant>(__vars)...);
+        return __detail::__dispatch1r_via_table<_R>(make_index_sequence<_M>(),
+                                                    __XVI_STD_NS::forward<_Visitor>(__vis),
+                                                    __XVI_STD_NS::forward<_Variant>(__vars)...);
     }
     else
     {
@@ -1523,7 +1523,7 @@ constexpr _R visit(_Visitor&& __vis, _Variants&&... __vars)
 
 struct monostate {};
 constexpr bool operator==(monostate, monostate) { return true; }
-constexpr std::strong_ordering operator<=>(monostate, monostate) { return std::strong_ordering::equal; }
+constexpr strong_ordering operator<=>(monostate, monostate) { return strong_ordering::equal; }
 
 
 } // namespace __XVI_STD_CORE_NS_DECL

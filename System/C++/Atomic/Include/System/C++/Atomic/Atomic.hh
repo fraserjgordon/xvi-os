@@ -10,7 +10,7 @@
 #include <System/C++/Atomic/Private/Config.hh>
 
 
-namespace __XVI_STD_ATOMIC_NS
+namespace __XVI_STD_ATOMIC_NS_DECL
 {
 
 
@@ -1901,7 +1901,7 @@ using atomic_intmax_t   = atomic<intmax_t>;
 using atomic_uintmax_t  = atomic<uintmax_t>;
 
 
-} // namespace __XVI_STD_ATOMIC_NS
+} // namespace __XVI_STD_ATOMIC_NS_DECL
 
 
 #endif /* ifndef __SYSTEM_CXX_ATOMIC_ATOMIC_H */

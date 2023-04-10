@@ -266,10 +266,7 @@ public:
 
     constexpr bad_optional_access() = default;
 
-    const char* what() const noexcept override
-    {
-        return "bad optional access";
-    }
+    const char* what() const noexcept override;
 };
 
 

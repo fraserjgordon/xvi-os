@@ -30,8 +30,7 @@ public:
     bad_cast() noexcept = default;
     bad_cast(const bad_cast&) noexcept = default;
     bad_cast& operator=(const bad_cast&) noexcept = default;
-    const char* what() const noexcept override
-        { return "bad cast"; }
+    const char* what() const noexcept override;
 };
 
 class bad_typeid : public exception
@@ -41,8 +40,7 @@ public:
     bad_typeid() noexcept = default;
     bad_typeid(const bad_typeid&) noexcept = default;
     bad_typeid& operator=(const bad_typeid&) noexcept = default;
-    const char* what() const noexcept override
-        { return "bad typeid"; }
+    const char* what() const noexcept override;
 };
 
 

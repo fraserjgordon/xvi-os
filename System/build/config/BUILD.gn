@@ -249,6 +249,15 @@ config("hidden_visibility")
     cflags      = ["-fvisibility=hidden"]
 }
 
+config("clang_sized_deallocation")
+{
+    if (compiler_id == "clang")
+    {
+        # Clang disables support for the sized deallocation functions by default.
+        cflags_cc = ["-fsized-deallocation"]
+    }
+}
+
 config("gcc_gc_crash_fix")
 {
     if (false && compiler_id == "gcc")

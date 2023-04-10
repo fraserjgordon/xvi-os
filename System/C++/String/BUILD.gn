@@ -8,6 +8,7 @@ library("String")
 
     header_deps =
     [
+        "../Allocator",
         "../Core",
         "../LanguageSupport:LanguageSupport_headers",
         "../TypeTraits",
@@ -18,6 +19,8 @@ library("String")
         "CharTraits.hh",
         "FPos.hh",
         "MBState.hh",
+        "String.hh",
+        "StringFwd.hh",
         "StringView.hh",
 
         "Private/Config.hh",
@@ -28,6 +31,8 @@ library("String")
         "CharTraits.cc",
         "FPos.cc",
         "MBState.cc",
+        "String.cc",
+        "StringFwd.cc",
         "StringView.cc",
     ]
 }

@@ -32,7 +32,7 @@ template <class _A, class _B>
 void __uaca_test_fun(const pair<_A, _B>&);
 
 template <class _T>
-concept __uaca_test_fun_valid = __is_pair_specialization_v<_T> && requires (_T&& __t) { __uaca_test_fun(std::forward<_T>(__t)); };
+concept __uaca_test_fun_valid = __is_pair_specialization_v<_T> && requires (_T&& __t) { __uaca_test_fun(__XVI_STD_NS::forward<_T>(__t)); };
 
 }
 
@@ -51,17 +51,17 @@ constexpr auto uses_allocator_construction_args(const _Alloc& __alloc, _Args&&..
     if constexpr (!uses_allocator_v<_T, _Alloc>
                   && is_constructible_v<_T, _Args...>)
     {
-        return forward_as_tuple(std::forward<_Args>(__args)...);
+        return forward_as_tuple(__XVI_STD_NS::forward<_Args>(__args)...);
     }
     else if constexpr (uses_allocator_v<_T, _Alloc>
                        && is_constructible_v<_T, allocator_arg_t, _Alloc, _Args...>)
     {
-        return tuple<allocator_arg_t, const _Alloc&, _Args&&...>(allocator_arg, __alloc, std::forward<_Args>(__args)...);
+        return tuple<allocator_arg_t, const _Alloc&, _Args&&...>(allocator_arg, __alloc, __XVI_STD_NS::forward<_Args>(__args)...);
     }
     else if constexpr (uses_allocator_v<_T, _Alloc>
                        && is_constructible_v<_T, _Args..., _Alloc>)
     {
-        return forward_as_tuple(std::forward<_Args>(__args)..., __alloc);
+        return forward_as_tuple(__XVI_STD_NS::forward<_Args>(__args)..., __alloc);
     }
     else
     {
@@ -81,12 +81,12 @@ constexpr auto uses_allocator_construction_args(const _Alloc& __alloc, piecewise
         piecewise_construct,
         apply([&__alloc](auto&&... __args1)
             {
-                return uses_allocator_construction_args<_T1>(__alloc, std::forward<decltype(__args1)>(__args1)...);
-            }, std::forward<_Tuple1>(__x)),
+                return uses_allocator_construction_args<_T1>(__alloc, __XVI_STD_NS::forward<decltype(__args1)>(__args1)...);
+            }, __XVI_STD_NS::forward<_Tuple1>(__x)),
         apply([&__alloc](auto&&... __args2)
             {
-                return uses_allocator_construction_args<_T2>(__alloc, std::forward<decltype(__args2)>(__args2)...);
-            }, std::forward<_Tuple2>(__y))
+                return uses_allocator_construction_args<_T2>(__alloc, __XVI_STD_NS::forward<decltype(__args2)>(__args2)...);
+            }, __XVI_STD_NS::forward<_Tuple2>(__y))
     );
 }
 
@@ -101,7 +101,7 @@ template <class _T, class _Alloc, class _U, class _V>
     requires (__detail::__is_pair_specialization_v<_T>)
 constexpr auto uses_allocator_construction_args(const _Alloc& __alloc, _U&& __u, _V&& __v)
 {
-    return uses_allocator_construction_args<_T>(__alloc, piecewise_construct, forward_as_tuple(std::forward<_U>(__u)), forward_as_tuple(std::forward<_V>(__v)));
+    return uses_allocator_construction_args<_T>(__alloc, piecewise_construct, forward_as_tuple(__XVI_STD_NS::forward<_U>(__u)), forward_as_tuple(__XVI_STD_NS::forward<_V>(__v)));
 }
 
 template <class _T, class _Alloc, class _U, class _V>
@@ -122,21 +122,21 @@ template <class _T, class _Alloc, class _U, class _V>
     requires (__detail::__is_pair_specialization_v<_T>)
 constexpr auto uses_allocator_construction_args(const _Alloc& __alloc, pair<_U, _V>&& __pr)
 {
-    return uses_allocator_construction_args(__alloc, piecewise_construct, forward_as_tuple(std::move(__pr.first)), forward_as_tuple(std::move(__pr.second)));
+    return uses_allocator_construction_args(__alloc, piecewise_construct, forward_as_tuple(__XVI_STD_NS::move(__pr.first)), forward_as_tuple(__XVI_STD_NS::move(__pr.second)));
 }
 
 template <class _T, class _Alloc, class _U, class _V>
     requires (__detail::__is_pair_specialization_v<_T>)
 constexpr auto uses_allocator_construction_args(const _Alloc& __alloc, const pair<_U, _V>&& __pr)
 {
-    return uses_allocator_construction_args(__alloc, piecewise_construct, forward_as_tuple(std::move(__pr.first)), forward_as_tuple(std::move(__pr.second)));
+    return uses_allocator_construction_args(__alloc, piecewise_construct, forward_as_tuple(__XVI_STD_NS::move(__pr.first)), forward_as_tuple(__XVI_STD_NS::move(__pr.second)));
 }
 
 
 template <class _T, class _Alloc, class... _Args>
 constexpr _T make_obj_using_allocator(const _Alloc& __alloc, _Args&&... __args)
 {
-    return make_from_tuple<_T>(uses_allocator_construction_args<_T>(__alloc, std::forward<_Args>(__args)...));
+    return make_from_tuple<_T>(uses_allocator_construction_args<_T>(__alloc, __XVI_STD_NS::forward<_Args>(__args)...));
 }
 
 
@@ -148,7 +148,7 @@ constexpr auto uses_allocator_construction_args(const _Alloc& __alloc, _U&& __u)
     {
     private:
 
-        using __pair_type = std::remove_cv_t<_T>;
+        using __pair_type = remove_cv_t<_T>;
 
         constexpr auto __do_construct(const __pair_type& __p) const
         {
@@ -157,7 +157,7 @@ constexpr auto uses_allocator_construction_args(const _Alloc& __alloc, _U&& __u)
 
         constexpr auto __do_construct(__pair_type&& __p) const
         {
-            return make_obj_using_allocator<__pair_type>(_M_alloc, std::move(__p));
+            return make_obj_using_allocator<__pair_type>(_M_alloc, __XVI_STD_NS::move(__p));
         }
 
         _Alloc _M_alloc;
@@ -167,7 +167,7 @@ constexpr auto uses_allocator_construction_args(const _Alloc& __alloc, _U&& __u)
 
         constexpr operator __pair_type() const
         {
-            return __do_construct(std::forward<_U>(_M_u));
+            return __do_construct(__XVI_STD_NS::forward<_U>(_M_u));
         }
 
         constexpr __pair_constructor(const _Alloc& __alloc, _U& __u) :
@@ -185,8 +185,8 @@ constexpr _T* uninitialized_construct_using_allocator(_T* __p, const _Alloc& __a
 {
     return apply([&]<class... _U>(_U&&... __us)
     {
-        return construct_at(__p, std::forward<_U>(__us)...);
-    }, uses_allocator_construction_args<_T>(__alloc, std::forward<_Args>(__args)...));
+        return construct_at(__p, __XVI_STD_NS::forward<_U>(__us)...);
+    }, uses_allocator_construction_args<_T>(__alloc, __XVI_STD_NS::forward<_Args>(__args)...));
 }
 
 
@@ -570,7 +570,7 @@ template <class _T, class... _Args>
     requires requires { ::new (declval<void*>()) _T(declval<_Args>()...); }
 constexpr _T* construct_at(_T* __location, _Args&&... __args)
 {
-    return ::new(__voidify(*__location)) _T(std::forward<_Args>(__args)...);
+    return ::new(__voidify(*__location)) _T(__XVI_STD_NS::forward<_Args>(__args)...);
 }
 
 

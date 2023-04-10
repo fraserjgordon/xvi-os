@@ -18,17 +18,17 @@ template <class _T>
 constexpr void swap(_T& __a, _T& __b)
     noexcept(__detail::is_nothrow_move_constructible<_T>::value && __detail::is_nothrow_move_assignable<_T>::value)
 {
-    _T __tmp = std::move(__a);
-    __a = std::move(__b);
-    __b = std::move(__tmp);
+    _T __tmp = __XVI_STD_NS::move(__a);
+    __a = __XVI_STD_NS::move(__b);
+    __b = __XVI_STD_NS::move(__tmp);
 }
 
 
 template <class _T, class _U = _T>
 constexpr _T exchange(_T& __obj, _U&& __new_val)
 {
-    _T __old_val = std::move(__obj);
-    __obj = std::forward<_U>(__new_val);
+    _T __old_val = __XVI_STD_NS::move(__obj);
+    __obj = __XVI_STD_NS::forward<_U>(__new_val);
     return __old_val;
 }
 

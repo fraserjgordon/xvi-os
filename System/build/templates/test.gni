@@ -3,7 +3,7 @@ template("test")
     prefix = invoker.prefix
     test_sources = invoker.test_sources
 
-    forward_variables_from(invoker, ["output_name", "test_library"])
+    forward_variables_from(invoker, ["output_name", "test_library", "test_deps"])
 
     if (host_build)
     {
@@ -37,15 +37,20 @@ template("test")
             if (defined(test_library) && test_sources != [])
             {
                 deps = [":${test_library}"]
+
+                if (defined(test_deps))
+                {
+                    deps += test_deps
+                }
             }
             else
             {
-                not_needed(["test_library"])
+                not_needed(["test_library", "test_deps"])
             }
         }
     }
     else
     {
-        not_needed(["target_name", "prefix", "output_name", "test_sources", "test_library"])
+        not_needed(["target_name", "prefix", "output_name", "test_sources", "test_library", "test_deps"])
     }
 }

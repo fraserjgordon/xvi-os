@@ -24,8 +24,7 @@ class bad_function_call : public exception
 public:
 
     constexpr bad_function_call() noexcept = default;
-    const char* what() const noexcept override
-        { return "bad function call"; }
+    const char* what() const noexcept override;
 };
 
 

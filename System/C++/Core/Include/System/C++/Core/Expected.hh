@@ -128,10 +128,7 @@ class bad_expected_access<void> : public exception
 {
 public:
 
-    const char* what() const noexcept override
-    {
-        return "bad expected access";
-    }
+    const char* what() const noexcept override;
 
 protected:
 
@@ -157,11 +154,6 @@ public:
     explicit bad_expected_access(_E __e) :
         _M_val(__XVI_STD_NS::move(__e))
     {
-    }
-
-    const char* what() const noexcept override
-    {
-        return "bad expected access: contained error";
     }
 
     _E& error() & noexcept
@@ -931,7 +923,7 @@ public:
         if (has_value())
             return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(value()));
         else
-            return _U(unexpect, std::move(error()));
+            return _U(unexpect, __XVI_STD_NS::move(error()));
     }
 
     template <class _F>
@@ -945,7 +937,7 @@ public:
         if (has_value())
             return __XVI_STD_NS::invoke(__XVI_STD_NS::forward<_F>(__f), __XVI_STD_NS::move(value()));
         else
-            return _U(unexpect, std::move(error()));
+            return _U(unexpect, __XVI_STD_NS::move(error()));
     }
 
     template <class _F>

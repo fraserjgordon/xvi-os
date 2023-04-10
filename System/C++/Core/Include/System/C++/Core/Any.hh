@@ -24,8 +24,7 @@ class bad_any_cast
 public:
 
     constexpr bad_any_cast() = default;
-    const char* what() const noexcept override
-        { return "bad any_cast"; }
+    const char* what() const noexcept override;
 };
 
 

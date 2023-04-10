@@ -3,6 +3,10 @@
 #define __SYSTEM_CXX_LANGUAGESUPPORT_INITIALIZERLIST_H
 
 
+#if defined(__XVI_HOSTED)
+#  include <initializer_list>
+#endif
+
 #include <System/C++/LanguageSupport/StdDef.hh>
 #include <System/C++/LanguageSupport/Private/Namespace.hh>
 

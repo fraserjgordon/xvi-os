@@ -8,6 +8,7 @@ library("Utility")
 
     header_deps =
     [
+        "../Allocator",
         "../Atomic",
         "../Core:Core_headers",
         "../LanguageSupport:LanguageSupport_headers",

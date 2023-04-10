@@ -33,6 +33,9 @@ template <size_t _I> struct in_place_index_t
     { explicit in_place_index_t() = default; };
 template <size_t _I> inline constexpr in_place_index_t<_I> in_place_index {};
 
+struct from_range_t { explicit from_range_t() = default; };
+inline constexpr from_range_t from_range {};
+
 
 namespace __detail
 {
