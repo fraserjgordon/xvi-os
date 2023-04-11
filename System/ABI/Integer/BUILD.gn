@@ -11,7 +11,7 @@ library("Integer")
 
     deps =
     [
-        "//C++/LanguageSupport:LanguageSupport_headers"
+        "//C++/LanguageSupport"
     ]
 
     defines =

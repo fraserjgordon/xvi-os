@@ -8,7 +8,7 @@ library("Core")
 
     header_deps =
     [
-        "../LanguageSupport:LanguageSupport_headers",
+        "../LanguageSupport",
         "../TypeTraits",
     ]
 

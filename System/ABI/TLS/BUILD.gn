@@ -12,7 +12,7 @@ library("TLS")
     deps =
     [
         "//ABI/String",
-        "//C++/LanguageSupport:LanguageSupport_headers",
+        "//C++/LanguageSupport",
         "//C++/Utility:Utility_headers"
     ]
 

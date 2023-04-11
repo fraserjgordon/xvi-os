@@ -46,7 +46,7 @@ library("CFI")
     public_deps =
     [
         "//ABI/ExecContext:ExecContext_headers",
-        "//C++/LanguageSupport:LanguageSupport_headers",
+        "//C++/LanguageSupport",
         "//C++/Utility:Utility_headers",
     ]
 

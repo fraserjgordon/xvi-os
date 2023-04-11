@@ -9,7 +9,7 @@ library("String")
 
     public_deps =
     [
-        "//C++/LanguageSupport:LanguageSupport_headers"
+        "//C++/LanguageSupport"
     ]
 
     defines =

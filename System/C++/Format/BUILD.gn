@@ -8,7 +8,7 @@ library("Format")
 
     header_deps =
     [
-        "../LanguageSupport:LanguageSupport_headers",
+        "../LanguageSupport",
         "../Locale:Locale_headers",
         "../Utility:Utility_headers",
     ]

@@ -10,7 +10,7 @@ library("ExecContext")
 
     public_deps =
     [
-        "//C++/LanguageSupport:LanguageSupport_headers",
+        "//C++/LanguageSupport",
         "//C++/TypeTraits",
         "//C++/Utility:Utility_headers",
         "//HW/CPU/CPUID",

@@ -6,7 +6,7 @@ deps =
     ":C++_headers",
 
     "//ABI/Integer:Integer",
-    "//C++/LanguageSupport:LanguageSupport_headers",
+    "//C++/LanguageSupport",
 ]
 
 if (current_arch == "arm" && arm_arch_major >= 8)

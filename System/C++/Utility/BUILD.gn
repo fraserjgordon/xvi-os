@@ -11,7 +11,7 @@ library("Utility")
         "../Allocator",
         "../Atomic",
         "../Core:Core_headers",
-        "../LanguageSupport:LanguageSupport_headers",
+        "../LanguageSupport",
         "../String",
         "../TypeTraits",
 

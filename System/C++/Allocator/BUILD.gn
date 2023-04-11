@@ -16,16 +16,19 @@ library("Allocator")
     [
         "Allocator.hh",
         "AllocatorTraits.hh",
+        "New.hh",
         "Private/Config.hh",
     ]
 
     sources =
     [
+        "New.cc",
     ]
 
     test_sources =
     [
         "Allocator.cc",
         "AllocatorTraits.cc",
+        "New.cc",
     ]
 }

@@ -10,7 +10,7 @@ library("String")
     [
         "../Allocator",
         "../Core",
-        "../LanguageSupport:LanguageSupport_headers",
+        "../LanguageSupport",
         "../TypeTraits",
     ]
 
