@@ -12,7 +12,7 @@ namespace __XVI_STD_STRING_NS_DECL
 template <class> struct char_traits;
 
 // Not defined in this library.
-template <class> struct allocator;
+template <class> class allocator;
 
 
 template <class _CharT, class = char_traits<_CharT>, class = allocator<_CharT>> class basic_string;

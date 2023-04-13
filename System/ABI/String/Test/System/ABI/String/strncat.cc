@@ -19,7 +19,7 @@ TEST(Strncat, NulTerminator)
     __strncat(buffer, " there", sizeof(buffer) - 1);
     EXPECT_EQ(__strnlen(buffer, sizeof(buffer)), 8);
 
-    __strncat(buffer, ": this is too long", sizeof(buffer) - 1);
+    __strncat(buffer, ": this is too long", sizeof(buffer) - 9);
     EXPECT_EQ(__strnlen(buffer, sizeof(buffer)), sizeof(buffer) - 1);
 }
 
@@ -31,7 +31,7 @@ TEST(Strncat, Concat)
     EXPECT_EQ(__strnlen(buffer, sizeof(buffer)), 5);
     EXPECT_EQ(__strcmp(buffer, "Hello"), 0);
 
-    __strncat(buffer, ", World!", sizeof(buffer) - 1);
+    __strncat(buffer, ", World!", sizeof(buffer) - 6);
     EXPECT_EQ(__strnlen(buffer, sizeof(buffer)), 13);
     EXPECT_EQ(__strcmp(buffer, "Hello, World!"), 0);
 }

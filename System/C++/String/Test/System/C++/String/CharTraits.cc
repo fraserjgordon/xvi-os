@@ -8,9 +8,6 @@
 using namespace __XVI_STD_STRING_NS;
 
 
-//! @todo: tests for char_traits<wchar_t>.
-
-
 TEST(CharTraits, CharTypes)
 {
     using Traits = char_traits<char>;
@@ -456,7 +453,7 @@ TEST(CharTraits, Char32IntType)
     using Traits = char_traits<char32_t>;
 
     EXPECT_EQ(Traits::eof(), uint32_t(-1U));
-    EXPECT_EQ(Traits::to_int_type(u'\0'), 0);
+    EXPECT_EQ(Traits::to_int_type(U'\0'), 0);
     EXPECT_NE(Traits::to_int_type(char32_t(0xff)), uint32_t(-1U));
 
     EXPECT(Traits::not_eof(Traits::to_int_type(char32_t(0xff))));
@@ -465,4 +462,119 @@ TEST(CharTraits, Char32IntType)
     EXPECT_EQ(Traits::to_char_type(Traits::to_int_type(char32_t(0xff))), char32_t(0xff));
 
     EXPECT(Traits::eq_int_type(Traits::eof(), uint32_t(-1U)));
+}
+
+
+TEST(CharTraits, WcharTypes)
+{
+    using Traits = char_traits<wchar_t>;
+
+    EXPECT_SAME_TYPE(Traits::char_type, wchar_t);
+    EXPECT_SAME_TYPE(Traits::int_type, wint_t);
+    EXPECT_SAME_TYPE(Traits::off_type, streamoff);
+    EXPECT_SAME_TYPE(Traits::pos_type, wstreampos);
+    EXPECT_SAME_TYPE(Traits::state_type, __XVI_STD_STRING_NS::mbstate_t);
+    EXPECT_SAME_TYPE(Traits::comparison_category, strong_ordering);
+}
+
+TEST(CharTraits, WcharAssign)
+{
+    using Traits = char_traits<wchar_t>;
+
+    // Single character assignment.
+    {
+        wchar_t a = 0;
+        wchar_t b = 1;
+
+        Traits::assign(a, b);
+
+        EXPECT_EQ(b, 1);
+    }
+
+    // Character fill.
+    {
+        wchar_t str[7] = L"Hello!";
+
+        Traits::assign(str, 5, L'x');
+        EXPECT_EQ(std::memcmp(str, L"xxxxx!", 28), 0);
+    }
+}
+
+TEST(CharTraits, WcharComparisons)
+{
+    using Traits = char_traits<wchar_t>;
+
+    EXPECT(Traits::eq(0, 0));
+    EXPECT(!Traits::eq(0, 1));
+    EXPECT(Traits::lt(0, 1));
+    EXPECT(!Traits::lt(1, 1));
+
+    // Comparison is required to be unsigned.
+    EXPECT(Traits::lt(0, wchar_t(0xff)));
+
+    EXPECT_EQ(Traits::compare(L"Hello", L"Hello", 5), 0);
+    EXPECT_GT(Traits::compare(L"hello", L"Hello", 5), 0);
+}
+
+TEST(CharTraits, WcharLength)
+{
+    using Traits = char_traits<wchar_t>;
+
+    EXPECT_EQ(Traits::length(L""), 0);
+    EXPECT_EQ(Traits::length(L"Hello"), 5);
+}
+
+TEST(CharTraits, WcharFind)
+{
+    using Traits = char_traits<wchar_t>;
+
+    const wchar_t str[6] = L"Hello";
+
+    EXPECT_EQ(Traits::find(str, 6, L'H'), &str[0]);
+    EXPECT_EQ(Traits::find(str, 6, L'h'), nullptr);
+    EXPECT_EQ(Traits::find(str, 6, L'\0'), &str[5]);
+    EXPECT_EQ(Traits::find(str, 6, L'l'), &str[2]);
+}
+
+TEST(CharTraits, WcharMove)
+{
+    using Traits = char_traits<wchar_t>;
+
+    wchar_t str[14];
+
+    Traits::move(str, L"Hello, world!", 14);
+    ASSERT_EQ(std::memcmp(str, L"Hello, world!", 56), 0);
+
+    Traits::move(&str[7], str, 5);
+    EXPECT_EQ(std::memcmp(str, L"Hello, Hello!", 56), 0);
+
+    Traits::move(str, L"Hello, world!", 14);
+    Traits::move(str, &str[7], 5);
+    EXPECT_EQ(std::memcmp(str, L"world, world!", 56), 0);
+}
+
+TEST(CharTraits, WcharCopy)
+{
+    using Traits = char_traits<wchar_t>;
+
+    wchar_t str[14];
+
+    Traits::copy(str, L"Hello, world!", 14);
+    EXPECT_EQ(std::memcmp(str, L"Hello, world!", 56), 0);
+}
+
+TEST(CharTraits, WcharIntType)
+{
+    using Traits = char_traits<wchar_t>;
+
+    EXPECT_EQ(Traits::eof(), wint_t(-1U));
+    EXPECT_EQ(Traits::to_int_type(L'\0'), 0);
+    EXPECT_NE(Traits::to_int_type(wchar_t(0xff)), wint_t(-1U));
+
+    EXPECT(Traits::not_eof(Traits::to_int_type(wchar_t(0xff))));
+    EXPECT(!Traits::not_eof(Traits::eof()));
+
+    EXPECT_EQ(Traits::to_char_type(Traits::to_int_type(wchar_t(0xff))), wchar_t(0xff));
+
+    EXPECT(Traits::eq_int_type(Traits::eof(), wint_t(-1U)));
 }

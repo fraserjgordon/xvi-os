@@ -14,7 +14,7 @@ namespace __XVI_STD_CORE_NS_DECL
 
 
 // Forward declarations.
-template <class> struct allocator;
+template <class> class allocator;
 template <class> struct char_traits;
 template <class, class, class> class basic_string;
 
@@ -48,7 +48,7 @@ public:
     }
 
     // Defined in the System.C++.Exception library.
-    static __ptr __make(const char*, size_t);
+    static __ptr __make(const char*, size_t, size_t);
 
 private:
 

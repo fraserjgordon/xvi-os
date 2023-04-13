@@ -33,6 +33,7 @@ library("Exception")
     [
         "ExceptionPtr.cc",
         "ExceptionStrings.cc",
+        "ExceptionThrows.cc",
         "Terminate.cc",
         "Uncaught.cc",
         "Unexpected.cc",

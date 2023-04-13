@@ -16,7 +16,7 @@ namespace __detail
 {
 
 
-inline __exception_string::__ptr __exception_string::__make(const char* __str, size_t __len)
+inline __exception_string::__ptr __exception_string::__make(const char* __str, size_t __strlen, size_t __len)
 {
     auto __rawp = new byte[sizeof(__ptr) + __len + 1];
     auto __p = reinterpret_cast<__exception_string*>(__rawp);
@@ -24,8 +24,8 @@ inline __exception_string::__ptr __exception_string::__make(const char* __str, s
 
     new (__p) __exception_string();
 
-    char_traits<char>::copy(__strp, __str, __len);
-    __strp[__len] = '\0';
+    char_traits<char>::copy(__strp, __str, __strlen);
+    __strp[__strlen] = '\0';
 
     return __ptr(__p);
 }
@@ -54,7 +54,7 @@ __exception_string::__ptr __make_exception_string(_Args&&... __args)
 
     size_t __len = (1 + ... + __get_len(__args));
 
-    auto __ptr = __exception_string::__make("", __len);
+    auto __ptr = __exception_string::__make("", 0, __len);
 
     (__builtin_strcat(__ptr.__raw(), __get_ptr(__args)), ...);
 

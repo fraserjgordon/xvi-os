@@ -293,8 +293,8 @@ static constexpr void string_concatenate(C* __restrict dest, const C* __restrict
 template <class C, C Nul = C(0)>
 static constexpr void string_concatenate_n(C* __restrict dest, const C* __restrict source, std::size_t n)
 {
-    auto dest_len = string_length(dest, n);
-    string_copy_n(dest + dest_len, source, n - dest_len);
+    auto dest_len = string_length(dest);
+    string_copy_n(dest + dest_len, source, n);
 }
 
 template <class C, C Nul = C(0)>

@@ -50,7 +50,7 @@ constexpr std::size_t TLSPtrOffset = 0x8000;
 struct TCB
 {
     void**          dtv = nullptr;  // Pointer to the dynamic thread vector (DTV).
-#if defined(_ABIO32) || defined(_ABIN32) || defined(__mios_o32) || defined(__mips_n32)
+#if defined(_ABIO32) || defined(_ABIN32) || defined(__mips_o32) || defined(__mips_n32)
     std::uintptr_t  pad = 0;        // Unused.
 #endif
 };

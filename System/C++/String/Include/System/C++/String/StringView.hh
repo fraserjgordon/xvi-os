@@ -19,8 +19,14 @@ namespace __XVI_STD_STRING_NS_DECL
 {
 
 
-// Forward declarations (mutual dependency between out_of_range and basic_string_view).
-class out_of_range;
+namespace __detail
+{
+
+
+[[noreturn]] void __string_view_out_of_range();
+
+
+} // namespace __detail
 
 
 template <class _CharT, class _Traits>
@@ -203,7 +209,7 @@ public:
         if (__pos > size())
             __out_of_range();
         
-        auto __rlen = min(__n, size() - __pos);
+        auto __rlen = __min(__n, size() - __pos);
         _Traits::copy(__s, data() + __pos, __rlen);
         return __rlen;
     }
@@ -213,13 +219,13 @@ public:
         if (__pos > size())
             __out_of_range();
 
-        auto __rlen = min(__n, size() - __pos);
+        auto __rlen = __min(__n, size() - __pos);
         return basic_string_view(data() + __pos, __rlen);
     }
 
     constexpr int compare(basic_string_view __s) const noexcept
     {
-        auto __rlen = min(size(), __s.size());
+        auto __rlen = __min(size(), __s.size());
         int __res = _Traits::compare(data(), __s.data(), __rlen);
 
         if (__res != 0)
@@ -338,12 +344,48 @@ public:
         return find(basic_string_view(__s), __pos);
     }
 
-    //! @TODO: implement.
-    constexpr size_type rfind(basic_string_view __s, size_type __pos = npos) const noexcept;
+    constexpr size_type rfind(basic_string_view __s, size_type __pos = npos) const noexcept
+    {
+        difference_type __offset = 0;
+        if (__pos < size())
+            __offset = static_cast<difference_type>(size() - __pos);
+        
+        if (__s.size() == 1)
+        {
+            _CharT __c = __s.front();
+            for (auto __p = rbegin() + __offset; __p != rend(); ++__p)
+            {
+                if (*__p == __c)
+                    return static_cast<size_type>(__XVI_STD_NS::addressof(*__p) - begin());
+            }
+
+            return npos;
+        }
+
+        // Boyer-Moore-Horspool substring search.
+        __search_table_t __tbl = {};
+        __generate_reverse_search_table(__tbl, __s);
+
+        __pos = __pos >= size() ? size() - 1 : __pos;
+        while (__pos >= (__s.size() - 1))
+        {
+            size_t __i = __s.size() - 1;
+            while (_M_ptr[__pos - __i] == __s[__s.size() - 1 - __i])
+            {
+                if (__i == 0)
+                    return __pos - __s.size() + 1;
+                --__i;
+            }
+
+            __pos -= __tbl[__hash(_M_ptr[__pos - __s.size() + 1])];
+        }
+
+        return npos;
+    }
 
     constexpr size_type rfind(_CharT __c, size_type __pos = npos) const noexcept
     {
-        return rfind(basic_string_view(addressof(__c), 1), __pos);
+        return rfind(basic_string_view(__XVI_STD_NS::addressof(__c), 1), __pos);
     }
 
     constexpr size_type rfind(const _CharT* __s, size_type __pos, size_type __n) const
@@ -388,7 +430,7 @@ public:
 
     constexpr size_type find_first_of(_CharT __c, size_type __pos = 0) const noexcept
     {
-        return find_first_of(basic_string_view(addressof(__c), 1), __pos);
+        return find_first_of(basic_string_view(__XVI_STD_NS::addressof(__c), 1), __pos);
     }
 
     constexpr size_type find_first_of(const _CharT* __s, size_type __pos, size_type __n) const
@@ -413,7 +455,7 @@ public:
             for (auto __p = rbegin() + __offset; __p != rend(); ++__p)
             {
                 if (*__p == __c)
-                    return static_cast<size_type>(addressof(*__p) - begin());
+                    return static_cast<size_type>(__XVI_STD_NS::addressof(*__p) - begin());
             }
 
             return npos;
@@ -426,10 +468,10 @@ public:
             if (__in_table(__tbl, *__p))
             {
                 if constexpr (__hash_is_exact())
-                    return static_cast<size_type>(addressof(*__p) - begin());
+                    return static_cast<size_type>(__XVI_STD_NS::add_cv(*__p) - begin());
 
                 if (_Traits::find(__s.data(), __s.size(), *__p) != nullptr)
-                    return static_cast<size_type>(addressof(*__p) - begin());
+                    return static_cast<size_type>(__XVI_STD_NS::addressof(*__p) - begin());
             }
         }
 
@@ -438,7 +480,7 @@ public:
 
     constexpr size_type find_last_of(_CharT __c, size_type __pos = npos) const noexcept
     {
-        return find_last_of(basic_string_view(addressof(__c), 1), __pos);
+        return find_last_of(basic_string_view(__XVI_STD_NS::addressof(__c), 1), __pos);
     }
 
     constexpr size_type find_last_of(const _CharT* __s, size_type __pos, size_type __n) const
@@ -483,7 +525,7 @@ public:
 
     constexpr size_type find_first_not_of(_CharT __c, size_type __pos = 0) const noexcept
     {
-        return find_first_not_of(basic_string_view(addressof(__c), 1), __pos);
+        return find_first_not_of(basic_string_view(__XVI_STD_NS::addressof(__c), 1), __pos);
     }
 
     constexpr size_type find_first_not_of(const _CharT* __s, size_type __pos, size_type __n) const
@@ -508,7 +550,7 @@ public:
             for (auto __p = rbegin() + __offset; __p != rend(); ++__p)
             {
                 if (*__p != __c)
-                    return addressof(*__p) - begin();
+                    return __XVI_STD_NS::addressof(*__p) - begin();
             }
 
             return npos;
@@ -521,10 +563,10 @@ public:
             if (!__in_table(__tbl, *__p))
             {
                 if constexpr (__hash_is_exact())
-                    return addressof(*__p) - begin();
+                    return __XVI_STD_NS::addressof(*__p) - begin();
 
                 if (_Traits::find(__s.data(), __s.size(), *__p) == nullptr)
-                    return addressof(*__p) - begin();
+                    return __XVI_STD_NS::addressof(*__p) - begin();
             }
         }
 
@@ -533,7 +575,7 @@ public:
 
     constexpr size_type find_last_not_of(_CharT __c, size_type __pos = npos) const noexcept
     {
-        return find_last_not_of(basic_string_view(addressof(__c), 1), __pos);
+        return find_last_not_of(basic_string_view(__XVI_STD_NS::addressof(__c), 1), __pos);
     }
 
     constexpr size_type find_last_not_of(const _CharT* __s, size_type __pos, size_type __n) const
@@ -604,12 +646,32 @@ private:
             __tab[__i] = __needle.length();
 
         for (size_t __i = 0; __i < __needle.length() - 1; ++__i)
-            __tab[__hash(__needle[__i])] = __needle.length() - 1 - __i;
+        {
+            auto& __entry = __tab[__hash(__needle[__i])];
+            __entry = __needle.length() - 1 - __i;
+        }
+    }
+
+    static constexpr void __generate_reverse_search_table(__search_table_t& __tab, basic_string_view __needle)
+    {
+        for (size_t __i = 0; __i < 256; ++__i)
+            __tab[__i] = __needle.length();
+
+        for (size_t __i = 0; __i < __needle.length() - 1; ++__i)
+        {
+            auto& __entry = __tab[__hash(__needle[__needle.length() - 1 - __i])];
+            __entry = __needle.length() - 1 - __i;
+        }
+    }
+
+    static constexpr size_type __min(size_type __a, size_type __b) noexcept
+    {
+        return __a < __b ? __a : __b;
     }
 
     [[noreturn]] static void __out_of_range()
     {
-        throw out_of_range("invalid index into string_view");
+        __detail::__string_view_out_of_range();
     }
 };
 
