@@ -16,6 +16,9 @@
 #include <System/C++/String/StringView.hh>
 
 
+//! @todo: check that allocators are handled correctly on copy & move assignments (and on swaps).
+
+
 namespace __XVI_STD_STRING_NS_DECL
 {
 
@@ -79,6 +82,11 @@ protected:
 };
 
 
+[[noreturn]] void __string_bad_alloc();
+[[noreturn]] void __string_length_error(const char*);
+[[noreturn]] void __string_out_of_range(const char*);
+
+
 } // namespace __detail
 
 
@@ -90,6 +98,8 @@ template <class _CharT, class _Traits, class _Allocator>
 class basic_string :
     private __detail::__basic_string_storage<_CharT, typename allocator_traits<_Allocator>::size_type>
 {
+    template <class, class, class> friend class basic_string;
+
 public:
 
     using traits_type       = _Traits;
@@ -118,7 +128,7 @@ public:
 
     constexpr explicit basic_string(const _Allocator& __a) noexcept
         : _Storage{},
-          _M_allocator(__a)
+          _M_allocator(allocator_traits<_Allocator>::select_on_container_copy_construction(__a))
     {
         __constexpr_setup();
     }
@@ -156,6 +166,46 @@ public:
     constexpr basic_string(const basic_string& __s, size_type __pos, size_type __n, const _Allocator& __a = _Allocator())
         : basic_string(basic_string_view<_CharT, _Traits>(__s).substr(__pos, __n), __a)
     {
+    }
+
+    constexpr basic_string(basic_string&& __s, size_type __pos, const _Allocator& __a = _Allocator())
+        : basic_string(__s, __pos, npos, __a)
+    {
+    }
+
+    constexpr basic_string(basic_string&& __s, size_type __pos, size_type __n, const _Allocator& __a = _Allocator())
+        : basic_string(__a)
+    {
+        if (__pos > __s.size())
+            __throw_out_of_range("invalid string index");
+
+        auto __rlen = __pos + __min(__n, __s.size() - __pos);
+
+        if (allocator_traits<_Allocator>::is_always_equal::value || _M_allocator == __s.get_allocator())
+        {
+            if (__s.__is_inline())
+            {
+                assign(basic_string_view<_CharT, _Traits>(__s.data() + __pos, __s.data() + __rlen));
+            }
+            else
+            {
+                // Move the memory then perform the substring operation.
+                __mark_not_inline();
+                _M_length = __s._M_length;
+                _M_capacity = __s._M_capacity;
+                _M_memory = __s._M_memory;
+                __s.__mark_inline();
+
+                auto __len = __rlen - __pos;
+                _Traits::move(data(), data() + __pos, __len);
+                __truncate_in_place(__len);
+            }
+        }
+        else
+        {
+            // Allocators differ - can't move the memory.
+            assign(basic_string_view<_CharT, _Traits>(__s.data() + __pos, __s.data() + __rlen));
+        }
     }
 
     template <class _T>
@@ -211,7 +261,7 @@ public:
     constexpr basic_string(from_range_t, _R&& __rg, const _Allocator& __a = _Allocator())
         : basic_string(__a)
     {
-        assign(from_range, __XVI_STD_NS::forward<_R>(__rg));
+        assign_range(__XVI_STD_NS::forward<_R>(__rg));
     }
 
     constexpr basic_string(initializer_list<_CharT> __il, const _Allocator& __a = _Allocator())
@@ -252,6 +302,14 @@ public:
         if (__XVI_STD_NS::addressof(__s) == this)
             return *this;
         
+        if (allocator_traits<_Allocator>::propagate_on_container_copy_assignment::value
+            && (!allocator_traits<_Allocator>::is_always_equal::value && _M_allocator != __s.get_allocator()))
+        {
+            __deallocate();
+            _M_allocator = __s.get_allocator();
+            return append(__s);
+        }
+
         clear();
         return append(__s);
     }
@@ -263,23 +321,34 @@ public:
         if (__XVI_STD_NS::addressof(__s) == this)
             return *this;
 
-        __deallocate();
-
-        if constexpr (allocator_traits<_Allocator>::propagate_on_container_move_assignment::value)
-            _M_allocator = __XVI_STD_NS::move(__s._M_allocator);
-
-        if (__s.__is_inline())
+        if (allocator_traits<_Allocator>::propagate_on_container_move_assignment::value
+            || allocator_traits<_Allocator>::is_always_equal::value
+            || _M_allocator == __s.get_allocator())
         {
-            // Copy rather than a move in this case.
-            append(__s);
-            return *this;
-        }
+            __deallocate();
 
-        __mark_not_inline();
-        _M_length = __s._M_length;
-        _M_capacity = __s._M_capacity;
-        _M_memory = __s._M_memory;
-        __s.__mark_inline();
+            if constexpr (allocator_traits<_Allocator>::propagate_on_container_move_assignment::value)
+                _M_allocator = __XVI_STD_NS::move(__s._M_allocator);
+
+            if (__s.__is_inline())
+            {
+                // Copy rather than a move in this case.
+                append(__s);
+                return *this;
+            }
+
+            __mark_not_inline();
+            _M_length = __s._M_length;
+            _M_capacity = __s._M_capacity;
+            _M_memory = __s._M_memory;
+            __s.__mark_inline();
+        }
+        else
+        {
+            // Can't move memory; treat as a copy.
+            clear();
+            append(__s);
+        }
 
         return *this;
     }
@@ -342,7 +411,7 @@ public:
 
     constexpr reverse_iterator rend() noexcept
     {
-        return revese_iterator(begin());
+        return reverse_iterator(begin());
     }
 
     constexpr const_reverse_iterator rend() const noexcept
@@ -421,7 +490,7 @@ public:
     constexpr void reserve(size_type __n)
     {
         if (__n > max_size())
-            throw length_error("std::basic_string::reserve(n) with n > max_size()");
+            __throw_length_error("std::basic_string::reserve(n) with n > max_size()");
 
         if (capacity() < __n)
             __reallocate(__n);
@@ -465,7 +534,7 @@ public:
     constexpr const_reference at(size_type __pos) const
     {
         if (__pos >= size())
-            throw out_of_range("invalid index for std::basic_string::at");
+            __throw_out_of_range("invalid index for std::basic_string::at");
 
         return operator[](__pos);
     }
@@ -473,7 +542,7 @@ public:
     constexpr reference at(size_type __pos)
     {
         if (__pos >= size())
-            throw out_of_range("invalid index for std::basic_string::at");
+            __throw_out_of_range("invalid index for std::basic_string::at");
 
         return operator[](__pos);
     }
@@ -748,10 +817,10 @@ public:
     constexpr basic_string& insert(size_type __pos, const _CharT* __s, size_type __n)
     {
         if (__pos > size())
-            throw out_of_range("invalid offset for std::basic_string::insert");
+            __throw_out_of_range("invalid offset for std::basic_string::insert");
 
         if (__n > max_size() - size())
-            throw length_error("length > max_size() in std::basic_string::insert");
+            __throw_length_error("length > max_size() in std::basic_string::insert");
 
         __ensure_space_and_create_gap(size() + __n, __pos, __n);
 
@@ -768,10 +837,10 @@ public:
     constexpr basic_string& insert(size_type __pos, size_type __n, _CharT __c)
     {
         if (__pos > size())
-            throw out_of_range("invalid offset for std::basic_string::insert");
+            __throw_out_of_range("invalid offset for std::basic_string::insert");
 
         if (__n > max_size() - size())
-            throw length_error("length > max_size() in std::basic_string::insert");
+            __throw_length_error("length > max_size() in std::basic_string::insert");
 
         __ensure_space_and_create_gap(size() + __n, __pos, __n);
 
@@ -810,7 +879,7 @@ public:
             auto __orig_offset = __p - cbegin();
 
             if (__dist > max_size() - size())
-                throw length_error("length > max_size() in std::basic_string::insert");
+                __throw_length_error("length > max_size() in std::basic_string::insert");
 
             __ensure_space_and_create_gap(size() + __dist, __p, __dist);
 
@@ -842,7 +911,7 @@ public:
             auto __offset = __p - cbegin();
 
             if (__dist > max_size() - size())
-                throw length_error("length > max_size() in std::basic_string::insert_range");
+                __throw_length_error("length > max_size() in std::basic_string::insert_range");
 
             __ensure_space_and_create_gap(size() + __dist, __p, __dist);
 
@@ -865,9 +934,9 @@ public:
     constexpr basic_string& erase(size_type __pos = 0, size_type __n = npos)
     {
         if (__pos > size())
-            throw out_of_range("invalid offset for std::basic_string::erase");
+            __throw_out_of_range("invalid offset for std::basic_string::erase");
 
-        auto __xlen = min(__n, size() - __pos);
+        auto __xlen = __min(__n, size() - __pos);
         _Traits::move(data() + __pos, data() + __pos + __xlen, __xlen);
 
         if (__is_inline())
@@ -935,11 +1004,11 @@ public:
     constexpr basic_string& replace(size_type __pos, size_type __n1, const _CharT* __s, size_type __n2)
     {
         if (__pos > size())
-            throw out_of_range("invalid offset for std::basic_string::replace");
+            __throw_out_of_range("invalid offset for std::basic_string::replace");
         
-        auto __xlen = min(__n1, size() - __pos);
+        auto __xlen = __min(__n1, size() - __pos);
         if (size() - __xlen >= max_size() - __n2)
-            throw length_error("length > max_size() in std::basic_string::replace");
+            __throw_length_error("length > max_size() in std::basic_string::replace");
 
         size_type __req_size = size() - __xlen + __n2;
 
@@ -971,11 +1040,11 @@ public:
     constexpr basic_string& replace(size_type __pos, size_type __n1, size_type __n2, _CharT __c)
     {
         if (__pos > size())
-            throw out_of_range("invalid offset for std::basic_string::replace");
+            __throw_out_of_range("invalid offset for std::basic_string::replace");
         
-        auto __xlen = min(__n1, size() - __pos);
+        auto __xlen = __min(__n1, size() - __pos);
         if (size() - __xlen >= max_size() - __n2)
-            throw length_error("length > max_size() in std::basic_string::replace");
+            __throw_length_error("length > max_size() in std::basic_string::replace");
 
         size_type __req_size = size() - __xlen + __n2;
 
@@ -1170,7 +1239,7 @@ public:
         noexcept(is_nothrow_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>)
     {
         basic_string_view<_CharT, _Traits> __st = __t;
-        __sv().find(__st);
+        return __sv().find(__st, __pos);
     }
 
     constexpr size_type find(const basic_string& __str, size_type __pos = 0) const noexcept
@@ -1200,7 +1269,7 @@ public:
         noexcept(is_nothrow_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>)
     {
         basic_string_view<_CharT, _Traits> __st = __t;
-        __sv().rfind(__st);
+        return __sv().rfind(__st, __pos);
     }
 
     constexpr size_type rfind(const basic_string& __str, size_type __pos = npos) const noexcept
@@ -1230,7 +1299,7 @@ public:
         noexcept(is_nothrow_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>)
     {
         basic_string_view<_CharT, _Traits> __st = __t;
-        __sv().find_first_of(__st);
+        return __sv().find_first_of(__st, __pos);
     }
 
     constexpr size_type find_first_of(const basic_string& __str, size_type __pos = 0) const noexcept
@@ -1260,7 +1329,7 @@ public:
         noexcept(is_nothrow_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>)
     {
         basic_string_view<_CharT, _Traits> __st = __t;
-        __sv().find_last_of(__st);
+        return __sv().find_last_of(__st, __pos);
     }
 
     constexpr size_type find_last_of(const basic_string& __str, size_type __pos = npos) const noexcept
@@ -1290,7 +1359,7 @@ public:
         noexcept(is_nothrow_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>)
     {
         basic_string_view<_CharT, _Traits> __st = __t;
-        __sv().find_first_not_of(__st);
+        return __sv().find_first_not_of(__st, __pos);
     }
 
     constexpr size_type find_first_not_of(const basic_string& __str, size_type __pos = 0) const noexcept
@@ -1320,7 +1389,7 @@ public:
         noexcept(is_nothrow_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>)
     {
         basic_string_view<_CharT, _Traits> __st = __t;
-        __sv().find_last_not_of(__st);
+        return __sv().find_last_not_of(__st, __pos);
     }
 
     constexpr size_type find_last_not_of(const basic_string& __str, size_type __pos = npos) const noexcept
@@ -1346,9 +1415,9 @@ public:
     constexpr basic_string substr(size_type __pos = 0, size_type __n = npos) const
     {
         if (__pos > size())
-            throw out_of_range("invalid offset for std::basic_string::substr");
+            __throw_out_of_range("invalid offset for std::basic_string::substr");
 
-        auto __rlen = min(__n, size() - __pos);
+        auto __rlen = __min(__n, size() - __pos);
         
         return basic_string(data() + __pos, __rlen);
     }
@@ -1550,7 +1619,7 @@ private:
 
         // Free the associated memory.
         if (_M_memory)
-            allocator_traits<_Allocator>::deallocate(_M_allocator, _M_memory, _M_capacity);
+            allocator_traits<_Allocator>::deallocate(_M_allocator, _M_memory, (_M_capacity + 1) * sizeof(_CharT));
         __mark_inline();
     }
 
@@ -1597,7 +1666,7 @@ private:
     {
         // Check for overflow.
         if (__req_capacity > max_size() || __gap_len > __req_capacity)
-            throw bad_alloc();
+            __throw_bad_alloc();
 
         // Check for truncation.
         if (__req_capacity < size() + __gap_len)
@@ -1655,7 +1724,7 @@ private:
         // Allocate the new memory.
         _CharT* __p = allocator_traits<_Allocator>::allocate(_M_allocator, __new_capacity);
         if (!__p)
-            throw bad_alloc();
+            __throw_bad_alloc();
 
         _CharT* __current = data();
         size_type __current_size = size();
@@ -1695,6 +1764,27 @@ private:
     constexpr basic_string_view<_CharT, _Traits> __sv() const noexcept
     {
         return basic_string_view<_CharT, _Traits>(data(), size());
+    }
+
+
+    static constexpr size_type __min(size_type __a, size_type __b) noexcept
+    {
+        return __a < __b ? __a : __b;
+    }
+    
+    [[noreturn]] static void __throw_bad_alloc()
+    {
+        __detail::__string_bad_alloc();
+    }
+
+    [[noreturn]] static void __throw_length_error(const char* __msg)
+    {
+        __detail::__string_length_error(__msg);
+    }
+
+    [[noreturn]] static void __throw_out_of_range(const char* __msg)
+    {
+        __detail::__string_out_of_range(__msg);
     }
 };
 

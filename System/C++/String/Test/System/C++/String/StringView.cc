@@ -307,7 +307,7 @@ TEST(StringView, Find)
 {
     const char* const str = "Hello, World!";
     
-    string_view sv(str);
+    const string_view sv(str);
 
     EXPECT_EQ(sv.find("World"), 7);
     EXPECT_EQ(sv.find('l'), 2);
@@ -319,12 +319,72 @@ TEST(StringView, Rfind)
 {
     const char* const str = "Hello, World!";
 
-    string_view sv(str);
+    const string_view sv(str);
 
     EXPECT_EQ(sv.rfind("World"), 7);
     EXPECT_EQ(sv.rfind('l'), 10);
     EXPECT_EQ(sv.rfind("He"sv), 0);
     EXPECT_EQ(sv.rfind("Ho"), string_view::npos);
+}
+
+TEST(StringView, FindFirstOf)
+{
+    const char* const str = "Hello, World!";
+
+    const string_view sv(str);
+
+    EXPECT_EQ(sv.find_first_of(",!"), 5);
+    EXPECT_EQ(sv.find_first_of(",!", 7), 12);
+    EXPECT_EQ(sv.find_first_of("xyz"), string_view::npos);
+    EXPECT_EQ(sv.find_first_of('l'), 2);
+    EXPECT_EQ(sv.find_first_of('l', 3), 3);
+    EXPECT_EQ(sv.find_first_of('?'), string_view::npos);
+    EXPECT_EQ(sv.find_first_of("aeiou"sv), 1);
+    EXPECT_EQ(sv.find_first_of("aeiou"sv, 7), 8);
+    EXPECT_EQ(sv.find_first_of("AEIOU"sv), string_view::npos);
+    EXPECT_EQ(sv.find_first_of("aeiou", 0, 5), 1);
+    EXPECT_EQ(sv.find_first_of("aeiou", 5, 5), 8);
+    EXPECT_EQ(sv.find_first_of("aeiou", 2, 3), string_view::npos);
+}
+
+TEST(StringView, FindLastOf)
+{
+    const char* const str = "Hello, World!";
+
+    const string_view sv(str);
+
+    EXPECT_EQ(sv.find_last_of(",!"), 12);
+    EXPECT_EQ(sv.find_last_of(",!", 7), 5);
+    EXPECT_EQ(sv.find_last_of("xyz"), string_view::npos);
+    EXPECT_EQ(sv.find_last_of('l'), 10);
+    EXPECT_EQ(sv.find_last_of('l', 3), 2);
+    EXPECT_EQ(sv.find_last_of('?'), string_view::npos);
+    EXPECT_EQ(sv.find_last_of("aeiou"sv), 8);
+    EXPECT_EQ(sv.find_last_of("aeiou"sv, 7), 4);
+    EXPECT_EQ(sv.find_last_of("AEIOU"sv), string_view::npos);
+    EXPECT_EQ(sv.find_last_of("aeiou", string_view::npos, 5), 8);
+    EXPECT_EQ(sv.find_last_of("aeiou", 8, 5), 4);
+    EXPECT_EQ(sv.find_last_of("aeiou", string_view::npos, 1), string_view::npos);
+}
+
+TEST(StringView, FindFirstNotOf)
+{
+    const char* const str = "Hello, World!";
+
+    const string_view sv(str);
+
+    EXPECT_EQ(sv.find_first_not_of("01234567890"), 0);
+    EXPECT_EQ(sv.find_first_not_of("World", 7), 12);
+    EXPECT_EQ(sv.find_first_not_of("Helo, Wrd!"), string_view::npos);
+    EXPECT_EQ(sv.find_first_not_of('H'), 1);
+    EXPECT_EQ(sv.find_first_not_of('l', 2), 4);
+    EXPECT_EQ(sv.find_first_not_of('!', 12), string_view::npos);
+    EXPECT_EQ(sv.find_first_not_of("aeiou"sv), 0);
+    EXPECT_EQ(sv.find_first_not_of("Word!"sv, 8), 10);
+    EXPECT_EQ(sv.find_first_not_of(" ,!HWdelor"sv), string_view::npos);
+    EXPECT_EQ(sv.find_first_not_of("roledWH", 0, 7), 5);
+    EXPECT_EQ(sv.find_first_not_of("roledWH", 7, 7), 12);
+    EXPECT_EQ(sv.find_first_not_of(", roledHW", 1, 7), 7);
 }
 
 TEST(StringView, DeductionGuides)
@@ -357,4 +417,41 @@ TEST(StringView, Literals)
     EXPECT_SAME_TYPE(decltype(u8sv), u8string_view);
     EXPECT_SAME_TYPE(decltype(u16sv), u16string_view);
     EXPECT_SAME_TYPE(decltype(u32sv), u32string_view);
+}
+
+TEST(StringView, Comparisons)
+{
+    auto sv = "Hello, World!"sv;
+    std::array<char, 13> arr1 { "Hello, World" };
+    std::array<char, 8> arr2 { "Bye bye" };
+    arr1[12] = arr2[7] = '!';
+
+    EXPECT(sv == sv);
+    EXPECT(sv != "Word hero!"sv);
+    EXPECT(sv == "Hello, World!");
+    EXPECT(sv != "Testing 123.");
+    EXPECT(sv == arr1);
+    EXPECT(sv != arr2);
+    EXPECT("Hello, World!" == sv);
+    EXPECT("Testing 123." != sv);
+    EXPECT(arr1 == sv);
+    EXPECT(arr2 != sv);
+
+    EXPECT(sv < "Word hero!"sv);
+    EXPECT("Word hero!"sv > sv);
+
+    EXPECT(sv > arr2);
+    EXPECT(arr2 < sv);
+
+    EXPECT(sv <= "Hello, World!");
+    EXPECT("Hello, World!" >= sv);
+
+    EXPECT(sv >= arr1);
+    EXPECT(arr1 <= sv);
+
+    EXPECT((sv <=> sv) == 0);
+    EXPECT((sv <=> "Hello, World!") == 0);
+    EXPECT(("Word hero!" <=> sv) > 0);
+    EXPECT((sv <=> arr1) == 0);
+    EXPECT((arr2 <=> sv) < 0);
 }

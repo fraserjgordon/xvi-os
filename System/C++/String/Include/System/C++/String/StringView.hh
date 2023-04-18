@@ -468,7 +468,7 @@ public:
             if (__in_table(__tbl, *__p))
             {
                 if constexpr (__hash_is_exact())
-                    return static_cast<size_type>(__XVI_STD_NS::add_cv(*__p) - begin());
+                    return static_cast<size_type>(__XVI_STD_NS::addressof(*__p) - begin());
 
                 if (_Traits::find(__s.data(), __s.size(), *__p) != nullptr)
                     return static_cast<size_type>(__XVI_STD_NS::addressof(*__p) - begin());
@@ -500,10 +500,14 @@ public:
         
         if (__s.size() == 1)
         {
-            auto __p = _Traits::find(data() + __pos, size() - __pos, __s.front());
-            if (__p == nullptr)
-                return npos;
-            return __p - data();
+            _CharT __c = __s.front();
+            for (auto __p = begin() + __pos; __p != end(); ++__p)
+            {
+                if (*__p != __c)
+                    return static_cast<size_type>(__XVI_STD_NS::addressof(*__p) - begin());
+            }
+
+            return npos;
         }
 
         __hash_table_t __tbl = {};
