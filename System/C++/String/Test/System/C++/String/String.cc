@@ -10,7 +10,14 @@
 using namespace __XVI_STD_STRING_NS;
 
 
+//! @todo make the content tests test the whole content, not just the first char.
 //! @todo tests with non-default allocator types.
+
+
+[[noreturn]] void __XVI_STD_STRING_NS::__detail::__string_precondition_failed(const char* message)
+{
+    throw logic_error(message);
+}
 
 
 TEST(String, StringTypes)
@@ -140,11 +147,16 @@ TEST(String, SubstringMoveConstructors)
 
 TEST(String, StringViewConstructor)
 {
-    string s("Hello, World!"sv);
+    string a(string_view{});
+    string b("Hello, World!"sv);
 
-    EXPECT_EQ(s.size(), 13);
-    ASSERT_NE(s.data(), nullptr);
-    EXPECT_EQ(*s.data(), 'H');
+    EXPECT_EQ(a.size(), 0);
+    ASSERT_NE(a.data(), nullptr);
+    EXPECT_EQ(*a.data(), '\0');
+
+    EXPECT_EQ(b.size(), 13);
+    ASSERT_NE(b.data(), nullptr);
+    EXPECT_EQ(*b.data(), 'H');
 }
 
 TEST(String, StringViewSubstringConstructor)
@@ -156,6 +168,11 @@ TEST(String, StringViewSubstringConstructor)
     EXPECT_EQ(*s.data(), 'e');
 }
 
+TEST(String, NullPointerConstructorDeleted)
+{
+    EXPECT(!(std::is_constructible_v<string, nullptr_t>));
+}
+
 TEST(String, CStringConstructor)
 {
     string s("Hello, World!");
@@ -163,6 +180,8 @@ TEST(String, CStringConstructor)
     EXPECT_EQ(s.size(), 13);
     ASSERT_NE(s.data(), nullptr);
     EXPECT_EQ(*s.data(), 'H');
+
+    EXPECT_THROW(logic_error, string(static_cast<const char*>(nullptr)));
 }
 
 TEST(String, PointerAndLengthConstructor)
@@ -172,6 +191,9 @@ TEST(String, PointerAndLengthConstructor)
     EXPECT_EQ(s.size(), 5);
     ASSERT_NE(s.data(), nullptr);
     EXPECT_EQ(*s.data(), 'H');
+
+    EXPECT_THROW(logic_error, string(static_cast<const char*>(nullptr), 1));
+    EXPECT_NO_THROW(string(static_cast<const char*>(nullptr), 0));
 }
 
 TEST(String, CharFillConstructor)
@@ -193,6 +215,8 @@ TEST(String, IteratorPairConstructor)
     EXPECT_EQ(s.size(), 4);
     ASSERT_NE(s.data(), nullptr);
     EXPECT_EQ(*s.data(), 'e');
+
+    EXPECT_THROW(logic_error, string(cstr+1, cstr));
 }
 
 TEST(String, FromRangeConstructor)
@@ -218,6 +242,160 @@ TEST(String, InitializerListConstructor)
     EXPECT_EQ(s[0], 'H');
 }
 
+TEST(String, CopyAssignment)
+{
+    const string a;
+    const string b("Hello, World!");
+
+    string c;
+    string d;
+    string e("Testing");
+    string f("Testing");
+
+    c = a;
+    d = b;
+    e = a;
+    f = b;
+
+    EXPECT_EQ(c.size(), 0);
+    ASSERT_NE(c.data(), nullptr);
+    EXPECT_EQ(*c.data(), '\0');
+
+    EXPECT_EQ(d.size(), 13);
+    ASSERT_NE(d.data(), nullptr);
+    EXPECT_EQ(*d.data(), 'H');
+
+    EXPECT_EQ(e.size(), 0);
+    ASSERT_NE(e.data(), nullptr);
+    EXPECT_EQ(*e.data(), '\0');
+
+    EXPECT_EQ(f.size(), 13);
+    ASSERT_NE(f.data(), nullptr);
+    EXPECT_EQ(*f.data(), 'H');
+}
+
+TEST(String, MoveAssignment)
+{
+    string a;
+    string b1("Hello, World!");
+    string b2("Hello, World!");
+
+    string c;
+    string d;
+    string e("Testing");
+    string f("Testing");
+
+    c = std::move(a);
+    d = std::move(b1);
+    e = std::move(a);
+    f = std::move(b2);
+
+    EXPECT_EQ(c.size(), 0);
+    ASSERT_NE(c.data(), nullptr);
+    EXPECT_EQ(*c.data(), '\0');
+
+    EXPECT_EQ(d.size(), 13);
+    ASSERT_NE(d.data(), nullptr);
+    EXPECT_EQ(*d.data(), 'H');
+
+    EXPECT_EQ(e.size(), 0);
+    ASSERT_NE(e.data(), nullptr);
+    EXPECT_EQ(*e.data(), '\0');
+
+    EXPECT_EQ(f.size(), 13);
+    ASSERT_NE(f.data(), nullptr);
+    EXPECT_EQ(*f.data(), 'H');
+}
+
+TEST(String, StringViewAssignment)
+{
+    string a;
+    string b;
+    string c("Testing");
+    string d("Testing");
+
+    a = string_view{};
+    b = "Hello, World!"sv;
+    c = string_view{};
+    d = "Hello, World!"sv;
+
+    EXPECT_EQ(a.size(), 0);
+    ASSERT_NE(a.data(), nullptr);
+    EXPECT_EQ(*a.data(), '\0');
+
+    EXPECT_EQ(b.size(), 13);
+    ASSERT_NE(b.data(), nullptr);
+    EXPECT_EQ(*b.data(), 'H');
+
+    EXPECT_EQ(c.size(), 0);
+    ASSERT_NE(c.data(), nullptr);
+    EXPECT_EQ(*c.data(), '\0');
+
+    EXPECT_EQ(d.size(), 13);
+    ASSERT_NE(d.data(), nullptr);
+    EXPECT_EQ(*d.data(), 'H');
+}
+
+TEST(String, NullPointerAssignmentDeleted)
+{
+    EXPECT(!(std::is_assignable_v<string&, nullptr_t>));
+}
+
+TEST(String, CStringAssignment)
+{
+    string a;
+    string b("Testing");
+
+    a = "Hello, World!";
+    b = "Hello, World!";
+
+    EXPECT_EQ(a.size(), 13);
+    ASSERT_NE(a.data(), nullptr);
+    EXPECT_EQ(*a.data(), 'H');
+
+    EXPECT_EQ(b.size(), 13);
+    ASSERT_NE(b.data(), nullptr);
+    EXPECT_EQ(*b.data(), 'H');
+
+    EXPECT_THROW(logic_error, a = static_cast<const char *>(nullptr));
+}
+
+TEST(String, CharAssignment)
+{
+    string a;
+    string b("Testing");
+
+    a = '?';
+    b = '!';
+
+    EXPECT_EQ(a.size(), 1);
+    ASSERT_NE(a.data(), nullptr);
+    EXPECT_EQ(*a.data(), '?');
+
+    EXPECT_EQ(b.size(), 1);
+    ASSERT_NE(b.data(), nullptr);
+    EXPECT_EQ(*b.data(), '!');
+}
+
+TEST(String, InitializerListAssignment)
+{
+    auto il = {'H', 'i'};
+
+    string a;
+    string b("Testing");
+
+    a = il;
+    b = il;
+
+    EXPECT_EQ(a.size(), 2);
+    ASSERT_NE(a.data(), nullptr);
+    EXPECT_EQ(*a.data(), 'H');
+
+    EXPECT_EQ(b.size(), 2);
+    ASSERT_NE(b.data(), nullptr);
+    EXPECT_EQ(*b.data(), 'H');
+}
+
 TEST(String, Iterators)
 {
     const char* const str = "Hello, World!";
@@ -225,11 +403,11 @@ TEST(String, Iterators)
     string empty;
     string s(str);
 
-    EXPECT_EQ(empty.begin(), nullptr);
-    EXPECT_EQ(empty.end(), nullptr);
+    EXPECT_NE(empty.begin(), nullptr);
+    EXPECT_EQ(empty.end(), empty.begin());
 
-    EXPECT_EQ(s.begin(), str);
-    EXPECT_EQ(s.end(), str + 13);
+    EXPECT_NE(s.begin(), nullptr);
+    EXPECT_EQ(s.end(), s.begin() + 13);
 
     EXPECT_EQ(empty.begin(), empty.cbegin());
     EXPECT_EQ(empty.end(), empty.cend());
@@ -245,6 +423,82 @@ TEST(String, Iterators)
     EXPECT_EQ(empty.rend(), empty.crend());
     EXPECT_EQ(s.rbegin(), s.crbegin());
     EXPECT_EQ(s.rend(), s.crend());
+}
+
+TEST(String, Capacity)
+{
+    const string a;
+    const string b("Hello, World!");
+
+    EXPECT_EQ(a.size(), 0);
+    EXPECT_EQ(a.length(), a.size());
+
+    EXPECT_EQ(b.size(), 13);
+    EXPECT_EQ(b.length(), b.size());
+
+    EXPECT_EQ(a.max_size(), b.max_size());
+}
+
+TEST(String, Resize)
+{
+    string a;
+    string b("Hello, World!");
+
+    a.resize(5, '?');
+    b.resize(2);
+
+    EXPECT_EQ(a.size(), 5);
+    EXPECT_EQ(a, "?????"sv);
+
+    EXPECT_EQ(b.size(), 2);
+    EXPECT_EQ(b, "He"sv);
+
+    b.resize(6);
+
+    EXPECT_EQ(b.size(), 6);
+    EXPECT_EQ(b, "He\0\0\0\0"sv);
+
+    // Exercise some size changes.
+    a.resize(4096, '!');
+    EXPECT_GE(a.capacity(), 4096);
+    a.resize(72);
+    EXPECT_GE(a.capacity(), 72);
+    a.resize(65536, '=');
+    EXPECT_GE(a.capacity(), 65536);
+    a.resize(0);
+    EXPECT_GE(a.capacity(), 0);
+
+    EXPECT_EQ(a.size(), 0);
+    EXPECT_EQ(*a.data(), '\0');
+
+    EXPECT_THROW(length_error, a.resize(std::numeric_limits<size_t>::max()));
+}
+
+TEST(String, ResizeAndOverwrite)
+{
+    string a("Hello, World!");
+    string b("This is a string long enough to not use SSO");
+
+    a.resize_and_overwrite(5, [](auto p, auto m)
+    {
+        for (size_t i = 0; i < m; ++i)
+            p[i] ^= 0x20;
+
+        return m;
+    });
+
+    EXPECT_EQ(a.size(), 5);
+    EXPECT_EQ(a, "hELLO"sv);
+
+    b.resize_and_overwrite(4096, [](auto p, auto m)
+    {
+        std::memcpy(p + 43, " but now it's even longer!", 26);
+
+        return 43 + 26;
+    });
+
+    EXPECT_EQ(b.size(), 69);
+    EXPECT_EQ(b, "This is a string long enough to not use SSO but now it's even longer!"sv);
 }
 
 TEST(String, ElementAccess)

@@ -13,6 +13,12 @@ using namespace __XVI_STD_STRING_NS;
 // vary in behaviour depending on the character type.
 
 
+[[noreturn]] void __XVI_STD_STRING_NS::__detail::__string_view_precondition_failed(const char* message)
+{
+    throw logic_error(message);
+}
+
+
 TEST(StringView, StringViewTypes)
 {
     EXPECT_SAME_TYPE(string_view::traits_type, char_traits<char>);
@@ -73,6 +79,8 @@ TEST(StringView, CStringConstructor)
 
     EXPECT_EQ(sv.data(), str);
     EXPECT_EQ(sv.size(), 13);
+
+    EXPECT_THROW(logic_error, string_view(static_cast<const char*>(nullptr)));
 }
 
 TEST(StringView, NullptrConstructorDeleted)
@@ -88,6 +96,9 @@ TEST(StringView, PointerAndLengthConstructor)
 
     EXPECT_EQ(sv.data(), str);
     EXPECT_EQ(sv.size(), 5);
+
+    EXPECT_THROW(logic_error, string_view(static_cast<const char*>(nullptr), 1));
+    EXPECT_NO_THROW(string_view(static_cast<const char*>(nullptr), 0));
 }
 
 TEST(StringView, IteratorAndSentinelConstructor)
@@ -99,6 +110,8 @@ TEST(StringView, IteratorAndSentinelConstructor)
     EXPECT_EQ(sv.data(), &str[7]);
     EXPECT_EQ(sv.size(), 7);
     EXPECT_EQ(sv.data()[6], '\0');
+
+    EXPECT_THROW(logic_error, string_view(&str[1], &str[0]));
 }
 
 TEST(StringView, RangeConstructor)
@@ -153,6 +166,8 @@ TEST(StringView, ElementAccess)
     for (size_t i = 0; i < 13; ++i)
         EXPECT_EQ(sv.at(i), str[i]);
 
+    EXPECT_THROW(logic_error, sv[42]);
+
     EXPECT_THROW(out_of_range, empty.at(0));
     EXPECT_THROW(out_of_range, sv.at(13));
 
@@ -160,6 +175,9 @@ TEST(StringView, ElementAccess)
     EXPECT_EQ(&sv.back(), str + 12);
 
     EXPECT_EQ(&sv.front(), sv.data());
+
+    EXPECT_THROW(logic_error, empty.front());
+    EXPECT_THROW(logic_error, empty.back());
 }
 
 TEST(StringView, Modifiers)
@@ -177,6 +195,9 @@ TEST(StringView, Modifiers)
 
     EXPECT_EQ(sv.data(), str + 7);
     EXPECT_EQ(sv.size(), 5);
+
+    EXPECT_THROW(logic_error, sv.remove_suffix(42));
+    EXPECT_THROW(logic_error, sv.remove_prefix(37));
 }
 
 TEST(StringView, Swap)
@@ -208,6 +229,9 @@ TEST(StringView, Copy)
     sv.copy(buffer, 5, 7);
 
     EXPECT_EQ(std::memcmp(buffer, str + 7, 5), 0);
+
+    EXPECT_THROW(logic_error, sv.copy(nullptr, 5));
+    EXPECT_NO_THROW(sv.copy(nullptr, 0));
 }
 
 TEST(StringView, Substr)

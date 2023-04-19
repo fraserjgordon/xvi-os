@@ -25,6 +25,8 @@ namespace __detail
 
 [[noreturn]] void __string_view_out_of_range();
 
+[[noreturn]] void __string_view_precondition_failed(const char*);
+
 
 } // namespace __detail
 
@@ -54,9 +56,13 @@ public:
     constexpr basic_string_view& operator=(const basic_string_view&) noexcept = default;
 
     constexpr basic_string_view(const _CharT* __str)
-        : _M_ptr(__str),
-          _M_len(_Traits::length(__str))
+        : basic_string_view()
     {
+        if (__str == nullptr) [[unlikely]]
+            __precondition_failed("string_view constructed from null pointer");
+
+        _M_ptr = __str;
+        _M_len = _Traits::length(__str);
     }
 
     basic_string_view(nullptr_t) = delete;
@@ -64,6 +70,8 @@ public:
     constexpr basic_string_view(const _CharT* __str, size_t __len)
         : _M_ptr(__str), _M_len(__len)
     {
+        if (__str == nullptr && __len != 0) [[unlikely]]
+            __precondition_failed("string_view constructed from null pointer");
     }
 
     template <contiguous_iterator _It, sized_sentinel_for<_It> _End>
@@ -72,6 +80,8 @@ public:
     constexpr basic_string_view(_It __begin, _End __end)
         : _M_ptr(to_address(__begin)), _M_len(__end - __begin)
     {
+        if (__end < __begin) [[unlikely]]
+            __precondition_failed("string_view constructed with invalid iterators");
     }
 
     template <class _R>
@@ -160,6 +170,9 @@ public:
 
     constexpr const_reference operator[](size_type __pos) const
     {
+        if (__pos >= size()) [[unlikely]]
+            __precondition_failed("access beyond end of string_view");        
+
         return _M_ptr[__pos];
     }
 
@@ -173,11 +186,17 @@ public:
 
     constexpr const_reference front() const
     {
+        if (empty()) [[unlikely]]
+            __precondition_failed("dereference of empty string_view");        
+
         return _M_ptr[0];
     }
 
     constexpr const_reference back() const
     {
+        if (empty()) [[unlikely]]
+            __precondition_failed("dereference of empty string_view");
+
         return _M_ptr[_M_len - 1];
     }
 
@@ -188,12 +207,18 @@ public:
 
     constexpr void remove_prefix(size_type __n)
     {
+        if (__n > size()) [[unlikely]]
+            __precondition_failed("remove_prefix longer than string_view size");
+
         _M_ptr += __n;
         _M_len -= __n;
     }
 
     constexpr void remove_suffix(size_type __n)
     {
+        if (__n > size()) [[unlikely]]
+            __precondition_failed("remove_suffix longer than string_view size");
+
         _M_len -= __n;
     }
 
@@ -206,6 +231,9 @@ public:
 
     constexpr size_type copy(_CharT* __s, size_type __n, size_type __pos = 0) const
     {
+        if (__s == nullptr && __n != 0) [[unlikely]]
+            __precondition_failed("string_view copy to null pointer");
+
         if (__pos > size())
             __out_of_range();
         
@@ -676,6 +704,11 @@ private:
     [[noreturn]] static void __out_of_range()
     {
         __detail::__string_view_out_of_range();
+    }
+
+    [[noreturn]] static void __precondition_failed(const char* __msg)
+    {
+        __detail::__string_view_precondition_failed(__msg);
     }
 };
 

@@ -86,6 +86,8 @@ protected:
 [[noreturn]] void __string_length_error(const char*);
 [[noreturn]] void __string_out_of_range(const char*);
 
+[[noreturn]] void __string_precondition_failed(const char*);
+
 
 } // namespace __detail
 
@@ -228,8 +230,12 @@ public:
     }
 
     constexpr basic_string(const _CharT* __s, size_type __n, const _Allocator& __a = _Allocator())
+        requires __detail::__maybe_allocator<_Allocator>
         : basic_string(__a)
     {
+        if (__s == nullptr && __n != 0) [[unlikely]]
+            __precondition_failed("string constructed from null pointer");
+
         append(__s, __n);
     }
 
@@ -237,8 +243,12 @@ public:
 
     constexpr basic_string(const _CharT* __s, const _Allocator& __a = _Allocator())
         requires __detail::__maybe_allocator<_Allocator>
-        : basic_string(__s, _Traits::length(__s), __a)
+        : basic_string(__a)
     {
+        if (__s == nullptr) [[unlikely]]
+            __precondition_failed("string constructed from null pointer");
+
+        append(__s);
     }
 
     basic_string(size_type __n, _CharT __c, const _Allocator& __a = _Allocator())
@@ -364,6 +374,9 @@ public:
 
     constexpr basic_string& operator=(const _CharT* __s)
     {
+        if (__s == nullptr) [[unlikely]]
+            __precondition_failed("null pointer assigned to string");
+
         return *this = basic_string_view<_CharT, _Traits>(__s);
     }
 
@@ -472,14 +485,26 @@ public:
     constexpr void resize_and_overwrite(size_type __n, _Operation __op)
     {
         auto __o = size();
-        auto __k = min<size_type>(__o, __n);
-        auto __g = (__n > __o) ? __n - __o : 0;
+        auto __k = __min(__o, __n);
+        auto __g = __n - __k;
 
         __reallocate(__n, __k, __g);
 
-        auto __r = __XVI_STD_NS::move(__op)(data(), __n);
+        try
+        {
+            auto __m = __n;
+            auto __p = data();
+            auto __r = __XVI_STD_NS::move(__op)(__p, __m);
 
-        __truncate_in_place(__r);
+            if (__p != data() || __m != __n || __r < 0 || __r > __n) [[unlikely]]
+                __precondition_failed("operation failed preconditions during string resize_and_overwrite");
+
+            __truncate_in_place(__r);
+        }
+        catch (...)
+        {
+            __precondition_failed("exception thrown during string resize_and_overwrite");
+        }
     }
 
     constexpr size_type capacity() const noexcept
@@ -1665,8 +1690,11 @@ private:
     constexpr void __reallocate(size_type __req_capacity, size_type __gap_pos = npos, size_type __gap_len = 0)
     {
         // Check for overflow.
-        if (__req_capacity > max_size() || __gap_len > __req_capacity)
-            __throw_bad_alloc();
+        if (__req_capacity > max_size())
+            __throw_length_error("requested size greater than string max_size");
+
+        if (__gap_len > __req_capacity)
+            __precondition_failed("string internal error");
 
         // Check for truncation.
         if (__req_capacity < size() + __gap_len)
@@ -1677,7 +1705,7 @@ private:
         if (__gap_pos == npos || __gap_pos >= size())
         {
             __gap_at_end = true;
-            __gap_pos = 0;
+            __gap_pos = size();
         }
 
         // Can the "allocation" be stored inline?
@@ -1733,12 +1761,12 @@ private:
 
         try
         {
-            // Copy all data up to the first gap.
-            if (__gap_pos != 0)
-                _Traits::copy(__p, __current, __gap_pos);
+            // Copy all data up to the start of the gap.
+            _Traits::copy(__p, __current, __gap_pos);
 
             // Copy all data after the gap.
-            _Traits::copy(__p + __gap_pos + __gap_len, __current + __gap_pos, __current_size - __gap_pos);
+            if (!__gap_at_end)
+                _Traits::copy(__p + __gap_pos + __gap_len, __current + __gap_pos, __current_size - __gap_pos);
 
             // Set the NUL terminator.
             __p[__new_capacity - 1] = _CharT(0);
@@ -1785,6 +1813,11 @@ private:
     [[noreturn]] static void __throw_out_of_range(const char* __msg)
     {
         __detail::__string_out_of_range(__msg);
+    }
+
+    [[noreturn]] static void __precondition_failed(const char* __msg)
+    {
+        __detail::__string_precondition_failed(__msg);
     }
 };
 
