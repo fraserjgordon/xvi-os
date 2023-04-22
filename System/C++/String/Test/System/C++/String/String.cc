@@ -501,26 +501,166 @@ TEST(String, ResizeAndOverwrite)
     EXPECT_EQ(b, "This is a string long enough to not use SSO but now it's even longer!"sv);
 }
 
+TEST(String, Reserve)
+{
+    string s;
+
+    EXPECT_THROW(length_error, s.reserve(std::numeric_limits<size_t>::max()));
+
+    auto sizes = {0U, 1U, 16U, 256U, 4096U, 65536U, 0x100000U, 0x1000000U};
+
+    for (auto size : sizes)
+    {
+        s.reserve(size);
+        EXPECT_GE(s.capacity(), size);
+        EXPECT_NE(s.data(), nullptr);
+        EXPECT_EQ(*s.data(), '\0');
+    }
+}
+
+TEST(String, ShrinkToFit)
+{
+    auto sizes = {0U, 1U, 16U, 256U, 4096U, 65536U, 0x100000U, 0x1000000U};
+
+    for (auto size : sizes)
+    {
+        // shrink_to_fit may reduce capacity or leave it unchanged but may not increase it.
+        string a;
+        string b;
+        a.reserve(size);
+        b.reserve(size);
+        a.assign("Hello, World!");
+        b.assign("This is a string long enough to not use SSO");
+
+        auto asize = a.capacity();
+        auto bsize = b.capacity();
+
+        EXPECT_GE(asize, size);
+        EXPECT_GE(bsize, size);
+
+        a.shrink_to_fit();
+        b.shrink_to_fit();
+
+        if (a.size() < size)
+            EXPECT_LE(a.capacity(), asize);
+
+        if (b.size() < size)
+            EXPECT_LE(b.capacity(), bsize);
+    }
+}
+
 TEST(String, ElementAccess)
 {
-    const char* const str = "Hello, World!";
+    const char* const str1 = "Hello, World!";
+    const char* const str2 = "This is a string long enough to not use SSO";
 
     string empty;
-    string s(str);
+    string a(str1);
+    const string b(str2);
+
+    EXPECT_EQ(empty[0], '\0');
+
+    for (size_t i = 0; i < 14; ++i)
+        EXPECT_EQ(a[i], str1[i]);
 
     for (size_t i = 0; i < 13; ++i)
-        EXPECT_EQ(s[i], str[i]);
+        EXPECT_EQ(a.at(i), str1[i]);
 
-    for (size_t i = 0; i < 13; ++i)
-        EXPECT_EQ(s.at(i), str[i]);
+    for (size_t i = 0; i < 44; ++i)
+        EXPECT_EQ(b[i], str2[i]);
+
+    for (size_t i = 0; i < 43; ++i)
+        EXPECT_EQ(b.at(i), str2[i]);
 
     EXPECT_THROW(out_of_range, empty.at(0));
-    EXPECT_THROW(out_of_range, s.at(13));
+    EXPECT_THROW(out_of_range, a.at(13));
+    EXPECT_THROW(out_of_range, b.at(43));
 
-    EXPECT_EQ(&s.front(), str);
-    EXPECT_EQ(&s.back(), str + 12);
+    EXPECT_THROW(logic_error, a[14]);
+    EXPECT_THROW(logic_error, b[44]);
 
-    EXPECT_EQ(&s.front(), s.data());
+    EXPECT_EQ(&a.front(), a.data());
+    EXPECT_EQ(&a.back(), a.data() + 12);
+
+    EXPECT_EQ(&b.front(), b.data());
+    EXPECT_EQ(&b.back(), b.data() + 42);
+}
+
+TEST(String, Append)
+{
+    const char* const str1 = "Hello, World!";
+    const char* const str2 = "This is a string long enough to not use SSO";
+
+    const string a(str1);
+    const string b(str2);
+
+    string s;
+
+    s.append(s);
+
+    EXPECT_EQ(s.size(), 0);
+    EXPECT_NE(s.data(), nullptr);
+    EXPECT_EQ(*s.data(), '\0');
+
+    s.append(a);
+
+    EXPECT_EQ(s, "Hello, World!"sv);
+
+    s.append(a);
+
+    EXPECT_EQ(s, "Hello, World!Hello, World!"sv);
+
+    s.append(b);
+
+    EXPECT_EQ(s, "Hello, World!Hello, World!This is a string long enough to not use SSO"sv);
+
+    s.append(s);
+
+    EXPECT_EQ(s, "Hello, World!Hello, World!This is a string long enough to not use SSOHello, World!Hello, World!This is a string long enough to not use SSO"sv);
+}
+
+TEST(String, AppendSubstring)
+{
+const char* const str1 = "Hello, World!";
+    const char* const str2 = "This is a string long enough to not use SSO";
+
+    const string a(str1);
+    const string b(str2);
+
+    string s;
+
+    s.append(s, 0);
+
+    EXPECT_EQ(s.size(), 0);
+    EXPECT_NE(s.data(), nullptr);
+    EXPECT_EQ(*s.data(), '\0');
+
+    s.append(a, 0, 7);
+
+    EXPECT_EQ(s, "Hello, "sv);
+
+    s.append(s, 0, 5);
+
+    EXPECT_EQ(s, "Hello, Hello"sv);
+
+    s.append(a, 12);
+
+    EXPECT_EQ(s, "Hello, Hello!"sv);
+
+    s.append(b, 4, 1);
+    s.append(b, 0, 5);
+
+    EXPECT_EQ(s, "Hello, Hello! This "sv);
+
+    s.append(b, 10, 7);
+    s.append(b, 5, 2);
+    s.append(b, 16);
+
+    EXPECT_EQ(s, "Hello, Hello! This string is long enough to not use SSO"sv);
+
+    s.append(s, 5, 8);
+
+    EXPECT_EQ(s, "Hello, Hello! This string is long enough to not use SSO, Hello!"sv);
 }
 
 /*TEST(StringView, Modifiers)
