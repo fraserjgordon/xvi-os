@@ -12,6 +12,7 @@ using namespace __XVI_STD_STRING_NS;
 
 //! @todo make the content tests test the whole content, not just the first char.
 //! @todo tests with non-default allocator types.
+//! @todo how to test assign/assign_range with self-assignments in a way that will cause reallocation?
 
 
 [[noreturn]] void __XVI_STD_STRING_NS::__detail::__string_precondition_failed(const char* message)
@@ -228,8 +229,8 @@ TEST(String, FromRangeConstructor)
     EXPECT_EQ(s.size(), 14);
     ASSERT_NE(s.data(), nullptr);
     EXPECT_EQ(s[0], 'H');
-    EXPECT_EQ(s[12], '\0');
     EXPECT_EQ(s[13], '\0');
+    EXPECT_EQ(s[14], '\0');
 }
 
 TEST(String, InitializerListConstructor)
@@ -621,7 +622,7 @@ TEST(String, Append)
 
 TEST(String, AppendSubstring)
 {
-const char* const str1 = "Hello, World!";
+    const char* const str1 = "Hello, World!";
     const char* const str2 = "This is a string long enough to not use SSO";
 
     const string a(str1);
@@ -661,6 +662,637 @@ const char* const str1 = "Hello, World!";
     s.append(s, 5, 8);
 
     EXPECT_EQ(s, "Hello, Hello! This string is long enough to not use SSO, Hello!"sv);
+}
+
+TEST(String, AppendStringView)
+{
+    const char* const str1 = "Hello, World!";
+    const char* const str2 = "This is a string long enough to not use SSO";
+
+    const string_view empty;
+    const string_view a(str1);
+    const string_view b(str2);
+
+    string s;
+
+    s.append(empty);
+
+    EXPECT_EQ(s.size(), 0);
+    EXPECT_NE(s.data(), nullptr);
+    EXPECT_EQ(*s.data(), '\0');
+
+    s.append(a);
+
+    EXPECT_EQ(s, "Hello, World!"sv);
+
+    s.append(a);
+
+    EXPECT_EQ(s, "Hello, World!Hello, World!"sv);
+
+    s.append(b);
+
+    EXPECT_EQ(s, "Hello, World!Hello, World!This is a string long enough to not use SSO"sv);
+
+    s.append(string_view(s));
+
+    EXPECT_EQ(s, "Hello, World!Hello, World!This is a string long enough to not use SSOHello, World!Hello, World!This is a string long enough to not use SSO"sv);
+}
+
+TEST(String, AppendStringViewSubstring)
+{
+    const char* const str1 = "Hello, World!";
+    const char* const str2 = "This is a string long enough to not use SSO";
+
+    const string_view empty;
+    const string_view a(str1);
+    const string_view b(str2);
+
+    string s;
+
+    s.append(empty, 0);
+
+    EXPECT_EQ(s.size(), 0);
+    EXPECT_NE(s.data(), nullptr);
+    EXPECT_EQ(*s.data(), '\0');
+
+    s.append(a, 0, 7);
+
+    EXPECT_EQ(s, "Hello, "sv);
+
+    s.append(string_view(s), 0, 5);
+
+    EXPECT_EQ(s, "Hello, Hello"sv);
+
+    s.append(a, 12);
+
+    EXPECT_EQ(s, "Hello, Hello!"sv);
+
+    s.append(b, 4, 1);
+    s.append(b, 0, 5);
+
+    EXPECT_EQ(s, "Hello, Hello! This "sv);
+
+    s.append(b, 10, 7);
+    s.append(b, 5, 2);
+    s.append(b, 16);
+
+    EXPECT_EQ(s, "Hello, Hello! This string is long enough to not use SSO"sv);
+
+    s.append(string_view(s), 5, 8);
+
+    EXPECT_EQ(s, "Hello, Hello! This string is long enough to not use SSO, Hello!"sv);
+}
+
+TEST(String, AppendCString)
+{
+    const char* const str1 = "Hello, World!";
+    const char* const str2 = "This is a string long enough to not use SSO";
+
+    string s;
+
+    EXPECT_EQ(s.size(), 0);
+    EXPECT_NE(s.data(), nullptr);
+    EXPECT_EQ(*s.data(), '\0');
+
+    s.append(str1);
+
+    EXPECT_EQ(s, "Hello, World!"sv);
+
+    s.append(str1);
+
+    EXPECT_EQ(s, "Hello, World!Hello, World!"sv);
+
+    s.append(str2);
+
+    EXPECT_EQ(s, "Hello, World!Hello, World!This is a string long enough to not use SSO"sv);
+
+    s.append(s.c_str());
+
+    EXPECT_EQ(s, "Hello, World!Hello, World!This is a string long enough to not use SSOHello, World!Hello, World!This is a string long enough to not use SSO"sv);
+
+    EXPECT_THROW(logic_error, s.append(nullptr));
+}
+
+TEST(String, AppendPointerAndLength)
+{
+    const char* const str1 = "Hello, World!";
+    const char* const str2 = "This is a string long enough to not use SSO";
+
+    string s;
+
+    s.append(nullptr, 0);
+
+    EXPECT_EQ(s.size(), 0);
+    EXPECT_NE(s.data(), nullptr);
+    EXPECT_EQ(*s.data(), '\0');
+
+    s.append(str1, 7);
+
+    EXPECT_EQ(s, "Hello, "sv);
+
+    s.append(s.c_str(), 5);
+
+    EXPECT_EQ(s, "Hello, Hello"sv);
+
+    s.append(str1 + 12);
+
+    EXPECT_EQ(s, "Hello, Hello!"sv);
+
+    s.append(str2 + 4, 1);
+    s.append(str2, 5);
+
+    EXPECT_EQ(s, "Hello, Hello! This "sv);
+
+    s.append(str2 + 10, 7);
+    s.append(str2 + 5, 2);
+    s.append(str2 + 16);
+
+    EXPECT_EQ(s, "Hello, Hello! This string is long enough to not use SSO"sv);
+
+    s.append(s.c_str() + 5, 8);
+
+    EXPECT_EQ(s, "Hello, Hello! This string is long enough to not use SSO, Hello!"sv);
+}
+
+TEST(String, AppendIteratorPair)
+{
+    //! @todo: test non-forward iterators as they have a different (less efficient) implementation.
+
+    const char* const str1 = "Hello, World!";
+    const char* const str2 = "This is a string long enough to not use SSO";
+
+    string s;
+
+    EXPECT_EQ(s.size(), 0);
+    EXPECT_NE(s.data(), nullptr);
+    EXPECT_EQ(*s.data(), '\0');
+
+    s.append(str1, str1 + 7);
+
+    EXPECT_EQ(s, "Hello, "sv);
+
+    s.append(s.c_str(), s.c_str() + 5);
+
+    EXPECT_EQ(s, "Hello, Hello"sv);
+
+    s.append(str1 + 12, str1 + 13);
+
+    EXPECT_EQ(s, "Hello, Hello!"sv);
+
+    s.append(str2 + 4, str2 + 5);
+    s.append(str2, str2 + 5);
+
+    EXPECT_EQ(s, "Hello, Hello! This "sv);
+
+    s.append(str2 + 10, str2 + 17);
+    s.append(str2 + 5, str2 + 7);
+    s.append(str2 + 16, str2 + 43);
+
+    EXPECT_EQ(s, "Hello, Hello! This string is long enough to not use SSO"sv);
+
+    s.append(s.c_str() + 5, s.c_str() + 13);
+
+    EXPECT_EQ(s, "Hello, Hello! This string is long enough to not use SSO, Hello!"sv);
+}
+
+TEST(String, AppendInitializerList)
+{
+    auto il = { 'H', 'e', 'l', 'l', 'o' };
+
+    string s;
+
+    s.append(il);
+
+    EXPECT_EQ(s, "Hello"sv);
+}
+
+TEST(String, AppendRepeatedChar)
+{
+    string s;
+
+    s.append(16, '!');
+
+    EXPECT_EQ(s, "!!!!!!!!!!!!!!!!"sv);
+}
+
+TEST(String, AppendRange)
+{
+    //! @todo: test non-sized ranges as they have a different (less efficient) implementation.
+
+    std::array<char, 14> arr1 { "Hello, World!" };
+    std::array<char, 26> arr2 { "I hope it finds you well." };
+
+    string s("I say this to you: "sv);
+
+    s.append_range(arr1);
+
+    EXPECT_EQ(s, "I say this to you: Hello, World!\0"sv);
+
+    s.append_range(arr2);
+
+    EXPECT_EQ(s, "I say this to you: Hello, World!\0I hope it finds you well.\0"sv);
+
+    s.append_range(s);
+
+    EXPECT_EQ(s, "I say this to you: Hello, World!\0I hope it finds you well.\0I say this to you: Hello, World!\0I hope it finds you well.\0"sv);
+}
+
+TEST(String, PushBack)
+{
+    string s;
+
+    s.push_back('H');
+    s.push_back('e');
+    s.push_back('l');
+    s.push_back('l');
+    s.push_back('o');
+
+    EXPECT_EQ(s, "Hello"sv);
+}
+
+TEST(String, PlusEquals)
+{
+    string s;
+
+    s += "Hello"sv;
+
+    EXPECT_EQ(s, "Hello"sv);
+
+    s += ',';
+
+    EXPECT_EQ(s, "Hello,"sv);
+
+    s += " World";
+
+    EXPECT_EQ(s, "Hello, World"sv);
+
+    auto il = { '!', ' ' };
+    s += il;
+
+    EXPECT_EQ(s, "Hello, World! "sv);
+
+    s += s;
+
+    EXPECT_EQ(s, "Hello, World! Hello, World! "sv);
+
+    s += s;
+
+    EXPECT_EQ(s, "Hello, World! Hello, World! Hello, World! Hello, World! "sv);
+}
+
+TEST(String, Assign)
+{
+    const string empty;
+    const string a("Hello, World!");
+    const string b("This is a string long enough to not use SSO");
+
+    string s;
+
+    s.assign(empty);
+
+    EXPECT(s.empty());
+
+    s.assign(a);
+
+    EXPECT_EQ(s, a);
+
+    s.assign(empty);
+
+    EXPECT(s.empty());
+
+    s.assign(b);
+
+    EXPECT_EQ(s, b);
+
+    s.assign(empty);
+
+    EXPECT(s.empty());
+
+    s.assign(a);
+    s.assign(b);
+
+    EXPECT_EQ(s, b);
+
+    s.assign(a);
+
+    EXPECT_EQ(s, a);
+
+    s.assign(s);
+}
+
+TEST(String, AssignRvalue)
+{
+    const char* const a = "Hello, World!";
+    const char* const b = "This is a string long enough to not use SSO";
+
+    string s;
+
+    s.assign(string{});
+
+    EXPECT(s.empty());
+
+    s.assign(string(a));
+
+    EXPECT_EQ(s, a);
+
+    s.assign(string{});
+
+    EXPECT(s.empty());
+
+    s.assign(string(b));
+
+    EXPECT_EQ(s, b);
+
+    s.assign(string{});
+
+    EXPECT(s.empty());
+
+    s.assign(string(a));
+    s.assign(string(b));
+
+    EXPECT_EQ(s, b);
+
+    s.assign(string(a));
+
+    EXPECT_EQ(s, a);
+
+    s.assign(std::move(s));
+}
+
+TEST(String, AssignSubstring)
+{
+    const string empty;
+    const string a("Hello, World!");
+    const string b("This is a string long enough to not use SSO");
+
+    string s;
+
+    s.assign(empty, 0);
+
+    EXPECT(s.empty());
+
+    s.assign(a, 0);
+
+    EXPECT_EQ(s, a);
+
+    s.assign(b, 0);
+
+    EXPECT_EQ(s, b);
+
+    s.assign(a, 7, 5);
+
+    EXPECT_EQ(s, "World"sv);
+
+    s.assign(b, 40, 3);
+
+    EXPECT_EQ(s, "SSO"sv);
+
+    s.assign(b, 0, 30);
+    s.assign(s, 10, 6);
+
+    EXPECT_EQ(s, "string"sv);
+}
+
+TEST(String, AssignStringView)
+{
+    const string_view empty;
+    const string_view a("Hello, World!");
+    const string_view b("This is a string long enough to not use SSO");
+
+    string s;
+
+    s.assign(empty);
+
+    EXPECT(s.empty());
+
+    s.assign(a);
+
+    EXPECT_EQ(s, a);
+
+    s.assign(empty);
+
+    EXPECT(s.empty());
+
+    s.assign(b);
+
+    EXPECT_EQ(s, b);
+
+    s.assign(empty);
+
+    EXPECT(s.empty());
+
+    s.assign(a);
+    s.assign(b);
+
+    EXPECT_EQ(s, b);
+
+    s.assign(a);
+
+    EXPECT_EQ(s, a);
+
+    s.assign(string_view(s));
+}
+
+TEST(String, AssignStringViewSubstring)
+{
+    const string_view empty;
+    const string_view a("Hello, World!");
+    const string_view b("This is a string long enough to not use SSO");
+
+    string s;
+
+    s.assign(empty, 0);
+
+    EXPECT(s.empty());
+
+    s.assign(a, 0);
+
+    EXPECT_EQ(s, a);
+
+    s.assign(b, 0);
+
+    EXPECT_EQ(s, b);
+
+    s.assign(a, 7, 5);
+
+    EXPECT_EQ(s, "World"sv);
+
+    s.assign(b, 40, 3);
+
+    EXPECT_EQ(s, "SSO"sv);
+
+    s.assign(b, 0, 30);
+    s.assign(string_view(s), 10, 6);
+
+    EXPECT_EQ(s, "string"sv);
+}
+
+TEST(String, AssignCString)
+{
+    const char* const a = "Hello, World!";
+    const char* const b = "This is a string long enough to not use SSO";
+
+    string s;
+
+    s.assign(a);
+
+    EXPECT_EQ(s, a);
+
+    s.assign(b);
+
+    EXPECT_EQ(s, b);
+
+    s.assign(a);
+
+    EXPECT_EQ(s, a);
+
+    s.assign(s.c_str());
+
+    EXPECT_THROW(logic_error, s.assign(nullptr));
+}
+
+TEST(String, AssignPointerAndLength)
+{
+    const char* const a = "Hello, World!";
+    const char* const b = "This is a string long enough to not use SSO";
+
+    string s;
+
+    s.assign(nullptr, 0);
+
+    EXPECT(s.empty());
+
+    s.assign(a, 13);
+
+    EXPECT_EQ(s, a);
+
+    s.assign(b, 43);
+
+    EXPECT_EQ(s, b);
+
+    s.assign(a + 7, 5);
+
+    EXPECT_EQ(s, "World"sv);
+
+    s.assign(b + 40, 3);
+
+    EXPECT_EQ(s, "SSO"sv);
+
+    s.assign(b, 30);
+    s.assign(s.c_str() + 10, 6);
+
+    EXPECT_EQ(s, "string"sv);
+}
+
+TEST(String, AssignIteratorPair)
+{
+    const char* const a = "Hello, World!";
+    const char* const b = "This is a string long enough to not use SSO";
+
+    string s;
+
+    s.assign(a, a + 13);
+
+    EXPECT_EQ(s, a);
+
+    s.assign(b, b + 43);
+
+    EXPECT_EQ(s, b);
+
+    s.assign(a + 7, a + 12);
+
+    EXPECT_EQ(s, "World"sv);
+
+    s.assign(b + 40, b + 43);
+
+    EXPECT_EQ(s, "SSO"sv);
+
+    s.assign(b, b + 30);
+    s.assign(s.c_str() + 10, s.c_str() + 16);
+
+    EXPECT_EQ(s, "string"sv);
+}
+
+TEST(String, AssignInitializerList)
+{
+    auto il = { 'H', 'e', 'l', 'l', 'o' };
+
+    string s;
+
+    s.assign(il);
+
+    EXPECT_EQ(s, "Hello"sv);
+}
+
+TEST(String, AssignRepeatedChar)
+{
+    string s;
+
+    s.assign(35, '?');
+
+    EXPECT_EQ(s, "???????????????????????????????????"sv);
+}
+
+TEST(String, AssignRange)
+{
+    std::array<char, 14> arr1 { "Hello, World!" };
+    std::array<char, 44> arr2 { "This is a string long enough to not use SSO" };
+    std::array<char, 0> empty;
+
+    string s;
+
+    s.assign_range(arr1);
+
+    EXPECT_EQ(s, "Hello, World!\0"sv);
+
+    s.assign_range(arr2);
+
+    EXPECT_EQ(s, "This is a string long enough to not use SSO\0"sv);
+
+    s.assign_range(s);
+
+    s.assign_range(empty);
+
+    EXPECT(s.empty());
+}
+
+TEST(String, Insert)
+{
+    const string a("Beginning");
+    const string b(" and end.");
+    const string c(", middle");
+    const string d("now we're at the ");
+    const string e("A story: ");
+    const string f(". The End!");
+
+    string s;
+
+    s.insert(0, a);
+
+    EXPECT_EQ(s, "Beginning"sv);
+
+    s.insert(9, b);
+
+    EXPECT_EQ(s, "Beginning and end."sv);
+
+    s.insert(9, c);
+    
+    extern int printf(const char*, ...);
+    printf("\n\n%s\n\n", s.c_str());
+
+    EXPECT_EQ(s, "Beginning, middle and end."sv);
+
+    s.insert(22, d);
+
+    EXPECT_EQ(s, "Beginning, middle and now we're at the end"sv);
+
+    s.insert(0, e);
+
+    EXPECT_EQ(s, "A story: Beginning, middle and now we're at the end"sv);
+
+    s.insert(52, f);
+
+    EXPECT_EQ(s, "A story: Beginning, middle and now we're at the end. The End!"sv);
 }
 
 /*TEST(StringView, Modifiers)

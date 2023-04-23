@@ -141,6 +141,11 @@ public:
     {
         return __is_inline() ? static_cast<_SizeType>(_M_inline_length) : _M_length;
     }
+
+    constexpr _SizeType __capacity() const noexcept
+    {
+        return __is_inline() ? _MaxInline : _M_capacity;
+    }
 };
 
 
@@ -526,8 +531,7 @@ public:
 
     constexpr size_type max_size() const noexcept
     {
-        // Divided by an additional constant factor to prevent overflow when resizing.
-        return numeric_limits<size_type>::max() / (sizeof(_CharT) * 4);
+        return __max_size();
     }
 
     constexpr void resize(size_type __n, _CharT __c)
@@ -571,7 +575,7 @@ public:
 
     constexpr size_type capacity() const noexcept
     {
-        return __is_inline() ? _MaxInline : _M_capacity;
+        return __capacity();
     }
 
     constexpr void reserve(size_type __n)
@@ -719,6 +723,9 @@ public:
 
     constexpr basic_string& append(const _CharT* __s, size_type __n)
     {
+        if (__s == nullptr && __n != 0)
+            __precondition_failed("can't append null C string");
+
         auto __storage = __ensure_space(size() + __n);
 
         _Traits::copy(__storage.__data() + __storage.__size(), __s, __n);
@@ -742,6 +749,9 @@ public:
 
     constexpr basic_string& append(const _CharT* __s)
     {
+        if (__s == nullptr) [[unlikely]]
+            __precondition_failed("can't append null C string");
+
         return append(__s, _Traits::length(__s));
     }
 
@@ -772,13 +782,59 @@ public:
         if constexpr (is_base_of_v<forward_iterator_tag, typename iterator_traits<_InputIterator>::iterator_category>)
         {
             auto __dist = distance(__first, __last);
-            reserve(size() + __dist);
+            auto __needed = size() + __dist;
+
+            auto __storage = __ensure_space(__needed);
+
+            auto __ptr = __storage.__data() + size();
+            for (; __first != __last; ++__first, (void)++__ptr)
+                _Traits::assign(*__ptr, *__first);
+
+            __set_storage(__storage);
+
+            if (__is_inline())
+            {
+                _M_inline_length += __dist;
+                if (_M_inline_length < _Storage::_MaxInline)
+                    _M_inline[_M_inline_length] = _CharT(0);
+            }
+            else
+            {
+                _M_length += __dist;
+                _M_memory[_M_length] = _CharT(0);
+            }
+
+            return *this;
         }
+        else
+        {
+            auto __storage = __ensure_storage(capacity());          
 
-        for (; __first != __last; ++__first)
-            append(size_type{1}, static_cast<_CharT>(*__first));
+            for (; __first != __last; ++__first)
+            {
+                // Allocate another character.
+                __set_storage(__storage, __ensure_storage(__storage, __storage.__size() + 1));
 
-        return *this;
+                auto __ptr = __storage.data() + __storage.size();
+                _Traits::assign(*__ptr, *__first);
+
+                if (__storage.__is_inline())
+                {
+                    __storage._M_inline_length += 1;
+                    if (__storage._M_inline_length < _Storage::_MaxInline)
+                        __storage._M_inline[__storage._M_inline_length] = _CharT(0);
+                }
+                else
+                {
+                    __storage._M_length += 1;
+                    __storage._M_memory[__storage._M_length] = _CharT(0);
+                }
+            }
+
+            __set_storage(__storage);
+
+            return *this;
+        }
     }
 
     template <__detail::__container_compatible_range<_CharT> _R>
@@ -786,14 +842,65 @@ public:
     {
         if constexpr (ranges::sized_range<_R>)
         {
-            auto __len = ranges::distance(__r);
-            reserve(size() + __len);
+            auto __dist = ranges::distance(__r);
+            auto __needed = size() + __dist;
+
+            auto __storage = __ensure_space(__needed);
+
+            auto __ptr = __storage.__data() + size();
+            auto __first = ranges::begin(__XVI_STD_NS::forward<_R>(__r));
+            auto __last = ranges::end(__XVI_STD_NS::forward<_R>(__r));
+
+            for (; __first != __last; ++__first, (void)++__ptr)
+                _Traits::assign(*__ptr, *__first);
+
+            __set_storage(__storage);
+
+            if (__is_inline())
+            {
+                _M_inline_length += __dist;
+                if (_M_inline_length < _Storage::_MaxInline)
+                    _M_inline[_M_inline_length] = _CharT(0);
+            }
+            else
+            {
+                _M_length += __dist;
+                _M_memory[_M_length] = _CharT(0);
+            }
+
+            return *this;
         }
+        else
+        {
+            auto __storage = __ensure_storage(capacity());          
 
-        for (auto __first = ranges::begin(__r), __last = ranges::end(__r); __first != __last; ++__first)
-            append(size_type{1}, static_cast<_CharT>(*__first));
+            auto __first = ranges::begin(__XVI_STD_NS::forward<_R>(__r));
+            auto __last = ranges::end(__XVI_STD_NS::forward<_R>(__r));
+            for (; __first != __last; ++__first)
+            {
+                // Allocate another character.
+                __set_storage(__storage, __ensure_storage(__storage, __storage.__size() + 1));
 
-        return *this;
+                auto __ptr = __storage.data() + __storage.size();
+                _Traits::assign(*__ptr, *__first);
+
+                if (__storage.__is_inline())
+                {
+                    __storage._M_inline_length += 1;
+                    if (__storage._M_inline_length < _Storage::_MaxInline)
+                        __storage._M_inline[__storage._M_inline_length] = _CharT(0);
+                }
+                else
+                {
+                    __storage._M_length += 1;
+                    __storage._M_memory[__storage._M_length] = _CharT(0);
+                }
+            }
+
+            __set_storage(__storage);
+
+            return *this;
+        }
     }
 
     constexpr basic_string& append(initializer_list<_CharT> __il)
@@ -843,6 +950,9 @@ public:
 
     constexpr basic_string& assign(const _CharT* __s, size_type __n)
     {
+        if (__s == nullptr && __n != 0) [[unlikely]]
+            __precondition_failed("can't assign null C string");
+
         auto __storage = __ensure_space(__n, false);
         
         _Traits::copy(__storage.__data(), __s, __n);
@@ -866,13 +976,16 @@ public:
 
     constexpr basic_string& assign(const _CharT* __s)
     {
+        if (__s == nullptr) [[unlikely]]
+            __precondition_failed("can't assign null C string");        
+
         return assign(__s, _Traits::length(__s));
     }
 
     constexpr basic_string& assign(size_type __n, _CharT __c)
     {
-        __ensure_space(__n);
-        clear();
+        __set_storage(__ensure_space(__n, false));
+        __set_zero_length();
         return append(__n, __c);
     }
 
@@ -880,7 +993,7 @@ public:
         requires __detail::__maybe_iterator<_InputIterator>
     constexpr basic_string& assign(_InputIterator __first, _InputIterator __last)
     {
-        clear();
+        __set_zero_length();
         append(__first, __last);
         return *this;
     }
@@ -888,7 +1001,7 @@ public:
     template <__detail::__container_compatible_range<_CharT> _R>
     constexpr basic_string& assign_range(_R&& __r)
     {
-        clear();
+        __set_zero_length();
         append_range(__XVI_STD_NS::forward<_R>(__r));
         return *this;
     }
@@ -934,9 +1047,11 @@ public:
         if (__n > max_size() - size())
             __throw_length_error("length > max_size() in std::basic_string::insert");
 
-        __ensure_space_and_create_gap(size() + __n, __pos, __n);
+        auto __storage = __ensure_space_and_create_gap(size() + __n, __pos, __n);
 
-        _Traits::copy(data() + __pos, __s, __n);
+        _Traits::copy(__storage.__data() + __pos, __s, __n);
+
+        __set_storage(__storage);
 
         return *this;
     }
@@ -954,9 +1069,11 @@ public:
         if (__n > max_size() - size())
             __throw_length_error("length > max_size() in std::basic_string::insert");
 
-        __ensure_space_and_create_gap(size() + __n, __pos, __n);
+        auto __storage = __ensure_space_and_create_gap(size() + __n, __pos, __n);
 
-        _Traits::assign(data() + __pos, __n, __c);
+        _Traits::assign(__storage.__data() + __pos, __n, __c);
+
+        __set_storage(__storage);
 
         return *this;
     }
@@ -1653,6 +1770,7 @@ private:
     using _Storage::__constexpr_setup;
     using _Storage::__data;
     using _Storage::__size;
+    using _Storage::__capacity;
 
     static constexpr size_t __grow_numerator = 4;
     static constexpr size_t __grow_denomenator = 3;
@@ -1681,106 +1799,120 @@ private:
         _M_length = __new_length;
     }
 
-    constexpr void __deallocate()
+    constexpr void __deallocate(_Storage& __storage)
     {
-        if (__is_inline())
+        if (__storage.__is_inline())
         {
             // Reset for consistency.
-            __mark_inline();
+            __storage.__mark_inline();
             return;
         }
 
         // Free the associated memory.
         if (_M_memory)
-            allocator_traits<_Allocator>::deallocate(_M_allocator, _M_memory, (_M_capacity + 1) * sizeof(_CharT));
-        __mark_inline();
+            allocator_traits<_Allocator>::deallocate(_M_allocator, __storage._M_memory, (__storage._M_capacity + 1) * sizeof(_CharT));
+        __storage.__mark_inline();
     }
 
-    [[nodiscard]] constexpr _Storage __ensure_space(size_type __n, bool __preserve = true)
+    constexpr void __deallocate()
     {
-        if (__n <= capacity())
+        __deallocate(*static_cast<_Storage*>(this));
+    }
+
+    [[nodiscard]] constexpr _Storage __ensure_space(_Storage& __prev, size_type __n, bool __preserve = true)
+    {
+        if (__n <= __prev.__capacity())
             return *static_cast<_Storage*>(this);
 
-        auto __target = (capacity() * __grow_numerator) / __grow_denomenator;
+        auto __target = (__prev.__capacity() * __grow_numerator) / __grow_denomenator;
         if (__target > __n)
             __n = __target;
 
         //! @todo: don't preserve contents when not needed.
-        return __reallocate(__n);
+        return __reallocate(__prev, __n);
+    }
+
+    [[nodiscard]] constexpr _Storage __ensure_space(size_type __n, bool __preserve = true)
+    {
+        return __ensure_space(*static_cast<_Storage*>(this), __n, __preserve);
+    }
+
+    [[nodiscard]] constexpr _Storage __ensure_space_and_create_gap(_Storage& __prev, size_type __n, size_type __gap_pos, size_type __gap_len)
+    {
+        if (__prev.__capacity() < __n)
+        {
+            auto __target = (__prev.__capacity() * __grow_numerator) / __grow_denomenator;
+            if (__target > __n)
+                __n = __target;
+            
+            return __reallocate(__prev, __n, __gap_pos, __gap_len);
+        }
+
+        _Traits::move(__prev.__data() + __gap_pos + __gap_len, __prev.__data() + __gap_pos, __gap_len);
+
+        if (__prev.__is_inline())
+        {
+            __prev._M_inline_length += __gap_len;
+            if (__prev._M_inline_length < _MaxInline)
+                __prev._M_inline[__prev._M_inline_length] = _CharT(0);
+        }
+        else
+        {
+            __prev._M_length += __gap_len;
+            __prev._M_memory[__prev._M_length] = _CharT(0);
+        }
+
+        return __prev;
     }
 
     [[nodiscard]] constexpr _Storage __ensure_space_and_create_gap(size_type __n, size_type __gap_pos, size_type __gap_len)
     {
-        if (capacity() < __n)
-        {
-            auto __target = (capacity() * __grow_numerator) / __grow_denomenator;
-            if (__target > __n)
-                __n = __target;
-            
-            return __reallocate(__n, __gap_pos, __gap_len);
-        }
-
-        _Traits::move(data() + __gap_pos + __gap_len, data() + __gap_pos, __gap_len);
-
-        if (__is_inline())
-        {
-            _M_inline_length += __gap_len;
-            if (_M_inline_length < _MaxInline)
-                _M_inline[_M_inline_length] = _CharT(0);
-        }
-        else
-        {
-            _M_length += __gap_len;
-            _M_memory[_M_length] = _CharT(0);
-        }
-
-        return *static_cast<_Storage*>(this);
+        return __ensure_space_and_create_gap(*static_cast<_Storage*>(this), __n, __gap_pos, __gap_len);
     }
 
-    [[nodiscard]] constexpr _Storage __reallocate(size_type __req_capacity, size_type __gap_pos = npos, size_type __gap_len = 0)
+    [[nodiscard]] constexpr _Storage __reallocate(_Storage& __prev, size_type __req_capacity, size_type __gap_pos = npos, size_type __gap_len = 0)
     {
         // Check for overflow.
-        if (__req_capacity > max_size())
+        if (__req_capacity > __max_size())
             __throw_length_error("requested size greater than string max_size");
 
         if (__gap_len > __req_capacity)
             __precondition_failed("string internal error");
 
         // Check for truncation.
-        if (__req_capacity < size() + __gap_len)
+        if (__req_capacity < __prev.__size() + __gap_len)
             __truncate_in_place(__req_capacity - __gap_len);
 
         // Handle "problematic" gap positions.
         bool __gap_at_end = false;
-        if (__gap_pos == npos || __gap_pos >= size())
+        if (__gap_pos == npos || __gap_pos >= __prev.__size())
         {
             __gap_at_end = true;
-            __gap_pos = size();
+            __gap_pos = __prev.__size();
         }
 
         // Can the "allocation" be stored inline?
         if (__req_capacity <= _MaxInline && !is_constant_evaluated())
         {
             // If already inline, all that needs to be done is to create the gap (if any).
-            if (__is_inline())
+            if (__prev.__is_inline())
             {
                 // Create the gap and update the length.
                 if (__gap_len > 0 && !__gap_at_end)
-                    _Traits::move(&_M_inline[__gap_pos + __gap_len], &_M_inline[__gap_pos], __gap_len);
-                _M_inline_length += __gap_len;
+                    _Traits::move(&__prev._M_inline[__gap_pos + __gap_len], &__prev._M_inline[__gap_pos], __gap_len);
+                __prev._M_inline_length += __gap_len;
 
                 // Ensure the string stays terminated.
-                if (_M_inline_length < _MaxInline)
-                    _M_inline[_M_inline_length] = _CharT(0);
+                if (__prev._M_inline_length < _MaxInline)
+                    __prev._M_inline[__prev._M_inline_length] = _CharT(0);
 
                 // Nothing more to do for inline strings.
-                return *static_cast<_Storage*>(this);
+                return __prev;
             }
 
             // Switching from heap storage to inline.
-            _CharT* __current = data();
-            size_type __current_size = size();
-            size_type __current_capacity = capacity() + 1;
+            _CharT* __current = __prev.__data();
+            size_type __current_size = __prev.__size();
 
             // Copy the data inline and terminate it.
             _Storage __storage;
@@ -1801,9 +1933,8 @@ private:
         if (!__p)
             __throw_bad_alloc();
 
-        _CharT* __current = data();
-        size_type __current_size = size();
-        size_type __current_capacity = capacity() + 1;
+        _CharT* __current = __prev.__data();
+        size_type __current_size = __prev.__size();
 
         try
         {
@@ -1819,8 +1950,7 @@ private:
         }
         catch (...)
         {
-            if (_M_memory)
-                allocator_traits<_Allocator>::deallocate(_M_allocator, __p, __new_capacity);
+            allocator_traits<_Allocator>::deallocate(_M_allocator, __p, __new_capacity);
             throw;
         }
 
@@ -1834,14 +1964,36 @@ private:
         return __storage;
     }
 
-    constexpr void __set_storage(const _Storage& __storage)
+    [[nodiscard]] constexpr _Storage __reallocate(size_type __req_capacity, size_type __gap_pos = npos, size_type __gap_len = 0)
     {
-        if (!__is_inline() && !__storage.__is_inline() && _M_memory == __storage._M_memory)
+        return __reallocate(*static_cast<_Storage*>(this), __req_capacity, __gap_pos, __gap_len);
+    }
+
+    constexpr void __set_storage(_Storage& __dest, const _Storage& __storage)
+    {
+        if (!__dest.__is_inline() && !__storage.__is_inline() && __dest._M_memory == __storage._M_memory)
             return;
 
-        __deallocate();
+        __deallocate(__dest);
 
-        static_cast<_Storage*>(this)->operator=(__storage);
+        __dest.operator=(__storage);
+    }
+
+    constexpr void __set_storage(const _Storage& __storage)
+    {
+        __set_storage(*static_cast<_Storage*>(this), __storage);
+    }
+
+    constexpr void __set_zero_length() noexcept
+    {
+        if (__is_inline())
+        {
+            _M_inline_length = 0;
+        }
+        else
+        {
+            _M_length = 0;
+        }
     }
 
     constexpr basic_string_view<_CharT, _Traits> __sv() const noexcept
@@ -1849,6 +2001,12 @@ private:
         return basic_string_view<_CharT, _Traits>(data(), size());
     }
 
+
+    static constexpr size_type __max_size() noexcept
+    {
+        // Divided by an additional constant factor to prevent overflow when resizing.
+        return numeric_limits<size_type>::max() / (sizeof(_CharT) * 4);
+    }
 
     static constexpr size_type __min(size_type __a, size_type __b) noexcept
     {
