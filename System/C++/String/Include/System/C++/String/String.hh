@@ -781,7 +781,7 @@ public:
     {
         if constexpr (is_base_of_v<forward_iterator_tag, typename iterator_traits<_InputIterator>::iterator_category>)
         {
-            auto __dist = distance(__first, __last);
+            auto __dist = __XVI_STD_NS::distance(__first, __last);
             auto __needed = size() + __dist;
 
             auto __storage = __ensure_space(__needed);
@@ -1047,9 +1047,41 @@ public:
         if (__n > max_size() - size())
             __throw_length_error("length > max_size() in std::basic_string::insert");
 
+        // Insertions of a (sub)range of this string need special handling.
+        bool __self_insert = __pointer_within_this(__s);
+
         auto __storage = __ensure_space_and_create_gap(size() + __n, __pos, __n);
 
-        _Traits::copy(__storage.__data() + __pos, __s, __n);
+        if (!__self_insert || __storage_was_reallocated(__storage))
+        {
+            // The memory that we're copying from is unmodified (and non-overlapping).
+            _Traits::copy(__storage.__data() + __pos, __s, __n);
+        }
+        else
+        {
+            // The pointer we're inserting from has potentially been moved due to the gap creation. There are three
+            // cases: the source is entirely before the gap; the source is entirely after the gap; or the source was
+            // split when we created the gap.
+            auto __offset = __s - begin();
+            if (__offset >= __pos)
+            {
+                // Source is after the gap.
+                _Traits::move(__storage.__data() + __pos, __s + __n, __n);
+            }
+            else if ((__offset + __n) <= __pos)
+            {
+                // Source is before the gap.
+                _Traits::move(__storage.__data() + __pos, __s, __n);
+            }
+            else
+            {
+                // Source straddles the gap.
+                auto __n_before = (__pos - __offset);
+                auto __n_after = __n - __n_before;
+                _Traits::move(__storage.__data() + __pos, __s, __n_before);
+                _Traits::move(__storage.__data() + __pos + __n_before, __s + __n + __n_before, __n_after);
+            }
+        }
 
         __set_storage(__storage);
 
@@ -1080,15 +1112,19 @@ public:
 
     constexpr iterator insert(const_iterator __p, _CharT __c)
     {
+        __validate_iterator(__p);
+
         size_type __offset = __p - begin();
-        insert(__offset, __c);
+        insert(__offset, 1, __c);
         return begin() + __offset;
     }
 
     constexpr iterator insert(const_iterator __p, size_type __n, _CharT __c)
     {
+        __validate_iterator(__p);
+
         if (__n == 0)
-            return __p;
+            return begin() + (__p - begin());
 
         size_type __offset = __p - begin();
         insert(__offset, __n, __c);
@@ -1099,63 +1135,35 @@ public:
         requires __detail::__maybe_iterator<_InputIterator>
     constexpr iterator insert(const_iterator __p, _InputIterator __first, _InputIterator __last)
     {
-        if (__p == cend())
-            return append(__first, __last);
+        __validate_iterator(__p);
 
-        if constexpr (is_base_of_v<forward_iterator_tag, typename iterator_traits<_InputIterator>::iterator_category>)
-        {
-            auto __dist = distance(__first, __last);
-            auto __orig_offset = __p - cbegin();
+        // It is very hard to prove that the iterators won't read from the current value of this string and, as
+        // specified, this method takes a copy of the inputs before inserting so it is not invalid to pass iterators
+        // that do that.
+        //
+        // Making the copy may require additional allocation but correctness is needed.
 
-            if (__dist > max_size() - size())
-                __throw_length_error("length > max_size() in std::basic_string::insert");
-
-            __ensure_space_and_create_gap(size() + __dist, __p, __dist);
-
-            for (auto __offset = __orig_offset; __first != __last; ++__first, ++__offset)
-                _Traits::assign(data() + __offset, static_cast<_CharT>(*__first));
-
-            return begin() + __orig_offset;
-        }
-        else
-        {
-            auto __orig_offset = __p - cbegin();
-
-            for (auto __offset = __orig_offset; __first != __last; ++__first, ++__offset)
-                insert(cbegin() + __offset, static_cast<_CharT>(*__first));
-
-            return begin() + __orig_offset;
-        }
+        auto __orig_offset = __p - cbegin();
+        insert(__orig_offset, basic_string(__first, __last, get_allocator()));
+        return begin() + __orig_offset;
     }
 
     template <__detail::__container_compatible_range<_CharT> _R>
     constexpr iterator insert_range(const_iterator __p, _R&& __r)
     {
-        if (__p == cend())
-            return append_range(__XVI_STD_NS::forward<_R>(__r));
+        __validate_iterator(__p);
 
-        if constexpr (ranges::sized_range<_R>)
-        {
-            auto __dist = ranges::distance(__r);
-            auto __offset = __p - cbegin();
+        // It is very hard to prove that the range won't read from the current value of this string and, as specified,
+        // this method takes a copy of the inputs before inserting so it is not invalid to pass a range that does that.
+        //
+        // Making the copy may require additional allocation but correctness is needed.
 
-            if (__dist > max_size() - size())
-                __throw_length_error("length > max_size() in std::basic_string::insert_range");
-
-            __ensure_space_and_create_gap(size() + __dist, __p, __dist);
-
-            for (auto __first = ranges::begin(__r), __last = ranges::end(__r); __first != __last; ++__first, ++__offset)
-                _Traits::assign(data() + __offset, static_cast<_CharT>(*__first));
-        }
-        else
-        {
-            auto __offset = __p - cbegin();
-            for (auto __first = ranges::begin(__r), __last = ranges::end(__r); __first != __last; ++__first, ++__offset)
-                insert(cbegin() + __offset, static_cast<_CharT>(*__first));
-        }
+        auto __orig_offset = __p - cbegin();
+        insert(__orig_offset, basic_string(from_range, __XVI_STD_NS::forward<_R>(__r), get_allocator()));
+        return begin() + __orig_offset;
     }
 
-    constexpr iterator insert(const_iterator __p, initializer_list<_CharT> __il)
+    constexpr iterator insert(const_iterator __p, std::initializer_list<_CharT> __il)
     {
         return insert(__p, __il.begin(), __il.end());
     }
@@ -1166,7 +1174,7 @@ public:
             __throw_out_of_range("invalid offset for std::basic_string::erase");
 
         auto __xlen = __min(__n, size() - __pos);
-        _Traits::move(data() + __pos, data() + __pos + __xlen, __xlen);
+        _Traits::move(data() + __pos, data() + __pos + __xlen, size() - __pos - __xlen);
 
         if (__is_inline())
         {
@@ -1185,20 +1193,25 @@ public:
 
     constexpr iterator erase(const_iterator __p)
     {
-        auto __offset = __p - begin();
-        erase(__offset, 1);
-        return __p;
+        __validate_dereferenceable_iterator(__p);
+    
+        return erase(__p, __p + 1);
     }
 
     constexpr iterator erase(const_iterator __first, const_iterator __last)
     {
+        __validate_iterator_pair(__first, __last);
+
         auto __offset = __first - begin();
         erase(__offset, __last - __first);
-        return __first;
+        return __offset < size() ? (begin() + __offset) : end();
     }
 
     constexpr void pop_back()
     {
+        if (empty())
+            __precondition_failed("pop from empty string");
+
         erase(end() - 1);
     }
 
@@ -1848,7 +1861,8 @@ private:
             return __reallocate(__prev, __n, __gap_pos, __gap_len);
         }
 
-        _Traits::move(__prev.__data() + __gap_pos + __gap_len, __prev.__data() + __gap_pos, __gap_len);
+        auto __len_to_move = __n - (__gap_pos + __gap_len);
+        _Traits::move(__prev.__data() + __gap_pos + __gap_len, __prev.__data() + __gap_pos, __len_to_move);
 
         if (__prev.__is_inline())
         {
@@ -1999,6 +2013,37 @@ private:
     constexpr basic_string_view<_CharT, _Traits> __sv() const noexcept
     {
         return basic_string_view<_CharT, _Traits>(data(), size());
+    }
+
+    constexpr bool __storage_was_reallocated(const _Storage& __storage) const noexcept
+    {
+        return __storage.__data() != __data();
+    }
+
+    constexpr bool __pointer_within_this(const char* __p) const noexcept
+    {
+        return (__p >= begin() && __p <= end());
+    }
+
+    constexpr void __validate_iterator(const_iterator __p) const
+    {
+        if (__p < begin() || __p > end())
+            __precondition_failed("invalid string iterator");
+    }
+
+    constexpr void __validate_dereferenceable_iterator(const_iterator __p) const
+    {
+        if (__p < begin() || __p >= end())
+            __precondition_failed("invalid dereferenceable string iterator");
+    }
+
+    constexpr void __validate_iterator_pair(const_iterator __first, const_iterator __last) const
+    {
+        __validate_iterator(__first);
+        __validate_iterator(__last);
+
+        if (__first > __last)
+            __precondition_failed("invalid string iterator pair");
     }
 
 

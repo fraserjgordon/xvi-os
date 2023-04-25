@@ -5,6 +5,10 @@
 // exceptions.
 
 
+#if defined (__GNUC__) && !defined(__clang__)
+#  pragma GCC diagnostic ignored "-Wmissing-declarations"
+#endif
+
 namespace __XVI_STD_EXCEPTION_NS_DECL
 {
 

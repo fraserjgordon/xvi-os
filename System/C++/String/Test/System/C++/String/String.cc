@@ -1263,7 +1263,7 @@ TEST(String, Insert)
     const string c(", middle");
     const string d("now we're at the ");
     const string e("A story: ");
-    const string f(". The End!");
+    const string f(" The End!");
 
     string s;
 
@@ -1277,22 +1277,526 @@ TEST(String, Insert)
 
     s.insert(9, c);
     
-    extern int printf(const char*, ...);
-    printf("\n\n%s\n\n", s.c_str());
-
     EXPECT_EQ(s, "Beginning, middle and end."sv);
 
     s.insert(22, d);
 
-    EXPECT_EQ(s, "Beginning, middle and now we're at the end"sv);
+    EXPECT_EQ(s, "Beginning, middle and now we're at the end."sv);
 
     s.insert(0, e);
 
-    EXPECT_EQ(s, "A story: Beginning, middle and now we're at the end"sv);
+    EXPECT_EQ(s, "A story: Beginning, middle and now we're at the end."sv);
 
     s.insert(52, f);
 
     EXPECT_EQ(s, "A story: Beginning, middle and now we're at the end. The End!"sv);
+
+    EXPECT_THROW(out_of_range, s.insert(9999, a));
+}
+
+
+TEST(String, InsertSubstring)
+{
+    const string a("Hello, World!");
+    const string b("This is quite a long string that we'll use to build up a story.");
+
+    string s;
+
+    s.insert(0, a, 0, 5);
+    s.insert(5, a, 12);
+
+    EXPECT_EQ(s, "Hello!"sv);
+
+    s.insert(6, b, 62, 1);
+
+    EXPECT_EQ(s, "Hello!."sv);
+
+    s.insert(6, b, 21, 6);
+
+    EXPECT_EQ(s, "Hello!string."sv);
+
+    s.insert(6, a, 6, 1);
+
+    EXPECT_EQ(s, "Hello! string."sv);
+
+    s.insert(7, b, 0, 8);
+
+    EXPECT_EQ(s, "Hello! This is string."sv);
+
+    s.insert(14, b, 13, 2);
+
+    EXPECT_EQ(s, "Hello! This is a string."sv);
+
+    s.insert(16, b, 15, 5);
+
+    EXPECT_EQ(s, "Hello! This is a long string."sv);
+
+    s.insert(16, b, 7, 6);
+
+    EXPECT_EQ(s, "Hello! This is a quite long string."sv);
+
+    s.insert(0, a, 7, 5);
+
+    EXPECT_EQ(s, "WorldHello! This is a quite long string."sv);
+
+    s.insert(5, a, 5, 2);
+
+    EXPECT_EQ(s, "World, Hello! This is a quite long string."sv);
+
+    s.insert(0, s, 7, 5);
+
+    EXPECT_EQ(s, "HelloWorld, Hello! This is a quite long string."sv);
+
+    s.insert(5, s, 10, 2);
+
+    EXPECT_EQ(s, "Hello, World, Hello! This is a quite long string."sv);
+}
+
+TEST(String, InsertStringView)
+{
+    const string_view a("Beginning");
+    const string_view b(" and end.");
+    const string_view c(", middle");
+    const string_view d("now we're at the ");
+    const string_view e("A story: ");
+    const string_view f(" The End!");
+
+    string s;
+
+    s.insert(0, a);
+
+    EXPECT_EQ(s, "Beginning"sv);
+
+    s.insert(9, b);
+
+    EXPECT_EQ(s, "Beginning and end."sv);
+
+    s.insert(9, c);
+    
+    EXPECT_EQ(s, "Beginning, middle and end."sv);
+
+    s.insert(22, d);
+
+    EXPECT_EQ(s, "Beginning, middle and now we're at the end."sv);
+
+    s.insert(0, e);
+
+    EXPECT_EQ(s, "A story: Beginning, middle and now we're at the end."sv);
+
+    s.insert(52, f);
+
+    EXPECT_EQ(s, "A story: Beginning, middle and now we're at the end. The End!"sv);
+
+    EXPECT_THROW(out_of_range, s.insert(9999, a));
+}
+
+TEST(String, InsertStringViewSubstring)
+{
+    const string_view a("Hello, World!");
+    const string_view b("This is quite a long string that we'll use to build up a story.");
+
+    string s;
+
+    s.insert(0, a, 0, 5);
+    s.insert(5, a, 12);
+
+    EXPECT_EQ(s, "Hello!"sv);
+
+    s.insert(6, b, 62, 1);
+
+    EXPECT_EQ(s, "Hello!."sv);
+
+    s.insert(6, b, 21, 6);
+
+    EXPECT_EQ(s, "Hello!string."sv);
+
+    s.insert(6, a, 6, 1);
+
+    EXPECT_EQ(s, "Hello! string."sv);
+
+    s.insert(7, b, 0, 8);
+
+    EXPECT_EQ(s, "Hello! This is string."sv);
+
+    s.insert(14, b, 13, 2);
+
+    EXPECT_EQ(s, "Hello! This is a string."sv);
+
+    s.insert(16, b, 15, 5);
+
+    EXPECT_EQ(s, "Hello! This is a long string."sv);
+
+    s.insert(16, b, 7, 6);
+
+    EXPECT_EQ(s, "Hello! This is a quite long string."sv);
+
+    s.insert(0, a, 7, 5);
+
+    EXPECT_EQ(s, "WorldHello! This is a quite long string."sv);
+
+    s.insert(5, a, 5, 2);
+
+    EXPECT_EQ(s, "World, Hello! This is a quite long string."sv);
+
+    s.insert(0, string_view(s), 7, 5);
+
+    EXPECT_EQ(s, "HelloWorld, Hello! This is a quite long string."sv);
+
+    s.insert(5, string_view(s), 10, 2);
+
+    EXPECT_EQ(s, "Hello, World, Hello! This is a quite long string."sv);
+}
+
+TEST(String, InsertCString)
+{
+    const char* const a = "Beginning";
+    const char* const b = " and end.";
+    const char* const c = ", middle";
+    const char* const d = "now we're at the ";
+    const char* const e = "A story: ";
+    const char* const f = " The End!";
+
+    string s;
+
+    s.insert(0, a);
+
+    EXPECT_EQ(s, "Beginning"sv);
+
+    s.insert(9, b);
+
+    EXPECT_EQ(s, "Beginning and end."sv);
+
+    s.insert(9, c);
+    
+    EXPECT_EQ(s, "Beginning, middle and end."sv);
+
+    s.insert(22, d);
+
+    EXPECT_EQ(s, "Beginning, middle and now we're at the end."sv);
+
+    s.insert(0, e);
+
+    EXPECT_EQ(s, "A story: Beginning, middle and now we're at the end."sv);
+
+    s.insert(52, f);
+
+    EXPECT_EQ(s, "A story: Beginning, middle and now we're at the end. The End!"sv);
+
+    EXPECT_THROW(out_of_range, s.insert(9999, a));
+}
+
+TEST(String, InsertPointerAndLength)
+{
+    const char* const a = "Hello, World!";
+    const char* const b = "This is quite a long string that we'll use to build up a story.";
+
+    string s;
+
+    s.insert(0, a, 5);
+    s.insert(5, a + 12, 1);
+
+    EXPECT_EQ(s, "Hello!"sv);
+
+    s.insert(6, b + 62, 1);
+
+    EXPECT_EQ(s, "Hello!."sv);
+
+    s.insert(6, b + 21, 6);
+
+    EXPECT_EQ(s, "Hello!string."sv);
+
+    s.insert(6, a + 6, 1);
+
+    EXPECT_EQ(s, "Hello! string."sv);
+
+    s.insert(7, b, 8);
+
+    EXPECT_EQ(s, "Hello! This is string."sv);
+
+    s.insert(14, b + 13, 2);
+
+    EXPECT_EQ(s, "Hello! This is a string."sv);
+
+    s.insert(16, b + 15, 5);
+
+    EXPECT_EQ(s, "Hello! This is a long string."sv);
+
+    s.insert(16, b + 7, 6);
+
+    EXPECT_EQ(s, "Hello! This is a quite long string."sv);
+
+    s.insert(0, a + 7, 5);
+
+    EXPECT_EQ(s, "WorldHello! This is a quite long string."sv);
+
+    s.insert(5, a + 5, 2);
+
+    EXPECT_EQ(s, "World, Hello! This is a quite long string."sv);
+
+    s.insert(0, s.c_str() + 7, 5);
+
+    EXPECT_EQ(s, "HelloWorld, Hello! This is a quite long string."sv);
+
+    s.insert(5, s.c_str() + 10, 2);
+
+    EXPECT_EQ(s, "Hello, World, Hello! This is a quite long string."sv);
+}
+
+TEST(String, InsertRepeatedChar)
+{
+    string s("Hello, World!");
+
+    s.insert(12, 5, '!');
+
+    EXPECT_EQ(s, "Hello, World!!!!!!"sv);
+
+    s.insert(2, 7, 'l');
+
+    EXPECT_EQ(s, "Helllllllllo, World!!!!!!"sv);
+
+    s.insert(16, 4, 'r');
+
+    EXPECT_EQ(s, "Helllllllllo, Worrrrrld!!!!!!"sv);
+}
+
+TEST(String, InsertCharAt)
+{
+    string s("Hello World");
+
+    auto iter = s.insert(s.end(), '!');
+
+    EXPECT_EQ(iter, s.begin() + 11);
+    EXPECT_EQ(s, "Hello World!"sv);
+
+    iter = s.insert(s.begin() + 5, ',');
+
+    EXPECT_EQ(iter, s.begin() + 5);
+    EXPECT_EQ(s, "Hello, World!"sv);
+
+    EXPECT_THROW(logic_error, s.insert(s.end() + 1, 'x'));
+}
+
+TEST(String, InsertRepeatedCharAt)
+{
+    string s("Hello, World!");
+
+    auto iter = s.insert(s.end(), 5, '!');
+
+    EXPECT_EQ(iter, s.begin() + 13);
+    EXPECT_EQ(s, "Hello, World!!!!!!"sv);
+
+    iter = s.insert(s.begin() + 2, 7, 'l');
+
+    EXPECT_EQ(iter, s.begin() + 2);
+    EXPECT_EQ(s, "Helllllllllo, World!!!!!!"sv);
+
+    iter = s.insert(s.begin() + 16, 4, 'r');
+
+    EXPECT_EQ(iter, s.begin() + 16);
+    EXPECT_EQ(s, "Helllllllllo, Worrrrrld!!!!!!"sv);
+
+    EXPECT_THROW(logic_error, s.insert(s.end() + 1, 3, 'x'));
+}
+
+TEST(String, InsertIteratorPairAt)
+{
+    const char* const a = "Hello, World!";
+    const char* const b = "This is quite a long string that we'll use to build up a story.";
+
+    string s;
+
+    s.insert(s.begin(), a, a + 5);
+    s.insert(s.end(), a + 12, a + 13);
+
+    EXPECT_EQ(s, "Hello!"sv);
+
+    s.insert(s.begin() + 6, b + 62, b + 63);
+
+    EXPECT_EQ(s, "Hello!."sv);
+
+    s.insert(s.begin() + 6, b + 21, b + 27);
+
+    EXPECT_EQ(s, "Hello!string."sv);
+
+    s.insert(s.begin() + 6, a + 6, a + 7);
+
+    EXPECT_EQ(s, "Hello! string."sv);
+
+    s.insert(s.begin() + 7, b, b + 8);
+
+    EXPECT_EQ(s, "Hello! This is string."sv);
+
+    s.insert(s.begin() + 14, b + 13, b + 15);
+
+    EXPECT_EQ(s, "Hello! This is a string."sv);
+
+    s.insert(s.begin() + 16, b + 15, b + 20);
+
+    EXPECT_EQ(s, "Hello! This is a long string."sv);
+
+    s.insert(s.begin() + 16, b + 7, b + 13);
+
+    EXPECT_EQ(s, "Hello! This is a quite long string."sv);
+
+    s.insert(s.begin(), a + 7, a + 12);
+
+    EXPECT_EQ(s, "WorldHello! This is a quite long string."sv);
+
+    s.insert(s.begin() + 5, a + 5, a + 7);
+
+    EXPECT_EQ(s, "World, Hello! This is a quite long string."sv);
+
+    s.insert(s.begin(), s.c_str() + 7, s.c_str() + 12);
+
+    EXPECT_EQ(s, "HelloWorld, Hello! This is a quite long string."sv);
+
+    s.insert(s.begin() + 5, s.c_str() + 10, s.c_str() + 12);
+
+    EXPECT_EQ(s, "Hello, World, Hello! This is a quite long string."sv);
+
+    EXPECT_THROW(logic_error, s.insert(s.end() + 1, a, a));
+}
+
+TEST(String, InsertInitializerListAt)
+{
+    auto il = { 'H', 'e', 'l', 'l', 'o' };
+
+    string s(", World!");
+
+    auto iter = s.insert(s.begin(), il);
+
+    EXPECT_EQ(iter, s.begin());
+    EXPECT_EQ(s, "Hello, World!"sv);
+
+    EXPECT_THROW(logic_error, s.insert(s.end() + 1, il));
+}
+
+TEST(String, InsertRange)
+{
+    const std::array<char, 10> a = {"Beginning"};
+    const std::array<char, 10> b = {" and end."};
+    const std::array<char, 9>  c = {", middle"};
+    const std::array<char, 18> d = {"now we're at the "};
+    const std::array<char, 10> e = {"A story: "};
+    const std::array<char, 10> f = {" The End!"};
+
+    string s;
+
+    s.insert_range(s.begin(), a);
+
+    EXPECT_EQ(s, "Beginning\0"sv);
+
+    s.insert_range(s.end(), b);
+
+    EXPECT_EQ(s, "Beginning\0 and end.\0"sv);
+
+    s.insert_range(s.begin() + 10, c);
+    
+    EXPECT_EQ(s, "Beginning\0, middle\0 and end.\0"sv);
+
+    s.insert_range(s.begin() + 24, d);
+
+    EXPECT_EQ(s, "Beginning\0, middle\0 and now we're at the \0end.\0"sv);
+
+    s.insert_range(s.begin(), e);
+
+    EXPECT_EQ(s, "A story: \0Beginning\0, middle\0 and now we're at the \0end.\0"sv);
+
+    s.insert_range(s.begin() + 57, f);
+
+    EXPECT_EQ(s, "A story: \0Beginning\0, middle\0 and now we're at the \0end.\0 The End!\0"sv);
+
+    EXPECT_THROW(logic_error, s.insert_range(s.begin() + 9999, a));
+}
+
+TEST(String, Erase)
+{
+    string s("Hello, how are you today? My world is going well!");
+
+    s.erase(34, 14);
+
+    EXPECT_EQ(s, "Hello, how are you today? My world!"sv);
+
+    s.erase(7, 22);
+
+    EXPECT_EQ(s, "Hello, world!"sv);
+
+    s.erase(5);
+
+    EXPECT_EQ(s, "Hello"sv);
+
+    s.erase();
+
+    EXPECT(s.empty());
+}
+
+TEST(String, EraseAt)
+{
+    string s("Hello, World!");
+
+    s.erase(s.begin() + 5);
+
+    EXPECT_EQ(s, "Hello World!"sv);
+
+    s.erase(s.end() - 1);
+
+    EXPECT_EQ(s, "Hello World"sv);
+
+    EXPECT_THROW(logic_error, s.erase(s.end()));
+}
+
+TEST(String, EraseIteratorRange)
+{
+    string s("Hello, how are you today? My world is going well!");
+
+    s.erase(s.begin() + 34, s.begin() + 48);
+
+    EXPECT_EQ(s, "Hello, how are you today? My world!"sv);
+
+    s.erase(s.begin() + 7, s.begin() + 29);
+
+    EXPECT_EQ(s, "Hello, world!"sv);
+
+    s.erase(s.begin() + 5, s.end());
+
+    EXPECT_EQ(s, "Hello"sv);
+
+    s.erase(s.begin(), s.begin());
+
+    EXPECT_EQ(s, "Hello"sv);
+
+    s.erase(s.begin() + 2, s.begin() + 2);
+
+    EXPECT_EQ(s, "Hello"sv);
+
+    s.erase(s.end(), s.end());
+
+    EXPECT_EQ(s, "Hello"sv);
+
+    EXPECT_THROW(logic_error, s.erase(s.end(), s.begin()));
+
+    s.erase(s.begin(), s.end());
+
+    EXPECT(s.empty());
+}
+
+TEST(String, PopBack)
+{
+    string s("123");
+
+    s.pop_back();
+
+    EXPECT_EQ(s, "12"sv);
+
+    s.pop_back();
+
+    EXPECT_EQ(s, "1"sv);
+
+    s.pop_back();
+
+    EXPECT(s.empty());
+
+    EXPECT_THROW(logic_error, s.pop_back());
 }
 
 /*TEST(StringView, Modifiers)
