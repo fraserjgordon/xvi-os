@@ -1254,22 +1254,32 @@ public:
 
         size_type __req_size = size() - __xlen + __n2;
 
-        if (capacity() < __req_size)
-        {
-            // Construct in a temporary string.
-            basic_string __str;
-            __str.reserve(__req_size);
-            __str.append(data(), __pos);
-            __str.append(__s, __n2);
-            __str.append(data() + __pos + __xlen, size() - __pos - __xlen);
-            swap(__str);
-        }
-        else
-        {
-            // Shift the data around to make a hole and copy the replacement into the hole.
-            _Traits::move(data() + __pos + __n2, data() + __pos + __xlen, size() - __pos - __xlen);
-            _Traits::copy(data() + __pos, __s, __n2);
-        }
+        // Reallocate if needed but don't copy contents - we'll handle that ourselves.
+        auto __storage = __ensure_space(__req_size, false);
+        bool __reallocated = __storage.__data() != data();
+        bool __self_copy = !__reallocated && __pointer_within_this(__s);
+
+        // If we're going to do a self-copy where the replacement size is unequal to the replaced sized, do it the
+        // slow-but-safe way (requiring extra allocations).
+        if (__self_copy && __n2 != __n1)
+            return replace(__pos, __n1, basic_string(__s, __n2, get_allocator()));
+
+        // Copy retained prefix.
+        if (__reallocated)
+            _Traits::copy(__storage.__data(), data(), __pos);
+
+        // Copy/move retained suffix. This comes before the replacement is written otherwise the replacement will
+        // overwrite part of the suffix.
+        if (__reallocated || __n1 != __n2)
+            _Traits::move(__storage.__data() + __pos + __n2, data() + __pos + __xlen, size() - __pos - __xlen);
+
+        // Copy replacement range, which may be an overlapping copy.
+        _Traits::move(__storage.__data() + __pos, __s, __n2);
+
+        __set_storage(__storage);
+
+        // Ensure termination.
+        __truncate_in_place(__req_size);
 
         return *this;
     }
@@ -1343,91 +1353,27 @@ public:
         requires __detail::__maybe_iterator<_InputIterator>
     constexpr basic_string& replace(const_iterator __i1, const_iterator __i2, _InputIterator __j1, _InputIterator __j2)
     {
-        if constexpr (is_base_of_v<forward_iterator_tag, typename iterator_traits<_InputIterator>::iterator_category>)
-        {
-            auto __dist = distance(__j1, __j2);
-            auto __replaced_dist = __i2 - __i1;
+        __validate_iterator_pair(__i1, __i2);        
 
-            // Will this fit in the current allocation?
-            if (capacity() <= (size() - __replaced_dist + __dist))
-            {
-                // Make a hole for the replacement data.
-                auto __hole_source_offset = __i2 - cbegin();
-                auto __hole_start_offset = __i1 - cbegin();
-                auto __hole_end_offset = __hole_start_offset + __dist;
-                _Traits::move(data() + __hole_end_offset, data() + __hole_source_offset, size() - __hole_source_offset);
+        // It is very hard to prove that the range won't read from the current value of this string and, as specified,
+        // this method takes a copy of the inputs before replacing so it is not invalid to pass a range that does that.
+        //
+        // Making the copy may require additional allocation but correctness is needed.
 
-                for (auto __offset = __hole_start_offset; __j1 != __j2; ++__j1, ++__offset)
-                    _Traits::assign(data() + __offset, static_cast<_CharT>(*__j1));
-            }
-            else
-            {
-                // Allocation will be required; construct via a temporary.
-                basic_string __temp;
-                __temp.reserve(size() + __dist - __replaced_dist);
-                __temp.append(cbegin(), __i1);
-                __temp.append(__j1, __j2);
-                __temp.append(__i2, cend());
-                swap(__temp);
-            }
-        }
-        else
-        {
-            // Unknown length. Construct via a temporary copy.
-            basic_string __copy;
-            __copy.append(cbegin(), __i1);
-            __copy.append(__j1, __j2);
-            __copy.append(__i2, cend());
-            swap(__copy);
-        }
-
-        return *this;
+        return replace(__i1, __i2, basic_string(__j1, __j2, get_allocator()));
     }
 
     template <__detail::__container_compatible_range<_CharT> _R>
     constexpr basic_string& replace_with_range(const_iterator __i1, const_iterator __i2, _R&& __rg)
     {
-        if constexpr (ranges::sized_range<_R>)
-        {
-            auto __dist = ranges::distance(__XVI_STD_NS::forward<_R>(__rg));
-            auto __replaced_dist = __i2 - __i1;
+        __validate_iterator_pair(__i1, __i2);
 
-            // Will this fit in the current allocation?
-            if (capacity() <= (size() - __replaced_dist + __dist))
-            {
-                // Make a hole for the replacement data.
-                auto __hole_source_offset = __i2 - cbegin();
-                auto __hole_start_offset = __i1 - cbegin();
-                auto __hole_end_offset = __hole_start_offset + __dist;
-                _Traits::move(data() + __hole_end_offset, data() + __hole_source_offset, size() - __hole_source_offset);
+        // It is very hard to prove that the range won't read from the current value of this string and, as specified,
+        // this method takes a copy of the inputs before replacing so it is not invalid to pass a range that does that.
+        //
+        // Making the copy may require additional allocation but correctness is needed.
 
-                auto __j1 = ranges::begin(__XVI_STD_NS::forward<_R>(__rg));
-                auto __j2 = ranges::end(__XVI_STD_NS::forward<_R>(__rg));
-                for (auto __offset = __hole_start_offset; __j1 != __j2; ++__j1, ++__offset)
-                    _Traits::assign(data() + __offset, static_cast<_CharT>(*__j1));
-            }
-            else
-            {
-                // Allocation will be required; construct via a temporary.
-                basic_string __temp;
-                __temp.reserve(size() + __dist - __replaced_dist);
-                __temp.append(cbegin(), __i1);
-                __temp.append_range(__XVI_STD_NS::forward<_R>(__rg));
-                __temp.append(__i2, cend());
-                swap(__temp);
-            }
-        }
-        else
-        {
-            // Unknown length. Construct via a temporary copy.
-            basic_string __copy;
-            __copy.append(cbegin(), __i1);
-            __copy.append_range(__XVI_STD_NS::forward<_R>(__rg));
-            __copy.append(__i2, cend());
-            swap(__copy);
-        }
-
-        return *this;
+        return replace(__i1, __i2, basic_string(from_range, __XVI_STD_NS::forward<_R>(__rg), get_allocator()));
     }
 
     constexpr basic_string& replace(const_iterator __i1, const_iterator __i2, initializer_list<_CharT> __il)
@@ -1507,7 +1453,7 @@ public:
     template <class _T>
         requires is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
             && (!is_convertible_v<const _T&, const _CharT*>)
-    constexpr size_type rfind(const _T& __t, size_type __pos = 0) const
+    constexpr size_type rfind(const _T& __t, size_type __pos = npos) const
         noexcept(is_nothrow_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>)
     {
         basic_string_view<_CharT, _Traits> __st = __t;
@@ -1567,7 +1513,7 @@ public:
     template <class _T>
         requires is_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>
             && (!is_convertible_v<const _T&, const _CharT*>)
-    constexpr size_type find_last_of(const _T& __t, size_type __pos = 0) const
+    constexpr size_type find_last_of(const _T& __t, size_type __pos = npos) const
         noexcept(is_nothrow_convertible_v<const _T&, basic_string_view<_CharT, _Traits>>)
     {
         basic_string_view<_CharT, _Traits> __st = __t;
@@ -1841,8 +1787,7 @@ private:
         if (__target > __n)
             __n = __target;
 
-        //! @todo: don't preserve contents when not needed.
-        return __reallocate(__prev, __n);
+        return __reallocate(__prev, __n, npos, 0, __preserve);
     }
 
     [[nodiscard]] constexpr _Storage __ensure_space(size_type __n, bool __preserve = true)
@@ -1884,7 +1829,7 @@ private:
         return __ensure_space_and_create_gap(*static_cast<_Storage*>(this), __n, __gap_pos, __gap_len);
     }
 
-    [[nodiscard]] constexpr _Storage __reallocate(_Storage& __prev, size_type __req_capacity, size_type __gap_pos = npos, size_type __gap_len = 0)
+    [[nodiscard]] constexpr _Storage __reallocate(_Storage& __prev, size_type __req_capacity, size_type __gap_pos = npos, size_type __gap_len = 0, bool __preserve = true)
     {
         // Check for overflow.
         if (__req_capacity > __max_size())
@@ -1912,12 +1857,12 @@ private:
             if (__prev.__is_inline())
             {
                 // Create the gap and update the length.
-                if (__gap_len > 0 && !__gap_at_end)
+                if (__preserve && __gap_len > 0 && !__gap_at_end)
                     _Traits::move(&__prev._M_inline[__gap_pos + __gap_len], &__prev._M_inline[__gap_pos], __gap_len);
                 __prev._M_inline_length += __gap_len;
 
                 // Ensure the string stays terminated.
-                if (__prev._M_inline_length < _MaxInline)
+                if (__preserve && __prev._M_inline_length < _MaxInline)
                     __prev._M_inline[__prev._M_inline_length] = _CharT(0);
 
                 // Nothing more to do for inline strings.
@@ -1932,9 +1877,12 @@ private:
             _Storage __storage;
             __storage.__mark_inline();
             __storage._M_inline_length = __current_size;
-            _Traits::copy(&__storage._M_inline[0], __current, __current_size);
+
+            if (__preserve)
+                _Traits::copy(&__storage._M_inline[0], __current, __current_size);
+
             if (__current_size < _MaxInline)
-                __storage._M_inline[__current_size] = _CharT(0);
+                    __storage._M_inline[__current_size] = _CharT(0);
 
             return __storage;
         }
@@ -1953,10 +1901,11 @@ private:
         try
         {
             // Copy all data up to the start of the gap.
-            _Traits::copy(__p, __current, __gap_pos);
+            if (__preserve)
+                _Traits::copy(__p, __current, __gap_pos);
 
             // Copy all data after the gap.
-            if (!__gap_at_end)
+            if (__preserve && !__gap_at_end)
                 _Traits::copy(__p + __gap_pos + __gap_len, __current + __gap_pos, __current_size - __gap_pos);
 
             // Set the NUL terminator.
@@ -2020,7 +1969,7 @@ private:
         return __storage.__data() != __data();
     }
 
-    constexpr bool __pointer_within_this(const char* __p) const noexcept
+    constexpr bool __pointer_within_this(const _CharT* __p) const noexcept
     {
         return (__p >= begin() && __p <= end());
     }
@@ -2323,6 +2272,14 @@ constexpr wstring operator""s(const wchar_t* __str, size_t __len)
 
 } // namespace string_literals
 } // namespace literals
+
+
+extern template class basic_string<char>;
+extern template class basic_string<char8_t>;
+extern template class basic_string<char16_t>;
+extern template class basic_string<char32_t>;
+extern template class basic_string<wchar_t>;
+
 
 } // namespace __XVI_STD_STRING_NS_DECL
 

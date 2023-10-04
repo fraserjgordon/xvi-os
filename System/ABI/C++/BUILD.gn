@@ -76,6 +76,11 @@ library("EhPersonality")
 
     use_stdlib = false
 
+    deps +=
+    [
+        "//C++/Exception:Exception_headers",
+    ]
+
     public_deps =
     [
         ":Unwind",
@@ -116,6 +121,7 @@ library("Exception")
 
         "//ABI/TLS",
         "//C++/Atomic",
+        "//C++/Exception:Exception_headers",
     ]
 
     sources =

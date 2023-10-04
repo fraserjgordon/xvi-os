@@ -44,3 +44,27 @@ if (host_build)
         "//build/config:hosted"
     ]
 }
+
+foreach(ts, test_sanitizers)
+{
+    if (ts == "address")
+    {
+        default_configs += ["//build/config:sanitize_address"]
+    }
+    else if (ts == "memory")
+    {
+        default_configs += ["//build/config:sanitize_memory"]
+    }
+    else if (ts == "leak")
+    {
+        default_configs += ["//build/config:sanitize_leak"]
+    }
+    else if (ts == "undefined")
+    {
+        default_configs += ["//build/config:sanitize_undefined"]
+    }
+    else
+    {
+        assert(false, "unknown sanitizer \"{ts}\"")
+    }
+}

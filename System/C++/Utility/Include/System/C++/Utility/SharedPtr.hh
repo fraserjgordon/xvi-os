@@ -36,8 +36,7 @@ public:
 
     constexpr bad_weak_ptr() noexcept = default;
 
-    const char* what() const noexcept override
-        { return "bad weak pointer"; }
+    const char* what() const noexcept override;
 };
 
 

@@ -1799,25 +1799,49 @@ TEST(String, PopBack)
     EXPECT_THROW(logic_error, s.pop_back());
 }
 
-/*TEST(StringView, Modifiers)
+TEST(String, Replace)
 {
-    const char* const str = "Hello, World!";
+    const string a("T");
+    const string b("string");
+    const string c("lots");
+    const string d("errors");
+    const string e;
+    const string f("replacements are needed to correct");
 
-    string_view sv(str);
+    string s("this is a Strngki with ltos of erors in it.. Many rplaecements r kneaded two corrext it.");
 
-    sv.remove_suffix(1);
+    s.replace(0, 1, a);
 
-    EXPECT_EQ(sv.data(), str);
-    EXPECT_EQ(sv.size(), 12);
+    EXPECT_EQ(s, "This is a Strngki with ltos of erors in it.. Many rplaecements r kneaded two corrext it."sv);
 
-    sv.remove_prefix(7);
+    s.replace(10, 7, b);
 
-    EXPECT_EQ(sv.data(), str + 7);
-    EXPECT_EQ(sv.size(), 5);
-}*/
+    EXPECT_EQ(s, "This is a string with ltos of erors in it.. Many rplaecements r kneaded two corrext it."sv);
+
+    s.replace(22, 4, c);
+
+    EXPECT_EQ(s, "This is a string with lots of erors in it.. Many rplaecements r kneaded two corrext it."sv);
+
+    s.replace(30, 5, d);
+
+    EXPECT_EQ(s, "This is a string with lots of errors in it.. Many rplaecements r kneaded two corrext it."sv);
+
+    s.replace(43, 1, e);
+
+    EXPECT_EQ(s, "This is a string with lots of errors in it. Many rplaecements r kneaded two corrext it."sv);
+
+    s.replace(49, 34, f);
+
+    EXPECT_EQ(s, "This is a string with lots of errors in it. Many replacements are needed to correct it."sv);
+
+    //! @todo exception tests
+    //! @todo self-copy tests
+}
 
 TEST(String, Swap)
 {
+    //! @bug Broken.
+
     const char* const str = "Hello, World!";
 
     string a;
@@ -1856,11 +1880,12 @@ TEST(String, Substr)
     auto hello = s.substr(0, 5);
     auto world = s.substr(7);
 
-    EXPECT_EQ(hello.data(), str);
     EXPECT_EQ(hello.size(), 5);
+    EXPECT_EQ(std::memcmp(hello.data(), str, 5), 0);
 
-    EXPECT_EQ(world.data(), str + 7);
+    // +1 in the memcmp because we're comparing the NUL too.
     EXPECT_EQ(world.size(), 6);
+    EXPECT_EQ(std::memcmp(world.data(), str + 7, 7), 0);
 }
 
 TEST(String, Compare)

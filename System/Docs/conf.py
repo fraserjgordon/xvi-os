@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'XVI'
-copyright = '2018-2020, Fraser Gordon'
+copyright = '2018-2023, Fraser Gordon'
 author = 'Fraser Gordon'
 language = 'en'
 
@@ -80,6 +80,7 @@ latex_elements = {
 
 # Doxygen project
 breathe_default_project = 'XVI'
+breathe_projects = {'XVI': '../_docs/doxygen/xml'}
 
 
 # -- Auto section label options ----------------------------------------------

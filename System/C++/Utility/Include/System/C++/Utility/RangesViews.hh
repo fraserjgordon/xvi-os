@@ -2,6 +2,8 @@
 #define __SYSTEM_CXX_UTILITY_RANGESVIEWS_H
 
 
+#include <System/C++/Core/TupleTraits.hh>
+
 #include <System/C++/Utility/Private/Config.hh>
 #include <System/C++/Utility/Algorithm.hh>
 #include <System/C++/Utility/Ranges.hh>
@@ -4512,8 +4514,13 @@ inline constexpr __detail::__range_adaptor_closure chunk_by = []<class _E, class
 namespace views = ranges::views;
 
 
-template <class _T> struct tuple_size;
-template <__XVI_STD_NS::size_t _I, class _T> struct tuple_element;
+} // namespace __XVI_STD_UTILITY_NS
+
+
+
+namespace __XVI_STD_CORE_NS
+{
+
 
 template <class _I, class _S, ranges::subrange_kind _K>
 struct tuple_size<ranges::subrange<_I, _S, _K>> : __XVI_STD_NS::integral_constant<__XVI_STD_NS::size_t, 2> {};
@@ -4535,7 +4542,7 @@ struct tuple_element<1, const ranges::subrange<_I, _S, _K>>
     { using type = _S; };
 
 
-} // namespace __XVI_STD_UTILITY_NS
+} // namespace __XVI_STD_CORE_NS
 
 
 // Required for the implementation of ranges::find_if and we have a mutual dependency.

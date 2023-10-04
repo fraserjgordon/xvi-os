@@ -6,9 +6,9 @@
 #  define __XVI_STD_NS _xvi_std
 #endif
 
-#if !defined(__XVI_STD_STRING_NS)
+#if !defined(__XVI_STD_ALLOCATOR_NS)
 #  if defined (__XVI_STD_NS)
-#   define __XVI_STD_ALLOCATOR_NS       __XVI_STD_NS
+#    define __XVI_STD_ALLOCATOR_NS      __XVI_STD_NS
 #  else
 #    define __XVI_STD_NS                std
 #    define __XVI_STD_ALLOCATOR_NS      __XVI_STD_NS

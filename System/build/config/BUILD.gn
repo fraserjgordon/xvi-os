@@ -288,6 +288,90 @@ config("gcc_colour_output")
     }
 }
 
+config("no_omit_frame_pointer")
+{
+    cflags = ["-fno-omit-frame-pointer"]
+}
+
+config("sanitize_address")
+{
+    if (host_build)
+    {
+        configs =
+        [
+            ":no_omit_frame_pointer",
+        ]
+
+        cflags =
+        [
+            "-fsanitize=address",
+        ]
+
+        ldflags =
+        [
+            "-fsanitize=address",
+        ]
+    }
+}
+
+config("sanitize_leak")
+{
+    if (host_build)
+    {
+        configs =
+        [
+            ":no_omit_frame_pointer",
+        ]
+
+        cflags =
+        [
+            "-fsanitize=leak",
+        ]
+
+        ldflags =
+        [
+            "-fsanitize=leak",
+        ]
+    }
+}
+
+config("sanitize_memory")
+{
+    if (host_build)
+    {
+        configs =
+        [
+            ":no_omit_frame_pointer",
+        ]
+
+        cflags =
+        [
+            "-fsanitize=memory",
+        ]
+
+        ldflags =
+        [
+            "-fsanitize=memory",
+        ]
+    }
+}
+
+config("sanitize_undefined")
+{
+    if (host_build)
+    {
+        cflags =
+        [
+            "-fsanitize=undefined",
+        ]
+
+        ldflags =
+        [
+            "-fsanitize=undefined",
+        ]
+    }
+}
+
 config("kernel")
 {
     configs =

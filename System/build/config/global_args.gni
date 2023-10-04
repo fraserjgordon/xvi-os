@@ -29,6 +29,9 @@ declare_args()
 
     # Build all tests, not just the default targets.
     test_all = true
+
+    # Sanitizers to use for tests.
+    test_sanitizers = []
 }
 
 # Compiler arguments

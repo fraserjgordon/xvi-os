@@ -431,7 +431,7 @@ struct equal_to
         requires equality_comparable_with<_T, _U> || __detail::_BUILTIN_PTR_CMP<_T, _U>
     constexpr bool operator()(_T&& __t, _U&& __u) const
     {
-        return std::forward<_T>(__t) == std::forward<_U>(__u);
+        return __XVI_STD_NS::forward<_T>(__t) == __XVI_STD_NS::forward<_U>(__u);
     }
 
     using is_transparent = void;
@@ -443,7 +443,7 @@ struct not_equal_to
         requires equality_comparable_with<_T, _U> || __detail::_BUILTIN_PTR_CMP<_T, _U>
     constexpr bool operator()(_T&& __t, _U&& __u) const
     {
-        return !ranges::equal_to{}(std::forward<_T>(__t), std::forward<_U>(__u));
+        return !ranges::equal_to{}(__XVI_STD_NS::forward<_T>(__t), __XVI_STD_NS::forward<_U>(__u));
     }
 
     using is_transparent = void;
@@ -455,7 +455,7 @@ struct less
         requires totally_ordered_with<_T, _U> || __detail::_BUILTIN_PTR_CMP<_T, _U>
     constexpr bool operator()(_T&& __t, _U&& __u) const
     {
-        return std::forward<_T>(__t) < std::forward<_U>(__u);
+        return __XVI_STD_NS::forward<_T>(__t) < __XVI_STD_NS::forward<_U>(__u);
     }
 
     using is_transparent = void;
@@ -467,7 +467,7 @@ struct greater
         requires totally_ordered_with<_T, _U> || __detail::_BUILTIN_PTR_CMP<_T, _U>
     constexpr bool operator()(_T&& __t, _U&& __u) const
     {
-        return ranges::less{}(std::forward<_U>(__u), std::forward<_T>(__t));
+        return ranges::less{}(__XVI_STD_NS::forward<_U>(__u), __XVI_STD_NS::forward<_T>(__t));
     }
 
     using is_transparent = void;
@@ -479,7 +479,7 @@ struct greater_equal
         requires totally_ordered_with<_T, _U> || __detail::_BUILTIN_PTR_CMP<_T, _U>
     constexpr bool operator()(_T&& __t, _U&& __u) const
     {
-        return !ranges::less{}(std::forward<_T>(__t), std::forward<_U>(__u));
+        return !ranges::less{}(__XVI_STD_NS::forward<_T>(__t), __XVI_STD_NS::forward<_U>(__u));
     }
 
     using is_transparent = void;
@@ -491,7 +491,7 @@ struct less_equal
         requires totally_ordered_with<_T, _U> || __detail::_BUILTIN_PTR_CMP<_T, _U>
     constexpr bool operator()(_T&& __t, _U&& __u) const
     {
-        return !ranges::less{}(std::forward<_U>(__u), std::forward<_T>(__t));
+        return !ranges::less{}(__XVI_STD_NS::forward<_U>(__u), __XVI_STD_NS::forward<_T>(__t));
     }
 
     using is_transparent = void;
@@ -503,7 +503,7 @@ struct __compare_3way
     template <class _T, class _U>
     constexpr auto operator()(_T&& __t, _U&& __u) const
     {
-        return std::forward<_T>(__t) <=> std::forward<_U>(__u);
+        return __XVI_STD_NS::forward<_T>(__t) <=> __XVI_STD_NS::forward<_U>(__u);
     }
 };
 

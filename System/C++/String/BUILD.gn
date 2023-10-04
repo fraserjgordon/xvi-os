@@ -3,6 +3,8 @@ library("String")
     library_name    = "System.C++.String"
     library_version = "0.1.0"
 
+    shared_define = "__XVI_SYSTEM_CXX_STRING_BUILD_SHARED"
+
     define_header_target = true
     use_stdlib = false
 
@@ -29,6 +31,15 @@ library("String")
         "StringView.hh",
 
         "Private/Config.hh",
+    ]
+
+    sources =
+    [
+        "string.cc",
+        "u8string.cc",
+        "u16string.cc",
+        "u32string.cc",
+        "wstring.cc",
     ]
 
     test_sources =

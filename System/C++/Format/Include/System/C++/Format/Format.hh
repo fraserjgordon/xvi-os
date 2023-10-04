@@ -8,6 +8,7 @@
 #include <System/C++/Utility/CharTraits.hh>
 #include <System/C++/Utility/Function.hh>
 #include <System/C++/Utility/IntegerCompare.hh>
+#include <System/C++/Utility/RangesAlgorithm.hh>
 #include <System/C++/Utility/StdExcept.hh>
 #include <System/C++/Utility/String.hh>
 #include <System/C++/Utility/StringView.hh>

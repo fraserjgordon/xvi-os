@@ -48,10 +48,13 @@ namespace std
 {
 
 // Weak definition of std::terminate() in case the stdlib doesn't provide it.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-declarations"
 [[gnu::weak]] void terminate()
 {
     System::ABI::CXX::terminate();
 }
+#pragma GCC diagnostic pop
 
 } // namespace std
 

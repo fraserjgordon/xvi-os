@@ -20,6 +20,15 @@
 #endif
 
 
+#if __XVI_HOSTED_TEST
+#  if defined(__clang__)
+#    pragma clang optimize off
+#  else
+#    pragma GCC optimize ("no-builtin")
+#  endif
+#endif
+
+
 __SYSTEM_ABI_STRING_EXPORT void* __memccpy(void* __restrict, const void* __restrict, int, std::size_t) asm("memccpy");
 __SYSTEM_ABI_STRING_EXPORT void* __memchr(const void*, int, std::size_t) asm("memchr");
 __SYSTEM_ABI_STRING_EXPORT int   __memcmp(const void*, const void*, std::size_t) asm("memcmp");

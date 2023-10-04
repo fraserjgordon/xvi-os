@@ -5,22 +5,15 @@
 
 #include <System/C++/LanguageSupport/StdDef.hh>
 
+#include <System/C++/Utility/Allocator.hh>
+#include <System/C++/Utility/CharTraits.hh>
 #include <System/C++/Utility/MBState.hh>
+#include <System/C++/Utility/String.hh>
 #include <System/C++/Utility/Private/Config.hh>
 
 
 namespace __XVI_STD_UTILITY_NS
 {
-
-
-template <class> struct char_traits;
-template <> struct char_traits<char>;
-template <> struct char_traits<char8_t>;
-template <> struct char_traits<char16_t>;
-template <> struct char_traits<char32_t>;
-template <> struct char_traits<wchar_t>;
-
-template <class> class allocator;
 
 
 using streamoff = int64_t;
@@ -34,8 +27,9 @@ namespace __XVI_STD_IOS_NS
 {
 
 
-using __XVI_STD_UTILITY_NS::char_traits;
 using __XVI_STD_UTILITY_NS::allocator;
+using __XVI_STD_UTILITY_NS::char_traits;
+using __XVI_STD_UTILITY_NS::fpos;
 
 
 template <class _CharT, class = char_traits<_CharT>> class basic_ios;
@@ -99,7 +93,6 @@ using wfstream = basic_fstream<wchar_t>;
 using wsyncbuf = basic_syncbuf<wchar_t>;
 using wosyncstream = basic_osyncstream<wchar_t>;
 
-template <class> class fpos;
 using streampos = fpos<mbstate_t>;
 using wstreampos = fpos<mbstate_t>;
 using u8streampos = fpos<mbstate_t>;

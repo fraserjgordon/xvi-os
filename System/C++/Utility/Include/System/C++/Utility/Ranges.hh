@@ -449,10 +449,10 @@ namespace __detail
 {
 
 
-template <input_or_output_iterator _I, sentinel_for<_I> _S, subrange_kind _K>
+template <input_or_output_iterator _I, sentinel_for<_I> _S, ranges::subrange_kind _K>
 struct __is_tuple_like<ranges::subrange<_I, _S, _K>> : true_type {};
 
-template <input_or_output_iterator _I, sentinel_for<_I> _S, subrange_kind _K>
+template <input_or_output_iterator _I, sentinel_for<_I> _S, ranges::subrange_kind _K>
 struct __is_ranges_subrange_specialisation<ranges::subrange<_I, _S, _K>> : true_type {};
 
 

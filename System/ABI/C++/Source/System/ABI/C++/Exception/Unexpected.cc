@@ -20,7 +20,7 @@ void unexpectedException()
     unexpectedExceptionWithHandler(g_unexpectedHandler);
 }
 
-void unexpectedExceptionWithHandler(std::unexpected_handler handler)
+void unexpectedExceptionWithHandler(unexpected_handler handler)
 {
     if (handler)
         handler();
@@ -28,12 +28,12 @@ void unexpectedExceptionWithHandler(std::unexpected_handler handler)
     __abort();
 }
 
-std::unexpected_handler getUnexpectedExceptionHandler()
+unexpected_handler getUnexpectedExceptionHandler()
 {
     return g_unexpectedHandler;
 }
 
-std::unexpected_handler setUnexpectedExceptionHandler(std::unexpected_handler handler)
+unexpected_handler setUnexpectedExceptionHandler(unexpected_handler handler)
 {
     return g_unexpectedHandler.exchange(handler);
 }
