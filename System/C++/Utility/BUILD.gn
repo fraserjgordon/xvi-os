@@ -8,10 +8,12 @@ library("Utility")
 
     header_deps =
     [
+        "../Algorithm",
         "../Allocator",
         "../Atomic",
         "../Core:Core_headers",
         "../LanguageSupport",
+        "../Ranges",
         "../String",
         "../TypeTraits",
 

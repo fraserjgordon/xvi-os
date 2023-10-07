@@ -1,0 +1,38 @@
+library("Ranges")
+{
+    library_name    = "System.C++.Ranges"
+    library_version = "0.1.0"
+
+    use_stdlib = false
+
+    header_deps =
+    [
+        "../Algorithm",
+        "../Allocator",
+        "../Core",
+        "../String",
+    ]
+
+    test_deps =
+    [
+        "../Exception",
+    ]
+
+    public_headers =
+    [
+        "Algorithm.hh",
+        "Ranges.hh",
+        "StreamViews.hh",
+        "Views.hh",
+
+        "Private/Config.hh",
+    ]
+
+    test_sources =
+    [
+        "Algorithm.cc",
+        "Ranges.cc",
+        "StreamViews.cc",
+        "Views.cc",
+    ]
+}
